@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: cardquorum-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: cardquorum
+      POSTGRES_PASSWORD: cardquorum
+      POSTGRES_DB: cardquorum
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cardquorum"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:8-alpine
+    container_name: cardquorum-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  pgdata:
+  redisdata:
