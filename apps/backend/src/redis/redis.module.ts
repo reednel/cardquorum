@@ -1,6 +1,7 @@
 import { Module, Global, OnApplicationShutdown, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
+import { RedisPubSubService } from './redis-pubsub.service';
 
 export const REDIS = Symbol('REDIS');
 
@@ -14,8 +15,9 @@ export const REDIS = Symbol('REDIS');
         return new Redis(config.getOrThrow<string>('REDIS_URL'));
       },
     },
+    RedisPubSubService,
   ],
-  exports: [REDIS],
+  exports: [REDIS, RedisPubSubService],
 })
 export class RedisModule implements OnApplicationShutdown {
   @Inject(REDIS) private readonly redis: Redis;

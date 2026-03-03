@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as Joi from 'joi';
 import { LoggerModule } from 'nestjs-pino';
+import { ChatModule } from '../chat/chat.module';
 import { DrizzleModule } from '../drizzle/drizzle.module';
 import { HealthModule } from '../health/health.module';
 import { RedisModule } from '../redis/redis.module';
@@ -36,6 +37,7 @@ import { AppService } from './app.service';
     DrizzleModule,
     RedisModule,
     HealthModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService],
