@@ -15,12 +15,10 @@ import {
   JoinRoomPayload,
   LeaveRoomPayload,
   SendMessagePayload,
-  ChatMessagePayload,
   UserIdentity,
 } from '@cardquorum/shared';
 import { RoomService } from '../room/room.service';
 import { ChatService } from './chat.service';
-import { RedisPubSubService } from '../redis/redis-pubsub.service';
 
 /** Map ws clients by a stable connection ID. */
 interface TrackedClient {
@@ -28,8 +26,6 @@ interface TrackedClient {
   ws: any;
   identity?: UserIdentity;
 }
-
-const REDIS_CHAT_CHANNEL = 'chat:messages';
 
 @WebSocketGateway({ path: '/ws' })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -44,15 +40,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private readonly roomService: RoomService,
     private readonly chatService: ChatService,
-    private readonly redisPubSub: RedisPubSubService,
   ) {}
-
-  async afterInit() {
-    await this.redisPubSub.subscribe(REDIS_CHAT_CHANNEL);
-    this.redisPubSub.onChannel<ChatMessagePayload>(REDIS_CHAT_CHANNEL).subscribe((msg) => {
-      this.broadcastToRoom(msg.roomId, WS_EMIT.CHAT_MESSAGE, msg);
-    });
-  }
 
   handleConnection(client: any) {
     const id = `conn-${this.nextId++}`;
@@ -132,7 +120,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       payload.content,
     );
 
-    await this.redisPubSub.publish(REDIS_CHAT_CHANNEL, msg);
+    this.broadcastToRoom(msg.roomId, WS_EMIT.CHAT_MESSAGE, msg);
   }
 
   private send(client: any, event: string, data: unknown) {
