@@ -1,102 +1,80 @@
 # CardQuorum
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+![GitHub Release](https://img.shields.io/github/v/release/reednel/cardquorum) [![GitHub License](https://img.shields.io/github/license/reednel/cardquorum?color=purple)](https://github.com/reednel/cardquorum/blob/main/LICENSE) [![Repo Size](https://img.shields.io/github/repo-size/reednel/cardquorum)](https://github.com/reednel/cardquorum) ![GitHub issues](https://img.shields.io/github/issues/reednel/cardquorum)
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is ready ✨.
+A free and open source PWA for card games online. Or, it will be soon.
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/getting-started/tutorials/angular-monorepo-tutorial?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+## Development Instructions
 
-## Run tasks
+Requires [Node.js](https://nodejs.org/) (v20+), [pnpm](https://pnpm.io/), and [Docker](https://www.docker.com/).
 
-To run the dev server for your app, use:
-
-```sh
-npx nx serve frontend
-```
-
-To create a production bundle:
+### Setup
 
 ```sh
-npx nx build frontend
+pnpm install
+docker compose -f compose.dev.yml up -d # starts Postgres and Redis
+cp .env.template .env                   # then fill in values
 ```
 
-To see all available targets to run for a project, run:
+### Running
 
 ```sh
-npx nx show project frontend
+pnpm nx serve frontend # Angular dev server on :4200 (also starts backend)
+pnpm nx serve backend  # NestJS on :3000/api (standalone)
 ```
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
-
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Add new projects
-
-While you could add new projects to your workspace manually, you might want to leverage [Nx plugins](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) and their [code generation](https://nx.dev/features/generate-code?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) feature.
-
-Use the plugin's generator to create new projects.
-
-To generate a new application, use:
+### Building and Testing
 
 ```sh
-npx nx g @nx/angular:app demo
+pnpm nx run-many -t build
+pnpm nx run-many -t test
+pnpm nx run-many -t lint
+pnpm nx lint <project>    # lint a single project
+pnpm prettier --check .   # check formatting
+pnpm prettier --write .   # fix formatting
 ```
 
-To generate a new library, use:
+### Scaffolding a New Game Plugin
 
 ```sh
-npx nx g @nx/angular:lib mylib
+pnpm nx g @nx/js:lib --name=<game-name> --directory=libs/games/<game-name> --unitTestRunner=jest --bundler=none
 ```
 
-You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
+### Project Structure
 
-[Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Set up CI!
-
-### Step 1
-
-To connect to Nx Cloud, run the following command:
-
-```sh
-npx nx connect
+```md
+apps/
+frontend/ # Angular SPA
+frontend-e2e/ # Playwright E2E tests
+backend/ # NestJS + Fastify API
+backend-e2e/ # Backend integration tests
+libs/
+shared/ # API contracts, DTOs, event types
+engine/ # Game engine infrastructure
+games/
+sheepshead/ # Sheepshead game plugin
 ```
 
-Connecting to Nx Cloud ensures a [fast and scalable CI](https://nx.dev/ci/intro/why-nx-cloud?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) pipeline. It includes features such as:
+## Contributing
 
-- [Remote caching](https://nx.dev/ci/features/remote-cache?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task distribution across multiple machines](https://nx.dev/ci/features/distribute-task-execution?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Automated e2e test splitting](https://nx.dev/ci/features/split-e2e-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task flakiness detection and rerunning](https://nx.dev/ci/features/flaky-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+Users interested in expanding functionalities in Sheepshead Online are welcome to do so. Issues reports are encouraged through Github's [issue tracker](https://github.com/reednel/cardquorum/issues). See details on how to contribute and report issues in [CONTRIBUTING.md](CONTRIBUTING.md). All contributors are expected to adhere to the [Code of Conduct](CODE_OF_CONDUCT.md).
 
-### Step 2
+## License
 
-Use the following command to configure a CI workflow for your workspace:
+This software is licensed under the [AGPL-3.0 license](LICENSE).
 
-```sh
-npx nx g ci-workflow
-```
+## Acknowledgements
 
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+We owe thanks to all the projects that make CardQuorum run. (not that it runs right now)
 
-## Install Nx Console
-
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
-
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Useful links
-
-Learn more:
-
-- [Learn more about this workspace setup](https://nx.dev/getting-started/tutorials/angular-monorepo-tutorial?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-And join the Nx community:
-
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+- [Angular](https://github.com/angular)
+- [Docker](https://github.com/docker)
+- [Drizzle](https://github.com/drizzle-team)
+- [Fastify](https://github.com/fastify)
+- [NestJS](https://github.com/nestjs)
+- [Node](https://github.com/nodejs)
+- [Nx](https://github.com/nrwl/nx)
+- [Playwright](https://github.com/microsoft/playwright)
+- [Postgres](https://github.com/postgres)
+- [Redis](https://github.com/redis)
+- [Tailwind](https://github.com/tailwindlabs)
