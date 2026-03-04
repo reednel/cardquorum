@@ -34,16 +34,7 @@ The `ChatGateway` demonstrates the NestJS WebSocket gateway pattern:
 
 A game gateway would follow the same pattern, handling game-specific events like `game:start`, `game:play-card`, etc.
 
-### 4. Redis Pub/Sub
-
-`RedisPubSubService` provides cross-instance message broadcasting:
-
-- `publish(channel, data)` — send a message
-- `onChannel<T>(channel)` — returns an RxJS Observable of typed messages
-
-Games would use their own Redis channels (e.g. `game:sheepshead:events`) for broadcasting game state changes across server instances.
-
-### 5. Frontend WebSocketService
+### 4. Frontend WebSocketService
 
 The browser-side `WebSocketService` is game-agnostic:
 

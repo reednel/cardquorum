@@ -38,7 +38,7 @@
 4. **Run database migrations:**
 
    ```sh
-   pnpm drizzle-kit migrate --config ./apps/backend/drizzle.config.ts
+   pnpm drizzle-kit migrate --config ./libs/api/drizzle.config.ts
    ```
 
 5. **Start the dev servers:**

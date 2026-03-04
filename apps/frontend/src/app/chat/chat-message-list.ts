@@ -10,7 +10,7 @@ import { ChatMessagePayload } from '@cardquorum/shared';
       @for (msg of messages(); track msg.id) {
         <div class="flex gap-2 text-sm">
           <span class="font-semibold text-indigo-400 shrink-0">{{ msg.senderNickname }}</span>
-          <span class="text-gray-200 break-words min-w-0">{{ msg.content }}</span>
+          <span class="text-gray-200 wrap-break-word min-w-0">{{ msg.content }}</span>
           <span class="text-gray-500 text-xs shrink-0 ml-auto self-end">
             {{ formatTime(msg.sentAt) }}
           </span>

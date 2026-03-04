@@ -1,12 +1,10 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { desc, eq } from 'drizzle-orm';
+import { Injectable } from '@nestjs/common';
 import { ChatMessagePayload } from '@cardquorum/shared';
-import { DRIZZLE } from '../drizzle/drizzle.module';
-import { messages } from '../drizzle/schema';
+import { MessageRepository } from '@cardquorum/api';
 
 @Injectable()
 export class ChatService {
-  constructor(@Inject(DRIZZLE) private readonly db: any) {}
+  constructor(private readonly messages: MessageRepository) {}
 
   async saveMessage(
     roomId: string,
@@ -14,36 +12,10 @@ export class ChatService {
     senderNickname: string,
     content: string,
   ): Promise<ChatMessagePayload> {
-    const [row] = await this.db
-      .insert(messages)
-      .values({ roomId, senderUserId, senderNickname, content })
-      .returning();
-
-    return {
-      id: row.id,
-      roomId: row.roomId,
-      senderUserId: row.senderUserId,
-      senderNickname: row.senderNickname,
-      content: row.content,
-      sentAt: row.sentAt.toISOString(),
-    };
+    return this.messages.insert(roomId, senderUserId, senderNickname, content);
   }
 
   async getRecentMessages(roomId: string, limit = 50): Promise<ChatMessagePayload[]> {
-    const rows = await this.db
-      .select()
-      .from(messages)
-      .where(eq(messages.roomId, roomId))
-      .orderBy(desc(messages.sentAt))
-      .limit(limit);
-
-    return rows.reverse().map((row: any) => ({
-      id: row.id,
-      roomId: row.roomId,
-      senderUserId: row.senderUserId,
-      senderNickname: row.senderNickname,
-      content: row.content,
-      sentAt: row.sentAt.toISOString(),
-    }));
+    return this.messages.findByRoomId(roomId, limit);
   }
 }

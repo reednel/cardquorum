@@ -7,8 +7,8 @@ if (!databaseUrl) {
 }
 
 export default defineConfig({
-  schema: './apps/backend/src/drizzle/schema/*.ts',
-  out: './apps/backend/drizzle/migrations',
+  schema: './libs/api/src/schema/*.ts',
+  out: './libs/api/migrations',
   dialect: 'postgresql',
   dbCredentials: {
     url: databaseUrl,
