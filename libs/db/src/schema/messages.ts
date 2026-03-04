@@ -1,13 +1,16 @@
-import { pgTable, uuid, varchar, text, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, serial, integer, varchar, text, timestamp } from 'drizzle-orm/pg-core';
 import { rooms } from './rooms';
+import { users } from './users';
 
 export const messages = pgTable('messages', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  roomId: uuid('room_id')
+  id: serial('id').primaryKey(),
+  roomId: integer('room_id')
     .notNull()
     .references(() => rooms.id, { onDelete: 'cascade' }),
-  senderUserId: uuid('sender_user_id').notNull(),
-  senderNickname: varchar('sender_nickname', { length: 255 }).notNull(),
+  senderUserId: integer('sender_user_id')
+    .notNull()
+    .references(() => users.id),
+  senderDisplayName: varchar('sender_display_name', { length: 255 }).notNull(),
   content: text('content').notNull(),
   sentAt: timestamp('sent_at', { withTimezone: true }).notNull().defaultNow(),
 });

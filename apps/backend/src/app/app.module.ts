@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as Joi from 'joi';
 import { LoggerModule } from 'nestjs-pino';
+import { AuthModule } from '../auth/auth.module';
 import { ChatModule } from '../chat/chat.module';
 import { DrizzleModule } from '../drizzle/drizzle.module';
 import { HealthModule } from '../health/health.module';
@@ -19,6 +20,22 @@ import { AppService } from './app.service';
         LOG_LEVEL: Joi.string().valid('debug', 'info', 'warn', 'error').default('info'),
         PORT: Joi.number().default(3000),
         NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
+        AUTH_STRATEGY: Joi.string().valid('basic', 'oidc').default('basic'),
+        JWT_SECRET: Joi.string().when('AUTH_STRATEGY', {
+          is: 'basic',
+          then: Joi.required(),
+          otherwise: Joi.optional(),
+        }),
+        OIDC_ISSUER: Joi.string().uri().when('AUTH_STRATEGY', {
+          is: 'oidc',
+          then: Joi.required(),
+          otherwise: Joi.optional(),
+        }),
+        OIDC_CLIENT_ID: Joi.string().when('AUTH_STRATEGY', {
+          is: 'oidc',
+          then: Joi.required(),
+          otherwise: Joi.optional(),
+        }),
       }),
     }),
     LoggerModule.forRootAsync({
@@ -37,6 +54,7 @@ import { AppService } from './app.service';
     DrizzleModule,
     RedisModule,
     HealthModule,
+    AuthModule,
     ChatModule,
   ],
   controllers: [AppController],

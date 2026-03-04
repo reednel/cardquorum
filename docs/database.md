@@ -8,24 +8,47 @@ Schema files live in `libs/db/src/schema/` and are barrel-exported from `@cardqu
 
 Current tables:
 
+### `users`
+
+| Column         | Type           | Notes                     |
+| -------------- | -------------- | ------------------------- |
+| `id`           | `serial`       | PK, auto-increment        |
+| `username`     | `varchar(255)` | Not null, unique          |
+| `display_name` | `varchar(255)` | Not null                  |
+| `email`        | `varchar(255)` | Nullable                  |
+| `created_at`   | `timestamptz`  | Not null, default `now()` |
+| `updated_at`   | `timestamptz`  | Not null, default `now()` |
+
+### `user_credentials`
+
+| Column       | Type           | Notes                                     |
+| ------------ | -------------- | ----------------------------------------- |
+| `id`         | `serial`       | PK, auto-increment                        |
+| `user_id`    | `integer`      | FK → `users.id`, cascade delete, not null |
+| `method`     | `varchar(10)`  | Not null (`'basic'` or `'oidc'`)          |
+| `credential` | `varchar(255)` | Not null                                  |
+| `created_at` | `timestamptz`  | Not null, default `now()`                 |
+
+**Constraints:** `UNIQUE(user_id, method)`, partial unique index on `credential WHERE method = 'oidc'`
+
 ### `rooms`
 
-| Column       | Type           | Notes                           |
-| ------------ | -------------- | ------------------------------- |
-| `id`         | `uuid`         | PK, default `gen_random_uuid()` |
-| `name`       | `varchar(255)` | Not null                        |
-| `created_at` | `timestamptz`  | Not null, default `now()`       |
+| Column       | Type           | Notes                     |
+| ------------ | -------------- | ------------------------- |
+| `id`         | `serial`       | PK, auto-increment        |
+| `name`       | `varchar(255)` | Not null                  |
+| `created_at` | `timestamptz`  | Not null, default `now()` |
 
 ### `messages`
 
-| Column            | Type           | Notes                           |
-| ----------------- | -------------- | ------------------------------- |
-| `id`              | `uuid`         | PK, default `gen_random_uuid()` |
-| `room_id`         | `uuid`         | FK → `rooms.id`, cascade delete |
-| `sender_user_id`  | `uuid`         | Not null                        |
-| `sender_nickname` | `varchar(255)` | Not null                        |
-| `content`         | `text`         | Not null                        |
-| `sent_at`         | `timestamptz`  | Not null, default `now()`       |
+| Column                | Type           | Notes                           |
+| --------------------- | -------------- | ------------------------------- |
+| `id`                  | `serial`       | PK, auto-increment              |
+| `room_id`             | `integer`      | FK → `rooms.id`, cascade delete |
+| `sender_user_id`      | `integer`      | FK → `users.id`, not null       |
+| `sender_display_name` | `varchar(255)` | Not null                        |
+| `content`             | `text`         | Not null                        |
+| `sent_at`             | `timestamptz`  | Not null, default `now()`       |
 
 ## Drizzle Kit Config
 
@@ -53,16 +76,23 @@ export class ChatService {
     this.messages = new MessageRepository(db);
   }
 
-  async saveMessage(roomId: string, senderUserId: string, senderNickname: string, content: string) {
-    return this.messages.insert(roomId, senderUserId, senderNickname, content);
+  async saveMessage(
+    roomId: number,
+    senderUserId: number,
+    senderDisplayName: string,
+    content: string,
+  ) {
+    return this.messages.insert(roomId, senderUserId, senderDisplayName, content);
   }
 }
 ```
 
 Available repositories:
 
-- **`RoomRepository`** — `findById`, `create`, `ensureExists`
+- **`RoomRepository`** — `findById`, `create`
 - **`MessageRepository`** — `insert`, `findByRoomId`
+- **`UserRepository`** — `findById`, `findByUsername`, `create`
+- **`CredentialRepository`** — `findCredentialByUserId`, `findUserByCredential`, `upsertCredential`, `findOrCreateUserByOidc`
 
 ## Common Operations
 

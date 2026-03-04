@@ -73,20 +73,21 @@ export class ChatRoom implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
-  roomId = '';
+  roomId = 0;
   messageText = signal('');
 
   ngOnInit(): void {
-    this.roomId = this.route.snapshot.paramMap.get('roomId') ?? '';
-    const nickname = sessionStorage.getItem('chat_nickname');
+    const param = this.route.snapshot.paramMap.get('roomId');
+    this.roomId = param ? parseInt(param, 10) : 0;
+    const displayName = sessionStorage.getItem('chat_display_name');
 
-    if (!this.roomId || !nickname) {
+    if (!this.roomId || !displayName) {
       this.router.navigate(['/chat']);
       return;
     }
 
     this.chatService.connect();
-    this.chatService.joinRoom(this.roomId, nickname);
+    this.chatService.joinRoom(this.roomId, displayName);
   }
 
   ngOnDestroy(): void {

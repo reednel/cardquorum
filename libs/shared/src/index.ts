@@ -11,3 +11,4 @@ export type {
   WsErrorPayload,
 } from './lib/ws-types';
 export type { Room } from './lib/room-types';
+export type { AuthStrategy, LoginRequest, LoginResponse, RegisterRequest } from './lib/auth-types';

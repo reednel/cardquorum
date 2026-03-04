@@ -27,22 +27,22 @@ describe('MessageRepository', () => {
       const now = new Date('2026-03-02T12:00:00Z');
       db.returning.mockResolvedValue([
         {
-          id: 'msg-1',
-          roomId: 'room-1',
-          senderUserId: 'u1',
-          senderNickname: 'Alice',
+          id: 1,
+          roomId: 1,
+          senderUserId: 1,
+          senderDisplayName: 'Alice',
           content: 'Hello',
           sentAt: now,
         },
       ]);
 
-      const result = await repo.insert('room-1', 'u1', 'Alice', 'Hello');
+      const result = await repo.insert(1, 1, 'Alice', 'Hello');
 
       expect(result).toEqual({
-        id: 'msg-1',
-        roomId: 'room-1',
-        senderUserId: 'u1',
-        senderNickname: 'Alice',
+        id: 1,
+        roomId: 1,
+        senderUserId: 1,
+        senderDisplayName: 'Alice',
         content: 'Hello',
         sentAt: '2026-03-02T12:00:00.000Z',
       });
@@ -54,35 +54,35 @@ describe('MessageRepository', () => {
     it('should return messages in chronological order', async () => {
       const rows = [
         {
-          id: 'msg-2',
-          roomId: 'room-1',
-          senderUserId: 'u2',
-          senderNickname: 'Bob',
+          id: 2,
+          roomId: 1,
+          senderUserId: 2,
+          senderDisplayName: 'Bob',
           content: 'Hi',
           sentAt: new Date('2026-03-02T12:01:00Z'),
         },
         {
-          id: 'msg-1',
-          roomId: 'room-1',
-          senderUserId: 'u1',
-          senderNickname: 'Alice',
+          id: 1,
+          roomId: 1,
+          senderUserId: 1,
+          senderDisplayName: 'Alice',
           content: 'Hello',
           sentAt: new Date('2026-03-02T12:00:00Z'),
         },
       ];
       db.limit.mockResolvedValue(rows);
 
-      const result = await repo.findByRoomId('room-1');
+      const result = await repo.findByRoomId(1);
 
-      expect(result[0].id).toBe('msg-1');
-      expect(result[1].id).toBe('msg-2');
+      expect(result[0].id).toBe(1);
+      expect(result[1].id).toBe(2);
       expect(result[0].sentAt).toBe('2026-03-02T12:00:00.000Z');
     });
 
     it('should use custom limit when provided', async () => {
       db.limit.mockResolvedValue([]);
 
-      await repo.findByRoomId('room-1', 10);
+      await repo.findByRoomId(1, 10);
 
       expect(db.limit).toHaveBeenCalledWith(10);
     });

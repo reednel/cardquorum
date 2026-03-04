@@ -14,7 +14,7 @@ import { WebSocketService } from './websocket.service';
 export class ChatService {
   readonly messages = signal<ChatMessagePayload[]>([]);
   readonly members = signal<UserIdentity[]>([]);
-  readonly currentRoomId = signal<string | null>(null);
+  readonly currentRoomId = signal<number | null>(null);
 
   private unsubscribes: Array<() => void> = [];
   private readonly ws = inject(WebSocketService);
@@ -30,11 +30,11 @@ export class ChatService {
     this.ws.disconnect();
   }
 
-  joinRoom(roomId: string, nickname: string): void {
+  joinRoom(roomId: number, displayName: string): void {
     this.currentRoomId.set(roomId);
     this.messages.set([]);
     this.members.set([]);
-    this.ws.send(WS_EVENT.ROOM_JOIN, { roomId, nickname });
+    this.ws.send(WS_EVENT.ROOM_JOIN, { roomId });
   }
 
   leaveRoom(): void {

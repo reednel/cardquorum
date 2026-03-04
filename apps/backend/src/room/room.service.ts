@@ -8,8 +8,8 @@ export class RoomService {
 
   constructor(private readonly rooms: RoomRepository) {}
 
-  /** Ensure the room exists in Postgres (upsert by id). */
-  async ensureRoomExists(roomId: string): Promise<void> {
-    await this.rooms.ensureExists(roomId);
+  async roomExists(roomId: number): Promise<boolean> {
+    const room = await this.rooms.findById(roomId);
+    return room !== null;
   }
 }

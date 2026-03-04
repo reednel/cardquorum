@@ -8,6 +8,7 @@ import {
   MessageBody,
   ConnectedSocket,
 } from '@nestjs/websockets';
+import { IncomingMessage } from 'http';
 import { Server } from 'ws';
 import {
   WS_EVENT,
@@ -17,6 +18,7 @@ import {
   SendMessagePayload,
   UserIdentity,
 } from '@cardquorum/shared';
+import { WsAuthGuard } from '../auth/ws-auth.guard';
 import { RoomService } from '../room/room.service';
 import { ChatService } from './chat.service';
 
@@ -38,14 +40,22 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private nextId = 1;
 
   constructor(
+    private readonly wsAuthGuard: WsAuthGuard,
     private readonly roomService: RoomService,
     private readonly chatService: ChatService,
   ) {}
 
-  handleConnection(client: any) {
+  async handleConnection(client: any, request: IncomingMessage) {
+    const identity = await this.wsAuthGuard.authenticate(request);
+    if (!identity) {
+      this.logger.warn('WS connection rejected: invalid or missing token');
+      client.close(4001, 'Unauthorized');
+      return;
+    }
+
     const id = `conn-${this.nextId++}`;
-    this.clients.set(client, { id, ws: client });
-    this.logger.log(`Client connected: ${id}`);
+    this.clients.set(client, { id, ws: client, identity });
+    this.logger.log(`Client connected: ${id} (user: ${identity.userId})`);
   }
 
   handleDisconnect(client: any) {
@@ -63,29 +73,30 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage(WS_EVENT.ROOM_JOIN)
   async handleJoinRoom(@ConnectedSocket() client: any, @MessageBody() payload: JoinRoomPayload) {
     const tracked = this.clients.get(client);
-    if (!tracked) return;
+    if (!tracked?.identity) return;
 
-    const identity: UserIdentity = {
-      userId: tracked.id, // stub: use connection ID as user ID until auth
-      nickname: payload.nickname,
-    };
-    tracked.identity = identity;
+    const roomId = payload.roomId;
+    const exists = await this.roomService.roomExists(roomId);
+    if (!exists) {
+      this.send(client, WS_EMIT.ERROR, { message: `Room ${roomId} does not exist` });
+      return;
+    }
 
-    await this.roomService.ensureRoomExists(payload.roomId);
-    this.roomService.manager.joinRoom(payload.roomId, tracked.id, identity);
+    const roomKey = String(roomId);
+    this.roomService.manager.joinRoom(roomKey, tracked.id, tracked.identity);
 
-    const members = this.roomService.manager.getRoomMembers(payload.roomId);
-    const history = await this.chatService.getRecentMessages(payload.roomId);
+    const members = this.roomService.manager.getRoomMembers(roomKey);
+    const history = await this.chatService.getRecentMessages(roomId);
 
-    this.send(client, WS_EMIT.ROOM_JOINED, { roomId: payload.roomId, members });
-    this.send(client, WS_EMIT.MESSAGE_HISTORY, { roomId: payload.roomId, messages: history });
+    this.send(client, WS_EMIT.ROOM_JOINED, { roomId, members });
+    this.send(client, WS_EMIT.MESSAGE_HISTORY, { roomId, messages: history });
 
     this.broadcastToRoom(
-      payload.roomId,
+      roomKey,
       WS_EMIT.MEMBER_JOINED,
       {
-        roomId: payload.roomId,
-        member: identity,
+        roomId,
+        member: tracked.identity,
       },
       tracked.id,
     );
@@ -96,9 +107,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const tracked = this.clients.get(client);
     if (!tracked) return;
 
-    const identity = this.roomService.manager.leaveRoom(payload.roomId, tracked.id);
+    const roomKey = String(payload.roomId);
+    const identity = this.roomService.manager.leaveRoom(roomKey, tracked.id);
     if (identity) {
-      this.broadcastToRoom(payload.roomId, WS_EMIT.MEMBER_LEFT, {
+      this.broadcastToRoom(roomKey, WS_EMIT.MEMBER_LEFT, {
         roomId: payload.roomId,
         member: identity,
       });
@@ -116,11 +128,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const msg = await this.chatService.saveMessage(
       payload.roomId,
       tracked.identity.userId,
-      tracked.identity.nickname,
+      tracked.identity.displayName,
       payload.content,
     );
 
-    this.broadcastToRoom(msg.roomId, WS_EMIT.CHAT_MESSAGE, msg);
+    this.broadcastToRoom(String(msg.roomId), WS_EMIT.CHAT_MESSAGE, msg);
   }
 
   private send(client: any, event: string, data: unknown) {

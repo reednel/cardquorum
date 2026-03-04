@@ -3,7 +3,12 @@ import { ConfigService } from '@nestjs/config';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from '@cardquorum/db';
-import { RoomRepository, MessageRepository } from '@cardquorum/db';
+import {
+  RoomRepository,
+  MessageRepository,
+  UserRepository,
+  CredentialRepository,
+} from '@cardquorum/db';
 
 export const DRIZZLE = Symbol('DRIZZLE');
 
@@ -28,8 +33,18 @@ export const DRIZZLE = Symbol('DRIZZLE');
       inject: [DRIZZLE],
       useFactory: (db: any) => new MessageRepository(db),
     },
+    {
+      provide: UserRepository,
+      inject: [DRIZZLE],
+      useFactory: (db: any) => new UserRepository(db),
+    },
+    {
+      provide: CredentialRepository,
+      inject: [DRIZZLE],
+      useFactory: (db: any) => new CredentialRepository(db),
+    },
   ],
-  exports: [DRIZZLE, RoomRepository, MessageRepository],
+  exports: [DRIZZLE, RoomRepository, MessageRepository, UserRepository, CredentialRepository],
 })
 export class DrizzleModule implements OnApplicationShutdown {
   async onApplicationShutdown() {

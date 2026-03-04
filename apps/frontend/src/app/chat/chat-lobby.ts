@@ -15,16 +15,16 @@ import { Router } from '@angular/router';
         <h1 class="text-2xl font-bold text-white text-center">Join a Chat Room</h1>
 
         <label class="flex flex-col gap-1">
-          <span class="text-sm font-medium text-gray-300">Nickname</span>
+          <span class="text-sm font-medium text-gray-300">Display Name</span>
           <input
             type="text"
-            [(ngModel)]="nickname"
-            name="nickname"
+            [(ngModel)]="displayName"
+            name="displayName"
             required
             maxlength="30"
             class="rounded-md bg-gray-700 border border-gray-600 text-white px-3 py-2 text-sm
                    focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            placeholder="Enter your nickname"
+            placeholder="Enter your display name"
           />
         </label>
 
@@ -37,13 +37,13 @@ import { Router } from '@angular/router';
             required
             class="rounded-md bg-gray-700 border border-gray-600 text-white px-3 py-2 text-sm
                    focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            placeholder="Enter a room ID (any UUID)"
+            placeholder="Enter a room ID (number)"
           />
         </label>
 
         <button
           type="submit"
-          [disabled]="!nickname() || !roomId()"
+          [disabled]="!displayName() || !roomId()"
           class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white
                  hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed
                  focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2
@@ -58,20 +58,23 @@ import { Router } from '@angular/router';
 export class ChatLobby {
   private readonly router = inject(Router);
 
-  nickname = signal('');
+  displayName = signal('');
   roomId = signal('');
 
   constructor() {
-    const saved = sessionStorage.getItem('chat_nickname');
-    if (saved) this.nickname.set(saved);
+    const saved = sessionStorage.getItem('chat_display_name');
+    if (saved) this.displayName.set(saved);
   }
 
   joinRoom(): void {
-    const nick = this.nickname().trim();
+    const name = this.displayName().trim();
     const room = this.roomId().trim();
-    if (!nick || !room) return;
+    if (!name || !room) return;
 
-    sessionStorage.setItem('chat_nickname', nick);
-    this.router.navigate(['/chat', room]);
+    const roomNum = parseInt(room, 10);
+    if (isNaN(roomNum)) return;
+
+    sessionStorage.setItem('chat_display_name', name);
+    this.router.navigate(['/chat', roomNum]);
   }
 }

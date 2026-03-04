@@ -7,15 +7,15 @@ export class ChatService {
   constructor(private readonly messages: MessageRepository) {}
 
   async saveMessage(
-    roomId: string,
-    senderUserId: string,
-    senderNickname: string,
+    roomId: number,
+    senderUserId: number,
+    senderDisplayName: string,
     content: string,
   ): Promise<ChatMessagePayload> {
-    return this.messages.insert(roomId, senderUserId, senderNickname, content);
+    return this.messages.insert(roomId, senderUserId, senderDisplayName, content);
   }
 
-  async getRecentMessages(roomId: string, limit = 50): Promise<ChatMessagePayload[]> {
+  async getRecentMessages(roomId: number, limit = 50): Promise<ChatMessagePayload[]> {
     return this.messages.findByRoomId(roomId, limit);
   }
 }

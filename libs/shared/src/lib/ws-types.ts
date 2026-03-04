@@ -1,48 +1,46 @@
-/** Stub identity until OIDC auth is wired up. */
 export interface UserIdentity {
-  userId: string;
-  nickname: string;
+  userId: number;
+  displayName: string;
 }
 
 // --- Client → Server payloads ---
 
 export interface JoinRoomPayload {
-  roomId: string;
-  nickname: string;
+  roomId: number;
 }
 
 export interface LeaveRoomPayload {
-  roomId: string;
+  roomId: number;
 }
 
 export interface SendMessagePayload {
-  roomId: string;
+  roomId: number;
   content: string;
 }
 
 // --- Server → Client payloads ---
 
 export interface RoomJoinedPayload {
-  roomId: string;
+  roomId: number;
   members: UserIdentity[];
 }
 
 export interface MemberChangePayload {
-  roomId: string;
+  roomId: number;
   member: UserIdentity;
 }
 
 export interface ChatMessagePayload {
-  id: string;
-  roomId: string;
-  senderUserId: string;
-  senderNickname: string;
+  id: number;
+  roomId: number;
+  senderUserId: number;
+  senderDisplayName: string;
   content: string;
   sentAt: string;
 }
 
 export interface MessageHistoryPayload {
-  roomId: string;
+  roomId: number;
   messages: ChatMessagePayload[];
 }
 

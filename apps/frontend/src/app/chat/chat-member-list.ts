@@ -13,7 +13,7 @@ import { UserIdentity } from '@cardquorum/shared';
         @for (member of members(); track member.userId) {
           <li class="text-sm text-gray-300 flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-green-500" aria-hidden="true"></span>
-            {{ member.nickname }}
+            {{ member.displayName }}
           </li>
         }
       </ul>

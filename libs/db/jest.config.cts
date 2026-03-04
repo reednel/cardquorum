@@ -1,5 +1,5 @@
 module.exports = {
-  displayName: 'api',
+  displayName: 'db',
   preset: '../../jest.preset.js',
   testEnvironment: 'node',
   transform: {

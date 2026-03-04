@@ -7,27 +7,27 @@ export class MessageRepository {
   constructor(private readonly db: DbInstance) {}
 
   async insert(
-    roomId: string,
-    senderUserId: string,
-    senderNickname: string,
+    roomId: number,
+    senderUserId: number,
+    senderDisplayName: string,
     content: string,
   ): Promise<ChatMessagePayload> {
     const [row] = await this.db
       .insert(messages)
-      .values({ roomId, senderUserId, senderNickname, content })
+      .values({ roomId, senderUserId, senderDisplayName, content })
       .returning();
 
     return {
       id: row.id,
       roomId: row.roomId,
       senderUserId: row.senderUserId,
-      senderNickname: row.senderNickname,
+      senderDisplayName: row.senderDisplayName,
       content: row.content,
       sentAt: row.sentAt.toISOString(),
     };
   }
 
-  async findByRoomId(roomId: string, limit = 50): Promise<ChatMessagePayload[]> {
+  async findByRoomId(roomId: number, limit = 50): Promise<ChatMessagePayload[]> {
     const rows = await this.db
       .select()
       .from(messages)
@@ -39,7 +39,7 @@ export class MessageRepository {
       id: row.id,
       roomId: row.roomId,
       senderUserId: row.senderUserId,
-      senderNickname: row.senderNickname,
+      senderDisplayName: row.senderDisplayName,
       content: row.content,
       sentAt: row.sentAt.toISOString(),
     }));

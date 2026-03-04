@@ -4,8 +4,8 @@ import { UserIdentity } from '@cardquorum/shared';
 describe('RoomManager', () => {
   let manager: RoomManager;
 
-  const alice: UserIdentity = { userId: 'u1', nickname: 'Alice' };
-  const bob: UserIdentity = { userId: 'u2', nickname: 'Bob' };
+  const alice: UserIdentity = { userId: 1, displayName: 'Alice' };
+  const bob: UserIdentity = { userId: 2, displayName: 'Bob' };
 
   beforeEach(() => {
     manager = new RoomManager();

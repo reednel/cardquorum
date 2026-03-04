@@ -21,11 +21,13 @@
    cp .env.template .env
    ```
 
-   The defaults work with the Docker dev containers out of the box:
+   The defaults work with the Docker dev containers out of the box. For basic auth (the default), make sure `JWT_SECRET` is set:
 
    ```env
    DATABASE_URL=postgresql://cardquorum:cardquorum@localhost:5432/cardquorum
    REDIS_URL=redis://localhost:6379
+   AUTH_STRATEGY=basic
+   JWT_SECRET=dev-secret-change-me-in-production
    LOG_LEVEL=debug
    ```
 
@@ -41,7 +43,17 @@
    pnpm drizzle-kit migrate --config ./libs/db/drizzle.config.ts
    ```
 
-5. **Start the dev servers:**
+5. **Register a user:**
+
+   ```sh
+   curl -X POST http://localhost:3000/api/auth/register \
+     -H 'Content-Type: application/json' \
+     -d '{"username":"dev","displayName":"Dev","password":"password"}'
+   ```
+
+   This returns a JWT token you can use for WebSocket connections and API calls.
+
+6. **Start the dev servers:**
 
    ```sh
    pnpm nx serve frontend
