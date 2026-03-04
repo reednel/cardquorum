@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import {
   WS_EVENT,
   WS_EMIT,
@@ -17,8 +17,7 @@ export class ChatService {
   readonly currentRoomId = signal<string | null>(null);
 
   private unsubscribes: Array<() => void> = [];
-
-  constructor(private readonly ws: WebSocketService) {}
+  private readonly ws = inject(WebSocketService);
 
   connect(): void {
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';

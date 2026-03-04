@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { RoomManager } from '@cardquorum/engine';
-import { RoomRepository } from '@cardquorum/api';
+import { RoomRepository } from '@cardquorum/db';
 
 @Injectable()
 export class RoomService {

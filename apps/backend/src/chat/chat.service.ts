@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ChatMessagePayload } from '@cardquorum/shared';
-import { MessageRepository } from '@cardquorum/api';
+import { MessageRepository } from '@cardquorum/db';
 
 @Injectable()
 export class ChatService {

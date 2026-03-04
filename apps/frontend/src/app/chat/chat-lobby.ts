@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 
@@ -56,10 +56,12 @@ import { Router } from '@angular/router';
   `,
 })
 export class ChatLobby {
+  private readonly router = inject(Router);
+
   nickname = signal('');
   roomId = signal('');
 
-  constructor(private readonly router: Router) {
+  constructor() {
     const saved = sessionStorage.getItem('chat_nickname');
     if (saved) this.nickname.set(saved);
   }

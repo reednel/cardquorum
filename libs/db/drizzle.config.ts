@@ -7,8 +7,8 @@ if (!databaseUrl) {
 }
 
 export default defineConfig({
-  schema: './libs/api/src/schema/*.ts',
-  out: './libs/api/migrations',
+  schema: './libs/db/src/schema/*.ts',
+  out: './libs/db/migrations',
   dialect: 'postgresql',
   dbCredentials: {
     url: databaseUrl,
