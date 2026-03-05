@@ -12,7 +12,8 @@
       "source": {
         "source": "github",
         "repo": "nrwl/nx-ai-agents-config"
-      }
+      },
+      "autoUpdate": true
     }
   }
 }
