@@ -9,7 +9,7 @@ export const gameSessions = pgTable('game_sessions', {
   gameType: varchar('game_type', { length: 50 }).notNull(),
   status: varchar('status', { length: 20 }).notNull().default('waiting'),
   config: jsonb('config').notNull().default({}),
-  state: jsonb('state'),
+  store: jsonb('store').notNull().default({}),
   startedAt: timestamp('started_at', { withTimezone: true }),
   finishedAt: timestamp('finished_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

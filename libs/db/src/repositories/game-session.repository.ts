@@ -23,10 +23,10 @@ export class GameSessionRepository {
     return row;
   }
 
-  async updateState(sessionId: number, state: unknown) {
+  async updateStore(sessionId: number, store: unknown) {
     const [row] = await this.db
       .update(gameSessions)
-      .set({ state })
+      .set({ store })
       .where(eq(gameSessions.id, sessionId))
       .returning();
     return row;

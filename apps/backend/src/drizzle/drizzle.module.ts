@@ -9,8 +9,6 @@ import {
   UserRepository,
   CredentialRepository,
   GameSessionRepository,
-  GamePlayerRepository,
-  GameEventRepository,
 } from '@cardquorum/db';
 
 export const DRIZZLE = Symbol('DRIZZLE');
@@ -51,16 +49,6 @@ export const DRIZZLE = Symbol('DRIZZLE');
       inject: [DRIZZLE],
       useFactory: (db: any) => new GameSessionRepository(db),
     },
-    {
-      provide: GamePlayerRepository,
-      inject: [DRIZZLE],
-      useFactory: (db: any) => new GamePlayerRepository(db),
-    },
-    {
-      provide: GameEventRepository,
-      inject: [DRIZZLE],
-      useFactory: (db: any) => new GameEventRepository(db),
-    },
   ],
   exports: [
     DRIZZLE,
@@ -69,8 +57,6 @@ export const DRIZZLE = Symbol('DRIZZLE');
     UserRepository,
     CredentialRepository,
     GameSessionRepository,
-    GamePlayerRepository,
-    GameEventRepository,
   ],
 })
 export class DrizzleModule implements OnApplicationShutdown {
