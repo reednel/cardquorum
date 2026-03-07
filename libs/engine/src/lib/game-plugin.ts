@@ -1,6 +1,6 @@
 export interface GameEventBase {
   type: string;
-  playerId?: number;
+  userID?: number;
   payload?: unknown;
 }
 
@@ -12,6 +12,7 @@ export interface GameEventBase {
 export interface GamePlugin<
   TConfig = unknown,
   TState = unknown,
+  TStore = unknown,
   TEvent extends GameEventBase = GameEventBase,
 > {
   /** Unique identifier, matches game_sessions.game_type. */
@@ -21,16 +22,19 @@ export interface GamePlugin<
   validateConfig(config: unknown): config is TConfig;
 
   /** Build the initial state for a new game. */
-  createInitialState(config: TConfig, playerIds: number[]): TState;
+  createInitialState(config: TConfig, userIDs: number[]): TState;
+
+  /** Build the initial store for a new game. */
+  createInitialStore(config: TConfig, userIDs: number[]): TStore;
 
   /** Return which actions are valid for a given player in the current state. */
-  getValidActions(state: TState, playerId: number): TEvent['type'][];
+  getValidActions(state: TState, userID: number): TEvent['type'][];
 
-  /** Apply an event to the state, returning the new state. Throws if invalid. */
-  applyEvent(state: TState, event: TEvent): TState;
+  /** Apply an event to the state, returning the new state. Update the store as well. Throws if invalid. */
+  applyEvent(state: TState, store: TStore, event: TEvent): [TState, TStore];
 
   /** Derive the state visible to a specific player (hides other hands, etc.). */
-  getPlayerView(state: TState, playerId: number): Partial<TState>;
+  getPlayerView(state: TState, userID: number): Partial<TState>;
 
   /** Check whether the game is over. */
   isGameOver(state: TState): boolean;

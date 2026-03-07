@@ -1,5 +1,13 @@
 import { GamePlugin } from '@cardquorum/engine';
-import { SheepsheadConfig, SheepsheadState, SheepsheadEvent, SheepsheadEventType } from './types';
+import {
+  SheepsheadConfig,
+  SheepsheadState,
+  SheepsheadStore,
+  SheepsheadEvent,
+  SheepsheadEventType,
+  UserID,
+} from './types';
+import { PHASE } from './constants';
 
 /**
  * Sheepshead game plugin. Implements the generic GamePlugin interface
@@ -8,7 +16,7 @@ import { SheepsheadConfig, SheepsheadState, SheepsheadEvent, SheepsheadEventType
  * TODO: implement each method as game logic is built out.
  */
 export class SheepsheadPlugin
-  implements GamePlugin<SheepsheadConfig, SheepsheadState, SheepsheadEvent>
+  implements GamePlugin<SheepsheadConfig, SheepsheadState, SheepsheadStore, SheepsheadEvent>
 {
   readonly gameType = 'sheepshead';
 
@@ -25,48 +33,77 @@ export class SheepsheadPlugin
     return (
       typeof c['leasters'] === 'boolean' &&
       typeof c['doublers'] === 'boolean' &&
-      typeof c['crack'] === 'boolean' &&
-      typeof c['blitzing'] === 'boolean'
+      typeof c['cracking'] === 'boolean' &&
+      typeof c['blitzing'] === 'boolean' &&
+      typeof c['noAceFaceTrump'] === 'boolean'
     );
   }
 
-  createInitialState(config: SheepsheadConfig, _playerIds: number[]): SheepsheadState {
+  createInitialState(config: SheepsheadConfig, userIDs: UserID[]): SheepsheadState {
     return {
-      scores: new Array(config.playerCount).fill(0),
-      handNumber: 0,
-      doublerCount: 0,
-      currentHand: null,
+      players: userIDs.map((id) => ({
+        userID: id,
+        role: null,
+        hand: [],
+        tricksWon: 0,
+        pointsWon: 0,
+        cardsWon: [],
+        scoreDelta: null,
+      })),
+      phase: PHASE.deal,
+      trickNumber: 0,
+      activePlayer: null,
+      blind: [],
+      buried: [],
+      calledSuit: null,
+      tricks: [],
+      crack: null,
+      blitz: null,
+      isLeaster: null,
     };
   }
 
-  getValidActions(_state: SheepsheadState, _playerId: number): SheepsheadEventType[] {
+  createInitialStore(config: SheepsheadConfig, userIDs: UserID[]): SheepsheadStore {
+    return {
+      players: userIDs.map((id) => ({ userID: id, role: null, won: null, scoreDelta: null })),
+      blind: [],
+      buried: [],
+      calledSuit: null,
+      tricks: [],
+      crack: null,
+      blitz: null,
+      isLeaster: null,
+    };
+  }
+
+  getValidActions(_state: SheepsheadState, _userID: UserID): SheepsheadEventType[] {
     /* TODO: return valid actions based on current phase and active player */
     return [];
   }
 
-  applyEvent(state: SheepsheadState, _event: SheepsheadEvent): SheepsheadState {
+  applyEvent(
+    state: SheepsheadState,
+    store: SheepsheadStore,
+    _event: SheepsheadEvent,
+  ): [SheepsheadState, SheepsheadStore] {
     /* TODO: dispatch to phase-specific handlers */
-    return state;
+    return [state, store];
   }
 
-  getPlayerView(state: SheepsheadState, playerId: number): Partial<SheepsheadState> {
-    if (!state.currentHand) return state;
+  getPlayerView(state: SheepsheadState, userID: UserID): Partial<SheepsheadState> {
+    const thisPlayer = state.players.find((p) => p.userID === userID);
+    const isPicker = thisPlayer?.role === 'picker';
 
-    /* Hide other players' hands and the blind (unless picker) */
-    const hand = state.currentHand;
-    const maskedHands = hand.hands.map((h, i) => (i === playerId ? h : []));
-    const maskedBlind = hand.picker === playerId ? hand.blind : [];
-    const maskedBuried = hand.picker === playerId ? hand.buried : [];
+    // Each player only sees their own hand
+    const players = state.players.map((p) => (p.userID === userID ? p : { ...p, hand: [] }));
 
-    return {
-      ...state,
-      currentHand: {
-        ...hand,
-        hands: maskedHands,
-        blind: maskedBlind,
-        buried: maskedBuried,
-      },
-    };
+    // Blind is face-down during deal and pick phases
+    const blind = state.phase === 'deal' || state.phase === 'pick' ? [] : state.blind;
+
+    // Buried cards are only visible to the picker
+    const buried = isPicker ? state.buried : null;
+
+    return { ...state, players, blind, buried };
   }
 
   isGameOver(_state: SheepsheadState): boolean {

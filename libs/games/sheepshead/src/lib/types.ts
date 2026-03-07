@@ -1,4 +1,19 @@
-export type PartnerRule = 'jack-of-diamonds' | 'called-ace' | 'none';
+/**
+ * The unique identifier for a player (userID).
+ */
+export type UserID = number;
+
+/** Phases within a single game. */
+export type GamePhase = 'deal' | 'pick' | 'bury' | 'call' | 'play' | 'score';
+
+/** Decision made during the pick phase. */
+export type PickDecision = 'pick' | 'pass';
+
+/** A player's role in a game. */
+export type PlayerRole = 'picker' | 'partner' | 'opposition';
+
+/** Rule for determining the partner/s. */
+export type PartnerRule = 'called-ace' | 'jd' | 'jc-qs' | 'first-trick' | 'qc-7d';
 
 /**
  * Stored as game_sessions.config (jsonb).
@@ -10,109 +25,85 @@ export interface SheepsheadConfig {
   /* Optional house rules. */
   leasters: boolean;
   doublers: boolean;
-  crack: boolean;
+  cracking: boolean;
   blitzing: boolean;
+  noAceFaceTrump: boolean;
 }
 
-/** Phases within a single hand. */
-export type HandPhase = 'deal' | 'pick' | 'bury' | 'call' | 'play' | 'score';
-
-/** A player's role in a hand. */
-export type PlayerRole = 'picker' | 'partner' | 'opposition';
-
 /**
- * The ordered list of players (userIDs) in the hand.
+ * The ordered list of players (userIDs) in the game.
  * Dealer at index 0, then clockwise around the table.
  */
-export type PlayerData = {
+export type PlayerState = {
   userID: UserID;
   role: PlayerRole | null;
+  hand: Card[];
+  tricksWon: number;
+  pointsWon: number;
+  cardsWon: Card[];
+  scoreDelta: number | null;
 };
-
-/**
- * The unique identifier for a player (userID).
- */
-export type UserID = number;
 
 /**
  * Full game state. Stored as game_sessions.state (jsonb).
  * Mutated via applyEvent() on each game action.
  */
 export interface SheepsheadState {
-  /** Overall scores across hands, indexed by seat index. */
-  scores: number[];
-  /** Current hand number (1-indexed). */
-  handNumber: number;
-  /** Consecutive all-pass count (for doublers rule). */
-  doublerCount: number;
-  /** The current hand, or null between hands. */
-  currentHand: HandState | null;
-}
-
-/** State within a single hand. */
-export interface HandState {
-  phase: HandPhase;
-  /** Seat index of the dealer. */
-  dealer: number;
-  /** Seat index of whose turn it is (null during scoring). */
-  activePlayer: number | null;
-  /** Each player's cards, indexed by seat index. */
-  hands: Card[][];
+  /** Ordered list of players and their state. Dealer at index 0. */
+  players: PlayerState[];
+  /** Current phase of the game. */
+  phase: GamePhase;
+  /** Current trick number (1-indexed). */
+  trickNumber: number | null;
+  /** UserID of whose turn it is (null during scoring). */
+  activePlayer: UserID | null;
   /** Cards in the blind. */
-  blind: Card[];
+  blind: Card[] | null;
   /** Cards buried by the picker. */
-  buried: Card[];
-  /** Seat index of the picker, or null if not yet determined. */
-  picker: number | null;
-  /** Seat index of the partner, or null. */
-  partner: number | null;
+  buried: Card[] | null;
   /** Called suit (only used in called-ace variant). */
   calledSuit: string | null;
-  /** Whether partner has been revealed (e.g., by playing the called ace). */
-  partnerRevealed: boolean;
-  /** Role assignment per seat index. */
-  roles: (PlayerRole | null)[];
-  /** Ordered record of picking decisions. */
-  pickingRound: PickDecision[];
   /** Completed tricks. */
   tricks: TrickState[];
-  /** The trick currently being played. */
-  currentTrick: TrickState | null;
-  /** Crack/re-crack multiplier state. */
-  crackState: CrackState;
-  /** Whether this hand is a leaster (everyone passed). */
-  isLeaster: boolean;
+  /** Crack/re-crack state. */
+  crack: CrackState | null;
+  /** Blitz state. */
+  blitz: BlitzState | null;
+  /** Whether this game is a leaster (everyone passed). */
+  isLeaster: boolean | null;
 }
 
-/** State within a single hand. */
-export interface HandStore {
-  players: PlayerData[];
-  /** Role assignment per seat index. */
-  roles: (PlayerRole | null)[];
+/**
+ * The ordered list of players (userIDs) in the game.
+ * Dealer at index 0, then clockwise around the table.
+ */
+export type PlayerStore = {
+  userID: UserID;
+  role: PlayerRole | null;
+  won: boolean | null;
+  scoreDelta: number | null;
+};
+
+/** State within a single game session. */
+export interface SheepsheadStore {
+  players: PlayerStore[];
   /** Original cards in the blind. */
   blind: Card[];
   /** Cards buried by the picker. */
   buried: Card[];
   /** Called suit (only used in called-ace variant). */
   calledSuit: Suit | null;
-  /** Ordered record of picking decisions. */
-  pickingRound: PickDecision[];
   /** Completed tricks. */
   tricks: TrickState[];
-  /** Crack/re-crack multiplier state. */
-  crackState: CrackState;
-  /** Whether this hand is a leaster (everyone passed). */
-  isLeaster: boolean;
-}
-
-export interface PickDecision {
-  player: UserID;
-  action: 'pick' | 'pass';
+  /** Crack/re-crack state. */
+  crack: CrackState | null;
+  /** Blitz state. */
+  blitz: BlitzState | null;
+  /** Whether this game is a leaster (everyone passed). */
+  isLeaster: boolean | null;
 }
 
 export interface TrickState {
-  /** Player who led the trick. */
-  leader: UserID;
   /** Cards played in order. */
   plays: TrickPlay[];
   /** Player who won the trick. */
@@ -125,10 +116,13 @@ export interface TrickPlay {
 }
 
 export interface CrackState {
-  /** 1 = normal, 2 = cracked, 4 = re-cracked. */
-  multiplier: 1 | 2 | 4;
-  crackedBy: UserID | null;
+  crackedBy: UserID;
   reCrackedBy: UserID | null;
+}
+
+export interface BlitzState {
+  type: 'black-blitz' | 'red-blitz';
+  blitzedBy: UserID;
 }
 
 /**
@@ -145,7 +139,7 @@ export type SheepsheadEvent =
   | ReCrackEvent
   | PlayCardEvent
   | TrickWonEvent
-  | HandScoredEvent
+  | GameScoredEvent
   | GameOverEvent;
 
 export interface DealEvent {
@@ -154,49 +148,49 @@ export interface DealEvent {
 
 export interface PickEvent {
   type: 'pick';
-  playerId: number;
+  userID: UserID;
 }
 
 export interface PassEvent {
   type: 'pass';
-  playerId: number;
+  userID: UserID;
 }
 
 export interface BuryEvent {
   type: 'bury';
-  playerId: number;
+  userID: UserID;
   payload: { cards: Card[] };
 }
 
 export interface CallAceEvent {
   type: 'call_ace';
-  playerId: number;
-  payload: { suit: string };
+  userID: UserID;
+  payload: { suit: Suit };
 }
 
 export interface CrackEvent {
   type: 'crack';
-  playerId: number;
+  userID: UserID;
 }
 
 export interface ReCrackEvent {
   type: 're_crack';
-  playerId: number;
+  userID: UserID;
 }
 
 export interface PlayCardEvent {
   type: 'play_card';
-  playerId: number;
+  userID: UserID;
   payload: { card: Card };
 }
 
 export interface TrickWonEvent {
   type: 'trick_won';
-  payload: { winner: number; points: number };
+  payload: { winner: UserID; points: number };
 }
 
-export interface HandScoredEvent {
-  type: 'hand_scored';
+export interface GameScoredEvent {
+  type: 'game_scored';
   payload: {
     scoreDeltas: number[];
     schneider: boolean;
@@ -208,7 +202,7 @@ export interface GameOverEvent {
   type: 'game_over';
   payload: {
     finalScores: number[];
-    winners: number[];
+    winners: UserID[];
   };
 }
 

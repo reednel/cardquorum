@@ -1,5 +1,5 @@
 import { Card, TrickState } from './types';
-import { cardPower, isTrump, failSuit } from './cards';
+import { cardPower, isTrump } from './cards';
 
 /**
  * Determine the winner of a completed trick.
@@ -11,24 +11,22 @@ export function evaluateTrick(trick: TrickState): number {
   }
 
   const leadCard = trick.plays[0].card;
-  const leadFailSuit = failSuit(leadCard);
-  /* If lead is trump, comparison suit is null (all trump compared by power) */
-  const comparisonSuit = isTrump(leadCard) ? null : leadFailSuit;
+  const leadSuit = leadCard.suit;
 
   let bestIndex = 0;
-  let bestPower = cardPower(trick.plays[0].card, comparisonSuit);
+  let bestPower = cardPower(leadCard, leadSuit);
 
   for (let i = 1; i < trick.plays.length; i++) {
-    const power = cardPower(trick.plays[i].card, comparisonSuit);
+    const power = cardPower(trick.plays[i].card, leadSuit);
     /* -1 means the card doesn't compete (wrong fail suit, not trump) */
     if (power === -1) continue;
-    if (bestPower === -1 || power < bestPower) {
+    if (power < bestPower) {
       bestPower = power;
       bestIndex = i;
     }
   }
 
-  return trick.plays[bestIndex].seatIndex;
+  return trick.plays[bestIndex].player;
 }
 
 /**

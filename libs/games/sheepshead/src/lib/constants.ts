@@ -1,4 +1,4 @@
-import { Card, Suit, Rank, CardName } from './types';
+import { Card, Suit, Rank, CardName, GamePhase } from './types';
 
 export const TOTAL_POINTS = 120;
 
@@ -64,3 +64,12 @@ export const TRUMP_ORDER: readonly CardName[] = [
 
 /** Non-trump rank order within a fail suit, highest to lowest. */
 export const FAIL_RANK_ORDER: readonly Rank[] = ['ace', '10', 'king', '9', '8', '7'];
+
+export const PHASE: { [key in GamePhase]: GamePhase } = {
+  deal: 'deal',
+  pick: 'pick',
+  bury: 'bury',
+  call: 'call',
+  play: 'play',
+  score: 'score',
+};

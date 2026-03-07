@@ -1,4 +1,4 @@
-import { Card, Rank } from './types';
+import { Card, Rank, Suit, TrickState } from './types';
 import { TRUMP_ORDER, FAIL_RANK_ORDER } from './constants';
 
 /** Whether a card is trump (queens, jacks, or diamonds). */
@@ -7,8 +7,16 @@ export function isTrump(card: Card): boolean {
 }
 
 /** Total points in a set of cards. */
-export function sumPoints(cards: Card[]): number {
-  return cards.reduce((sum, c) => sum + c.points, 0);
+export function sumPoints(tricks: TrickState[]): number;
+export function sumPoints(cards: Card[] | null): number;
+export function sumPoints(arg: TrickState[] | Card[] | null): number {
+  if (arg === null || arg.length === 0) return 0;
+  if ('plays' in arg[0]) {
+    return (arg as TrickState[]).reduce((sum, t) => {
+      return sum + t.plays.reduce((s, p) => s + p.card.points, 0);
+    }, 0);
+  }
+  return (arg as Card[]).reduce((sum, c) => sum + c.points, 0);
 }
 
 /**
@@ -16,7 +24,7 @@ export function sumPoints(cards: Card[]): number {
  * Trump cards are always stronger than fail cards.
  * Returns -1 if the card isn't relevant to the comparison (wrong fail suit).
  */
-export function cardPower(card: Card, leadSuit: string | null): number {
+export function cardPower(card: Card, leadSuit: Suit): number {
   const trumpIndex = TRUMP_ORDER.findIndex((t) => t === card.name);
   if (trumpIndex !== -1) return trumpIndex;
 
@@ -31,14 +39,4 @@ export function cardPower(card: Card, leadSuit: string | null): number {
 /** Whether two cards are the same. */
 export function cardsEqual(a: Card, b: Card): boolean {
   return a.suit === b.suit && a.rank === b.rank;
-}
-
-/**
- * The effective "fail suit" of a card for follow-suit purposes.
- * Trump cards have no fail suit (they belong to the trump "suit").
- * Returns null for trump cards.
- */
-export function failSuit(card: Card): string | null {
-  if (isTrump(card)) return null;
-  return card.suit;
 }

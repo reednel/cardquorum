@@ -1,20 +1,23 @@
-import { HandState, SheepsheadConfig, CrackState } from './types';
+import { SheepsheadConfig, SheepsheadState, UserID } from './types';
 import { sumPoints } from './cards';
 import { TOTAL_POINTS } from './constants';
 
 /**
- * Calculate the points captured by the picking team (picker + partner).
+ * Calculate the points captured by the picking team (picker + partner/s).
  * Buried cards count toward the picker's team.
  */
-export function pickingTeamPoints(hand: HandState): number {
-  const pickerSeats = new Set<number>();
-  if (hand.picker !== null) pickerSeats.add(hand.picker);
-  if (hand.partner !== null) pickerSeats.add(hand.partner);
+export function pickingTeamPoints(state: SheepsheadState): number {
+  const pickingTeam = new Set<UserID>();
+  for (const player of state.players) {
+    if (player.role === 'picker' || player.role === 'partner') {
+      pickingTeam.add(player.userID);
+    }
+  }
 
-  let points = sumPoints(hand.buried);
+  let points = sumPoints(state.buried);
 
-  for (const trick of hand.tricks) {
-    if (trick.winner !== null && pickerSeats.has(trick.winner)) {
+  for (const trick of state.tricks) {
+    if (trick.winner !== null && pickingTeam.has(trick.winner)) {
       const trickCards = trick.plays.map((p) => p.card);
       points += sumPoints(trickCards);
     }
@@ -30,16 +33,19 @@ export function isSchneider(pickerTeamPts: number, pickerWon: boolean): boolean 
 }
 
 /** Whether schwarz applies (losing team took 0 tricks). */
-export function isSchwarz(hand: HandState): boolean {
-  const pickerSeats = new Set<number>();
-  if (hand.picker !== null) pickerSeats.add(hand.picker);
-  if (hand.partner !== null) pickerSeats.add(hand.partner);
+export function isSchwarz(state: SheepsheadState): boolean {
+  const pickingTeam = new Set<UserID>();
+  for (const player of state.players) {
+    if (player.role === 'picker' || player.role === 'partner') {
+      pickingTeam.add(player.userID);
+    }
+  }
 
-  const pickerTrickCount = hand.tricks.filter(
-    (t) => t.winner !== null && pickerSeats.has(t.winner),
+  const pickingTeamTricks = state.tricks.filter(
+    (t) => t.winner !== null && pickingTeam.has(t.winner),
   ).length;
 
-  return pickerTrickCount === 0 || pickerTrickCount === hand.tricks.length;
+  return pickingTeamTricks === 0 || pickingTeamTricks === state.tricks.length;
 }
 
 /**
@@ -47,11 +53,7 @@ export function isSchwarz(hand: HandState): boolean {
  *
  * TODO: finalize multiplier stacking rules (schneider, schwarz, crack, doublers).
  */
-export function scoreMultiplier(
-  _hand: HandState,
-  _config: SheepsheadConfig,
-  _crackState: CrackState,
-): number {
+export function scoreMultiplier(_state: SheepsheadState, _config: SheepsheadConfig): number {
   /* Placeholder: base multiplier only */
   return 1;
 }
