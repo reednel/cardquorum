@@ -1,19 +1,14 @@
 import { Card, Rank } from './types';
-import { TRUMP_ORDER, FAIL_RANK_ORDER, POINT_VALUES } from './constants';
+import { TRUMP_ORDER, FAIL_RANK_ORDER } from './constants';
 
 /** Whether a card is trump (queens, jacks, or diamonds). */
 export function isTrump(card: Card): boolean {
   return card.rank === 'queen' || card.rank === 'jack' || card.suit === 'diamonds';
 }
 
-/** Point value of a card. */
-export function cardPoints(card: Card): number {
-  return POINT_VALUES[card.rank];
-}
-
 /** Total points in a set of cards. */
 export function sumPoints(cards: Card[]): number {
-  return cards.reduce((sum, c) => sum + cardPoints(c), 0);
+  return cards.reduce((sum, c) => sum + c.points, 0);
 }
 
 /**
@@ -22,7 +17,7 @@ export function sumPoints(cards: Card[]): number {
  * Returns -1 if the card isn't relevant to the comparison (wrong fail suit).
  */
 export function cardPower(card: Card, leadSuit: string | null): number {
-  const trumpIndex = TRUMP_ORDER.findIndex((t) => t.suit === card.suit && t.rank === card.rank);
+  const trumpIndex = TRUMP_ORDER.findIndex((t) => t === card.name);
   if (trumpIndex !== -1) return trumpIndex;
 
   if (leadSuit && card.suit === leadSuit && !isTrump(card)) {

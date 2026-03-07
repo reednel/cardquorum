@@ -1,12 +1,3 @@
-export type Suit = 'clubs' | 'spades' | 'hearts' | 'diamonds';
-
-export type Rank = '7' | '8' | '9' | '10' | 'jack' | 'queen' | 'king' | 'ace';
-
-export interface Card {
-  suit: Suit;
-  rank: Rank;
-}
-
 export type PartnerRule = 'jack-of-diamonds' | 'called-ace' | 'none';
 
 /**
@@ -28,6 +19,20 @@ export type HandPhase = 'deal' | 'pick' | 'bury' | 'call' | 'play' | 'score';
 
 /** A player's role in a hand. */
 export type PlayerRole = 'picker' | 'partner' | 'opposition';
+
+/**
+ * The ordered list of players (userIDs) in the hand.
+ * Dealer at index 0, then clockwise around the table.
+ */
+export type PlayerData = {
+  userID: UserID;
+  role: PlayerRole | null;
+};
+
+/**
+ * The unique identifier for a player (userID).
+ */
+export type UserID = number;
 
 /**
  * Full game state. Stored as game_sessions.state (jsonb).
@@ -79,30 +84,51 @@ export interface HandState {
   isLeaster: boolean;
 }
 
+/** State within a single hand. */
+export interface HandStore {
+  players: PlayerData[];
+  /** Role assignment per seat index. */
+  roles: (PlayerRole | null)[];
+  /** Original cards in the blind. */
+  blind: Card[];
+  /** Cards buried by the picker. */
+  buried: Card[];
+  /** Called suit (only used in called-ace variant). */
+  calledSuit: Suit | null;
+  /** Ordered record of picking decisions. */
+  pickingRound: PickDecision[];
+  /** Completed tricks. */
+  tricks: TrickState[];
+  /** Crack/re-crack multiplier state. */
+  crackState: CrackState;
+  /** Whether this hand is a leaster (everyone passed). */
+  isLeaster: boolean;
+}
+
 export interface PickDecision {
-  seatIndex: number;
+  player: UserID;
   action: 'pick' | 'pass';
 }
 
 export interface TrickState {
-  /** Seat index of who led. */
-  leader: number;
+  /** Player who led the trick. */
+  leader: UserID;
   /** Cards played in order. */
   plays: TrickPlay[];
-  /** Seat index of the winner (null until complete). */
-  winner: number | null;
+  /** Player who won the trick. */
+  winner: UserID | null;
 }
 
 export interface TrickPlay {
-  seatIndex: number;
+  player: UserID;
   card: Card;
 }
 
 export interface CrackState {
   /** 1 = normal, 2 = cracked, 4 = re-cracked. */
   multiplier: 1 | 2 | 4;
-  crackedBy: number | null;
-  reCrackedBy: number | null;
+  crackedBy: UserID | null;
+  reCrackedBy: UserID | null;
 }
 
 /**
@@ -188,3 +214,50 @@ export interface GameOverEvent {
 
 /** String literal union of all event type names. */
 export type SheepsheadEventType = SheepsheadEvent['type'];
+
+export interface Card {
+  name: CardName;
+  suit: Suit;
+  rank: Rank;
+  points: Points;
+}
+
+export type Suit = 'clubs' | 'spades' | 'hearts' | 'diamonds';
+
+export type Rank = '7' | '8' | '9' | '10' | 'jack' | 'queen' | 'king' | 'ace';
+
+export type Points = 0 | 2 | 3 | 4 | 10 | 11;
+
+export type CardName =
+  | '7c'
+  | '8c'
+  | '9c'
+  | 'xc'
+  | 'jc'
+  | 'qc'
+  | 'kc'
+  | 'ac'
+  | '7s'
+  | '8s'
+  | '9s'
+  | 'xs'
+  | 'js'
+  | 'qs'
+  | 'ks'
+  | 'as'
+  | '7h'
+  | '8h'
+  | '9h'
+  | 'xh'
+  | 'jh'
+  | 'qh'
+  | 'kh'
+  | 'ah'
+  | '7d'
+  | '8d'
+  | '9d'
+  | 'xd'
+  | 'jd'
+  | 'qd'
+  | 'kd'
+  | 'ad';
