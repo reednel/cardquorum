@@ -222,7 +222,7 @@ describe('handlePick', () => {
     expect(state.activePlayer).toBe(1);
   });
 
-  it.each(['moster', 'mittler', 'schneidster', 'schwanzer'] as const)(
+  it.each(['moster', 'mittler', 'schneidster'] as const)(
     'all pass with %s noPick: transitions to play with all opposition',
     (noPick) => {
       const config = makeConfig({ noPick });
@@ -241,7 +241,23 @@ describe('handlePick', () => {
     },
   );
 
-  it('all pass with doubler: returns null (re-deal with previousGameDouble)', () => {
+  it('all pass with schwanzer: transitions to score (showdown)', () => {
+    const config = makeConfig({ noPick: 'schwanzer' });
+    const [dealt, dealStore] = handleDeal(makeState(), makeStore(), config);
+
+    let result = handlePick(dealt, dealStore, { type: 'pass', userID: 2 }, config);
+    result = handlePick(result![0], result![1], { type: 'pass', userID: 3 }, config);
+    result = handlePick(result![0], result![1], { type: 'pass', userID: 1 }, config);
+
+    expect(result).not.toBeNull();
+    const [state, store] = result!;
+    expect(state.phase).toBe('score');
+    expect(state.noPick).toBe('schwanzer');
+    expect(store.noPick).toBe('schwanzer');
+    expect(state.players.every((p) => p.role === 'opposition')).toBe(true);
+  });
+
+  it('all pass with doubler: returns result with previousGameDouble set', () => {
     const config = makeConfig({ noPick: 'doubler' });
     const [dealt, dealStore] = handleDeal(makeState(), makeStore(), config);
 
@@ -249,8 +265,10 @@ describe('handlePick', () => {
     result = handlePick(result![0], result![1], { type: 'pass', userID: 3 }, config);
     result = handlePick(result![0], result![1], { type: 'pass', userID: 1 }, config);
 
-    // Doubler triggers a re-deal, returns null
-    expect(result).toBeNull();
+    expect(result).not.toBeNull();
+    const [state, store] = result!;
+    expect(state.previousGameDouble).toBe(true);
+    expect(store.previousGameDouble).toBe(true);
   });
 });
 

@@ -11,7 +11,7 @@ import {
   TrickState,
 } from './types';
 import { PHASE, TRUMP_ORDER } from './constants';
-import { createShuffledDeck, deal } from './dealing';
+import { createShuffledDeck, deal, hasNoAceFaceTrump } from './dealing';
 import { cardsEqual, isTrump, sumPoints } from './cards';
 import { evaluateTrick, legalPlays } from './tricks';
 import { pickingTeamPoints, gotNoTricked, scoreMultiplier } from './scoring';
@@ -35,63 +35,81 @@ function seatIndex(state: SheepsheadState, userID: UserID): number {
 
 /**
  * Deal phase: shuffle deck, deal cards, set blind, transition to pick.
+ * Retries automatically if noAceFaceTrump is enabled and a hand qualifies.
  */
 export function handleDeal(
   state: SheepsheadState,
   store: SheepsheadStore,
   config: SheepsheadConfig,
 ): Result {
-  const deck = createShuffledDeck();
-  const { hands, blind } = deal(deck, config);
+  const maxRetries = 100;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const deck = createShuffledDeck(config.cardsRemoved);
+    const { hands, blind } = deal(deck, config);
 
-  let players = state.players.map((p, i) => ({
-    ...p,
-    hand: hands[i],
-  }));
-
-  const firstPlayerIdx = nextPlayerIndex(0, config.playerCount);
-
-  // No picking round — assign partners by card holdings and go straight to play
-  if (config.pickerRule === null) {
-    if (config.partnerRule) {
-      const withRoles = assignPartnerByRule({ ...state, players }, config.partnerRule);
-      players = withRoles.players;
+    if (config.noAceFaceTrump && hasNoAceFaceTrump(hands)) {
+      continue; // redeal
     }
-    return [
-      {
-        ...state,
-        players,
-        phase: PHASE.play,
-        blind,
-        activePlayer: players[firstPlayerIdx].userID,
-        trickNumber: 1,
-        tricks: [{ plays: [], winner: null }],
-      },
-      { ...store, blind: [...blind] },
-    ];
-  }
 
-  // Forced pick — player left of dealer must pick, go straight to bury
-  if (config.pickerRule === 'left-of-dealer') {
-    players = players.map((p, i) => {
-      if (i === firstPlayerIdx) {
-        return { ...p, role: 'picker' as const, hand: [...p.hand, ...blind] };
+    let players = state.players.map((p, i) => ({
+      ...p,
+      hand: hands[i],
+    }));
+
+    const firstPlayerIdx = nextPlayerIndex(0, config.playerCount);
+
+    // No picking round — assign partners by card holdings and go straight to play
+    if (config.pickerRule === null) {
+      if (config.partnerRule) {
+        const withRoles = assignPartnerByRule({ ...state, players }, config.partnerRule);
+        players = withRoles.players;
       }
-      return p;
-    });
+      return [
+        {
+          ...state,
+          players,
+          phase: PHASE.play,
+          blind,
+          activePlayer: players[firstPlayerIdx].userID,
+          trickNumber: 1,
+          tricks: [{ plays: [], winner: null }],
+        },
+        { ...store, blind: [...blind] },
+      ];
+    }
+
+    // Forced pick — player left of dealer must pick, go straight to bury
+    if (config.pickerRule === 'left-of-dealer') {
+      players = players.map((p, i) => {
+        if (i === firstPlayerIdx) {
+          return { ...p, role: 'picker' as const, hand: [...p.hand, ...blind] };
+        }
+        return p;
+      });
+      return [
+        {
+          ...state,
+          players,
+          phase: PHASE.bury,
+          blind,
+          activePlayer: players[firstPlayerIdx].userID,
+        },
+        { ...store, blind: [...blind] },
+      ];
+    }
+
+    // Autonomous — normal pick phase
     return [
-      {
-        ...state,
-        players,
-        phase: PHASE.bury,
-        blind,
-        activePlayer: players[firstPlayerIdx].userID,
-      },
+      { ...state, players, phase: PHASE.pick, blind, activePlayer: players[firstPlayerIdx].userID },
       { ...store, blind: [...blind] },
     ];
   }
 
-  // Autonomous — normal pick phase
+  // Fallback: deal without the check to avoid infinite loop
+  const deck = createShuffledDeck(config.cardsRemoved);
+  const { hands, blind } = deal(deck, config);
+  const players = state.players.map((p, i) => ({ ...p, hand: hands[i] }));
+  const firstPlayerIdx = nextPlayerIndex(0, config.playerCount);
   return [
     { ...state, players, phase: PHASE.pick, blind, activePlayer: players[firstPlayerIdx].userID },
     { ...store, blind: [...blind] },
@@ -149,8 +167,7 @@ export function handlePick(
       case 'leaster':
       case 'moster':
       case 'mittler':
-      case 'schneidster':
-      case 'schwanzer': {
+      case 'schneidster': {
         // Everyone plays for themselves
         const players = state.players.map((p) => ({
           ...p,
@@ -169,7 +186,29 @@ export function handlePick(
           { ...store, noPick: config.noPick },
         ];
       }
+      case 'schwanzer': {
+        // Showdown — no tricks played, go straight to score
+        const players = state.players.map((p) => ({
+          ...p,
+          role: 'opposition' as const,
+        }));
+        return [
+          {
+            ...state,
+            players,
+            phase: PHASE.score,
+            noPick: 'schwanzer',
+            activePlayer: null,
+          },
+          { ...store, noPick: 'schwanzer' },
+        ];
+      }
       case 'doubler':
+        // Re-deal with doubled stakes for next game
+        return [
+          { ...state, previousGameDouble: true },
+          { ...store, previousGameDouble: true },
+        ];
       default:
         // Re-deal needed
         return null;

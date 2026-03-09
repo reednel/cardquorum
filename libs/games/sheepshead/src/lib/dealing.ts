@@ -1,10 +1,14 @@
-import { Card, SheepsheadConfig } from './types';
+import { Card, CardName, SheepsheadConfig } from './types';
 import { DECK } from './constants';
 import { isTrump } from './cards';
 
-/** Returns a new shuffled copy of the deck. */
-export function createShuffledDeck(): Card[] {
-  const deck = [...DECK];
+/** Returns a new shuffled copy of the deck, optionally removing specified cards. */
+export function createShuffledDeck(cardsRemoved?: CardName[]): Card[] {
+  let deck = [...DECK];
+  if (cardsRemoved && cardsRemoved.length > 0) {
+    const removed = new Set(cardsRemoved);
+    deck = deck.filter((c) => !removed.has(c.name));
+  }
   /* Fisher-Yates shuffle */
   for (let i = deck.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));

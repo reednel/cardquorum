@@ -56,6 +56,8 @@ export interface SheepsheadConfig {
   partnerOffTheHook: boolean;
   noAceFaceTrump: boolean;
   multiplicityLimit: number | null;
+  /** Cards removed from the standard 32-card deck (e.g. ['7c','7s'] for 30-card variants). */
+  cardsRemoved?: CardName[];
 }
 
 export interface ConfigPreset {
@@ -182,6 +184,7 @@ export type SheepsheadEvent =
   | CallAceEvent
   | CrackEvent
   | ReCrackEvent
+  | BlitzEvent
   | PlayCardEvent
   | TrickWonEvent
   | GameScoredEvent
@@ -221,6 +224,12 @@ export interface CrackEvent {
 export interface ReCrackEvent {
   type: 're_crack';
   userID: UserID;
+}
+
+export interface BlitzEvent {
+  type: 'blitz';
+  userID: UserID;
+  payload: { blitzType: 'black-blitz' | 'red-blitz' };
 }
 
 export interface PlayCardEvent {

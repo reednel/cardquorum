@@ -6,6 +6,7 @@ import {
   SheepsheadEvent,
   SheepsheadEventType,
   UserID,
+  BlitzState,
 } from './types';
 import { PHASE } from './constants';
 import {
@@ -16,6 +17,7 @@ import {
   handlePlayCard,
   handleScore,
 } from './phases';
+import { isTrump } from './cards';
 
 /**
  * Sheepshead game plugin. Implements the generic GamePlugin interface
@@ -72,7 +74,10 @@ export class SheepsheadPlugin
       typeof c['doubleOnTheBump'] === 'boolean' &&
       typeof c['partnerOffTheHook'] === 'boolean' &&
       typeof c['noAceFaceTrump'] === 'boolean' &&
-      (c['multiplicityLimit'] === null || typeof c['multiplicityLimit'] === 'number')
+      (c['multiplicityLimit'] === null || typeof c['multiplicityLimit'] === 'number') &&
+      (c['cardsRemoved'] === undefined ||
+        (Array.isArray(c['cardsRemoved']) &&
+          c['cardsRemoved'].every((v: unknown) => typeof v === 'string')))
     );
   }
 
@@ -117,24 +122,58 @@ export class SheepsheadPlugin
   }
 
   getValidActions(state: SheepsheadState, userID: UserID): SheepsheadEventType[] {
+    const player = state.players.find((p) => p.userID === userID);
+    const actions: SheepsheadEventType[] = [];
+
     switch (state.phase) {
       case 'deal':
         return ['deal'];
       case 'pick':
-        if (state.activePlayer === userID) return ['pick', 'pass'];
+        if (state.activePlayer === userID) {
+          actions.push('pick', 'pass');
+        }
+        // Crack: opposition player who didn't get a chance to pick can crack
+        if (this.config?.cracking && !state.crack && player?.role === 'opposition') {
+          actions.push('crack');
+        }
+        // Re-crack: picker or partner can re-crack an existing crack
         if (
           this.config?.cracking &&
-          state.players.find((p) => p.userID === userID)?.role === 'opposition'
+          state.crack &&
+          !state.crack.reCrackedBy &&
+          (player?.role === 'picker' || player?.role === 'partner')
         ) {
-          return ['crack'];
+          actions.push('re_crack');
         }
-        return [];
+        return actions;
       case 'bury':
         return state.activePlayer === userID ? ['bury'] : [];
       case 'call':
         return state.activePlayer === userID ? ['call_ace'] : [];
-      case 'play':
-        return state.activePlayer === userID ? ['play_card'] : [];
+      case 'play': {
+        if (state.activePlayer === userID) {
+          actions.push('play_card');
+        }
+        // Blitz: before first card is played, a player holding both black or red queens can blitz
+        if (
+          this.config?.blitzing &&
+          state.crack &&
+          !state.blitz &&
+          state.trickNumber === 1 &&
+          state.tricks.length === 1 &&
+          state.tricks[0].plays.length === 0 &&
+          player
+        ) {
+          const hasBlackQueens =
+            player.hand.some((c) => c.name === 'qc') && player.hand.some((c) => c.name === 'qs');
+          const hasRedQueens =
+            player.hand.some((c) => c.name === 'qh') && player.hand.some((c) => c.name === 'qd');
+          if (hasBlackQueens || hasRedQueens) {
+            actions.push('blitz');
+          }
+        }
+        return actions;
+      }
       case 'score':
         return ['game_scored'];
       default:
@@ -164,6 +203,15 @@ export class SheepsheadPlugin
           const freshStore = this.createInitialStore(this.config, userIDs);
           return handleDeal(freshState, freshStore, this.config);
         }
+        // Doubler: state has previousGameDouble set, trigger re-deal with that flag preserved
+        if (result[0].previousGameDouble && result[0].phase !== 'score') {
+          const userIDs = state.players.map((p) => p.userID);
+          const freshState = this.createInitialState(this.config, userIDs);
+          freshState.previousGameDouble = true;
+          const freshStore = this.createInitialStore(this.config, userIDs);
+          freshStore.previousGameDouble = true;
+          return handleDeal(freshState, freshStore, this.config);
+        }
         return result;
       }
       case 'bury':
@@ -188,6 +236,16 @@ export class SheepsheadPlugin
           { ...store, crack: { ...store.crack, reCrackedBy: event.userID } },
         ];
       }
+      case 'blitz': {
+        if (state.blitz || store.blitz) {
+          throw new Error('Blitz already declared');
+        }
+        const blitz: BlitzState = { type: event.payload.blitzType, blitzedBy: event.userID };
+        return [
+          { ...state, blitz },
+          { ...store, blitz },
+        ];
+      }
       case 'trick_won':
       case 'game_over':
         // These are informational events, not state-changing
@@ -201,8 +259,29 @@ export class SheepsheadPlugin
     const thisPlayer = state.players.find((p) => p.userID === userID);
     const isPicker = thisPlayer?.role === 'picker';
 
-    // Each player only sees their own hand
-    const players = state.players.map((p) => (p.userID === userID ? p : { ...p, hand: [] }));
+    // Schwanzer: all hands are face-up (showdown)
+    const isSchwanzer = state.noPick === 'schwanzer';
+
+    // Each player only sees their own hand (unless schwanzer)
+    const players = isSchwanzer
+      ? state.players
+      : state.players.map((p) => {
+          if (p.userID === userID) return p;
+
+          // Called-ace: hide partner role until the called ace has been played
+          const hideRole =
+            this.config?.partnerRule === 'called-ace' &&
+            state.phase === 'play' &&
+            p.role === 'partner' &&
+            state.calledSuit &&
+            !this.calledAcePlayed(state);
+
+          return {
+            ...p,
+            hand: [],
+            role: hideRole ? ('opposition' as const) : p.role,
+          };
+        });
 
     // Blind is face-down during deal and pick phases
     const blind = state.phase === 'deal' || state.phase === 'pick' ? [] : state.blind;
@@ -215,5 +294,12 @@ export class SheepsheadPlugin
 
   isGameOver(state: SheepsheadState): boolean {
     return state.phase === 'score';
+  }
+
+  /** Check if the called ace has been played in any trick. */
+  private calledAcePlayed(state: SheepsheadState): boolean {
+    if (!state.calledSuit) return false;
+    const aceName = `a${state.calledSuit[0]}`;
+    return state.tricks.some((t) => t.plays.some((p) => p.card.name === aceName));
   }
 }
