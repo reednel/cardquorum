@@ -1,5 +1,6 @@
 import { Card, SheepsheadConfig } from './types';
 import { DECK } from './constants';
+import { isTrump } from './cards';
 
 /** Returns a new shuffled copy of the deck. */
 export function createShuffledDeck(): Card[] {
@@ -36,4 +37,13 @@ export function deal(
   }
 
   return { hands, blind };
+}
+
+/**
+ * Check if any hand qualifies for a no-ace-no-face-no-trump redeal.
+ * Returns true if at least one player has no aces, no face cards (jack/queen/king), and no trump.
+ */
+export function hasNoAceFaceTrump(hands: Card[][]): boolean {
+  const faceRanks = new Set(['ace', 'jack', 'queen', 'king']);
+  return hands.some((hand) => hand.every((c) => !faceRanks.has(c.rank) && !isTrump(c)));
 }

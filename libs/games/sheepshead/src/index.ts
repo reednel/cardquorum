@@ -9,10 +9,16 @@ export {
   CONFIG_PRESETS,
 } from './lib/constants';
 export { isTrump, sumPoints, cardPower, cardsEqual } from './lib/cards';
-export { createShuffledDeck, deal } from './lib/dealing';
+export { createShuffledDeck, deal, hasNoAceFaceTrump } from './lib/dealing';
 export { evaluateTrick, legalPlays } from './lib/tricks';
 export { pickingTeamPoints, gotSchneidered, gotNoTricked, scoreMultiplier } from './lib/scoring';
-export { determinePartnerJD, determinePartnerCalledAce, assignPartnerByRule } from './lib/partners';
+export {
+  determinePartnerJD,
+  determinePartnerCalledAce,
+  determinePartnerByCard,
+  assignCardPairPartners,
+  assignPartnerByRule,
+} from './lib/partners';
 export {
   handleDeal,
   handlePick,

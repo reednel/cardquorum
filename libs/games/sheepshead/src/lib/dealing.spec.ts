@@ -1,5 +1,12 @@
-import { createShuffledDeck, deal } from './dealing';
+import { createShuffledDeck, deal, hasNoAceFaceTrump } from './dealing';
 import { DECK } from './constants';
+import { Card } from './types';
+
+function card(name: string): Card {
+  const c = DECK.find((d) => d.name === name);
+  if (!c) throw new Error(`Card not found: ${name}`);
+  return c;
+}
 
 describe('createShuffledDeck', () => {
   it('returns 32 cards', () => {
@@ -55,5 +62,39 @@ describe('deal', () => {
     // No duplicates
     const names = allCards.map((c) => c.name);
     expect(new Set(names).size).toBe(names.length);
+  });
+});
+
+describe('hasNoAceFaceTrump', () => {
+  it('returns true when a hand has only low fail cards', () => {
+    // Hand with only 7s, 8s, 9s of fail suits — no ace, no face, no trump
+    const hands = [
+      [card('7c'), card('8c'), card('9c'), card('7s'), card('8s'), card('9s')],
+      [card('ac'), card('qc'), card('jd'), card('ad')],
+    ];
+    expect(hasNoAceFaceTrump(hands)).toBe(true);
+  });
+
+  it('returns false when all hands have at least one ace, face, or trump', () => {
+    const hands = [
+      [card('7c'), card('8c'), card('ac')], // has ace
+      [card('7s'), card('qc')], // has face (queen is also trump)
+      [card('7h'), card('7d')], // has trump (diamond)
+    ];
+    expect(hasNoAceFaceTrump(hands)).toBe(false);
+  });
+
+  it('returns false when hand has a trump diamond', () => {
+    const hands = [
+      [card('7d'), card('8c'), card('9c')], // 7d is trump
+    ];
+    expect(hasNoAceFaceTrump(hands)).toBe(false);
+  });
+
+  it('returns false when hand has a king (face card)', () => {
+    const hands = [
+      [card('kc'), card('8s'), card('9s')], // king is a face card
+    ];
+    expect(hasNoAceFaceTrump(hands)).toBe(false);
   });
 });

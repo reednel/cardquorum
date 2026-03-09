@@ -97,12 +97,12 @@ The `PartnerRule` type determines how the picker's partner is identified:
 | ---------------- | ----------------------------------------------------------------- | ----------- |
 | `called-ace`     | Picker calls a fail suit; holder of that Ace                      | Implemented |
 | `jd`             | Whoever holds the Jack of Diamonds                                | Implemented |
-| `jc`             | Whoever holds the Jack of Clubs (6-handed)                        | TODO        |
-| `qc-qs`          | Holders of the two black Queens are partners (4/8-handed)         | TODO        |
-| `qs-jc`          | Holders of Queen of Spades and Jack of Clubs (5-handed, 30 cards) | TODO        |
-| `first-trick`    | Winner of the first trick becomes the partner                     | TODO        |
-| `qc-7d`          | Holders of Queen of Clubs and 7 of Diamonds                       | TODO        |
-| `left-of-picker` | Player to picker's left (7-handed partner draft)                  | TODO        |
+| `jc`             | Whoever holds the Jack of Clubs (6-handed)                        | Implemented |
+| `qc-qs`          | Holders of the two black Queens are partners (4/8-handed)         | Implemented |
+| `qs-jc`          | Holders of Queen of Spades and Jack of Clubs (5-handed, 30 cards) | Implemented |
+| `first-trick`    | Winner of the first trick becomes the partner                     | Implemented |
+| `qc-7d`          | Holders of Queen of Clubs and 7 of Diamonds                       | Implemented |
+| `left-of-picker` | Player to picker's left (7-handed partner draft)                  | Implemented |
 | `null`           | No partner — picker plays alone (2/3-handed, or solo variants)    | Implemented |
 
 ## Scoring
@@ -124,8 +124,8 @@ Multipliers stack multiplicatively (subject to `multiplicityLimit`):
 | Schneider      | ×2         | Losing team took <30 points                   | Implemented |
 | Crack          | ×2         | Opposition declares before play               | Implemented |
 | Re-crack       | ×4         | Picker responds to crack (replaces crack)     | Implemented |
-| Blitz          | ×2         | Player with both black or red Queens declares | TODO        |
-| Double on bump | ×2         | Picking team pays double for losing           | TODO        |
+| Blitz          | ×2         | Player with both black or red Queens declares | Implemented |
+| Double on bump | ×2         | Picking team pays double for losing           | Implemented |
 
 Example: Schneider + Crack = ×2 × ×2 = ×4.
 

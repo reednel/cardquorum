@@ -71,5 +71,17 @@ export function scoreMultiplier(state: SheepsheadState, config: SheepsheadConfig
     }
   }
 
+  if (config.blitzing && state.blitz) {
+    multiplier *= 2;
+  }
+
+  if (config.doubleOnTheBump && !pickerWon) {
+    multiplier *= 2;
+  }
+
+  if (config.multiplicityLimit !== null && multiplier > config.multiplicityLimit) {
+    multiplier = config.multiplicityLimit;
+  }
+
   return multiplier;
 }
