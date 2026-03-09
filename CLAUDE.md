@@ -81,3 +81,7 @@ You are an expert in TypeScript, Angular, and scalable web application developme
 - Use the `inject()` function instead of constructor injection
 
 <!-- Angular configuration end -->
+
+## Game Architecture
+
+Games use a **State/Store** split: `State` is the full in-memory representation during play (hands, active player, phase); `Store` is the simplified permanent record in `game_sessions.store` (completed tricks, roles, scores). All game logic is pure — phase handlers take `(state, store, event)` and return `[newState, newStore]`. See [docs/game-engine.md](docs/game-engine.md) for the generic framework and [docs/design/sheepshead.md](docs/design/sheepshead.md) for Sheepshead-specific rules.

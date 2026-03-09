@@ -50,10 +50,31 @@ export function isSchwarz(state: SheepsheadState): boolean {
 
 /**
  * Compute the score multiplier for a hand.
- *
- * TODO: finalize multiplier stacking rules (schneider, schwarz, crack, doublers).
+ * Multipliers stack multiplicatively:
+ *   base (1) × schneider (×2) × schwarz (×3) × crack/re-crack
  */
-export function scoreMultiplier(_state: SheepsheadState, _config: SheepsheadConfig): number {
-  /* Placeholder: base multiplier only */
-  return 1;
+export function scoreMultiplier(state: SheepsheadState, config: SheepsheadConfig): number {
+  const pickerPts = pickingTeamPoints(state);
+  const pickerWon = pickerPts >= 61;
+
+  let multiplier = 1;
+
+  if (isSchneider(pickerPts, pickerWon)) {
+    multiplier *= 2;
+  }
+
+  if (isSchwarz(state)) {
+    // Schwarz replaces schneider (×3 total, not ×6)
+    multiplier = 3;
+  }
+
+  if (config.cracking && state.crack) {
+    if (state.crack.reCrackedBy !== null) {
+      multiplier *= 4; // re-crack
+    } else {
+      multiplier *= 2; // crack
+    }
+  }
+
+  return multiplier;
 }

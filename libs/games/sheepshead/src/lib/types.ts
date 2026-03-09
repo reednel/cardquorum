@@ -9,25 +9,66 @@ export type GamePhase = 'deal' | 'pick' | 'bury' | 'call' | 'play' | 'score';
 /** Decision made during the pick phase. */
 export type PickDecision = 'pick' | 'pass';
 
+/** How to proceed when nobody picks. */
+export type NoPick =
+  | 'forced-pick'
+  | 'leaster'
+  | 'moster'
+  | 'mittler'
+  | 'schneidster'
+  | 'doubler'
+  | 'schwanzer';
+
 /** A player's role in a game. */
 export type PlayerRole = 'picker' | 'partner' | 'opposition';
 
+/** How the picking round works. */
+export type PickerRule =
+  | 'autonomous' // each player in turn order chooses to pick or pass
+  | 'left-of-dealer' // one specific player must pick, no choice (Schiller)
+  | null; // no picking round (e.g. 4-player black queens)
+
 /** Rule for determining the partner/s. */
-export type PartnerRule = 'called-ace' | 'jd' | 'jc-qs' | 'first-trick' | 'qc-7d';
+export type PartnerRule =
+  | 'called-ace'
+  | 'jd'
+  | 'jc'
+  | 'qc-qs'
+  | 'qs-jc'
+  | 'first-trick'
+  | 'qc-7d'
+  | 'left-of-picker'
+  | null;
 
 /**
  * Stored as game_sessions.config (jsonb).
  */
 export interface SheepsheadConfig {
-  playerCount: number;
-  /* How partner is determined. */
+  playerCount: 2 | 3 | 4 | 5 | 6 | 7 | 8;
+  handSize: number;
+  blindSize: number;
+  pickerRule: PickerRule;
   partnerRule: PartnerRule;
-  /* Optional house rules. */
-  leasters: boolean;
-  doublers: boolean;
+  noPick: NoPick | null;
   cracking: boolean;
   blitzing: boolean;
+  doubleOnTheBump: boolean;
+  partnerOffTheHook: boolean;
   noAceFaceTrump: boolean;
+  multiplicityLimit: number | null;
+}
+
+export interface ConfigPreset {
+  /** Display name for the frontend. */
+  label: string;
+  /** Short description, e.g. for a tooltip. */
+  description: string;
+  /** Values locked by this preset — not user-editable. */
+  fixed: Partial<SheepsheadConfig>;
+  /** Values with defaults that the user can change. */
+  defaults: Partial<SheepsheadConfig>;
+  /** Cards removed from the standard 32-card deck. */
+  cardsRemoved?: CardName[];
 }
 
 /**
@@ -69,8 +110,10 @@ export interface SheepsheadState {
   crack: CrackState | null;
   /** Blitz state. */
   blitz: BlitzState | null;
-  /** Whether this game is a leaster (everyone passed). */
-  isLeaster: boolean | null;
+  /** Whether the previous game was a doubler. */
+  previousGameDouble: boolean | null;
+  /** How to proceed when nobody picks.  */
+  noPick: NoPick | null;
 }
 
 /**
@@ -99,8 +142,10 @@ export interface SheepsheadStore {
   crack: CrackState | null;
   /** Blitz state. */
   blitz: BlitzState | null;
-  /** Whether this game is a leaster (everyone passed). */
-  isLeaster: boolean | null;
+  /** Whether the previous game was a doubler. */
+  previousGameDouble: boolean | null;
+  /** How to proceed when nobody picks.  */
+  noPick: NoPick | null;
 }
 
 export interface TrickState {

@@ -1,4 +1,4 @@
-import { Card, Suit, Rank, CardName, GamePhase } from './types';
+import { Card, Suit, Rank, CardName, GamePhase, SheepsheadConfig, ConfigPreset } from './types';
 
 export const TOTAL_POINTS = 120;
 
@@ -72,4 +72,233 @@ export const PHASE: { [key in GamePhase]: GamePhase } = {
   call: 'call',
   play: 'play',
   score: 'score',
+};
+
+const HOUSE_RULE_DEFAULTS: Pick<
+  SheepsheadConfig,
+  'cracking' | 'blitzing' | 'partnerOffTheHook' | 'noAceFaceTrump' | 'multiplicityLimit'
+> = {
+  cracking: false,
+  blitzing: false,
+  partnerOffTheHook: false,
+  noAceFaceTrump: false,
+  multiplicityLimit: null,
+};
+
+export const CONFIG_PRESETS: Record<number, ConfigPreset[]> = {
+  2: [
+    {
+      label: 'Two-Handed',
+      description: 'No teams, no picking.',
+      fixed: {
+        playerCount: 2,
+        handSize: 14,
+        blindSize: 4,
+        pickerRule: null,
+        partnerRule: null,
+        noPick: null,
+        doubleOnTheBump: false,
+      },
+      defaults: { ...HOUSE_RULE_DEFAULTS },
+    },
+  ],
+  3: [
+    {
+      label: 'Three-Handed',
+      description: 'Picker plays alone against two opponents.',
+      fixed: {
+        playerCount: 3,
+        handSize: 10,
+        blindSize: 2,
+        pickerRule: 'autonomous',
+        partnerRule: null,
+      },
+      defaults: { noPick: 'leaster', doubleOnTheBump: false, ...HOUSE_RULE_DEFAULTS },
+    },
+  ],
+  4: [
+    {
+      label: 'Black Queens',
+      description: 'Holders of the two black Queens are partners. Player with both goes alone.',
+      fixed: {
+        playerCount: 4,
+        handSize: 8,
+        blindSize: 0,
+        pickerRule: null,
+        partnerRule: 'qc-qs',
+        noPick: null,
+        doubleOnTheBump: true,
+      },
+      defaults: { ...HOUSE_RULE_DEFAULTS },
+    },
+    {
+      label: 'Queen & 7',
+      description:
+        'Queen of Clubs and 7 of Diamonds holders are partners. Player with both goes alone.',
+      fixed: {
+        playerCount: 4,
+        handSize: 8,
+        blindSize: 0,
+        pickerRule: null,
+        partnerRule: 'qc-7d',
+        noPick: null,
+        doubleOnTheBump: false,
+      },
+      defaults: { ...HOUSE_RULE_DEFAULTS },
+    },
+    {
+      label: 'Picker Alone',
+      description: 'Picker plays alone against three opponents.',
+      fixed: {
+        playerCount: 4,
+        handSize: 7,
+        blindSize: 4,
+        pickerRule: 'autonomous',
+        partnerRule: null,
+        doubleOnTheBump: true,
+      },
+      defaults: { noPick: 'leaster', ...HOUSE_RULE_DEFAULTS },
+    },
+    // Play with 30 cards (black 7s removed). Picker calls an ace for partner.
+    {
+      label: 'Called Ace',
+      description: 'Black 7s removed. Picker calls a fail ace for partner.',
+      fixed: {
+        playerCount: 4,
+        handSize: 7,
+        blindSize: 2,
+        pickerRule: 'autonomous',
+        partnerRule: 'called-ace',
+        doubleOnTheBump: true,
+      },
+      defaults: { noPick: 'leaster', ...HOUSE_RULE_DEFAULTS },
+      cardsRemoved: ['7c', '7s'],
+    },
+  ],
+  5: [
+    {
+      label: 'Called Ace',
+      description: 'Picker calls a fail ace for partner.',
+      fixed: {
+        playerCount: 5,
+        handSize: 6,
+        blindSize: 2,
+        pickerRule: 'autonomous',
+        partnerRule: 'called-ace',
+      },
+      defaults: { noPick: 'leaster', doubleOnTheBump: false, ...HOUSE_RULE_DEFAULTS },
+    },
+    {
+      label: 'Jack of Diamonds',
+      description: 'Holder of the Jack of Diamonds is the partner.',
+      fixed: {
+        playerCount: 5,
+        handSize: 6,
+        blindSize: 2,
+        pickerRule: 'autonomous',
+        partnerRule: 'jd',
+      },
+      defaults: { noPick: 'leaster', doubleOnTheBump: false, ...HOUSE_RULE_DEFAULTS },
+    },
+    {
+      label: 'Queen & Jack',
+      description:
+        'Black 7s removed. Queen of Spades and Jack of Clubs holders are partners. No blind.',
+      fixed: {
+        playerCount: 5,
+        handSize: 6,
+        blindSize: 0,
+        pickerRule: null,
+        partnerRule: 'qs-jc',
+        noPick: null,
+      },
+      defaults: { doubleOnTheBump: false, ...HOUSE_RULE_DEFAULTS },
+      cardsRemoved: ['7c', '7s'],
+    },
+    {
+      label: 'First Trick',
+      description: 'Winner of the first trick is the partner.',
+      fixed: {
+        playerCount: 5,
+        handSize: 6,
+        blindSize: 2,
+        pickerRule: 'autonomous',
+        partnerRule: 'first-trick',
+      },
+      defaults: { noPick: 'leaster', doubleOnTheBump: false, ...HOUSE_RULE_DEFAULTS },
+    },
+    {
+      label: 'Schiller',
+      description: 'Player left of dealer must pick. Called ace for partner.',
+      fixed: {
+        playerCount: 5,
+        handSize: 6,
+        blindSize: 2,
+        pickerRule: 'left-of-dealer',
+        partnerRule: 'called-ace',
+        noPick: null,
+      },
+      defaults: { doubleOnTheBump: false, ...HOUSE_RULE_DEFAULTS },
+    },
+  ],
+  6: [
+    {
+      label: 'Jack of Clubs',
+      description:
+        'Partner is the Jack of Clubs. If picker has it, they can call another Jack or play alone.',
+      fixed: {
+        playerCount: 6,
+        handSize: 5,
+        blindSize: 2,
+        pickerRule: 'autonomous',
+        partnerRule: 'jc',
+        doubleOnTheBump: false,
+      },
+      defaults: { noPick: 'leaster', ...HOUSE_RULE_DEFAULTS },
+    },
+  ],
+  7: [
+    {
+      label: 'Jack of Diamonds',
+      description:
+        'Partner is the Jack of Diamonds. If picker has it, they can call another Jack or play alone.',
+      fixed: {
+        playerCount: 7,
+        handSize: 4,
+        blindSize: 4,
+        pickerRule: 'autonomous',
+        partnerRule: 'jd',
+      },
+      defaults: { noPick: 'leaster', doubleOnTheBump: false, ...HOUSE_RULE_DEFAULTS },
+    },
+    // Picker draws 2 from blind, player to their left draws 2.
+    {
+      label: 'Partner Draft',
+      description:
+        'Picker draws 2 from blind. Player to their left is partner and draws the other 2.',
+      fixed: {
+        playerCount: 7,
+        handSize: 4,
+        blindSize: 4,
+        pickerRule: 'autonomous',
+        partnerRule: 'left-of-picker',
+      },
+      defaults: { noPick: 'leaster', doubleOnTheBump: false, ...HOUSE_RULE_DEFAULTS },
+    },
+  ],
+  8: [
+    {
+      label: 'Black Queens',
+      description: 'Black Queen holders are partners. Player with both goes alone. No blind.',
+      fixed: {
+        playerCount: 8,
+        handSize: 4,
+        blindSize: 0,
+        pickerRule: null,
+        partnerRule: 'qc-qs',
+        noPick: null,
+      },
+      defaults: { doubleOnTheBump: false, ...HOUSE_RULE_DEFAULTS },
+    },
+  ],
 };
