@@ -27,13 +27,13 @@ export function pickingTeamPoints(state: SheepsheadState): number {
 }
 
 /** Whether schneider applies (losing team took <30 points). */
-export function isSchneider(pickerTeamPts: number, pickerWon: boolean): boolean {
+export function gotSchneidered(pickerTeamPts: number, pickerWon: boolean): boolean {
   if (pickerWon) return TOTAL_POINTS - pickerTeamPts < 30;
   return pickerTeamPts < 30;
 }
 
-/** Whether schwarz applies (losing team took 0 tricks). */
-export function isSchwarz(state: SheepsheadState): boolean {
+/** Whether losing team took 0 tricks. */
+export function gotNoTricked(state: SheepsheadState): boolean {
   const pickingTeam = new Set<UserID>();
   for (const player of state.players) {
     if (player.role === 'picker' || player.role === 'partner') {
@@ -51,7 +51,7 @@ export function isSchwarz(state: SheepsheadState): boolean {
 /**
  * Compute the score multiplier for a hand.
  * Multipliers stack multiplicatively:
- *   base (1) × schneider (×2) × schwarz (×3) × crack/re-crack
+ *   base (1) × schneider (×2) × crack/re-crack
  */
 export function scoreMultiplier(state: SheepsheadState, config: SheepsheadConfig): number {
   const pickerPts = pickingTeamPoints(state);
@@ -59,13 +59,8 @@ export function scoreMultiplier(state: SheepsheadState, config: SheepsheadConfig
 
   let multiplier = 1;
 
-  if (isSchneider(pickerPts, pickerWon)) {
+  if (gotSchneidered(pickerPts, pickerWon)) {
     multiplier *= 2;
-  }
-
-  if (isSchwarz(state)) {
-    // Schwarz replaces schneider (×3 total, not ×6)
-    multiplier = 3;
   }
 
   if (config.cracking && state.crack) {

@@ -237,7 +237,7 @@ describe('SheepsheadPlugin', () => {
       // Score
       [state, store] = plugin.applyEvent(state, store, {
         type: 'game_scored',
-        payload: { scoreDeltas: [], schneider: false, schwarz: false },
+        payload: { scoreDeltas: [], gotSchneidered: false, gotNoTricked: false },
       });
 
       // All players should have score deltas

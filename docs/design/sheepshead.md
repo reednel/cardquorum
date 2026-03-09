@@ -37,9 +37,9 @@ All four Queens, then all four Jacks, then the remaining Diamonds (Ace down to 7
 
 ## Dealing
 
-`dealingLayout(playerCount)` determines hand size and blind size for 2–8 players. The constraint is `playerCount × cardsPerPlayer + blindSize = 32`.
+Hand size and blind size are set in `SheepsheadConfig` (`handSize`, `blindSize`) and locked by the chosen preset. The constraint is `playerCount × handSize + blindSize = deckSize` (where deckSize is 32 minus any removed cards).
 
-The blind is dealt first (top of shuffled deck), then hands are dealt to each player in seat order.
+`deal(deck, config)` takes the shuffled deck and config, deals the blind first (top of deck), then distributes hands to each player in seat order.
 
 ## Phase Flow
 
@@ -49,17 +49,18 @@ deal → pick → bury → call → play → score
 
 ### deal
 
-Shuffle the deck, distribute cards per `dealingLayout`. Transition to `pick`. Active player is the player after the dealer (seat index 1).
+Shuffle the deck, distribute cards per config's `handSize`/`blindSize`. Transition to `pick`. Active player is the player after the dealer (seat index 1).
 
 ### pick
 
-Each player, starting after the dealer, chooses to **pick** (take the blind) or **pass**.
+Behavior depends on `config.pickerRule`:
 
-- **Pick**: Player becomes the picker, blind cards are added to their hand. Transition to `bury`.
-- **Pass**: Advance to the next player.
-- **All pass**:
-  - If `config.leasters`: all players are opposition, `isLeaster = true`, skip to `play`.
-  - Otherwise: re-deal (engine creates fresh state and deals again).
+- **`'autonomous'`**: Each player, starting after the dealer, chooses to **pick** or **pass**.
+  - **Pick**: Player becomes the picker, blind cards are added to their hand. Transition to `bury`.
+  - **Pass**: Advance to the next player.
+  - **All pass**: Handled by `config.noPick` (see [Non-Picking](#non-picking)).
+- **`'left-of-dealer'`**: The player at seat index 1 must pick. No choice. (Schiller variant.)
+- **`null`**: No picking round — partners are predetermined by card holdings (e.g. black queens). Skip directly to `play`.
 
 ### bury
 
@@ -92,13 +93,17 @@ Compute final results. See [Scoring](#scoring) below.
 
 The `PartnerRule` type determines how the picker's partner is identified:
 
-| Rule          | How partner is determined                    | Status      |
-| ------------- | -------------------------------------------- | ----------- |
-| `called-ace`  | Picker calls a fail suit; holder of that Ace | Implemented |
-| `jd`          | Whoever holds the Jack of Diamonds           | Implemented |
-| `jc-qs`       | —                                            | Stub (TODO) |
-| `first-trick` | —                                            | Stub (TODO) |
-| `qc-7d`       | —                                            | Stub (TODO) |
+| Rule             | How partner is determined                                         | Status      |
+| ---------------- | ----------------------------------------------------------------- | ----------- |
+| `called-ace`     | Picker calls a fail suit; holder of that Ace                      | Implemented |
+| `jd`             | Whoever holds the Jack of Diamonds                                | Implemented |
+| `jc`             | Whoever holds the Jack of Clubs (6-handed)                        | TODO        |
+| `qc-qs`          | Holders of the two black Queens are partners (4/8-handed)         | TODO        |
+| `qs-jc`          | Holders of Queen of Spades and Jack of Clubs (5-handed, 30 cards) | TODO        |
+| `first-trick`    | Winner of the first trick becomes the partner                     | TODO        |
+| `qc-7d`          | Holders of Queen of Clubs and 7 of Diamonds                       | TODO        |
+| `left-of-picker` | Player to picker's left (7-handed partner draft)                  | TODO        |
+| `null`           | No partner — picker plays alone (2/3-handed, or solo variants)    | Implemented |
 
 ## Scoring
 
@@ -111,14 +116,16 @@ The picking team (picker + partner) needs **61+ points** to win. Points come fro
 
 ### Multipliers
 
-Multipliers stack multiplicatively:
+Multipliers stack multiplicatively (subject to `multiplicityLimit`):
 
-| Condition | Multiplier | Notes                                     |
-| --------- | ---------- | ----------------------------------------- |
-| Base      | ×1         |                                           |
-| Schneider | ×2         | Losing team took <30 points               |
-| Crack     | ×2         | Opposition declares before play           |
-| Re-crack  | ×4         | Picker responds to crack (replaces crack) |
+| Condition      | Multiplier | Notes                                         | Status      |
+| -------------- | ---------- | --------------------------------------------- | ----------- |
+| Base           | ×1         |                                               | Implemented |
+| Schneider      | ×2         | Losing team took <30 points                   | Implemented |
+| Crack          | ×2         | Opposition declares before play               | Implemented |
+| Re-crack       | ×4         | Picker responds to crack (replaces crack)     | Implemented |
+| Blitz          | ×2         | Player with both black or red Queens declares | TODO        |
+| Double on bump | ×2         | Picking team pays double for losing           | TODO        |
 
 Example: Schneider + Crack = ×2 × ×2 = ×4.
 
@@ -139,28 +146,35 @@ When all players pass and leasters is enabled, everyone plays for themselves (al
 - **Buried cards**: Only visible to the picker. `null` for everyone else.
 - **Partner identity**: In `called-ace`, the partner is hidden until the called Ace is played during a trick.
 
-## Configuration (House Rules)
+## Configuration
 
-### Team Rules
+Game configuration is defined by `SheepsheadConfig` (stored in `game_sessions.config`). Valid configurations are expressed as **presets** (`ConfigPreset` in `constants.ts`), keyed by player count in `CONFIG_PRESETS`.
 
-- 2 Handed: No teams.
-- 3 Handed: Picker plays alone against two opponents, buries 2 cards. 10 cards to each, 2 in the blind.
-- 4 Handed
-  - Black Queens are partners. Player with both goes alone. 8 cards to each, no blind. Double on the bump.
-  - Queen of Clubs and 7 of Diamonds are partners. Player with both goes alone. 8 cards to each, no blind. Not double on the bump.
-  - Picker plays alone, buries 4. 7 cards to each, 4 in the blind. Double on the bump.
-  - Play with 30 cards (black 7s removed). 7 cards to each, 2 in the blind. Picker calls an ace for partner. If picker has all 3 fail aces, call for winner of first trick to be partner. Double on the bump.
-- 5 Handed
-  - Picker calls and ace of fail suit in hand, and must keep that fail in hand until that fail is lead, or the card is forced.
-  - Picker and Jack of Diamonds are partners.
-  - Remove the black 7s from the deck. Queen of Spades and Jack of Clubs are partners. 6 cards to each, no blind.
-  - Whomever takes the first trick is the partner.
-  - Schiller: The player left of the dealer has to pick
-- 6 Handed: 5 cards to each, 2 in the blind. Picker and Jack of Clubs are partners. If picker has the Jack of Clubs, they can call another Jack or play alone. Not double on the bump.
-- 7 Handed
-  - 4 cards to each, 4 in the blind. Picker and Jack of Diamonds are partners. If picker has the Jack of Diamonds, they can call another Jack or play alone.
-  - 4 cards to each, 4 in the blind. Picker draws 2 from the blind, and the player to their left is their partner, drawing the remaining 2 from the blind.
-- 8 handed: 4 cards to each, no blind. Black Queens are partners. Player with both goes alone.
+Each preset has:
+
+- **`fixed`** — values locked by the preset (playerCount, handSize, blindSize, pickerRule, partnerRule, etc.)
+- **`defaults`** — house rules the players can toggle (noPick, cracking, blitzing, doubleOnTheBump, etc.)
+- **`cardsRemoved`** — optional cards removed from the 32-card deck (e.g. black 7s for 30-card variants)
+
+### Presets by Player Count
+
+| Players | Preset           | Hand | Blind | Picker         | Partner          | Cards Removed |
+| ------- | ---------------- | ---- | ----- | -------------- | ---------------- | ------------- |
+| 2       | Two-Handed       | 14   | 4     | —              | —                |               |
+| 3       | Three-Handed     | 10   | 2     | autonomous     | —                |               |
+| 4       | Black Queens     | 8    | 0     | —              | `qc-qs`          |               |
+| 4       | Queen & 7        | 8    | 0     | —              | `qc-7d`          |               |
+| 4       | Picker Alone     | 7    | 4     | autonomous     | —                |               |
+| 4       | Called Ace       | 7    | 2     | autonomous     | `called-ace`     | 7c, 7s        |
+| 5       | Called Ace       | 6    | 2     | autonomous     | `called-ace`     |               |
+| 5       | Jack of Diamonds | 6    | 2     | autonomous     | `jd`             |               |
+| 5       | Queen & Jack     | 6    | 0     | —              | `qs-jc`          | 7c, 7s        |
+| 5       | First Trick      | 6    | 2     | autonomous     | `first-trick`    |               |
+| 5       | Schiller         | 6    | 2     | left-of-dealer | `called-ace`     |               |
+| 6       | Jack of Clubs    | 5    | 2     | autonomous     | `jc`             |               |
+| 7       | Jack of Diamonds | 4    | 4     | autonomous     | `jd`             |               |
+| 7       | Partner Draft    | 4    | 4     | autonomous     | `left-of-picker` |               |
+| 8       | Black Queens     | 4    | 0     | —              | `qc-qs`          |               |
 
 ### Non-Picking
 

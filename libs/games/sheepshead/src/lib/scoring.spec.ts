@@ -1,4 +1,4 @@
-import { pickingTeamPoints, isSchneider, isSchwarz, scoreMultiplier } from './scoring';
+import { pickingTeamPoints, gotSchneidered, gotNoTricked, scoreMultiplier } from './scoring';
 import { DECK, TOTAL_POINTS } from './constants';
 import { Card, SheepsheadConfig, SheepsheadState, TrickState } from './types';
 
@@ -149,32 +149,32 @@ describe('pickingTeamPoints', () => {
   });
 });
 
-describe('isSchneider', () => {
-  it('picker wins schneider when opposition has <30', () => {
-    expect(isSchneider(91, true)).toBe(true); // opposition has 29
+describe('gotSchneidered', () => {
+  it('opposition gets schneidered when they take <30', () => {
+    expect(gotSchneidered(91, true)).toBe(true); // opposition has 29
   });
 
   it('picker does not get schneider when opposition has 30+', () => {
-    expect(isSchneider(90, true)).toBe(false); // opposition has 30
+    expect(gotSchneidered(90, true)).toBe(false); // opposition has 30
   });
 
   it('picker loses schneider when picker has <30', () => {
-    expect(isSchneider(29, false)).toBe(true);
+    expect(gotSchneidered(29, false)).toBe(true);
   });
 
   it('picker does not lose schneider when picker has 30+', () => {
-    expect(isSchneider(30, false)).toBe(false);
+    expect(gotSchneidered(30, false)).toBe(false);
   });
 });
 
-describe('isSchwarz', () => {
+describe('gotNoTricked', () => {
   it('returns true when picking team won 0 tricks', () => {
     const tricks: TrickState[] = [
       { plays: [], winner: 2 },
       { plays: [], winner: 3 },
     ];
     const state = makeState({ tricks });
-    expect(isSchwarz(state)).toBe(true);
+    expect(gotNoTricked(state)).toBe(true);
   });
 
   it('returns true when picking team won all tricks', () => {
@@ -183,7 +183,7 @@ describe('isSchwarz', () => {
       { plays: [], winner: 1 },
     ];
     const state = makeState({ tricks });
-    expect(isSchwarz(state)).toBe(true);
+    expect(gotNoTricked(state)).toBe(true);
   });
 
   it('returns false when both teams won tricks', () => {
@@ -192,13 +192,13 @@ describe('isSchwarz', () => {
       { plays: [], winner: 2 },
     ];
     const state = makeState({ tricks });
-    expect(isSchwarz(state)).toBe(false);
+    expect(gotNoTricked(state)).toBe(false);
   });
 });
 
 describe('scoreMultiplier', () => {
   it('base multiplier is 1', () => {
-    // Picker won with 61 points (no schneider, no schwarz)
+    // Picker won with 61 points (loser wasn't schneidered or no-tricked).
     const tricks: TrickState[] = [
       {
         plays: [
@@ -227,7 +227,7 @@ describe('scoreMultiplier', () => {
   });
 
   it('schneider doubles', () => {
-    // Picker lost with <30 points. Both teams took tricks (no schwarz).
+    // Picker lost with <30 points. Both teams took tricks.
     const state = makeState({
       buried: [],
       tricks: [
@@ -248,36 +248,11 @@ describe('scoreMultiplier', () => {
       ],
     });
     // pickerPts = 11, pickerWon = false (11 < 61), isSchneider(11, false) = true (11 < 30)
-    // Not schwarz (both teams won tricks)
     expect(scoreMultiplier(state, makeConfig())).toBe(2);
   });
 
-  it('schwarz gives 3x (replaces schneider)', () => {
-    // All tricks won by opposition
-    const state = makeState({
-      tricks: [
-        {
-          plays: [
-            { player: 1, card: card('7c') },
-            { player: 2, card: card('ac') },
-          ],
-          winner: 2,
-        },
-        {
-          plays: [
-            { player: 1, card: card('7s') },
-            { player: 2, card: card('as') },
-          ],
-          winner: 2,
-        },
-      ],
-    });
-    // Picking team took 0 tricks → schwarz
-    expect(scoreMultiplier(state, makeConfig())).toBe(3);
-  });
-
   it('crack doubles the multiplier', () => {
-    // Both teams won tricks (no schwarz), schneider applies
+    // Both teams won tricks, schneider applies
     const state = makeState({
       tricks: [
         {

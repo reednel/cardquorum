@@ -238,8 +238,8 @@ export interface GameScoredEvent {
   type: 'game_scored';
   payload: {
     scoreDeltas: number[];
-    schneider: boolean;
-    schwarz: boolean;
+    gotSchneidered: boolean;
+    gotNoTricked: boolean;
   };
 }
 

@@ -31,10 +31,10 @@ export function determinePartnerCalledAce(state: SheepsheadState, suit: Suit): U
 
 /**
  * Assign partner based on a non-called-ace rule.
- * For rules that can be determined at bury time (jd, jc-qs, qc-7d),
+ * For rules that can be determined at bury time (jd, qs-jc, qc-7d),
  * assigns roles immediately. For 'first-trick', partner is revealed later.
  *
- * TODO: implement jc-qs, first-trick, qc-7d partner rules.
+ * TODO: implement qs-jc, first-trick, qc-7d partner rules.
  */
 export function assignPartnerByRule(state: SheepsheadState, rule: string): SheepsheadState {
   let partnerID: UserID | null = null;
@@ -43,7 +43,7 @@ export function assignPartnerByRule(state: SheepsheadState, rule: string): Sheep
     case 'jd':
       partnerID = determinePartnerJD(state);
       break;
-    case 'jc-qs':
+    case 'qs-jc':
     case 'first-trick':
     case 'qc-7d':
       // TODO: implement these partner rules
