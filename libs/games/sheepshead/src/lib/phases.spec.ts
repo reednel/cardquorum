@@ -30,6 +30,7 @@ function makeConfig(overrides: Partial<SheepsheadConfig> = {}): SheepsheadConfig
     partnerOffTheHook: false,
     noAceFaceTrump: false,
     multiplicityLimit: null,
+    callOwnAce: null,
     ...overrides,
   };
 }
@@ -50,7 +51,8 @@ function makeState(playerCount = 3): SheepsheadState {
     activePlayer: null,
     blind: [],
     buried: [],
-    calledSuit: null,
+    calledCard: null,
+    hole: null,
     tricks: [],
     crack: null,
     blitz: null,
@@ -69,7 +71,8 @@ function makeStore(playerCount = 3): SheepsheadStore {
     })),
     blind: [],
     buried: [],
-    calledSuit: null,
+    calledCard: null,
+    hole: null,
     tricks: [],
     crack: null,
     blitz: null,
@@ -343,10 +346,18 @@ describe('handleBury', () => {
 });
 
 describe('handleCall', () => {
-  it('sets calledSuit and assigns roles', () => {
-    const config = makeConfig({ partnerRule: 'called-ace' });
+  it('sets calledCard and assigns roles', () => {
+    const config = makeConfig({ partnerRule: 'called-ace', callOwnAce: false });
     const [dealt, dealStore] = handleDeal(makeState(), makeStore(), config);
     const [picked, pickStore] = handlePick(dealt, dealStore, { type: 'pick', userID: 2 }, config)!;
+
+    // Find a fail ace the picker does NOT hold so the call is valid
+    const pickerHand = picked.players[1].hand;
+    const failAces: ('ac' | 'as' | 'ah')[] = ['ac', 'as', 'ah'];
+    const callableAce = failAces.find((a) => !pickerHand.some((c) => c.name === a));
+    // If picker holds all 3 fail aces, call a 10 instead
+    const calledCard = callableAce ?? 'xc';
+
     const toBury = picked.players[1].hand.slice(0, 2);
     const [buried, buryStore] = handleBury(
       picked,
@@ -359,19 +370,52 @@ describe('handleCall', () => {
       config,
     );
 
-    const [state, store] = handleCall(buried, buryStore, {
-      type: 'call_ace',
-      userID: 2,
-      payload: { suit: 'clubs' },
-    });
+    const [state, store] = handleCall(
+      buried,
+      buryStore,
+      {
+        type: 'call_ace',
+        userID: 2,
+        payload: { card: calledCard },
+      },
+      config,
+    );
 
-    expect(state.calledSuit).toBe('clubs');
-    expect(store.calledSuit).toBe('clubs');
+    expect(state.calledCard).toBe(calledCard);
+    expect(store.calledCard).toBe(calledCard);
     expect(state.phase).toBe('play');
     // Picker should still be picker
     expect(state.players[1].role).toBe('picker');
     // Other players should have roles assigned
     expect(state.players.every((p) => p.role !== null)).toBe(true);
+  });
+
+  it('allows going alone', () => {
+    const config = makeConfig({ partnerRule: 'called-ace', callOwnAce: false });
+    const [dealt, dealStore] = handleDeal(makeState(), makeStore(), config);
+    const [picked, pickStore] = handlePick(dealt, dealStore, { type: 'pick', userID: 2 }, config)!;
+    const toBury = picked.players[1].hand.slice(0, 2);
+    const [buried, buryStore] = handleBury(
+      picked,
+      pickStore,
+      { type: 'bury', userID: 2, payload: { cards: toBury } },
+      config,
+    );
+
+    const [state, store] = handleCall(
+      buried,
+      buryStore,
+      {
+        type: 'call_ace',
+        userID: 2,
+        payload: { card: 'alone' },
+      },
+      config,
+    );
+
+    expect(state.calledCard).toBe('alone');
+    expect(state.players.filter((p) => p.role === 'partner')).toHaveLength(0);
+    expect(state.phase).toBe('play');
   });
 });
 
@@ -414,7 +458,8 @@ describe('handlePlayCard', () => {
       activePlayer: 1,
       blind: [],
       buried: [],
-      calledSuit: null,
+      calledCard: null,
+      hole: null,
       tricks: [{ plays: [], winner: null }],
       crack: null,
       blitz: null,
@@ -429,7 +474,8 @@ describe('handlePlayCard', () => {
       ],
       blind: [],
       buried: [],
-      calledSuit: null,
+      calledCard: null,
+      hole: null,
       tricks: [],
       crack: null,
       blitz: null,
@@ -563,7 +609,8 @@ describe('handlePlayCard', () => {
       activePlayer: 1,
       blind: [],
       buried: [],
-      calledSuit: null,
+      calledCard: null,
+      hole: null,
       tricks: [{ plays: [], winner: null }],
       crack: null,
       blitz: null,
@@ -637,7 +684,8 @@ describe('handlePlayCard', () => {
       activePlayer: 1,
       blind: [],
       buried: [],
-      calledSuit: null,
+      calledCard: null,
+      hole: null,
       tricks: [{ plays: [], winner: null }],
       crack: null,
       blitz: null,
@@ -711,7 +759,8 @@ describe('handlePlayCard', () => {
       activePlayer: 1,
       blind: [card('xc'), card('xs')], // 10 + 10 = 20 points
       buried: [],
-      calledSuit: null,
+      calledCard: null,
+      hole: null,
       tricks: [{ plays: [], winner: null }],
       crack: null,
       blitz: null,
@@ -785,7 +834,8 @@ describe('handlePlayCard', () => {
       activePlayer: 1,
       blind: [],
       buried: [],
-      calledSuit: null,
+      calledCard: null,
+      hole: null,
       tricks: [{ plays: [], winner: null }],
       crack: null,
       blitz: null,
@@ -868,7 +918,8 @@ describe('handleScore', () => {
       activePlayer: null,
       blind: [],
       buried: [],
-      calledSuit: null,
+      calledCard: null,
+      hole: null,
       tricks: [
         {
           plays: [
@@ -951,7 +1002,8 @@ describe('handleScore', () => {
       blind: [],
       // Buried counts for picker: 61 points from buried alone
       buried: [card('ac'), card('as'), card('ah'), card('xc'), card('xs'), card('xh')],
-      calledSuit: null,
+      calledCard: null,
+      hole: null,
       tricks: [
         {
           plays: [
@@ -1003,7 +1055,8 @@ describe('handleScore', () => {
       activePlayer: null,
       blind: [],
       buried: [],
-      calledSuit: null,
+      calledCard: null,
+      hole: null,
       tricks: [],
       crack: null,
       blitz: null,
@@ -1241,7 +1294,8 @@ describe('handleScore', () => {
       activePlayer: null,
       blind: [],
       buried: [],
-      calledSuit: null,
+      calledCard: null,
+      hole: null,
       tricks: [
         // All tricks won by opposition
         {

@@ -1,4 +1,4 @@
-import { SheepsheadState, UserID, Suit, CardName } from './types';
+import { SheepsheadState, UserID, CardName } from './types';
 
 /**
  * Determine the partner by Jack of Diamonds rule.
@@ -10,13 +10,15 @@ export function determinePartnerJD(state: SheepsheadState): UserID | null {
 }
 
 /**
- * Determine the partner by called-ace rule.
- * The player holding the ace of the called suit is the partner.
- * Returns null if no one holds it (shouldn't happen if call is valid).
+ * Determine the partner by called card.
+ * The player holding the called card (ace or 10) is the partner.
+ * Returns null if no one holds it.
  */
-export function determinePartnerCalledAce(state: SheepsheadState, suit: Suit): UserID | null {
-  const aceName = `a${suit[0]}` as CardName; // 'ac', 'as', 'ah' — never 'ad' (diamonds is trump)
-  return determinePartnerByCard(state, aceName);
+export function determinePartnerCalledAce(
+  state: SheepsheadState,
+  calledCard: CardName,
+): UserID | null {
+  return determinePartnerByCard(state, calledCard);
 }
 
 /**

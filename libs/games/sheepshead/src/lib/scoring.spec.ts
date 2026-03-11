@@ -23,6 +23,7 @@ function makeConfig(overrides: Partial<SheepsheadConfig> = {}): SheepsheadConfig
     partnerOffTheHook: false,
     noAceFaceTrump: false,
     multiplicityLimit: null,
+    callOwnAce: null,
     ...overrides,
   };
 }
@@ -63,7 +64,8 @@ function makeState(overrides: Partial<SheepsheadState> = {}): SheepsheadState {
     activePlayer: null,
     blind: [],
     buried: [],
-    calledSuit: null,
+    calledCard: null,
+    hole: null,
     tricks: [],
     crack: null,
     blitz: null,

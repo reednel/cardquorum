@@ -67,13 +67,19 @@ export const FAIL_RANK_ORDER: readonly Rank[] = ['ace', '10', 'king', '9', '8', 
 
 const HOUSE_RULE_DEFAULTS: Pick<
   SheepsheadConfig,
-  'cracking' | 'blitzing' | 'partnerOffTheHook' | 'noAceFaceTrump' | 'multiplicityLimit'
+  | 'cracking'
+  | 'blitzing'
+  | 'partnerOffTheHook'
+  | 'noAceFaceTrump'
+  | 'multiplicityLimit'
+  | 'callOwnAce'
 > = {
   cracking: false,
   blitzing: false,
   partnerOffTheHook: false,
   noAceFaceTrump: false,
   multiplicityLimit: null,
+  callOwnAce: null,
 };
 
 export const CONFIG_PRESETS: readonly ConfigPreset[] = [
@@ -166,7 +172,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
       doubleOnTheBump: true,
       cardsRemoved: ['7c', '7s'],
     },
-    defaults: { noPick: 'leaster', ...HOUSE_RULE_DEFAULTS },
+    defaults: { noPick: 'leaster', ...HOUSE_RULE_DEFAULTS, callOwnAce: false },
   },
   // 5 players
   {
@@ -180,7 +186,12 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
       pickerRule: 'autonomous',
       partnerRule: 'called-ace',
     },
-    defaults: { noPick: 'leaster', doubleOnTheBump: false, ...HOUSE_RULE_DEFAULTS },
+    defaults: {
+      noPick: 'leaster',
+      doubleOnTheBump: false,
+      ...HOUSE_RULE_DEFAULTS,
+      callOwnAce: false,
+    },
   },
   {
     label: 'Jack of Diamonds',
@@ -236,7 +247,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
       partnerRule: 'called-ace',
       noPick: null,
     },
-    defaults: { doubleOnTheBump: false, ...HOUSE_RULE_DEFAULTS },
+    defaults: { doubleOnTheBump: false, ...HOUSE_RULE_DEFAULTS, callOwnAce: false },
   },
   // 6 players
   {

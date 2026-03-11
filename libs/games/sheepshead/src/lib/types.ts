@@ -22,6 +22,9 @@ export type NoPick =
 /** A player's role in a game. */
 export type PlayerRole = 'picker' | 'partner' | 'opposition';
 
+/** Valid values for a called card: fail aces, fail 10s, or going alone. */
+export type CalledCard = 'ac' | 'as' | 'ah' | 'xc' | 'xs' | 'xh' | 'alone';
+
 /** How the picking round works. */
 export type PickerRule =
   | 'autonomous' // each player in turn order chooses to pick or pass
@@ -57,6 +60,8 @@ export interface SheepsheadConfig {
   partnerOffTheHook: boolean;
   noAceFaceTrump: boolean;
   multiplicityLimit: number | null;
+  /** Whether the picker can call an ace they hold or buried. */
+  callOwnAce: boolean | null;
   /** Cards removed from the standard 32-card deck (e.g. ['7c','7s'] for 30-card variants). */
   cardsRemoved?: CardName[];
 }
@@ -103,8 +108,10 @@ export interface SheepsheadState {
   blind: Card[] | null;
   /** Cards buried by the picker. */
   buried: Card[] | null;
-  /** Called suit (only used in called-ace variant). */
-  calledSuit: string | null;
+  /** Called card (only used in called-ace variant). */
+  calledCard: CalledCard | null;
+  /** Card laid face-down in the unknown ace condition. */
+  hole: CardName | null;
   /** Completed tricks. */
   tricks: TrickState[];
   /** Crack/re-crack state. */
@@ -140,8 +147,10 @@ export interface SheepsheadStore {
   blind: Card[];
   /** Cards buried by the picker. */
   buried: Card[];
-  /** Called suit (only used in called-ace variant). */
-  calledSuit: Suit | null;
+  /** Called card (only used in called-ace variant). */
+  calledCard: CalledCard | null;
+  /** Card laid face-down in the unknown ace condition. */
+  hole: CardName | null;
   /** Completed tricks. */
   tricks: TrickState[];
   /** Crack/re-crack state. */
@@ -166,6 +175,8 @@ export interface TrickState {
 export interface TrickPlay {
   player: UserID;
   card: Card;
+  /** True if this play is the face-down hole card (unknown ace condition). */
+  isHoleCard?: boolean;
 }
 
 export interface CrackState {
@@ -219,7 +230,7 @@ export interface BuryEvent {
 export interface CallAceEvent {
   type: 'call_ace';
   userID: UserID;
-  payload: { suit: Suit };
+  payload: { card: CalledCard; holeCard?: CardName };
 }
 
 export interface CrackEvent {

@@ -71,7 +71,17 @@ The picker discards cards from their hand (the number depends on blind size). Bu
 
 ### call
 
-Only used with the `called-ace` partner rule. The picker names a fail suit. The holder of that suit's Ace becomes the partner — but this is hidden from other players until the Ace is played.
+Only used with the `called-ace` partner rule. The picker names a fail ace (or fail 10, or goes alone). The holder of the called card becomes the partner — but this is hidden from other players until the called card is played.
+
+**Calling rules:**
+
+- The picker calls a fail ace (`ac`, `as`, or `ah`). They must hold at least one card of the called suit in their hand to call it. Unless `callOwnAce` is enabled, the picker cannot call an ace they hold or have buried.
+- **Calling a 10**: If the picker holds all 3 fail aces, they may call a fail 10 (`xc`, `xs`, or `xh`) instead. The picker is obligated to hold the ace of that suit. When the called suit is led, the picker must play the ace. The 10 takes the trick if it isn't trumped.
+- **Unknown / hole card**: If the picker has no fail suit for which they don't also hold the ace (but doesn't have all 3 aces), they may call any fail ace and place a card face-down as a "hole card." The hole card has no trick-taking power and its identity is hidden from all players except the trick-taker until scoring. The picker is forced to play the hole card on the first trick where the called suit is led.
+- **Going alone**: The picker can choose `'alone'` — no partner, no called card.
+- **`callOwnAce`**: When enabled, the picker can call a suit for which they hold the ace. They must save the ace and effectively play alone (without declaring it).
+
+The `CalledCard` type captures all valid options: `'ac' | 'as' | 'ah' | 'xc' | 'xs' | 'xh' | 'alone'`.
 
 ### play
 
@@ -83,7 +93,14 @@ Players play cards in tricks. The player after the dealer leads the first trick;
 - If a fail suit was led: must follow that suit if you have any.
 - If void in the led suit: any card is legal.
 
-**Trick evaluation:** Trump always beats fail. Higher trump beats lower trump. Within a fail suit, higher rank beats lower. Off-suit cards (not trump, not the led suit) never win.
+**Called-ace play constraints** (when `partnerRule === 'called-ace'`):
+
+- **Picker must hold suit**: Until the called suit has been led, the picker must keep at least one card of the called suit in hand (cannot play them all away on other tricks).
+- **Partner must play called card**: On the first trick where the called suit is led, the partner must play the called card (ace or 10).
+- **Picker plays ace when calling 10**: If the picker called a 10, they must play the ace of that suit on the first trick where the called suit is led.
+- **Hole card forced play**: If a hole card exists, the picker must play it on the first trick where the called suit is led. The hole card is played face-down and has no trick-taking power.
+
+**Trick evaluation:** Trump always beats fail. Higher trump beats lower trump. Within a fail suit, higher rank beats lower. Off-suit cards (not trump, not the led suit) never win. Hole cards never win (they are skipped during evaluation).
 
 ### score
 
@@ -95,7 +112,7 @@ The `PartnerRule` type determines how the picker's partner is identified:
 
 | Rule             | How partner is determined                                         | Status      |
 | ---------------- | ----------------------------------------------------------------- | ----------- |
-| `called-ace`     | Picker calls a fail suit; holder of that Ace                      | Implemented |
+| `called-ace`     | Picker calls a fail ace/10 or goes alone; see [call phase](#call) | Implemented |
 | `jd`             | Whoever holds the Jack of Diamonds                                | Implemented |
 | `jc`             | Whoever holds the Jack of Clubs (6-handed)                        | Implemented |
 | `qc-qs`          | Holders of the two black Queens are partners (4/8-handed)         | Implemented |
@@ -145,37 +162,39 @@ When all players pass and leasters is enabled, everyone plays for themselves (al
 - **Hands**: Each player sees only their own hand. Other players' hands appear as empty arrays.
 - **Blind**: Hidden (empty array) during `deal` and `pick` phases. Visible after picking.
 - **Buried cards**: Only visible to the picker. `null` for everyone else.
-- **Partner identity**: In `called-ace`, the partner is hidden until the called Ace is played during a trick.
+- **Partner identity**: In `called-ace`, the partner's role is shown as `'opposition'` until the called card has been played.
+- **Hole card**: During play, only the picker knows the hole card's identity. Other players see `'hidden'`. The trick-taker can see the hole card's identity in their trick. All hole cards are revealed at scoring.
 
 ## Configuration
 
-Game configuration is defined by `SheepsheadConfig` (stored in `game_sessions.config`). Valid configurations are expressed as **presets** (`ConfigPreset` in `constants.ts`), keyed by player count in `CONFIG_PRESETS`.
+Game configuration is defined by `SheepsheadConfig` (stored in `game_sessions.config`). Valid configurations are expressed as **presets** (`ConfigPreset` in `constants.ts`) in a flat array `CONFIG_PRESETS`.
 
 Each preset has:
 
-- **`fixed`** — values locked by the preset (playerCount, handSize, blindSize, pickerRule, partnerRule, etc.)
-- **`defaults`** — house rules the players can toggle (noPick, cracking, blitzing, doubleOnTheBump, etc.)
-- **`cardsRemoved`** — optional cards removed from the 32-card deck (e.g. black 7s for 30-card variants)
+- **`fixed`** — values locked by the preset (`name`, `playerCount`, `handSize`, `blindSize`, `pickerRule`, `partnerRule`, and optionally `cardsRemoved`)
+- **`defaults`** — house rules the players can toggle (`noPick`, `cracking`, `blitzing`, `doubleOnTheBump`, `callOwnAce`, etc.)
 
-### Presets by Player Count
+The `name` field is a unique, space-free identifier for each config (e.g. `'called-ace'`, `'jack-of-diamonds'`). It is stored in `SheepsheadConfig` alongside the other fixed values.
 
-| Players | Preset           | Hand | Blind | Picker         | Partner          | Cards Removed |
-| ------- | ---------------- | ---- | ----- | -------------- | ---------------- | ------------- |
-| 2       | Two-Handed       | 14   | 4     | —              | —                |               |
-| 3       | Three-Handed     | 10   | 2     | autonomous     | —                |               |
-| 4       | Black Queens     | 8    | 0     | —              | `qc-qs`          |               |
-| 4       | Queen & 7        | 8    | 0     | —              | `qc-7d`          |               |
-| 4       | Picker Alone     | 7    | 4     | autonomous     | —                |               |
-| 4       | Called Ace       | 7    | 2     | autonomous     | `called-ace`     | 7c, 7s        |
-| 5       | Called Ace       | 6    | 2     | autonomous     | `called-ace`     |               |
-| 5       | Jack of Diamonds | 6    | 2     | autonomous     | `jd`             |               |
-| 5       | Queen & Jack     | 6    | 0     | —              | `qs-jc`          | 7c, 7s        |
-| 5       | First Trick      | 6    | 2     | autonomous     | `first-trick`    |               |
-| 5       | Schiller         | 6    | 2     | left-of-dealer | `called-ace`     |               |
-| 6       | Jack of Clubs    | 5    | 2     | autonomous     | `jc`             |               |
-| 7       | Jack of Diamonds | 4    | 4     | autonomous     | `jd`             |               |
-| 7       | Partner Draft    | 4    | 4     | autonomous     | `left-of-picker` |               |
-| 8       | Black Queens     | 4    | 0     | —              | `qc-qs`          |               |
+### Presets
+
+| Players | Preset           | Name               | Hand | Blind | Picker         | Partner          | Cards Removed |
+| ------- | ---------------- | ------------------ | ---- | ----- | -------------- | ---------------- | ------------- |
+| 2       | Two-Handed       | `two-handed`       | 14   | 4     | —              | —                |               |
+| 3       | Three-Handed     | `three-handed`     | 10   | 2     | autonomous     | —                |               |
+| 4       | Black Queens     | `black-queens`     | 8    | 0     | —              | `qc-qs`          |               |
+| 4       | Queen & 7        | `queen-and-7`      | 8    | 0     | —              | `qc-7d`          |               |
+| 4       | Picker Alone     | `picker-alone`     | 7    | 4     | autonomous     | —                |               |
+| 4       | Called Ace       | `called-ace`       | 7    | 2     | autonomous     | `called-ace`     | 7c, 7s        |
+| 5       | Called Ace       | `called-ace`       | 6    | 2     | autonomous     | `called-ace`     |               |
+| 5       | Jack of Diamonds | `jack-of-diamonds` | 6    | 2     | autonomous     | `jd`             |               |
+| 5       | Queen & Jack     | `queen-and-jack`   | 6    | 0     | —              | `qs-jc`          | 7c, 7s        |
+| 5       | First Trick      | `first-trick`      | 6    | 2     | autonomous     | `first-trick`    |               |
+| 5       | Schiller         | `schiller`         | 6    | 2     | left-of-dealer | `called-ace`     |               |
+| 6       | Jack of Clubs    | `jack-of-clubs`    | 5    | 2     | autonomous     | `jc`             |               |
+| 7       | Jack of Diamonds | `jack-of-diamonds` | 4    | 4     | autonomous     | `jd`             |               |
+| 7       | Partner Draft    | `partner-draft`    | 4    | 4     | autonomous     | `left-of-picker` |               |
+| 8       | Black Queens     | `black-queens`     | 4    | 0     | —              | `qc-qs`          |               |
 
 ### Non-Picking
 
@@ -184,7 +203,7 @@ Each preset has:
 - Moster: All players are in opposition and the player with the most points is the only loser, unless that player takes every trick, in which case they are the winner.
 - Mittler: all players are in opposition and the player with the middle score wins. If there is no single middle value, the game is a wash.
 - Schneidster: All players are in opposition and the player with the closest to 30 points without going over wins. If two players tie for closest, the game is a wash.
-- Doubler: A new game is started, in which all points are worth double. Doublers do not stack multiplicitavely.
+- Doubler: A redeal occurs (within the same game session), in which all points are worth double. Doublers do not compound — multiple consecutive doublers still result in a ×2 multiplier. Each redeal's hands and blind are recorded in the store's `redeals` array.
 - Schwanzer: All players turn their cards up, and the player with the greatest calculated power is the only loser. If multiple players tie for greatest power, they one with the highest trump is the only loser.
   - Queens: 3 points, Jacks: 2 points, Diamonds: 1 point
 

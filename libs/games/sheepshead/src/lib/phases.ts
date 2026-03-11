@@ -9,8 +9,12 @@ import {
   PlayCardEvent,
   UserID,
   TrickState,
+  Card,
+  CardName,
+  CalledCard,
+  Suit,
 } from './types';
-import { TRUMP_ORDER } from './constants';
+import { DECK, TRUMP_ORDER } from './constants';
 import { createShuffledDeck, deal, hasNoAceFaceTrump } from './dealing';
 import { cardsEqual, isTrump, sumPoints } from './cards';
 import { evaluateTrick, legalPlays } from './tricks';
@@ -284,20 +288,96 @@ export function handleBury(
   ];
 }
 
+/** Get the suit of a called card. */
+function calledCardSuit(calledCard: CalledCard): Suit | null {
+  if (calledCard === 'alone') return null;
+  const card = DECK.find((c) => c.name === calledCard);
+  return card ? card.suit : null;
+}
+
+/** The three fail aces. */
+const FAIL_ACES: CardName[] = ['ac', 'as', 'ah'];
+
+/** The three fail 10s. */
+const FAIL_TENS: CardName[] = ['xc', 'xs', 'xh'];
+
+/** Fail suits (non-trump). */
+const FAIL_SUITS: Suit[] = ['clubs', 'spades', 'hearts'];
+
 /**
- * Call phase: picker calls an ace suit, partner determined (hidden).
+ * Call phase: picker calls a card (ace, 10, or alone), partner determined (hidden).
+ * Validates the call based on the picker's hand and buried cards.
  */
 export function handleCall(
   state: SheepsheadState,
   store: SheepsheadStore,
   event: CallAceEvent,
+  config: SheepsheadConfig,
 ): Result {
-  const calledSuit = event.payload.suit;
+  const calledCard = event.payload.card;
+  const pickerIdx = state.players.findIndex((p) => p.role === 'picker');
+  const pickerHand = state.players[pickerIdx].hand;
+  const buriedCards = state.buried ?? [];
 
-  // Determine partner (holder of called ace) — don't reveal yet
-  const partnerID = determinePartnerCalledAce(state, calledSuit);
+  // Going alone — no partner
+  if (calledCard === 'alone') {
+    const players = state.players.map((p) =>
+      p.role === 'picker' ? p : { ...p, role: 'opposition' as const },
+    );
+    const firstPlayerIdx = nextPlayerIndex(0, state.players.length);
+    return [
+      {
+        ...state,
+        players,
+        calledCard: 'alone',
+        phase: 'play',
+        activePlayer: players[firstPlayerIdx].userID,
+        trickNumber: 1,
+        tricks: [{ plays: [], winner: null }],
+      },
+      { ...store, calledCard: 'alone' },
+    ];
+  }
 
-  const players = state.players.map((p) => {
+  // Validate calling a 10: picker must hold all 3 fail aces
+  if (FAIL_TENS.includes(calledCard)) {
+    const hasAllFailAces = FAIL_ACES.every((a) => pickerHand.some((c) => c.name === a));
+    if (!hasAllFailAces) {
+      throw new Error('Cannot call a 10 without holding all 3 fail aces');
+    }
+  }
+
+  // Validate calling an ace: picker must not hold or have buried it (unless callOwnAce)
+  if (FAIL_ACES.includes(calledCard) && !config.callOwnAce) {
+    const pickerHasCard =
+      pickerHand.some((c) => c.name === calledCard) ||
+      buriedCards.some((c) => c.name === calledCard);
+    if (pickerHasCard) {
+      throw new Error(`Cannot call ${calledCard} — picker holds or buried it`);
+    }
+  }
+
+  // Handle hole card (unknown ace condition)
+  let hole: CardName | null = null;
+  let updatedPlayers = state.players;
+  if (event.payload.holeCard) {
+    hole = event.payload.holeCard;
+    // Remove hole card from picker's hand
+    updatedPlayers = state.players.map((p, i) => {
+      if (i === pickerIdx) {
+        return { ...p, hand: p.hand.filter((c) => c.name !== hole) };
+      }
+      return p;
+    });
+  }
+
+  // Determine partner — holder of the called card
+  const partnerID = determinePartnerCalledAce(
+    { ...state, players: updatedPlayers },
+    calledCard as CardName,
+  );
+
+  const players = updatedPlayers.map((p) => {
     if (p.role === 'picker') return p;
     if (partnerID !== null && p.userID === partnerID) {
       return { ...p, role: 'partner' as const };
@@ -311,14 +391,108 @@ export function handleCall(
     {
       ...state,
       players,
-      calledSuit,
+      calledCard,
+      hole,
       phase: 'play',
       activePlayer: players[firstPlayerIdx].userID,
       trickNumber: 1,
       tricks: [{ plays: [], winner: null }],
     },
-    { ...store, calledSuit },
+    { ...store, calledCard, hole },
   ];
+}
+
+/**
+ * Whether the called suit has been led in any completed trick.
+ */
+function calledSuitHasBeenLed(state: SheepsheadState): boolean {
+  if (!state.calledCard || state.calledCard === 'alone') return false;
+  const suit = calledCardSuit(state.calledCard);
+  if (!suit) return false;
+  // Check completed tricks (those with a winner)
+  return state.tricks.some(
+    (t) =>
+      t.plays.length > 0 &&
+      !isTrump(t.plays[0].card) &&
+      t.plays[0].card.suit === suit &&
+      t.winner !== null,
+  );
+}
+
+/**
+ * Whether the current trick is being led with the called suit.
+ */
+function currentTrickLeadsCalledSuit(state: SheepsheadState, currentTrick: TrickState): boolean {
+  if (!state.calledCard || state.calledCard === 'alone') return false;
+  if (currentTrick.plays.length === 0) return false;
+  const suit = calledCardSuit(state.calledCard);
+  if (!suit) return false;
+  const leadCard = currentTrick.plays[0].card;
+  return !isTrump(leadCard) && leadCard.suit === suit;
+}
+
+/**
+ * Apply called-ace constraints to narrow legal plays.
+ * Returns the filtered set of legal cards, or null if the hole card must be played instead.
+ */
+function applyCalledAceConstraints(
+  baseLegal: Card[],
+  state: SheepsheadState,
+  currentTrick: TrickState,
+  playerRole: string | null,
+  playerHand: Card[],
+): { legal: Card[]; playHoleCard: boolean } {
+  if (!state.calledCard || state.calledCard === 'alone') {
+    return { legal: baseLegal, playHoleCard: false };
+  }
+
+  const suit = calledCardSuit(state.calledCard);
+  if (!suit) return { legal: baseLegal, playHoleCard: false };
+
+  const isFirstLead =
+    !calledSuitHasBeenLed(state) && currentTrickLeadsCalledSuit(state, currentTrick);
+
+  if (isFirstLead) {
+    // Partner must play the called card
+    if (playerRole === 'partner') {
+      const calledCardInHand = baseLegal.find((c) => c.name === state.calledCard);
+      if (calledCardInHand) {
+        return { legal: [calledCardInHand], playHoleCard: false };
+      }
+    }
+
+    // Picker with hole card: must play the hole card
+    if (playerRole === 'picker' && state.hole) {
+      return { legal: [], playHoleCard: true };
+    }
+
+    // Picker calling a 10: must play the ace of the called suit
+    if (playerRole === 'picker' && FAIL_TENS.includes(state.calledCard)) {
+      const aceOfSuit = ('a' + suit[0]) as CardName;
+      const aceInHand = baseLegal.find((c) => c.name === aceOfSuit);
+      if (aceInHand) {
+        return { legal: [aceInHand], playHoleCard: false };
+      }
+    }
+  }
+
+  // Before the called suit has been led: picker cannot slough their last card of the called suit
+  if (playerRole === 'picker' && !calledSuitHasBeenLed(state) && !isFirstLead && !state.hole) {
+    const calledSuitCards = playerHand.filter((c) => !isTrump(c) && c.suit === suit);
+    if (calledSuitCards.length === 1) {
+      // Picker has exactly one card of the called suit — can't play it unless following suit
+      const lastCard = calledSuitCards[0];
+      const isFollowingSuit =
+        currentTrick.plays.length > 0 &&
+        !isTrump(currentTrick.plays[0].card) &&
+        currentTrick.plays[0].card.suit === suit;
+      if (!isFollowingSuit && baseLegal.length > 1) {
+        return { legal: baseLegal.filter((c) => !cardsEqual(c, lastCard)), playHoleCard: false };
+      }
+    }
+  }
+
+  return { legal: baseLegal, playHoleCard: false };
 }
 
 /**
@@ -334,16 +508,64 @@ export function handlePlayCard(
   const playerIdx = seatIndex(state, event.userID);
   const currentTrickIdx = state.tricks.length - 1;
   const currentTrick = state.tricks[currentTrickIdx];
+  const playerRole = state.players[playerIdx].role;
+
+  // Check if the hole card must be played instead
+  const baseLegal = legalPlays(state.players[playerIdx].hand, currentTrick);
+  const { legal, playHoleCard } =
+    config.partnerRule === 'called-ace'
+      ? applyCalledAceConstraints(
+          baseLegal,
+          state,
+          currentTrick,
+          playerRole,
+          state.players[playerIdx].hand,
+        )
+      : { legal: baseLegal, playHoleCard: false };
+
+  if (playHoleCard) {
+    // Picker must play the hole card — validate the event card matches
+    const holeCard = DECK.find((c) => c.name === state.hole);
+    if (!holeCard || card.name !== holeCard.name) {
+      throw new Error(`Must play hole card ${state.hole} when called suit is led`);
+    }
+
+    // Add hole card play to trick (face-down, no trick-taking power)
+    const updatedTrick: TrickState = {
+      ...currentTrick,
+      plays: [...currentTrick.plays, { player: event.userID, card: holeCard, isHoleCard: true }],
+    };
+
+    const tricks = state.tricks.map((t, i) => (i === currentTrickIdx ? updatedTrick : t));
+
+    // Clear hole from state
+    const newState = { ...state, tricks, hole: null };
+
+    // Check if trick is complete — continue with normal trick completion logic
+    if (updatedTrick.plays.length === state.players.length) {
+      return completeTrick(
+        newState,
+        store,
+        updatedTrick,
+        currentTrickIdx,
+        tricks,
+        state.players,
+        config,
+      );
+    }
+
+    const nextIdx = nextPlayerIndex(playerIdx, state.players.length);
+    return [{ ...newState, activePlayer: state.players[nextIdx].userID }, store];
+  }
 
   // Validate card is legal
-  const legal = legalPlays(state.players[playerIdx].hand, currentTrick);
   if (!legal.some((c) => cardsEqual(c, card))) {
     throw new Error(`Illegal play: ${card.name} by player ${event.userID}`);
   }
 
   // Remove card from player's hand
   const newHand = state.players[playerIdx].hand.filter((c) => !cardsEqual(c, card));
-  let players = state.players.map((p, i) => {
+  const players = state.players.map((p, i) => {
     if (i === playerIdx) return { ...p, hand: newHand };
     return p;
   });
@@ -358,88 +580,102 @@ export function handlePlayCard(
 
   // Check if trick is complete
   if (updatedTrick.plays.length === state.players.length) {
-    // Evaluate winner
-    const winnerID = evaluateTrick(updatedTrick);
-    const completedTrick: TrickState = { ...updatedTrick, winner: winnerID };
-
-    const trickCards = completedTrick.plays.map((p) => p.card);
-    const trickPoints = sumPoints(trickCards);
-
-    // Update winner's stats
-    players = players.map((p) => {
-      if (p.userID === winnerID) {
-        return {
-          ...p,
-          tricksWon: p.tricksWon + 1,
-          pointsWon: p.pointsWon + trickPoints,
-          cardsWon: [...p.cardsWon, ...trickCards],
-        };
-      }
-      return p;
-    });
-
-    // First-trick partner rule: winner of trick 1 becomes the partner
-    if (config.partnerRule === 'first-trick' && state.trickNumber === 1) {
-      players = players.map((p) => {
-        if (p.role === 'picker') return p;
-        if (p.userID === winnerID) return { ...p, role: 'partner' as const };
-        return { ...p, role: 'opposition' as const };
-      });
-    }
-
-    const completedTricks = tricks.map((t, i) => (i === currentTrickIdx ? completedTrick : t));
-
-    // Copy completed trick to store
-    const storeTricks = [...store.tricks, completedTrick];
-
-    // Check if all tricks played
-    const totalCards = players.reduce((sum, p) => sum + p.hand.length, 0);
-    if (totalCards === 0) {
-      // Leaster: last trick winner takes the blind points
-      let finalPlayers = players;
-      if (state.noPick === 'leaster' && state.blind && state.blind.length > 0) {
-        const blindPoints = sumPoints(state.blind);
-        finalPlayers = players.map((p) => {
-          if (p.userID === winnerID) {
-            return {
-              ...p,
-              pointsWon: p.pointsWon + blindPoints,
-              cardsWon: [...p.cardsWon, ...state.blind!],
-            };
-          }
-          return p;
-        });
-      }
-
-      // All tricks played — transition to score
-      return [
-        {
-          ...state,
-          players: finalPlayers,
-          tricks: completedTricks,
-          phase: 'score',
-          activePlayer: null,
-        },
-        { ...store, tricks: storeTricks },
-      ];
-    }
-
-    // Start new trick, winner leads
-    return [
-      {
-        ...state,
-        players,
-        tricks: [...completedTricks, { plays: [], winner: null }],
-        trickNumber: (state.trickNumber ?? 0) + 1,
-        activePlayer: winnerID,
-      },
-      { ...store, tricks: storeTricks },
-    ];
+    return completeTrick(state, store, updatedTrick, currentTrickIdx, tricks, players, config);
   }
 
   // Trick not complete — advance to next player
   const nextIdx = nextPlayerIndex(playerIdx, state.players.length);
   return [{ ...state, players, tricks, activePlayer: players[nextIdx].userID }, store];
+}
+
+/**
+ * Complete a trick: evaluate winner, update stats, check for game end.
+ */
+function completeTrick(
+  state: SheepsheadState,
+  store: SheepsheadStore,
+  updatedTrick: TrickState,
+  currentTrickIdx: number,
+  tricks: TrickState[],
+  currentPlayers: SheepsheadState['players'],
+  config: SheepsheadConfig,
+): Result {
+  const winnerID = evaluateTrick(updatedTrick);
+  const completedTrick: TrickState = { ...updatedTrick, winner: winnerID };
+
+  const trickCards = completedTrick.plays.map((p) => p.card);
+  const trickPoints = sumPoints(trickCards);
+
+  // Update winner's stats
+  let players = currentPlayers.map((p) => {
+    if (p.userID === winnerID) {
+      return {
+        ...p,
+        tricksWon: p.tricksWon + 1,
+        pointsWon: p.pointsWon + trickPoints,
+        cardsWon: [...p.cardsWon, ...trickCards],
+      };
+    }
+    return p;
+  });
+
+  // First-trick partner rule: winner of trick 1 becomes the partner
+  if (config.partnerRule === 'first-trick' && state.trickNumber === 1) {
+    players = players.map((p) => {
+      if (p.role === 'picker') return p;
+      if (p.userID === winnerID) return { ...p, role: 'partner' as const };
+      return { ...p, role: 'opposition' as const };
+    });
+  }
+
+  const completedTricks = tricks.map((t, i) => (i === currentTrickIdx ? completedTrick : t));
+
+  // Copy completed trick to store
+  const storeTricks = [...store.tricks, completedTrick];
+
+  // Check if all tricks played (account for hole card: picker may have fewer cards)
+  const totalCards = players.reduce((sum, p) => sum + p.hand.length, 0);
+  if (totalCards === 0) {
+    // Leaster: last trick winner takes the blind points
+    let finalPlayers = players;
+    if (state.noPick === 'leaster' && state.blind && state.blind.length > 0) {
+      const blindPoints = sumPoints(state.blind);
+      finalPlayers = players.map((p) => {
+        if (p.userID === winnerID) {
+          return {
+            ...p,
+            pointsWon: p.pointsWon + blindPoints,
+            cardsWon: [...p.cardsWon, ...state.blind!],
+          };
+        }
+        return p;
+      });
+    }
+
+    // All tricks played — transition to score
+    return [
+      {
+        ...state,
+        players: finalPlayers,
+        tricks: completedTricks,
+        phase: 'score',
+        activePlayer: null,
+      },
+      { ...store, tricks: storeTricks },
+    ];
+  }
+
+  // Start new trick, winner leads
+  return [
+    {
+      ...state,
+      players,
+      tricks: [...completedTricks, { plays: [], winner: null }],
+      trickNumber: (state.trickNumber ?? 0) + 1,
+      activePlayer: winnerID,
+    },
+    { ...store, tricks: storeTricks },
+  ];
 }
 
 /**

@@ -7,6 +7,7 @@ import {
   SheepsheadEventType,
   UserID,
   BlitzState,
+  CardName,
 } from './types';
 import {
   handleDeal,
@@ -74,6 +75,7 @@ export class SheepsheadPlugin
       typeof c['partnerOffTheHook'] === 'boolean' &&
       typeof c['noAceFaceTrump'] === 'boolean' &&
       (c['multiplicityLimit'] === null || typeof c['multiplicityLimit'] === 'number') &&
+      (c['callOwnAce'] === null || typeof c['callOwnAce'] === 'boolean') &&
       (c['cardsRemoved'] === undefined ||
         (Array.isArray(c['cardsRemoved']) &&
           c['cardsRemoved'].every((v: unknown) => typeof v === 'string')))
@@ -97,7 +99,8 @@ export class SheepsheadPlugin
       activePlayer: null,
       blind: [],
       buried: [],
-      calledSuit: null,
+      calledCard: null,
+      hole: null,
       tricks: [],
       crack: null,
       blitz: null,
@@ -111,7 +114,8 @@ export class SheepsheadPlugin
       players: userIDs.map((id) => ({ userID: id, role: null, won: null, scoreDelta: null })),
       blind: [],
       buried: [],
-      calledSuit: null,
+      calledCard: null,
+      hole: null,
       tricks: [],
       crack: null,
       blitz: null,
@@ -218,7 +222,7 @@ export class SheepsheadPlugin
       case 'bury':
         return handleBury(state, store, event, this.config);
       case 'call_ace':
-        return handleCall(state, store, event);
+        return handleCall(state, store, event, this.config);
       case 'play_card':
         return handlePlayCard(state, store, event, this.config);
       case 'game_scored':
@@ -269,13 +273,14 @@ export class SheepsheadPlugin
       : state.players.map((p) => {
           if (p.userID === userID) return p;
 
-          // Called-ace: hide partner role until the called ace has been played
+          // Called-ace: hide partner role until the called card has been played
           const hideRole =
             this.config?.partnerRule === 'called-ace' &&
             state.phase === 'play' &&
             p.role === 'partner' &&
-            state.calledSuit &&
-            !this.calledAcePlayed(state);
+            state.calledCard &&
+            state.calledCard !== 'alone' &&
+            !this.calledCardPlayed(state);
 
           return {
             ...p,
@@ -290,17 +295,46 @@ export class SheepsheadPlugin
     // Buried cards are only visible to the picker
     const buried = isPicker ? state.buried : null;
 
-    return { ...state, players, blind, buried };
+    // Hole card identity: only the picker knows during play;
+    // after scoring, everyone can see it.
+    const hole =
+      state.phase === 'score' || isPicker
+        ? state.hole
+        : state.hole
+          ? ('hidden' as unknown as CardName)
+          : null;
+
+    // Hide hole card identity in tricks from everyone except the trick-taker
+    const tricks = state.hole
+      ? state.tricks.map((t) => {
+          const holePlay = t.plays.find((p) => p.isHoleCard);
+          if (!holePlay) return t;
+          // During scoring, reveal to all
+          if (state.phase === 'score') return t;
+          // Trick-taker can see the hole card
+          if (t.winner === userID) return t;
+          // Everyone else sees a blank card
+          return {
+            ...t,
+            plays: t.plays.map((p) =>
+              p.isHoleCard
+                ? { ...p, card: { ...p.card, name: 'hidden' as CardName, points: 0 as any } }
+                : p,
+            ),
+          };
+        })
+      : state.tricks;
+
+    return { ...state, players, blind, buried, hole, tricks };
   }
 
   isGameOver(state: SheepsheadState): boolean {
     return state.phase === 'score';
   }
 
-  /** Check if the called ace has been played in any trick. */
-  private calledAcePlayed(state: SheepsheadState): boolean {
-    if (!state.calledSuit) return false;
-    const aceName = `a${state.calledSuit[0]}`;
-    return state.tricks.some((t) => t.plays.some((p) => p.card.name === aceName));
+  /** Check if the called card has been played in any trick. */
+  private calledCardPlayed(state: SheepsheadState): boolean {
+    if (!state.calledCard || state.calledCard === 'alone') return false;
+    return state.tricks.some((t) => t.plays.some((p) => p.card.name === state.calledCard));
   }
 }

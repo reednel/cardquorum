@@ -26,7 +26,8 @@ function makeState(players: PlayerState[]): SheepsheadState {
     activePlayer: players[0].userID,
     blind: [],
     buried: [],
-    calledSuit: null,
+    calledCard: null,
+    hole: null,
     tricks: [{ plays: [], winner: null }],
     crack: null,
     blitz: null,
@@ -54,12 +55,12 @@ describe('determinePartnerJD', () => {
 describe('determinePartnerCalledAce', () => {
   it('returns holder of called suit ace', () => {
     const state = makeState([makePlayer(1, [card('ac')]), makePlayer(2, [card('as')])]);
-    expect(determinePartnerCalledAce(state, 'spades')).toBe(2);
+    expect(determinePartnerCalledAce(state, 'as')).toBe(2);
   });
 
   it('returns null when no one holds the ace', () => {
     const state = makeState([makePlayer(1, [card('7c')]), makePlayer(2, [card('7s')])]);
-    expect(determinePartnerCalledAce(state, 'clubs')).toBeNull();
+    expect(determinePartnerCalledAce(state, 'ac')).toBeNull();
   });
 });
 

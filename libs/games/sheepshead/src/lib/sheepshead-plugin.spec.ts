@@ -17,6 +17,7 @@ function makeConfig(overrides: Partial<SheepsheadConfig> = {}): SheepsheadConfig
     partnerOffTheHook: false,
     noAceFaceTrump: false,
     multiplicityLimit: null,
+    callOwnAce: null,
     ...overrides,
   };
 }

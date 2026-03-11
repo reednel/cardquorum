@@ -13,10 +13,13 @@ export function evaluateTrick(trick: TrickState): number {
   const leadCard = trick.plays[0].card;
   const leadSuit = leadCard.suit;
 
+  // Find the first non-hole-card play as initial best
   let bestIndex = 0;
-  let bestPower = cardPower(leadCard, leadSuit);
+  let bestPower = trick.plays[0].isHoleCard ? Infinity : cardPower(leadCard, leadSuit);
 
   for (let i = 1; i < trick.plays.length; i++) {
+    // Hole cards have no trick-taking power
+    if (trick.plays[i].isHoleCard) continue;
     const power = cardPower(trick.plays[i].card, leadSuit);
     /* -1 means the card doesn't compete (wrong fail suit, not trump) */
     if (power === -1) continue;
