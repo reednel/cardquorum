@@ -203,12 +203,17 @@ export function handlePick(
           { ...store, noPick: 'schwanzer' },
         ];
       }
-      case 'doubler':
-        // Re-deal with doubled stakes for next game
+      case 'doubler': {
+        // Re-deal with doubled stakes — record the hands that were passed on
+        const redealRecord = {
+          hands: state.players.map((p) => ({ userID: p.userID, hand: [...p.hand] })),
+          blind: [...(state.blind ?? [])],
+        };
         return [
           { ...state, previousGameDouble: true },
-          { ...store, previousGameDouble: true },
+          { ...store, previousGameDouble: true, redeals: [...store.redeals, redealRecord] },
         ];
+      }
       default:
         // Re-deal needed
         return null;

@@ -128,6 +128,11 @@ export type PlayerStore = {
   scoreDelta: number | null;
 };
 
+export interface RedealRecord {
+  hands: { userID: UserID; hand: Card[] }[];
+  blind: Card[];
+}
+
 /** State within a single game session. */
 export interface SheepsheadStore {
   players: PlayerStore[];
@@ -147,6 +152,8 @@ export interface SheepsheadStore {
   previousGameDouble: boolean | null;
   /** How to proceed when nobody picks.  */
   noPick: NoPick | null;
+  /** Hands/blinds from previous deals when doubler caused a redeal. */
+  redeals: RedealRecord[];
 }
 
 export interface TrickState {

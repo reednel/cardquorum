@@ -117,6 +117,7 @@ export class SheepsheadPlugin
       blitz: null,
       previousGameDouble: null,
       noPick: null,
+      redeals: [],
     };
   }
 
@@ -209,6 +210,7 @@ export class SheepsheadPlugin
           freshState.previousGameDouble = true;
           const freshStore = this.createInitialStore(this.config, userIDs);
           freshStore.previousGameDouble = true;
+          freshStore.redeals = result[1].redeals;
           return handleDeal(freshState, freshStore, this.config);
         }
         return result;

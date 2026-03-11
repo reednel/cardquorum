@@ -75,6 +75,7 @@ function makeStore(playerCount = 3): SheepsheadStore {
     blitz: null,
     previousGameDouble: null,
     noPick: null,
+    redeals: [],
   };
 }
 
@@ -434,6 +435,7 @@ describe('handlePlayCard', () => {
       blitz: null,
       previousGameDouble: null,
       noPick: null,
+      redeals: [],
     };
     return { state, store };
   }
