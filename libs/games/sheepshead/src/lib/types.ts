@@ -100,8 +100,8 @@ export interface SheepsheadState {
   players: PlayerState[];
   /** Current phase of the game. */
   phase: GamePhase;
-  /** Current trick number (1-indexed). */
-  trickNumber: number | null;
+  /** Current trick number (0 = no tricks started, 1-indexed during play). */
+  trickNumber: number;
   /** UserID of whose turn it is (null during scoring). */
   activePlayer: UserID | null;
   /** Cards in the blind. */
@@ -139,6 +139,12 @@ export interface RedealRecord {
   hands: { userID: UserID; hand: Card[] }[];
   blind: Card[];
 }
+
+/** Discriminated result from the pick phase handler. */
+export type PickPhaseResult =
+  | { outcome: 'continue'; state: SheepsheadState; store: SheepsheadStore }
+  | { outcome: 'redeal' }
+  | { outcome: 'doubler-redeal'; redeals: RedealRecord[] };
 
 /** State within a single game session. */
 export interface SheepsheadStore {
@@ -203,9 +209,7 @@ export type SheepsheadEvent =
   | ReCrackEvent
   | BlitzEvent
   | PlayCardEvent
-  | TrickWonEvent
-  | GameScoredEvent
-  | GameOverEvent;
+  | GameScoredEvent;
 
 export interface DealEvent {
   type: 'deal';
@@ -255,25 +259,12 @@ export interface PlayCardEvent {
   payload: { card: Card };
 }
 
-export interface TrickWonEvent {
-  type: 'trick_won';
-  payload: { winner: UserID; points: number };
-}
-
 export interface GameScoredEvent {
   type: 'game_scored';
   payload: {
     scoreDeltas: number[];
     gotSchneidered: boolean;
     gotSchwarzed: boolean;
-  };
-}
-
-export interface GameOverEvent {
-  type: 'game_over';
-  payload: {
-    finalScores: number[];
-    winners: UserID[];
   };
 }
 

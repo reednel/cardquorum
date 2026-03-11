@@ -46,11 +46,11 @@ interface GamePlugin<TConfig, TState, TStore, TEvent extends GameEventBase> {
 
 **`createInitialState` / `createInitialStore`** — Build the blank game. State and store start empty; the first event (typically a "deal" or "start") populates them.
 
-**`getValidActions`** — Returns which event types a given player can perform right now. Used by the frontend to enable/disable UI controls and by the backend to reject invalid actions.
+**`getValidActions`** — Returns which event types a given player can perform right now. The engine passes config so the plugin stays stateless. Used by the frontend to enable/disable UI controls and by the backend to reject invalid actions.
 
-**`applyEvent`** — The core of the game. Takes current state + store + an event, returns new `[state, store]`. Must be pure — no mutation, no side effects. Throws on illegal moves.
+**`applyEvent`** — The core of the game. Takes config + current state + store + an event, returns new `[state, store]`. Must be pure — no mutation, no side effects, no instance state. Throws on illegal moves.
 
-**`getPlayerView`** — Derives a fog-of-war view for a specific player. Hides information they shouldn't see (other players' hands, face-down cards, hidden roles). The engine calls this before sending state to a client.
+**`getPlayerView`** — Derives a fog-of-war view for a specific player. Hides information they shouldn't see (other players' hands, face-down cards, hidden roles). The engine passes config and calls this before sending state to a client.
 
 **`isGameOver`** — Returns whether the game has ended. The engine checks this after each event to decide whether to finalize the session.
 

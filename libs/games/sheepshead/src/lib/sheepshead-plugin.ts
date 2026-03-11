@@ -24,6 +24,7 @@ function calledCardPlayed(state: SheepsheadState): boolean {
   return state.tricks.some((t) => t.plays.some((p) => p.card.name === state.calledCard));
 }
 
+/* TODO: make this useful (at time of wiring in user side) */
 function validateConfig(config: unknown): config is SheepsheadConfig {
   if (typeof config !== 'object' || config === null) return false;
 
@@ -194,24 +195,26 @@ function applyEvent(
     case 'pick':
     case 'pass': {
       const result = handlePick(state, store, event, config);
-      if (result === null) {
-        // Re-deal needed — create fresh state and deal
-        const userIDs = state.players.map((p) => p.userID);
-        const freshState = createInitialState(config, userIDs);
-        const freshStore = createInitialStore(config, userIDs);
-        return handleDeal(freshState, freshStore, config);
+      switch (result.outcome) {
+        case 'continue':
+          return [result.state, result.store];
+        case 'redeal': {
+          const userIDs = state.players.map((p) => p.userID);
+          const freshState = createInitialState(config, userIDs);
+          const freshStore = createInitialStore(config, userIDs);
+          return handleDeal(freshState, freshStore, config);
+        }
+        case 'doubler-redeal': {
+          const userIDs = state.players.map((p) => p.userID);
+          const freshState = createInitialState(config, userIDs);
+          freshState.previousGameDouble = true;
+          const freshStore = createInitialStore(config, userIDs);
+          freshStore.previousGameDouble = true;
+          freshStore.redeals = result.redeals;
+          return handleDeal(freshState, freshStore, config);
+        }
       }
-      // Doubler: state has previousGameDouble set, trigger re-deal with that flag preserved
-      if (result[0].previousGameDouble && result[0].phase !== 'score') {
-        const userIDs = state.players.map((p) => p.userID);
-        const freshState = createInitialState(config, userIDs);
-        freshState.previousGameDouble = true;
-        const freshStore = createInitialStore(config, userIDs);
-        freshStore.previousGameDouble = true;
-        freshStore.redeals = result[1].redeals;
-        return handleDeal(freshState, freshStore, config);
-      }
-      return result;
+      break; // unreachable, but satisfies no-fallthrough
     }
     case 'bury':
       return handleBury(state, store, event, config);
@@ -245,12 +248,8 @@ function applyEvent(
         { ...store, blitz },
       ];
     }
-    case 'trick_won':
-    case 'game_over':
-      // These are informational events, not state-changing
-      return [state, store];
     default:
-      return [state, store];
+      throw new Error(`Unknown event type: ${(event as { type: string }).type}`);
   }
 }
 

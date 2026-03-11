@@ -7,6 +7,7 @@ import {
   BuryEvent,
   CallAceEvent,
   PlayCardEvent,
+  PickPhaseResult,
   UserID,
   TrickState,
   Card,
@@ -122,14 +123,14 @@ export function handleDeal(
 
 /**
  * Pick phase: handle pick or pass decisions.
- * Returns null if all players pass and a re-deal is needed (engine handles re-creation).
+ * Returns a discriminated result indicating the outcome.
  */
 export function handlePick(
   state: SheepsheadState,
   store: SheepsheadStore,
   event: PickEvent | PassEvent,
   config: SheepsheadConfig,
-): Result | null {
+): PickPhaseResult {
   const playerIdx = seatIndex(state, event.userID);
 
   if (event.type === 'pick') {
@@ -146,7 +147,11 @@ export function handlePick(
       return p;
     });
 
-    return [{ ...state, players, phase: 'bury', activePlayer: event.userID }, store];
+    return {
+      outcome: 'continue',
+      state: { ...state, players, phase: 'bury', activePlayer: event.userID },
+      store,
+    };
   }
 
   // Pass: advance to next player
@@ -166,7 +171,11 @@ export function handlePick(
           }
           return p;
         });
-        return [{ ...state, players, phase: 'bury', activePlayer: event.userID }, store];
+        return {
+          outcome: 'continue',
+          state: { ...state, players, phase: 'bury', activePlayer: event.userID },
+          store,
+        };
       }
       case 'leaster':
       case 'moster':
@@ -177,8 +186,9 @@ export function handlePick(
           ...p,
           role: 'opposition' as const,
         }));
-        return [
-          {
+        return {
+          outcome: 'continue',
+          state: {
             ...state,
             players,
             phase: 'play',
@@ -187,8 +197,8 @@ export function handlePick(
             trickNumber: 1,
             tricks: [{ plays: [], winner: null }],
           },
-          { ...store, noPick: config.noPick },
-        ];
+          store: { ...store, noPick: config.noPick },
+        };
       }
       case 'schwanzer': {
         // Showdown — no tricks played, go straight to score
@@ -196,16 +206,17 @@ export function handlePick(
           ...p,
           role: 'opposition' as const,
         }));
-        return [
-          {
+        return {
+          outcome: 'continue',
+          state: {
             ...state,
             players,
             phase: 'score',
             noPick: 'schwanzer',
             activePlayer: null,
           },
-          { ...store, noPick: 'schwanzer' },
-        ];
+          store: { ...store, noPick: 'schwanzer' },
+        };
       }
       case 'doubler': {
         // Re-deal with doubled stakes — record the hands that were passed on
@@ -213,18 +224,21 @@ export function handlePick(
           hands: state.players.map((p) => ({ userID: p.userID, hand: [...p.hand] })),
           blind: [...(state.blind ?? [])],
         };
-        return [
-          { ...state, previousGameDouble: true },
-          { ...store, previousGameDouble: true, redeals: [...store.redeals, redealRecord] },
-        ];
+        return {
+          outcome: 'doubler-redeal',
+          redeals: [...store.redeals, redealRecord],
+        };
       }
       default:
-        // Re-deal needed
-        return null;
+        return { outcome: 'redeal' };
     }
   }
 
-  return [{ ...state, activePlayer: state.players[nextIdx].userID }, store];
+  return {
+    outcome: 'continue',
+    state: { ...state, activePlayer: state.players[nextIdx].userID },
+    store,
+  };
 }
 
 /**
@@ -671,7 +685,7 @@ function completeTrick(
       ...state,
       players,
       tricks: [...completedTricks, { plays: [], winner: null }],
-      trickNumber: (state.trickNumber ?? 0) + 1,
+      trickNumber: state.trickNumber + 1,
       activePlayer: winnerID,
     },
     { ...store, tricks: storeTricks },

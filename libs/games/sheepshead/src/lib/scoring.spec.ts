@@ -60,7 +60,7 @@ function makeState(overrides: Partial<SheepsheadState> = {}): SheepsheadState {
       },
     ],
     phase: 'score',
-    trickNumber: null,
+    trickNumber: 0,
     activePlayer: null,
     blind: [],
     buried: [],
