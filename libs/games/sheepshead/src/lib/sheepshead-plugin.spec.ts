@@ -187,15 +187,14 @@ describe('SheepsheadPlugin', () => {
       const userIDs: UserID[] = [1, 2, 3];
 
       let state = SheepsheadPlugin.createInitialState(config, userIDs);
-      let store = SheepsheadPlugin.createInitialStore(config, userIDs);
 
       // Deal
-      [state, store] = SheepsheadPlugin.applyEvent(config, state, store, { type: 'deal' });
+      state = SheepsheadPlugin.applyEvent(config, state, { type: 'deal' });
       expect(state.phase).toBe('pick');
       expect(state.activePlayer).toBe(2);
 
       // Player 2 picks
-      [state, store] = SheepsheadPlugin.applyEvent(config, state, store, {
+      state = SheepsheadPlugin.applyEvent(config, state, {
         type: 'pick',
         userID: 2,
       });
@@ -204,7 +203,7 @@ describe('SheepsheadPlugin', () => {
 
       // Player 2 buries 2 cards
       const toBury = state.players[1].hand.slice(0, 2);
-      [state, store] = SheepsheadPlugin.applyEvent(config, state, store, {
+      state = SheepsheadPlugin.applyEvent(config, state, {
         type: 'bury',
         userID: 2,
         payload: { cards: toBury },
@@ -226,7 +225,7 @@ describe('SheepsheadPlugin', () => {
         const legal = legalPlays(hand, currentTrick);
         const cardToPlay = legal[0];
 
-        [state, store] = SheepsheadPlugin.applyEvent(config, state, store, {
+        state = SheepsheadPlugin.applyEvent(config, state, {
           type: 'play_card',
           userID: activePlayer,
           payload: { card: cardToPlay },
@@ -240,7 +239,7 @@ describe('SheepsheadPlugin', () => {
       expect(state.phase).toBe('score');
 
       // Score
-      [state, store] = SheepsheadPlugin.applyEvent(config, state, store, {
+      state = SheepsheadPlugin.applyEvent(config, state, {
         type: 'game_scored',
         payload: { scoreDeltas: [], gotSchneidered: false, gotSchwarzed: false },
       });
@@ -257,7 +256,8 @@ describe('SheepsheadPlugin', () => {
       // Game should be over
       expect(SheepsheadPlugin.isGameOver(state)).toBe(true);
 
-      // Store should have final data
+      // Build store from final state
+      const store = SheepsheadPlugin.buildStore(config, state);
       expect(store.tricks.length).toBeGreaterThan(0);
       expect(store.blind.length).toBeGreaterThan(0);
     });

@@ -7,14 +7,14 @@ import {
   handleScore,
 } from './phases';
 import { DECK } from './constants';
-import { Card, PickPhaseResult, SheepsheadConfig, SheepsheadState, SheepsheadStore } from './types';
+import { Card, PickPhaseResult, SheepsheadConfig, SheepsheadState } from './types';
 
-/** Extract state/store from a PickPhaseResult, failing if outcome is not 'continue'. */
-function pickContinue(result: PickPhaseResult): [SheepsheadState, SheepsheadStore] {
+/** Extract state from a PickPhaseResult, failing if outcome is not 'continue'. */
+function pickContinue(result: PickPhaseResult): SheepsheadState {
   if (result.outcome !== 'continue') {
     throw new Error(`Expected pick outcome 'continue', got '${result.outcome}'`);
   }
-  return [result.state, result.store];
+  return result.state;
 }
 
 function card(name: string): Card {
@@ -66,26 +66,6 @@ function makeState(playerCount = 3): SheepsheadState {
     blitz: null,
     previousGameDouble: null,
     noPick: null,
-  };
-}
-
-function makeStore(playerCount = 3): SheepsheadStore {
-  return {
-    players: Array.from({ length: playerCount }, (_, i) => ({
-      userID: i + 1,
-      role: null,
-      won: null,
-      scoreDelta: null,
-    })),
-    blind: [],
-    buried: [],
-    calledCard: null,
-    hole: null,
-    tricks: [],
-    crack: null,
-    blitz: null,
-    previousGameDouble: null,
-    noPick: null,
     redeals: [],
   };
 }
@@ -93,27 +73,24 @@ function makeStore(playerCount = 3): SheepsheadStore {
 describe('handleDeal', () => {
   it('distributes cards to players and sets blind', () => {
     const config = makeConfig();
-    const [state, store] = handleDeal(makeState(), makeStore(), config);
+    const state = handleDeal(makeState(), config);
 
     expect(state.phase).toBe('pick');
     expect(state.blind).toHaveLength(config.blindSize);
     for (const p of state.players) {
       expect(p.hand).toHaveLength(config.handSize);
     }
-
-    // Store has blind copy
-    expect(store.blind).toHaveLength(config.blindSize);
   });
 
   it('sets activePlayer to player after dealer (index 1)', () => {
     const config = makeConfig();
-    const [state] = handleDeal(makeState(), makeStore(), config);
+    const state = handleDeal(makeState(), config);
     expect(state.activePlayer).toBe(2); // userID of index 1
   });
 
   it('all 32 cards accounted for', () => {
     const config = makeConfig();
-    const [state] = handleDeal(makeState(), makeStore(), config);
+    const state = handleDeal(makeState(), config);
     const allCards = [...(state.blind ?? []), ...state.players.flatMap((p) => p.hand)];
     expect(allCards).toHaveLength(32);
     expect(new Set(allCards.map((c) => c.name)).size).toBe(32);
@@ -128,7 +105,7 @@ describe('handleDeal', () => {
       partnerRule: 'qc-qs',
       noPick: null,
     });
-    const [state, store] = handleDeal(makeState(4), makeStore(4), config);
+    const state = handleDeal(makeState(4), config);
 
     expect(state.phase).toBe('play');
     expect(state.blind).toHaveLength(0);
@@ -149,7 +126,7 @@ describe('handleDeal', () => {
       partnerRule: 'called-ace',
       noPick: null,
     });
-    const [state] = handleDeal(makeState(5), makeStore(5), config);
+    const state = handleDeal(makeState(5), config);
 
     expect(state.phase).toBe('bury');
     // Player at index 1 (left of dealer) should be picker
@@ -163,11 +140,11 @@ describe('handleDeal', () => {
 describe('handlePick', () => {
   it('pick: sets player as picker and adds blind to hand', () => {
     const config = makeConfig();
-    const [dealt, dealStore] = handleDeal(makeState(), makeStore(), config);
+    const dealt = handleDeal(makeState(), config);
     const blindSize = dealt.blind?.length ?? 0;
     const handSize = dealt.players[1].hand.length;
 
-    const [state] = pickContinue(handlePick(dealt, dealStore, { type: 'pick', userID: 2 }, config));
+    const state = pickContinue(handlePick(dealt, { type: 'pick', userID: 2 }, config));
 
     expect(state.players[1].role).toBe('picker');
     expect(state.players[1].hand).toHaveLength(handSize + blindSize);
@@ -176,47 +153,46 @@ describe('handlePick', () => {
 
   it('pass: advances activePlayer to next', () => {
     const config = makeConfig();
-    const [dealt, dealStore] = handleDeal(makeState(), makeStore(), config);
+    const dealt = handleDeal(makeState(), config);
 
-    const [state] = pickContinue(handlePick(dealt, dealStore, { type: 'pass', userID: 2 }, config));
+    const state = pickContinue(handlePick(dealt, { type: 'pass', userID: 2 }, config));
 
     expect(state.activePlayer).toBe(3); // next player
   });
 
   it('all pass with leaster noPick: transitions to play as leaster', () => {
     const config = makeConfig({ noPick: 'leaster' });
-    const [dealt, dealStore] = handleDeal(makeState(), makeStore(), config);
+    const dealt = handleDeal(makeState(), config);
 
     // All 3 players pass: active starts at 2, pass→3, pass→1, pass→back to 2 (full circle)
-    let [s, st] = pickContinue(handlePick(dealt, dealStore, { type: 'pass', userID: 2 }, config));
-    [s, st] = pickContinue(handlePick(s, st, { type: 'pass', userID: 3 }, config));
+    let s = pickContinue(handlePick(dealt, { type: 'pass', userID: 2 }, config));
+    s = pickContinue(handlePick(s, { type: 'pass', userID: 3 }, config));
     // Player 1 is last — passing completes the circle
-    const [state, store] = pickContinue(handlePick(s, st, { type: 'pass', userID: 1 }, config));
+    const state = pickContinue(handlePick(s, { type: 'pass', userID: 1 }, config));
 
     expect(state.phase).toBe('play');
     expect(state.noPick).toBe('leaster');
-    expect(store.noPick).toBe('leaster');
   });
 
   it('all pass with null noPick: signals redeal', () => {
     const config = makeConfig({ noPick: null });
-    const [dealt, dealStore] = handleDeal(makeState(), makeStore(), config);
+    const dealt = handleDeal(makeState(), config);
 
-    let [s, st] = pickContinue(handlePick(dealt, dealStore, { type: 'pass', userID: 2 }, config));
-    [s, st] = pickContinue(handlePick(s, st, { type: 'pass', userID: 3 }, config));
-    const result = handlePick(s, st, { type: 'pass', userID: 1 }, config);
+    let s = pickContinue(handlePick(dealt, { type: 'pass', userID: 2 }, config));
+    s = pickContinue(handlePick(s, { type: 'pass', userID: 3 }, config));
+    const result = handlePick(s, { type: 'pass', userID: 1 }, config);
 
     expect(result.outcome).toBe('redeal');
   });
 
   it('all pass with forced-pick: last player is forced to pick', () => {
     const config = makeConfig({ noPick: 'forced-pick' });
-    const [dealt, dealStore] = handleDeal(makeState(), makeStore(), config);
+    const dealt = handleDeal(makeState(), config);
 
-    let [s, st] = pickContinue(handlePick(dealt, dealStore, { type: 'pass', userID: 2 }, config));
-    [s, st] = pickContinue(handlePick(s, st, { type: 'pass', userID: 3 }, config));
+    let s = pickContinue(handlePick(dealt, { type: 'pass', userID: 2 }, config));
+    s = pickContinue(handlePick(s, { type: 'pass', userID: 3 }, config));
     // Player 1 is last — should be forced to pick
-    const [state] = pickContinue(handlePick(s, st, { type: 'pass', userID: 1 }, config));
+    const state = pickContinue(handlePick(s, { type: 'pass', userID: 1 }, config));
 
     expect(state.phase).toBe('bury');
     expect(state.players[0].role).toBe('picker');
@@ -229,40 +205,38 @@ describe('handlePick', () => {
     'all pass with %s noPick: transitions to play with all opposition',
     (noPick) => {
       const config = makeConfig({ noPick });
-      const [dealt, dealStore] = handleDeal(makeState(), makeStore(), config);
+      const dealt = handleDeal(makeState(), config);
 
-      let [s, st] = pickContinue(handlePick(dealt, dealStore, { type: 'pass', userID: 2 }, config));
-      [s, st] = pickContinue(handlePick(s, st, { type: 'pass', userID: 3 }, config));
-      const [state, store] = pickContinue(handlePick(s, st, { type: 'pass', userID: 1 }, config));
+      let s = pickContinue(handlePick(dealt, { type: 'pass', userID: 2 }, config));
+      s = pickContinue(handlePick(s, { type: 'pass', userID: 3 }, config));
+      const state = pickContinue(handlePick(s, { type: 'pass', userID: 1 }, config));
 
       expect(state.phase).toBe('play');
       expect(state.noPick).toBe(noPick);
-      expect(store.noPick).toBe(noPick);
       expect(state.players.every((p) => p.role === 'opposition')).toBe(true);
     },
   );
 
   it('all pass with schwanzer: transitions to score (showdown)', () => {
     const config = makeConfig({ noPick: 'schwanzer' });
-    const [dealt, dealStore] = handleDeal(makeState(), makeStore(), config);
+    const dealt = handleDeal(makeState(), config);
 
-    let [s, st] = pickContinue(handlePick(dealt, dealStore, { type: 'pass', userID: 2 }, config));
-    [s, st] = pickContinue(handlePick(s, st, { type: 'pass', userID: 3 }, config));
-    const [state, store] = pickContinue(handlePick(s, st, { type: 'pass', userID: 1 }, config));
+    let s = pickContinue(handlePick(dealt, { type: 'pass', userID: 2 }, config));
+    s = pickContinue(handlePick(s, { type: 'pass', userID: 3 }, config));
+    const state = pickContinue(handlePick(s, { type: 'pass', userID: 1 }, config));
 
     expect(state.phase).toBe('score');
     expect(state.noPick).toBe('schwanzer');
-    expect(store.noPick).toBe('schwanzer');
     expect(state.players.every((p) => p.role === 'opposition')).toBe(true);
   });
 
   it('all pass with doubler: signals doubler-redeal with redeals recorded', () => {
     const config = makeConfig({ noPick: 'doubler' });
-    const [dealt, dealStore] = handleDeal(makeState(), makeStore(), config);
+    const dealt = handleDeal(makeState(), config);
 
-    let [s, st] = pickContinue(handlePick(dealt, dealStore, { type: 'pass', userID: 2 }, config));
-    [s, st] = pickContinue(handlePick(s, st, { type: 'pass', userID: 3 }, config));
-    const result = handlePick(s, st, { type: 'pass', userID: 1 }, config);
+    let s = pickContinue(handlePick(dealt, { type: 'pass', userID: 2 }, config));
+    s = pickContinue(handlePick(s, { type: 'pass', userID: 3 }, config));
+    const result = handlePick(s, { type: 'pass', userID: 1 }, config);
 
     expect(result.outcome).toBe('doubler-redeal');
     if (result.outcome === 'doubler-redeal') {
@@ -276,17 +250,14 @@ describe('handlePick', () => {
 describe('handleBury', () => {
   it('removes buried cards from picker hand', () => {
     const config = makeConfig();
-    const [dealt, dealStore] = handleDeal(makeState(), makeStore(), config);
-    const [picked, pickStore] = pickContinue(
-      handlePick(dealt, dealStore, { type: 'pick', userID: 2 }, config),
-    );
+    const dealt = handleDeal(makeState(), config);
+    const picked = pickContinue(handlePick(dealt, { type: 'pick', userID: 2 }, config));
 
     const handBefore = picked.players[1].hand;
     const toBury = handBefore.slice(0, 2);
 
-    const [state, store] = handleBury(
+    const state = handleBury(
       picked,
-      pickStore,
       {
         type: 'bury',
         userID: 2,
@@ -297,20 +268,16 @@ describe('handleBury', () => {
 
     expect(state.players[1].hand).toHaveLength(handBefore.length - 2);
     expect(state.buried).toEqual(toBury);
-    expect(store.buried).toEqual(toBury);
   });
 
   it('transitions to call phase for called-ace rule', () => {
     const config = makeConfig({ partnerRule: 'called-ace' });
-    const [dealt, dealStore] = handleDeal(makeState(), makeStore(), config);
-    const [picked, pickStore] = pickContinue(
-      handlePick(dealt, dealStore, { type: 'pick', userID: 2 }, config),
-    );
+    const dealt = handleDeal(makeState(), config);
+    const picked = pickContinue(handlePick(dealt, { type: 'pick', userID: 2 }, config));
 
     const toBury = picked.players[1].hand.slice(0, 2);
-    const [state] = handleBury(
+    const state = handleBury(
       picked,
-      pickStore,
       {
         type: 'bury',
         userID: 2,
@@ -324,15 +291,12 @@ describe('handleBury', () => {
 
   it('transitions to play phase for non-called-ace rules', () => {
     const config = makeConfig({ partnerRule: 'jd' });
-    const [dealt, dealStore] = handleDeal(makeState(), makeStore(), config);
-    const [picked, pickStore] = pickContinue(
-      handlePick(dealt, dealStore, { type: 'pick', userID: 2 }, config),
-    );
+    const dealt = handleDeal(makeState(), config);
+    const picked = pickContinue(handlePick(dealt, { type: 'pick', userID: 2 }, config));
 
     const toBury = picked.players[1].hand.slice(0, 2);
-    const [state] = handleBury(
+    const state = handleBury(
       picked,
-      pickStore,
       {
         type: 'bury',
         userID: 2,
@@ -350,10 +314,8 @@ describe('handleBury', () => {
 describe('handleCall', () => {
   it('sets calledCard and assigns roles', () => {
     const config = makeConfig({ partnerRule: 'called-ace', callOwnAce: false });
-    const [dealt, dealStore] = handleDeal(makeState(), makeStore(), config);
-    const [picked, pickStore] = pickContinue(
-      handlePick(dealt, dealStore, { type: 'pick', userID: 2 }, config),
-    );
+    const dealt = handleDeal(makeState(), config);
+    const picked = pickContinue(handlePick(dealt, { type: 'pick', userID: 2 }, config));
 
     // Find a fail ace the picker does NOT hold so the call is valid
     const pickerHand = picked.players[1].hand;
@@ -363,9 +325,8 @@ describe('handleCall', () => {
     const calledCard = callableAce ?? 'xc';
 
     const toBury = picked.players[1].hand.slice(0, 2);
-    const [buried, buryStore] = handleBury(
+    const buried = handleBury(
       picked,
-      pickStore,
       {
         type: 'bury',
         userID: 2,
@@ -374,9 +335,8 @@ describe('handleCall', () => {
       config,
     );
 
-    const [state, store] = handleCall(
+    const state = handleCall(
       buried,
-      buryStore,
       {
         type: 'call_ace',
         userID: 2,
@@ -386,7 +346,6 @@ describe('handleCall', () => {
     );
 
     expect(state.calledCard).toBe(calledCard);
-    expect(store.calledCard).toBe(calledCard);
     expect(state.phase).toBe('play');
     // Picker should still be picker
     expect(state.players[1].role).toBe('picker');
@@ -396,21 +355,17 @@ describe('handleCall', () => {
 
   it('allows going alone', () => {
     const config = makeConfig({ partnerRule: 'called-ace', callOwnAce: false });
-    const [dealt, dealStore] = handleDeal(makeState(), makeStore(), config);
-    const [picked, pickStore] = pickContinue(
-      handlePick(dealt, dealStore, { type: 'pick', userID: 2 }, config),
-    );
+    const dealt = handleDeal(makeState(), config);
+    const picked = pickContinue(handlePick(dealt, { type: 'pick', userID: 2 }, config));
     const toBury = picked.players[1].hand.slice(0, 2);
-    const [buried, buryStore] = handleBury(
+    const buried = handleBury(
       picked,
-      pickStore,
       { type: 'bury', userID: 2, payload: { cards: toBury } },
       config,
     );
 
-    const [state, store] = handleCall(
+    const state = handleCall(
       buried,
-      buryStore,
       {
         type: 'call_ace',
         userID: 2,
@@ -428,7 +383,6 @@ describe('handleCall', () => {
 describe('handlePlayCard', () => {
   /** Helper: set up a game at the play phase with known hands. */
   function setupPlayPhase() {
-    // 3-player game with deterministic hands
     const state: SheepsheadState = {
       players: [
         {
@@ -471,34 +425,17 @@ describe('handlePlayCard', () => {
       blitz: null,
       previousGameDouble: null,
       noPick: null,
-    };
-    const store: SheepsheadStore = {
-      players: [
-        { userID: 1, role: null, won: null, scoreDelta: null },
-        { userID: 2, role: null, won: null, scoreDelta: null },
-        { userID: 3, role: null, won: null, scoreDelta: null },
-      ],
-      blind: [],
-      buried: [],
-      calledCard: null,
-      hole: null,
-      tricks: [],
-      crack: null,
-      blitz: null,
-      previousGameDouble: null,
-      noPick: null,
       redeals: [],
     };
-    return { state, store };
+    return state;
   }
 
   it('removes card from hand and adds to trick', () => {
-    const { state, store } = setupPlayPhase();
+    const state = setupPlayPhase();
     const config = makeConfig();
 
-    const [newState] = handlePlayCard(
+    const newState = handlePlayCard(
       state,
-      store,
       {
         type: 'play_card',
         userID: 1,
@@ -513,14 +450,13 @@ describe('handlePlayCard', () => {
   });
 
   it('throws on illegal play', () => {
-    const { state, store } = setupPlayPhase();
+    const state = setupPlayPhase();
     const config = makeConfig();
 
     // Player 1 doesn't have queen of spades
     expect(() =>
       handlePlayCard(
         state,
-        store,
         {
           type: 'play_card',
           userID: 1,
@@ -532,13 +468,12 @@ describe('handlePlayCard', () => {
   });
 
   it('completes trick and determines winner', () => {
-    const { state, store } = setupPlayPhase();
+    const state = setupPlayPhase();
     const config = makeConfig();
 
     // Player 1 leads Ace of Clubs
-    let [s, st] = handlePlayCard(
+    let s = handlePlayCard(
       state,
-      store,
       {
         type: 'play_card',
         userID: 1,
@@ -548,9 +483,8 @@ describe('handlePlayCard', () => {
     );
 
     // Player 2 plays Queen of Clubs (trump — wins)
-    [s, st] = handlePlayCard(
+    s = handlePlayCard(
       s,
-      st,
       {
         type: 'play_card',
         userID: 2,
@@ -560,9 +494,8 @@ describe('handlePlayCard', () => {
     );
 
     // Player 3 plays Ace of Spades (off-suit, doesn't compete)
-    [s, st] = handlePlayCard(
+    s = handlePlayCard(
       s,
-      st,
       {
         type: 'play_card',
         userID: 3,
@@ -572,8 +505,7 @@ describe('handlePlayCard', () => {
     );
 
     // Trick complete — player 2 (queen of clubs) wins
-    expect(st.tricks).toHaveLength(1);
-    expect(st.tricks[0].winner).toBe(2);
+    expect(s.tricks[0].winner).toBe(2);
     expect(s.players[1].tricksWon).toBe(1);
     expect(s.players[1].pointsWon).toBe(25); // ac(11) + qc(3) + as(11)
   });
@@ -622,28 +554,17 @@ describe('handlePlayCard', () => {
       blitz: null,
       previousGameDouble: null,
       noPick: null,
+      redeals: [],
     };
-    const store = makeStore();
 
     // Player 1 leads Ac, Player 2 plays Qc (trump wins), Player 3 plays As
-    let [s, st] = handlePlayCard(
+    let s = handlePlayCard(
       state,
-      store,
       { type: 'play_card', userID: 1, payload: { card: card('ac') } },
       config,
     );
-    [s, st] = handlePlayCard(
-      s,
-      st,
-      { type: 'play_card', userID: 2, payload: { card: card('qc') } },
-      config,
-    );
-    [s, st] = handlePlayCard(
-      s,
-      st,
-      { type: 'play_card', userID: 3, payload: { card: card('as') } },
-      config,
-    );
+    s = handlePlayCard(s, { type: 'play_card', userID: 2, payload: { card: card('qc') } }, config);
+    s = handlePlayCard(s, { type: 'play_card', userID: 3, payload: { card: card('as') } }, config);
 
     // Player 2 (picker) won trick 1 — they can't be their own partner
     // Actually picker won, so winner = picker. Let's check: the picker should stay picker,
@@ -697,29 +618,18 @@ describe('handlePlayCard', () => {
       blitz: null,
       previousGameDouble: null,
       noPick: null,
+      redeals: [],
     };
-    const store = makeStore();
 
     // Player 1 leads Ac (clubs), Player 2 plays 7c (must follow clubs), Player 3 plays As (off-suit)
     // Ac wins within clubs suit
-    let [s, st] = handlePlayCard(
+    let s = handlePlayCard(
       state,
-      store,
       { type: 'play_card', userID: 1, payload: { card: card('ac') } },
       config,
     );
-    [s, st] = handlePlayCard(
-      s,
-      st,
-      { type: 'play_card', userID: 2, payload: { card: card('7c') } },
-      config,
-    );
-    [s, st] = handlePlayCard(
-      s,
-      st,
-      { type: 'play_card', userID: 3, payload: { card: card('as') } },
-      config,
-    );
+    s = handlePlayCard(s, { type: 'play_card', userID: 2, payload: { card: card('7c') } }, config);
+    s = handlePlayCard(s, { type: 'play_card', userID: 3, payload: { card: card('as') } }, config);
 
     // Player 1 won trick 1 — becomes partner
     expect(s.players[0].role).toBe('partner');
@@ -772,28 +682,17 @@ describe('handlePlayCard', () => {
       blitz: null,
       previousGameDouble: null,
       noPick: 'leaster',
+      redeals: [],
     };
-    const store = makeStore();
 
     // Qc (trump) wins
-    let [s, st] = handlePlayCard(
+    let s = handlePlayCard(
       state,
-      store,
       { type: 'play_card', userID: 1, payload: { card: card('ac') } },
       config,
     );
-    [s, st] = handlePlayCard(
-      s,
-      st,
-      { type: 'play_card', userID: 2, payload: { card: card('qc') } },
-      config,
-    );
-    [s, st] = handlePlayCard(
-      s,
-      st,
-      { type: 'play_card', userID: 3, payload: { card: card('as') } },
-      config,
-    );
+    s = handlePlayCard(s, { type: 'play_card', userID: 2, payload: { card: card('qc') } }, config);
+    s = handlePlayCard(s, { type: 'play_card', userID: 3, payload: { card: card('as') } }, config);
 
     // Player 2 won the last (only) trick — should get blind points too
     expect(s.phase).toBe('score');
@@ -847,12 +746,11 @@ describe('handlePlayCard', () => {
       blitz: null,
       previousGameDouble: null,
       noPick: null,
+      redeals: [],
     };
-    const store = makeStore();
 
-    let [s, st] = handlePlayCard(
+    let s = handlePlayCard(
       state,
-      store,
       {
         type: 'play_card',
         userID: 1,
@@ -860,9 +758,8 @@ describe('handlePlayCard', () => {
       },
       config,
     );
-    [s, st] = handlePlayCard(
+    s = handlePlayCard(
       s,
-      st,
       {
         type: 'play_card',
         userID: 2,
@@ -870,9 +767,8 @@ describe('handlePlayCard', () => {
       },
       config,
     );
-    [s, st] = handlePlayCard(
+    s = handlePlayCard(
       s,
-      st,
       {
         type: 'play_card',
         userID: 3,
@@ -953,20 +849,14 @@ describe('handleScore', () => {
       blitz: null,
       previousGameDouble: null,
       noPick: null,
+      redeals: [],
     };
-    const store = makeStore();
 
-    const [scored, scoredStore] = handleScore(state, store, config);
+    const scored = handleScore(state, config);
 
     // All players should have score deltas
     for (const p of scored.players) {
       expect(p.scoreDelta).not.toBeNull();
-    }
-
-    // Store should have roles and won status
-    for (const p of scoredStore.players) {
-      expect(p.scoreDelta).not.toBeNull();
-      expect(p.won).not.toBeNull();
     }
   });
 
@@ -1030,10 +920,10 @@ describe('handleScore', () => {
       blitz: null,
       previousGameDouble: null,
       noPick: null,
+      redeals: [],
     };
-    const store = makeStore();
 
-    const [scored] = handleScore(state, store, config);
+    const scored = handleScore(state, config);
     // Picker (player 2) should have positive scoreDelta
     expect(scored.players[1].scoreDelta).toBeGreaterThan(0);
     // Opposition should have negative
@@ -1068,13 +958,14 @@ describe('handleScore', () => {
       blitz: null,
       previousGameDouble: null,
       noPick,
+      redeals: [],
     };
   }
 
   it('moster: player with most points is the only loser', () => {
     const config = makeConfig({ noPick: 'moster' });
     const state = makeNoPickScoreState([40, 50, 30], [2, 3, 2], 'moster');
-    const [scored] = handleScore(state, makeStore(), config);
+    const scored = handleScore(state, config);
 
     // Player 2 (50 pts) is the loser
     expect(scored.players[1].scoreDelta).toBeLessThan(0);
@@ -1089,12 +980,12 @@ describe('handleScore', () => {
   it('mittler: player with middle score wins', () => {
     const config = makeConfig({ noPick: 'mittler' });
     const state = makeNoPickScoreState([20, 50, 50], [1, 2, 2], 'mittler');
-    const [scored] = handleScore(state, makeStore(), config);
+    const scored = handleScore(state, config);
 
     // Player 1 (20 pts) is middle of 3 sorted values [20, 50, 50]
     // Actually with duplicates at 50, the middle is 50. Let me use distinct values.
     const state2 = makeNoPickScoreState([20, 70, 30], [1, 3, 2], 'mittler');
-    const [scored2] = handleScore(state2, makeStore(), config);
+    const scored2 = handleScore(state2, config);
 
     // Sorted: 20, 30, 70 → middle is 30 → player 3 wins
     expect(scored2.players[2].scoreDelta).toBeGreaterThan(0);
@@ -1113,7 +1004,7 @@ describe('handleScore', () => {
       partnerRule: null,
     });
     const state = makeNoPickScoreState([10, 20, 30, 60], [1, 1, 1, 1], 'mittler');
-    const [scored] = handleScore(state, makeStore(4), config);
+    const scored = handleScore(state, config);
 
     // Even number of players — no single middle — all deltas 0 (wash)
     for (const p of scored.players) {
@@ -1124,7 +1015,7 @@ describe('handleScore', () => {
   it('schneidster: closest to 30 without going over wins', () => {
     const config = makeConfig({ noPick: 'schneidster' });
     const state = makeNoPickScoreState([25, 35, 60], [2, 2, 2], 'schneidster');
-    const [scored] = handleScore(state, makeStore(), config);
+    const scored = handleScore(state, config);
 
     // Player 1 (25 pts) is closest to 30 without going over
     expect(scored.players[0].scoreDelta).toBeGreaterThan(0);
@@ -1136,7 +1027,7 @@ describe('handleScore', () => {
   it('schneidster: wash when two players tie for closest', () => {
     const config = makeConfig({ noPick: 'schneidster' });
     const state = makeNoPickScoreState([25, 25, 70], [2, 2, 2], 'schneidster');
-    const [scored] = handleScore(state, makeStore(), config);
+    const scored = handleScore(state, config);
 
     // Tie — wash
     for (const p of scored.players) {
@@ -1148,7 +1039,7 @@ describe('handleScore', () => {
     const config = makeConfig({ noPick: 'moster' });
     // Player 2 took all tricks (all 120 points, all 7 tricks)
     const state = makeNoPickScoreState([0, 120, 0], [0, 7, 0], 'moster');
-    const [scored] = handleScore(state, makeStore(), config);
+    const scored = handleScore(state, config);
 
     // Player 2 took every trick — they win
     expect(scored.players[1].scoreDelta).toBeGreaterThan(0);
@@ -1197,7 +1088,7 @@ describe('handleScore', () => {
         },
       ],
     };
-    const [scored] = handleScore(state, makeStore(), config);
+    const scored = handleScore(state, config);
 
     // Player 1 (6 power) loses
     expect(scored.players[0].scoreDelta).toBeLessThan(0);
@@ -1245,7 +1136,7 @@ describe('handleScore', () => {
         },
       ],
     };
-    const [scored] = handleScore(state, makeStore(), config);
+    const scored = handleScore(state, config);
 
     // Player 1 has qs (index 1 in TRUMP_ORDER) — higher than qh (index 2)
     // Player 1 loses the tiebreaker
@@ -1358,8 +1249,9 @@ describe('handleScore', () => {
       blitz: null,
       previousGameDouble: null,
       noPick: null,
+      redeals: [],
     };
-    const [scored] = handleScore(state, makeStore(4), config);
+    const scored = handleScore(state, config);
 
     // Partner should have 0 delta (off the hook)
     expect(scored.players[1].scoreDelta).toBe(0);

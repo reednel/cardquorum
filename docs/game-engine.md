@@ -34,25 +34,27 @@ interface GamePlugin<TConfig, TState, TStore, TEvent extends GameEventBase> {
 
   validateConfig(config: unknown): config is TConfig;
   createInitialState(config: TConfig, userIDs: number[]): TState;
-  createInitialStore(config: TConfig, userIDs: number[]): TStore;
   getValidActions(config: TConfig, state: TState, userID: number): TEvent['type'][];
-  applyEvent(config: TConfig, state: TState, store: TStore, event: TEvent): [TState, TStore];
+  applyEvent(config: TConfig, state: TState, event: TEvent): TState;
   getPlayerView(config: TConfig, state: TState, userID: number): Partial<TState>;
   isGameOver(state: TState): boolean;
+  buildStore(config: TConfig, state: TState): TStore;
 }
 ```
 
 **`validateConfig`** — Type guard. Validates an unknown blob (from the client or DB) into a typed config. Called before session creation.
 
-**`createInitialState` / `createInitialStore`** — Build the blank game. State and store start empty; the first event (typically a "deal" or "start") populates them.
+**`createInitialState`** — Builds the blank game state. State starts empty; the first event (typically a "deal" or "start") populates it.
 
 **`getValidActions`** — Returns which event types a given player can perform right now. The engine passes config so the plugin stays stateless. Used by the frontend to enable/disable UI controls and by the backend to reject invalid actions.
 
-**`applyEvent`** — The core of the game. Takes config + current state + store + an event, returns new `[state, store]`. Must be pure — no mutation, no side effects, no instance state. Throws on illegal moves.
+**`applyEvent`** — The core of the game. Takes config + current state + an event, returns the new state. Must be pure — no mutation, no side effects, no instance state. Throws on illegal moves.
 
 **`getPlayerView`** — Derives a fog-of-war view for a specific player. Hides information they shouldn't see (other players' hands, face-down cards, hidden roles). The engine passes config and calls this before sending state to a client.
 
 **`isGameOver`** — Returns whether the game has ended. The engine checks this after each event to decide whether to finalize the session.
+
+**`buildStore`** — Constructs the permanent store record from a state snapshot. Called by the engine after the final `applyEvent` (when `isGameOver` returns true), or when a game is terminated early. This deferred construction means store data doesn't need to be maintained incrementally during play.
 
 ### Events
 
@@ -74,12 +76,12 @@ Each game defines a union of specific event types. The `type` field drives dispa
 
 A game session maps to one row in `game_sessions`:
 
-| Column      | Content                                 |
-| ----------- | --------------------------------------- |
-| `game_type` | Matches `plugin.gameType`               |
-| `config`    | JSONB — the validated `TConfig`         |
-| `store`     | JSONB — the `TStore`, updated per event |
-| `status`    | `'waiting'` / `'active'` / `'finished'` |
+| Column      | Content                                                  |
+| ----------- | -------------------------------------------------------- |
+| `game_type` | Matches `plugin.gameType`                                |
+| `config`    | JSONB — the validated `TConfig`                          |
+| `store`     | JSONB — the `TStore`, built at game end via `buildStore` |
+| `status`    | `'waiting'` / `'active'` / `'finished'`                  |
 
 State is not persisted. On reconnect, the engine holds state in memory (or reconstructs it if needed).
 
@@ -137,7 +139,7 @@ apps/backend/src/<game-name>/
 ### Implementation Checklist
 
 1. Define types: `TConfig`, `TState`, `TStore`, event union
-2. Implement `GamePlugin` — start with `validateConfig`, `createInitialState/Store`, `isGameOver`
+2. Implement `GamePlugin` — start with `validateConfig`, `createInitialState`, `isGameOver`, `buildStore`
 3. Build game logic as pure functions, called from `applyEvent`
 4. Implement `getValidActions` and `getPlayerView`
 5. Add event constants and payload types to `@cardquorum/shared`

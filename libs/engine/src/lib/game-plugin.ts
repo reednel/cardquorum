@@ -24,18 +24,18 @@ export interface GamePlugin<
   /** Build the initial state for a new game. */
   createInitialState(config: TConfig, userIDs: number[]): TState;
 
-  /** Build the initial store for a new game. */
-  createInitialStore(config: TConfig, userIDs: number[]): TStore;
-
   /** Return which actions are valid for a given player in the current state. */
   getValidActions(config: TConfig, state: TState, userID: number): TEvent['type'][];
 
-  /** Apply an event to the state, returning the new state. Update the store as well. Throws if invalid. */
-  applyEvent(config: TConfig, state: TState, store: TStore, event: TEvent): [TState, TStore];
+  /** Apply an event to the state, returning the new state. Throws if invalid. */
+  applyEvent(config: TConfig, state: TState, event: TEvent): TState;
 
   /** Derive the state visible to a specific player (hides other hands, etc.). */
   getPlayerView(config: TConfig, state: TState, userID: number): Partial<TState>;
 
   /** Check whether the game is over. */
   isGameOver(state: TState): boolean;
+
+  /** Construct the permanent store record from a state snapshot. */
+  buildStore(config: TConfig, state: TState): TStore;
 }

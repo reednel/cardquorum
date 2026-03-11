@@ -100,21 +100,6 @@ function createInitialState(config: SheepsheadConfig, userIDs: UserID[]): Sheeps
     blitz: null,
     previousGameDouble: null,
     noPick: null,
-  };
-}
-
-function createInitialStore(config: SheepsheadConfig, userIDs: UserID[]): SheepsheadStore {
-  return {
-    players: userIDs.map((id) => ({ userID: id, role: null, won: null, scoreDelta: null })),
-    blind: [],
-    buried: [],
-    calledCard: null,
-    hole: null,
-    tricks: [],
-    crack: null,
-    blitz: null,
-    previousGameDouble: null,
-    noPick: null,
     redeals: [],
   };
 }
@@ -186,67 +171,54 @@ function getValidActions(
 function applyEvent(
   config: SheepsheadConfig,
   state: SheepsheadState,
-  store: SheepsheadStore,
   event: SheepsheadEvent,
-): [SheepsheadState, SheepsheadStore] {
+): SheepsheadState {
   switch (event.type) {
     case 'deal':
-      return handleDeal(state, store, config);
+      return handleDeal(state, config);
     case 'pick':
     case 'pass': {
-      const result = handlePick(state, store, event, config);
+      const result = handlePick(state, event, config);
       switch (result.outcome) {
         case 'continue':
-          return [result.state, result.store];
+          return result.state;
         case 'redeal': {
           const userIDs = state.players.map((p) => p.userID);
           const freshState = createInitialState(config, userIDs);
-          const freshStore = createInitialStore(config, userIDs);
-          return handleDeal(freshState, freshStore, config);
+          return handleDeal(freshState, config);
         }
         case 'doubler-redeal': {
           const userIDs = state.players.map((p) => p.userID);
           const freshState = createInitialState(config, userIDs);
           freshState.previousGameDouble = true;
-          const freshStore = createInitialStore(config, userIDs);
-          freshStore.previousGameDouble = true;
-          freshStore.redeals = result.redeals;
-          return handleDeal(freshState, freshStore, config);
+          freshState.redeals = result.redeals;
+          return handleDeal(freshState, config);
         }
       }
       break; // unreachable, but satisfies no-fallthrough
     }
     case 'bury':
-      return handleBury(state, store, event, config);
+      return handleBury(state, event, config);
     case 'call_ace':
-      return handleCall(state, store, event, config);
+      return handleCall(state, event, config);
     case 'play_card':
-      return handlePlayCard(state, store, event, config);
+      return handlePlayCard(state, event, config);
     case 'game_scored':
-      return handleScore(state, store, config);
+      return handleScore(state, config);
     case 'crack':
-      return [
-        { ...state, crack: { crackedBy: event.userID, reCrackedBy: null } },
-        { ...store, crack: { crackedBy: event.userID, reCrackedBy: null } },
-      ];
+      return { ...state, crack: { crackedBy: event.userID, reCrackedBy: null } };
     case 're_crack': {
-      if (!state.crack || !store.crack) {
+      if (!state.crack) {
         throw new Error('Cannot re-crack without an existing crack');
       }
-      return [
-        { ...state, crack: { ...state.crack, reCrackedBy: event.userID } },
-        { ...store, crack: { ...store.crack, reCrackedBy: event.userID } },
-      ];
+      return { ...state, crack: { ...state.crack, reCrackedBy: event.userID } };
     }
     case 'blitz': {
-      if (state.blitz || store.blitz) {
+      if (state.blitz) {
         throw new Error('Blitz already declared');
       }
       const blitz: BlitzState = { type: event.payload.blitzType, blitzedBy: event.userID };
-      return [
-        { ...state, blitz },
-        { ...store, blitz },
-      ];
+      return { ...state, blitz };
     }
     default:
       throw new Error(`Unknown event type: ${(event as { type: string }).type}`);
@@ -329,6 +301,27 @@ function isGameOver(state: SheepsheadState): boolean {
   return state.phase === 'score';
 }
 
+function buildStore(config: SheepsheadConfig, state: SheepsheadState): SheepsheadStore {
+  return {
+    players: state.players.map((p) => ({
+      userID: p.userID,
+      role: p.role,
+      won: p.scoreDelta !== null ? p.scoreDelta > 0 : null,
+      scoreDelta: p.scoreDelta,
+    })),
+    blind: state.blind ?? [],
+    buried: state.buried ?? [],
+    calledCard: state.calledCard,
+    hole: state.hole,
+    tricks: state.tricks,
+    crack: state.crack,
+    blitz: state.blitz,
+    previousGameDouble: state.previousGameDouble,
+    noPick: state.noPick,
+    redeals: state.redeals,
+  };
+}
+
 /**
  * Sheepshead game plugin. Implements the generic GamePlugin interface
  * so the engine can orchestrate Sheepshead games without knowing the rules.
@@ -342,9 +335,9 @@ export const SheepsheadPlugin: GamePlugin<
   gameType: 'sheepshead',
   validateConfig,
   createInitialState,
-  createInitialStore,
   getValidActions,
   applyEvent,
   getPlayerView,
   isGameOver,
+  buildStore,
 };

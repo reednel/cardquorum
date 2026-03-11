@@ -71,6 +71,7 @@ function makeState(overrides: Partial<SheepsheadState> = {}): SheepsheadState {
     blitz: null,
     noPick: null,
     previousGameDouble: null,
+    redeals: [],
     ...overrides,
   };
 }

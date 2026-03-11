@@ -122,6 +122,8 @@ export interface SheepsheadState {
   previousGameDouble: boolean | null;
   /** How to proceed when nobody picks.  */
   noPick: NoPick | null;
+  /** Hands/blinds from previous deals when doubler caused a redeal. */
+  redeals: RedealRecord[];
 }
 
 /**
@@ -142,7 +144,7 @@ export interface RedealRecord {
 
 /** Discriminated result from the pick phase handler. */
 export type PickPhaseResult =
-  | { outcome: 'continue'; state: SheepsheadState; store: SheepsheadStore }
+  | { outcome: 'continue'; state: SheepsheadState }
   | { outcome: 'redeal' }
   | { outcome: 'doubler-redeal'; redeals: RedealRecord[] };
 

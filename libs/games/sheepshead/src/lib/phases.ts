@@ -1,7 +1,6 @@
 import {
   SheepsheadConfig,
   SheepsheadState,
-  SheepsheadStore,
   PickEvent,
   PassEvent,
   BuryEvent,
@@ -22,8 +21,6 @@ import { evaluateTrick, legalPlays } from './tricks';
 import { pickingTeamPoints, gotSchwarzed, scoreMultiplier } from './scoring';
 import { determinePartnerCalledAce, assignPartnerByRule } from './partners';
 
-type Result = [SheepsheadState, SheepsheadStore];
-
 /**
  * Get the next player index in seat order (wraps around).
  */
@@ -42,11 +39,7 @@ function seatIndex(state: SheepsheadState, userID: UserID): number {
  * Deal phase: shuffle deck, deal cards, set blind, transition to pick.
  * Retries automatically if noAceFaceTrump is enabled and a hand qualifies.
  */
-export function handleDeal(
-  state: SheepsheadState,
-  store: SheepsheadStore,
-  config: SheepsheadConfig,
-): Result {
+export function handleDeal(state: SheepsheadState, config: SheepsheadConfig): SheepsheadState {
   const maxRetries = 100;
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     const deck = createShuffledDeck(config.cardsRemoved);
@@ -69,18 +62,15 @@ export function handleDeal(
         const withRoles = assignPartnerByRule({ ...state, players }, config.partnerRule);
         players = withRoles.players;
       }
-      return [
-        {
-          ...state,
-          players,
-          phase: 'play',
-          blind,
-          activePlayer: players[firstPlayerIdx].userID,
-          trickNumber: 1,
-          tricks: [{ plays: [], winner: null }],
-        },
-        { ...store, blind: [...blind] },
-      ];
+      return {
+        ...state,
+        players,
+        phase: 'play',
+        blind,
+        activePlayer: players[firstPlayerIdx].userID,
+        trickNumber: 1,
+        tricks: [{ plays: [], winner: null }],
+      };
     }
 
     // Forced pick — player left of dealer must pick, go straight to bury
@@ -91,23 +81,23 @@ export function handleDeal(
         }
         return p;
       });
-      return [
-        {
-          ...state,
-          players,
-          phase: 'bury',
-          blind,
-          activePlayer: players[firstPlayerIdx].userID,
-        },
-        { ...store, blind: [...blind] },
-      ];
+      return {
+        ...state,
+        players,
+        phase: 'bury',
+        blind,
+        activePlayer: players[firstPlayerIdx].userID,
+      };
     }
 
     // Autonomous — normal pick phase
-    return [
-      { ...state, players, phase: 'pick', blind, activePlayer: players[firstPlayerIdx].userID },
-      { ...store, blind: [...blind] },
-    ];
+    return {
+      ...state,
+      players,
+      phase: 'pick',
+      blind,
+      activePlayer: players[firstPlayerIdx].userID,
+    };
   }
 
   // Fallback: deal without the check to avoid infinite loop
@@ -115,10 +105,7 @@ export function handleDeal(
   const { hands, blind } = deal(deck, config);
   const players = state.players.map((p, i) => ({ ...p, hand: hands[i] }));
   const firstPlayerIdx = nextPlayerIndex(0, config.playerCount);
-  return [
-    { ...state, players, phase: 'pick', blind, activePlayer: players[firstPlayerIdx].userID },
-    { ...store, blind: [...blind] },
-  ];
+  return { ...state, players, phase: 'pick', blind, activePlayer: players[firstPlayerIdx].userID };
 }
 
 /**
@@ -127,7 +114,6 @@ export function handleDeal(
  */
 export function handlePick(
   state: SheepsheadState,
-  store: SheepsheadStore,
   event: PickEvent | PassEvent,
   config: SheepsheadConfig,
 ): PickPhaseResult {
@@ -150,7 +136,6 @@ export function handlePick(
     return {
       outcome: 'continue',
       state: { ...state, players, phase: 'bury', activePlayer: event.userID },
-      store,
     };
   }
 
@@ -174,7 +159,6 @@ export function handlePick(
         return {
           outcome: 'continue',
           state: { ...state, players, phase: 'bury', activePlayer: event.userID },
-          store,
         };
       }
       case 'leaster':
@@ -197,7 +181,6 @@ export function handlePick(
             trickNumber: 1,
             tricks: [{ plays: [], winner: null }],
           },
-          store: { ...store, noPick: config.noPick },
         };
       }
       case 'schwanzer': {
@@ -215,7 +198,6 @@ export function handlePick(
             noPick: 'schwanzer',
             activePlayer: null,
           },
-          store: { ...store, noPick: 'schwanzer' },
         };
       }
       case 'doubler': {
@@ -226,7 +208,7 @@ export function handlePick(
         };
         return {
           outcome: 'doubler-redeal',
-          redeals: [...store.redeals, redealRecord],
+          redeals: [...state.redeals, redealRecord],
         };
       }
       default:
@@ -237,7 +219,6 @@ export function handlePick(
   return {
     outcome: 'continue',
     state: { ...state, activePlayer: state.players[nextIdx].userID },
-    store,
   };
 }
 
@@ -246,10 +227,9 @@ export function handlePick(
  */
 export function handleBury(
   state: SheepsheadState,
-  store: SheepsheadStore,
   event: BuryEvent,
   config: SheepsheadConfig,
-): Result {
+): SheepsheadState {
   const buriedCards = event.payload.cards;
   const pickerIdx = seatIndex(state, event.userID);
 
@@ -267,10 +247,7 @@ export function handleBury(
 
   if (config.partnerRule === 'called-ace') {
     // Need to call an ace — transition to call phase
-    return [
-      { ...state, players, buried, phase: 'call', activePlayer: event.userID },
-      { ...store, buried: [...buried] },
-    ];
+    return { ...state, players, buried, phase: 'call', activePlayer: event.userID };
   }
 
   // Assign partner by rule and transition to play
@@ -290,16 +267,13 @@ export function handleBury(
   }
 
   const firstPlayerIdx = nextPlayerIndex(0, state.players.length);
-  return [
-    {
-      ...newState,
-      phase: 'play',
-      activePlayer: newState.players[firstPlayerIdx].userID,
-      trickNumber: 1,
-      tricks: [{ plays: [], winner: null }],
-    },
-    { ...store, buried: [...buried] },
-  ];
+  return {
+    ...newState,
+    phase: 'play',
+    activePlayer: newState.players[firstPlayerIdx].userID,
+    trickNumber: 1,
+    tricks: [{ plays: [], winner: null }],
+  };
 }
 
 /** Get the suit of a called card. */
@@ -324,10 +298,9 @@ const FAIL_SUITS: Suit[] = ['clubs', 'spades', 'hearts'];
  */
 export function handleCall(
   state: SheepsheadState,
-  store: SheepsheadStore,
   event: CallAceEvent,
   config: SheepsheadConfig,
-): Result {
+): SheepsheadState {
   const calledCard = event.payload.card;
   const pickerIdx = state.players.findIndex((p) => p.role === 'picker');
   const pickerHand = state.players[pickerIdx].hand;
@@ -339,18 +312,15 @@ export function handleCall(
       p.role === 'picker' ? p : { ...p, role: 'opposition' as const },
     );
     const firstPlayerIdx = nextPlayerIndex(0, state.players.length);
-    return [
-      {
-        ...state,
-        players,
-        calledCard: 'alone',
-        phase: 'play',
-        activePlayer: players[firstPlayerIdx].userID,
-        trickNumber: 1,
-        tricks: [{ plays: [], winner: null }],
-      },
-      { ...store, calledCard: 'alone' },
-    ];
+    return {
+      ...state,
+      players,
+      calledCard: 'alone',
+      phase: 'play',
+      activePlayer: players[firstPlayerIdx].userID,
+      trickNumber: 1,
+      tricks: [{ plays: [], winner: null }],
+    };
   }
 
   // Validate calling a 10: picker must hold all 3 fail aces
@@ -401,19 +371,16 @@ export function handleCall(
 
   const firstPlayerIdx = nextPlayerIndex(0, state.players.length);
 
-  return [
-    {
-      ...state,
-      players,
-      calledCard,
-      hole,
-      phase: 'play',
-      activePlayer: players[firstPlayerIdx].userID,
-      trickNumber: 1,
-      tricks: [{ plays: [], winner: null }],
-    },
-    { ...store, calledCard, hole },
-  ];
+  return {
+    ...state,
+    players,
+    calledCard,
+    hole,
+    phase: 'play',
+    activePlayer: players[firstPlayerIdx].userID,
+    trickNumber: 1,
+    tricks: [{ plays: [], winner: null }],
+  };
 }
 
 /**
@@ -514,10 +481,9 @@ function applyCalledAceConstraints(
  */
 export function handlePlayCard(
   state: SheepsheadState,
-  store: SheepsheadStore,
   event: PlayCardEvent,
   config: SheepsheadConfig,
-): Result {
+): SheepsheadState {
   const card = event.payload.card;
   const playerIdx = seatIndex(state, event.userID);
   const currentTrickIdx = state.tricks.length - 1;
@@ -557,19 +523,11 @@ export function handlePlayCard(
 
     // Check if trick is complete — continue with normal trick completion logic
     if (updatedTrick.plays.length === state.players.length) {
-      return completeTrick(
-        newState,
-        store,
-        updatedTrick,
-        currentTrickIdx,
-        tricks,
-        state.players,
-        config,
-      );
+      return completeTrick(newState, updatedTrick, currentTrickIdx, tricks, state.players, config);
     }
 
     const nextIdx = nextPlayerIndex(playerIdx, state.players.length);
-    return [{ ...newState, activePlayer: state.players[nextIdx].userID }, store];
+    return { ...newState, activePlayer: state.players[nextIdx].userID };
   }
 
   // Validate card is legal
@@ -594,12 +552,12 @@ export function handlePlayCard(
 
   // Check if trick is complete
   if (updatedTrick.plays.length === state.players.length) {
-    return completeTrick(state, store, updatedTrick, currentTrickIdx, tricks, players, config);
+    return completeTrick(state, updatedTrick, currentTrickIdx, tricks, players, config);
   }
 
   // Trick not complete — advance to next player
   const nextIdx = nextPlayerIndex(playerIdx, state.players.length);
-  return [{ ...state, players, tricks, activePlayer: players[nextIdx].userID }, store];
+  return { ...state, players, tricks, activePlayer: players[nextIdx].userID };
 }
 
 /**
@@ -607,13 +565,12 @@ export function handlePlayCard(
  */
 function completeTrick(
   state: SheepsheadState,
-  store: SheepsheadStore,
   updatedTrick: TrickState,
   currentTrickIdx: number,
   tricks: TrickState[],
   currentPlayers: SheepsheadState['players'],
   config: SheepsheadConfig,
-): Result {
+): SheepsheadState {
   const winnerID = evaluateTrick(updatedTrick);
   const completedTrick: TrickState = { ...updatedTrick, winner: winnerID };
 
@@ -644,9 +601,6 @@ function completeTrick(
 
   const completedTricks = tricks.map((t, i) => (i === currentTrickIdx ? completedTrick : t));
 
-  // Copy completed trick to store
-  const storeTricks = [...store.tricks, completedTrick];
-
   // Check if all tricks played (account for hole card: picker may have fewer cards)
   const totalCards = players.reduce((sum, p) => sum + p.hand.length, 0);
   if (totalCards === 0) {
@@ -667,50 +621,40 @@ function completeTrick(
     }
 
     // All tricks played — transition to score
-    return [
-      {
-        ...state,
-        players: finalPlayers,
-        tricks: completedTricks,
-        phase: 'score',
-        activePlayer: null,
-      },
-      { ...store, tricks: storeTricks },
-    ];
+    return {
+      ...state,
+      players: finalPlayers,
+      tricks: completedTricks,
+      phase: 'score',
+      activePlayer: null,
+    };
   }
 
   // Start new trick, winner leads
-  return [
-    {
-      ...state,
-      players,
-      tricks: [...completedTricks, { plays: [], winner: null }],
-      trickNumber: state.trickNumber + 1,
-      activePlayer: winnerID,
-    },
-    { ...store, tricks: storeTricks },
-  ];
+  return {
+    ...state,
+    players,
+    tricks: [...completedTricks, { plays: [], winner: null }],
+    trickNumber: state.trickNumber + 1,
+    activePlayer: winnerID,
+  };
 }
 
 /**
  * Score phase: compute final scores for all players.
  */
-export function handleScore(
-  state: SheepsheadState,
-  store: SheepsheadStore,
-  config: SheepsheadConfig,
-): Result {
+export function handleScore(state: SheepsheadState, config: SheepsheadConfig): SheepsheadState {
   switch (state.noPick) {
     case 'leaster':
-      return handleLeasterScore(state, store);
+      return handleLeasterScore(state);
     case 'moster':
-      return handleMosterScore(state, store);
+      return handleMosterScore(state);
     case 'mittler':
-      return handleMittlerScore(state, store);
+      return handleMittlerScore(state);
     case 'schneidster':
-      return handleSchneidsterScore(state, store);
+      return handleSchneidsterScore(state);
     case 'schwanzer':
-      return handleSchwanzerScore(state, store);
+      return handleSchwanzerScore(state);
     default:
       break;
   }
@@ -758,38 +702,7 @@ export function handleScore(
     return { ...p, scoreDelta };
   });
 
-  const storePlayers = store.players.map((sp) => {
-    const statePlayer = players.find((p) => p.userID === sp.userID);
-    return {
-      ...sp,
-      role: statePlayer?.role ?? null,
-      won: statePlayer ? statePlayer.scoreDelta !== null && statePlayer.scoreDelta > 0 : null,
-      scoreDelta: statePlayer?.scoreDelta ?? null,
-    };
-  });
-
-  return [
-    { ...state, players },
-    { ...store, players: storePlayers },
-  ];
-}
-
-/**
- * Helper to build store players from state players for noPick scoring.
- */
-function buildNoPickStorePlayers(
-  store: SheepsheadStore,
-  players: SheepsheadState['players'],
-  winnerID: UserID | null,
-): SheepsheadStore['players'] {
-  return store.players.map((sp) => {
-    const statePlayer = players.find((p) => p.userID === sp.userID);
-    return {
-      ...sp,
-      won: statePlayer ? statePlayer.scoreDelta !== null && statePlayer.scoreDelta > 0 : false,
-      scoreDelta: statePlayer?.scoreDelta ?? null,
-    };
-  });
+  return { ...state, players };
 }
 
 /**
@@ -797,7 +710,7 @@ function buildNoPickStorePlayers(
  * The player who takes the fewest points wins.
  * If a player takes no tricks, the player who takes the most points wins.
  */
-function handleLeasterScore(state: SheepsheadState, store: SheepsheadStore): Result {
+function handleLeasterScore(state: SheepsheadState): SheepsheadState {
   // In leasters, the player with the fewest points wins
   // unless someone took no tricks — then the player with the most points wins
   const noTrickPlayers = state.players.filter((p) => p.tricksWon === 0);
@@ -818,26 +731,14 @@ function handleLeasterScore(state: SheepsheadState, store: SheepsheadStore): Res
     scoreDelta: p.userID === winnerID ? loserCount : -1,
   }));
 
-  const storePlayers = store.players.map((sp) => {
-    const statePlayer = players.find((p) => p.userID === sp.userID);
-    return {
-      ...sp,
-      won: statePlayer?.userID === winnerID ? true : false,
-      scoreDelta: statePlayer?.scoreDelta ?? null,
-    };
-  });
-
-  return [
-    { ...state, players },
-    { ...store, players: storePlayers },
-  ];
+  return { ...state, players };
 }
 
 /**
  * Moster scoring: the player who takes the most points is the only loser.
  * Everyone else wins. Zero-sum: loser pays 1 to each winner.
  */
-function handleMosterScore(state: SheepsheadState, store: SheepsheadStore): Result {
+function handleMosterScore(state: SheepsheadState): SheepsheadState {
   const mostPoints = state.players.reduce((worst, p) =>
     p.pointsWon > worst.pointsWon ? p : worst,
   );
@@ -863,10 +764,7 @@ function handleMosterScore(state: SheepsheadState, store: SheepsheadStore): Resu
     }));
   }
 
-  return [
-    { ...state, players },
-    { ...store, players: buildNoPickStorePlayers(store, players, null) },
-  ];
+  return { ...state, players };
 }
 
 /**
@@ -874,17 +772,14 @@ function handleMosterScore(state: SheepsheadState, store: SheepsheadStore): Resu
  * If there's no single middle (even player count), it's a wash (all 0).
  * Zero-sum: winner receives 1 from each loser.
  */
-function handleMittlerScore(state: SheepsheadState, store: SheepsheadStore): Result {
+function handleMittlerScore(state: SheepsheadState): SheepsheadState {
   const sorted = [...state.players].sort((a, b) => a.pointsWon - b.pointsWon);
   const n = sorted.length;
 
   // Even number of players — no single middle — wash
   if (n % 2 === 0) {
     const players = state.players.map((p) => ({ ...p, scoreDelta: 0 }));
-    return [
-      { ...state, players },
-      { ...store, players: buildNoPickStorePlayers(store, players, null) },
-    ];
+    return { ...state, players };
   }
 
   const middleIdx = Math.floor(n / 2);
@@ -896,10 +791,7 @@ function handleMittlerScore(state: SheepsheadState, store: SheepsheadStore): Res
     scoreDelta: p.userID === winnerID ? loserCount : -1,
   }));
 
-  return [
-    { ...state, players },
-    { ...store, players: buildNoPickStorePlayers(store, players, winnerID) },
-  ];
+  return { ...state, players };
 }
 
 /**
@@ -907,16 +799,13 @@ function handleMittlerScore(state: SheepsheadState, store: SheepsheadStore): Res
  * If two players tie for closest, it's a wash (all 0).
  * Zero-sum: winner receives 1 from each loser.
  */
-function handleSchneidsterScore(state: SheepsheadState, store: SheepsheadStore): Result {
+function handleSchneidsterScore(state: SheepsheadState): SheepsheadState {
   const eligible = state.players.filter((p) => p.pointsWon <= 30);
 
   if (eligible.length === 0) {
     // Nobody at or under 30 — wash
     const players = state.players.map((p) => ({ ...p, scoreDelta: 0 }));
-    return [
-      { ...state, players },
-      { ...store, players: buildNoPickStorePlayers(store, players, null) },
-    ];
+    return { ...state, players };
   }
 
   const bestScore = Math.max(...eligible.map((p) => p.pointsWon));
@@ -925,10 +814,7 @@ function handleSchneidsterScore(state: SheepsheadState, store: SheepsheadStore):
   if (tiedForBest.length > 1) {
     // Tie — wash
     const players = state.players.map((p) => ({ ...p, scoreDelta: 0 }));
-    return [
-      { ...state, players },
-      { ...store, players: buildNoPickStorePlayers(store, players, null) },
-    ];
+    return { ...state, players };
   }
 
   const winnerID = tiedForBest[0].userID;
@@ -939,10 +825,7 @@ function handleSchneidsterScore(state: SheepsheadState, store: SheepsheadStore):
     scoreDelta: p.userID === winnerID ? loserCount : -1,
   }));
 
-  return [
-    { ...state, players },
-    { ...store, players: buildNoPickStorePlayers(store, players, winnerID) },
-  ];
+  return { ...state, players };
 }
 
 /**
@@ -951,7 +834,7 @@ function handleSchneidsterScore(state: SheepsheadState, store: SheepsheadStore):
  * Trump power: Queens = 3, Jacks = 2, Diamonds = 1.
  * Zero-sum: loser pays 1 to each winner.
  */
-function handleSchwanzerScore(state: SheepsheadState, store: SheepsheadStore): Result {
+function handleSchwanzerScore(state: SheepsheadState): SheepsheadState {
   function trumpPower(player: SheepsheadState['players'][number]): number {
     return player.hand.reduce((power, c) => {
       if (!isTrump(c)) return power;
@@ -989,8 +872,5 @@ function handleSchwanzerScore(state: SheepsheadState, store: SheepsheadStore): R
     scoreDelta: p.userID === loserID ? -winnerCount : 1,
   }));
 
-  return [
-    { ...state, players },
-    { ...store, players: buildNoPickStorePlayers(store, players, null) },
-  ];
+  return { ...state, players };
 }
