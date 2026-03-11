@@ -8,7 +8,6 @@ import {
   UserID,
   BlitzState,
 } from './types';
-import { PHASE } from './constants';
 import {
   handleDeal,
   handlePick,
@@ -17,7 +16,6 @@ import {
   handlePlayCard,
   handleScore,
 } from './phases';
-import { isTrump } from './cards';
 
 /**
  * Sheepshead game plugin. Implements the generic GamePlugin interface
@@ -35,6 +33,7 @@ export class SheepsheadPlugin
     if (typeof config !== 'object' || config === null) return false;
 
     const c = config as Record<string, unknown>;
+    if (typeof c['name'] !== 'string' || /\s/.test(c['name'] as string)) return false;
     if (typeof c['playerCount'] !== 'number') return false;
     if (c['playerCount'] < 2 || c['playerCount'] > 8) return false;
 
@@ -93,7 +92,7 @@ export class SheepsheadPlugin
         cardsWon: [],
         scoreDelta: null,
       })),
-      phase: PHASE.deal,
+      phase: 'deal',
       trickNumber: 0,
       activePlayer: null,
       blind: [],

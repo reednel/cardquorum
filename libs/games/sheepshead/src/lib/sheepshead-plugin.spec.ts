@@ -4,6 +4,7 @@ import { DECK } from './constants';
 
 function makeConfig(overrides: Partial<SheepsheadConfig> = {}): SheepsheadConfig {
   return {
+    name: 'called-ace',
     playerCount: 5,
     handSize: 6,
     blindSize: 2,
@@ -237,7 +238,7 @@ describe('SheepsheadPlugin', () => {
       // Score
       [state, store] = plugin.applyEvent(state, store, {
         type: 'game_scored',
-        payload: { scoreDeltas: [], gotSchneidered: false, gotNoTricked: false },
+        payload: { scoreDeltas: [], gotSchneidered: false, gotSchwarzed: false },
       });
 
       // All players should have score deltas

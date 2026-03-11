@@ -17,6 +17,7 @@ function card(name: string): Card {
 
 function makeConfig(overrides: Partial<SheepsheadConfig> = {}): SheepsheadConfig {
   return {
+    name: 'jack-of-diamonds',
     playerCount: 3,
     handSize: 10,
     blindSize: 2,

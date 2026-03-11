@@ -10,11 +10,11 @@ import {
   UserID,
   TrickState,
 } from './types';
-import { PHASE, TRUMP_ORDER } from './constants';
+import { TRUMP_ORDER } from './constants';
 import { createShuffledDeck, deal, hasNoAceFaceTrump } from './dealing';
 import { cardsEqual, isTrump, sumPoints } from './cards';
 import { evaluateTrick, legalPlays } from './tricks';
-import { pickingTeamPoints, gotNoTricked, scoreMultiplier } from './scoring';
+import { pickingTeamPoints, gotSchwarzed, scoreMultiplier } from './scoring';
 import { determinePartnerCalledAce, assignPartnerByRule } from './partners';
 
 type Result = [SheepsheadState, SheepsheadStore];
@@ -68,7 +68,7 @@ export function handleDeal(
         {
           ...state,
           players,
-          phase: PHASE.play,
+          phase: 'play',
           blind,
           activePlayer: players[firstPlayerIdx].userID,
           trickNumber: 1,
@@ -90,7 +90,7 @@ export function handleDeal(
         {
           ...state,
           players,
-          phase: PHASE.bury,
+          phase: 'bury',
           blind,
           activePlayer: players[firstPlayerIdx].userID,
         },
@@ -100,7 +100,7 @@ export function handleDeal(
 
     // Autonomous — normal pick phase
     return [
-      { ...state, players, phase: PHASE.pick, blind, activePlayer: players[firstPlayerIdx].userID },
+      { ...state, players, phase: 'pick', blind, activePlayer: players[firstPlayerIdx].userID },
       { ...store, blind: [...blind] },
     ];
   }
@@ -111,7 +111,7 @@ export function handleDeal(
   const players = state.players.map((p, i) => ({ ...p, hand: hands[i] }));
   const firstPlayerIdx = nextPlayerIndex(0, config.playerCount);
   return [
-    { ...state, players, phase: PHASE.pick, blind, activePlayer: players[firstPlayerIdx].userID },
+    { ...state, players, phase: 'pick', blind, activePlayer: players[firstPlayerIdx].userID },
     { ...store, blind: [...blind] },
   ];
 }
@@ -142,7 +142,7 @@ export function handlePick(
       return p;
     });
 
-    return [{ ...state, players, phase: PHASE.bury, activePlayer: event.userID }, store];
+    return [{ ...state, players, phase: 'bury', activePlayer: event.userID }, store];
   }
 
   // Pass: advance to next player
@@ -162,7 +162,7 @@ export function handlePick(
           }
           return p;
         });
-        return [{ ...state, players, phase: PHASE.bury, activePlayer: event.userID }, store];
+        return [{ ...state, players, phase: 'bury', activePlayer: event.userID }, store];
       }
       case 'leaster':
       case 'moster':
@@ -177,7 +177,7 @@ export function handlePick(
           {
             ...state,
             players,
-            phase: PHASE.play,
+            phase: 'play',
             noPick: config.noPick,
             activePlayer: players[firstPlayerIdx].userID,
             trickNumber: 1,
@@ -196,7 +196,7 @@ export function handlePick(
           {
             ...state,
             players,
-            phase: PHASE.score,
+            phase: 'score',
             noPick: 'schwanzer',
             activePlayer: null,
           },
@@ -245,7 +245,7 @@ export function handleBury(
   if (config.partnerRule === 'called-ace') {
     // Need to call an ace — transition to call phase
     return [
-      { ...state, players, buried, phase: PHASE.call, activePlayer: event.userID },
+      { ...state, players, buried, phase: 'call', activePlayer: event.userID },
       { ...store, buried: [...buried] },
     ];
   }
@@ -270,7 +270,7 @@ export function handleBury(
   return [
     {
       ...newState,
-      phase: PHASE.play,
+      phase: 'play',
       activePlayer: newState.players[firstPlayerIdx].userID,
       trickNumber: 1,
       tricks: [{ plays: [], winner: null }],
@@ -307,7 +307,7 @@ export function handleCall(
       ...state,
       players,
       calledSuit,
-      phase: PHASE.play,
+      phase: 'play',
       activePlayer: players[firstPlayerIdx].userID,
       trickNumber: 1,
       tricks: [{ plays: [], winner: null }],
@@ -412,7 +412,7 @@ export function handlePlayCard(
           ...state,
           players: finalPlayers,
           tricks: completedTricks,
-          phase: PHASE.score,
+          phase: 'score',
           activePlayer: null,
         },
         { ...store, tricks: storeTricks },
@@ -480,7 +480,7 @@ export function handleScore(
   // Partner off the hook: if picking team lost, took no tricks, and rule is enabled,
   // partner pays nothing — picker absorbs partner's share
   const partnerOffTheHook =
-    config.partnerOffTheHook && !pickerWon && hasPartner && gotNoTricked(state);
+    config.partnerOffTheHook && !pickerWon && hasPartner && gotSchwarzed(state);
 
   const players = state.players.map((p, i) => {
     let scoreDelta = 0;

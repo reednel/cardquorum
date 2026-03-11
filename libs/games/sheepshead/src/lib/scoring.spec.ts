@@ -1,4 +1,4 @@
-import { pickingTeamPoints, gotSchneidered, gotNoTricked, scoreMultiplier } from './scoring';
+import { pickingTeamPoints, gotSchneidered, gotSchwarzed, scoreMultiplier } from './scoring';
 import { DECK, TOTAL_POINTS } from './constants';
 import { Card, SheepsheadConfig, SheepsheadState, TrickState } from './types';
 
@@ -10,6 +10,7 @@ function card(name: string): Card {
 
 function makeConfig(overrides: Partial<SheepsheadConfig> = {}): SheepsheadConfig {
   return {
+    name: 'jack-of-diamonds',
     playerCount: 3,
     handSize: 10,
     blindSize: 2,
@@ -167,14 +168,14 @@ describe('gotSchneidered', () => {
   });
 });
 
-describe('gotNoTricked', () => {
+describe('gotSchwarzed', () => {
   it('returns true when picking team won 0 tricks', () => {
     const tricks: TrickState[] = [
       { plays: [], winner: 2 },
       { plays: [], winner: 3 },
     ];
     const state = makeState({ tricks });
-    expect(gotNoTricked(state)).toBe(true);
+    expect(gotSchwarzed(state)).toBe(true);
   });
 
   it('returns true when picking team won all tricks', () => {
@@ -183,7 +184,7 @@ describe('gotNoTricked', () => {
       { plays: [], winner: 1 },
     ];
     const state = makeState({ tricks });
-    expect(gotNoTricked(state)).toBe(true);
+    expect(gotSchwarzed(state)).toBe(true);
   });
 
   it('returns false when both teams won tricks', () => {
@@ -192,13 +193,13 @@ describe('gotNoTricked', () => {
       { plays: [], winner: 2 },
     ];
     const state = makeState({ tricks });
-    expect(gotNoTricked(state)).toBe(false);
+    expect(gotSchwarzed(state)).toBe(false);
   });
 });
 
 describe('scoreMultiplier', () => {
   it('base multiplier is 1', () => {
-    // Picker won with 61 points (loser wasn't schneidered or no-tricked).
+    // Picker won with 61 points (loser wasn't schneidered or schwarz).
     const tricks: TrickState[] = [
       {
         plays: [
@@ -444,19 +445,49 @@ describe('scoreMultiplier', () => {
 
   it('doubleOnTheBump does not apply when picker wins', () => {
     const state = makeState({
-      buried: [card('ac'), card('as'), card('ah'), card('xc'), card('xs'), card('xh')],
+      buried: [card('ac'), card('as'), card('ah'), card('xc')],
       tricks: [
         {
           plays: [
-            { player: 1, card: card('7c') },
-            { player: 2, card: card('7s') },
+            { player: 1, card: card('xs') },
+            { player: 2, card: card('7c') },
           ],
           winner: 1,
-        },
+        }, // picker wins 10
+        {
+          plays: [
+            { player: 2, card: card('7s') },
+            { player: 1, card: card('7h') },
+          ],
+          winner: 2,
+        }, // opp wins 0
       ],
     });
-    // pickerPts = 11+11+11+10+10+10 = 63, pickerWon = true
-    // doubleOnTheBump should not apply
-    expect(scoreMultiplier(state, makeConfig({ doubleOnTheBump: true }))).toBe(1);
+    // pickerPts = 11+11+11+10 (buried) + 10 (trick) = 53... not enough
+    // Use more buried: ac=11, as=11, ah=11, xc=10 = 43 + 10 (trick) = 53... still < 61
+    // Add more to buried
+    const state2 = makeState({
+      buried: [card('ac'), card('as'), card('ah'), card('xc'), card('xs')],
+      tricks: [
+        {
+          plays: [
+            { player: 1, card: card('xh') },
+            { player: 2, card: card('7c') },
+          ],
+          winner: 1,
+        }, // picker wins 10
+        {
+          plays: [
+            { player: 2, card: card('7s') },
+            { player: 1, card: card('7h') },
+          ],
+          winner: 2,
+        }, // opp wins 0
+      ],
+    });
+    // pickerPts = 11+11+11+10+10 (buried) + 10 (trick) = 63, pickerWon = true
+    // Both teams won tricks, so no schwarz. Opposition has 57 pts, no schneider.
+    // doubleOnTheBump should not apply when picker wins
+    expect(scoreMultiplier(state2, makeConfig({ doubleOnTheBump: true }))).toBe(1);
   });
 });

@@ -118,16 +118,17 @@ The picking team (picker + partner) needs **61+ points** to win. Points come fro
 
 Multipliers stack multiplicatively (subject to `multiplicityLimit`):
 
-| Condition      | Multiplier | Notes                                         | Status      |
-| -------------- | ---------- | --------------------------------------------- | ----------- |
-| Base           | ×1         |                                               | Implemented |
-| Schneider      | ×2         | Losing team took <30 points                   | Implemented |
-| Crack          | ×2         | Opposition declares before play               | Implemented |
-| Re-crack       | ×4         | Picker responds to crack (replaces crack)     | Implemented |
-| Blitz          | ×2         | Player with both black or red Queens declares | Implemented |
-| Double on bump | ×2         | Picking team pays double for losing           | Implemented |
+| Condition      | Multiplier | Notes                                          | Status      |
+| -------------- | ---------- | ---------------------------------------------- | ----------- |
+| Base           | ×1         |                                                | Implemented |
+| Schneider      | ×2         | Losing team took <30 points                    | Implemented |
+| Schwarz        | ×3         | Losing team took 0 tricks (replaces schneider) | Implemented |
+| Crack          | ×2         | Opposition declares before play                | Implemented |
+| Re-crack       | ×4         | Picker responds to crack (replaces crack)      | Implemented |
+| Blitz          | ×2         | Player with both black or red Queens declares  | Implemented |
+| Double on bump | ×2         | Picking team pays double for losing            | Implemented |
 
-Example: Schneider + Crack = ×2 × ×2 = ×4.
+Example: Schneider + Crack = ×2 × ×2 = ×4. Schwarz + Crack = ×3 × ×2 = ×6.
 
 ### Zero-Sum Formula
 

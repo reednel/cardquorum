@@ -1,4 +1,4 @@
-import { Card, Suit, Rank, CardName, GamePhase, SheepsheadConfig, ConfigPreset } from './types';
+import { Card, Suit, Rank, CardName, SheepsheadConfig, ConfigPreset } from './types';
 
 export const TOTAL_POINTS = 120;
 
@@ -65,15 +65,6 @@ export const TRUMP_ORDER: readonly CardName[] = [
 /** Non-trump rank order within a fail suit, highest to lowest. */
 export const FAIL_RANK_ORDER: readonly Rank[] = ['ace', '10', 'king', '9', '8', '7'];
 
-export const PHASE: { [key in GamePhase]: GamePhase } = {
-  deal: 'deal',
-  pick: 'pick',
-  bury: 'bury',
-  call: 'call',
-  play: 'play',
-  score: 'score',
-};
-
 const HOUSE_RULE_DEFAULTS: Pick<
   SheepsheadConfig,
   'cracking' | 'blitzing' | 'partnerOffTheHook' | 'noAceFaceTrump' | 'multiplicityLimit'
@@ -91,6 +82,7 @@ export const CONFIG_PRESETS: Record<number, ConfigPreset[]> = {
       label: 'Two-Handed',
       description: 'No teams, no picking.',
       fixed: {
+        name: 'two-handed',
         playerCount: 2,
         handSize: 14,
         blindSize: 4,
@@ -107,6 +99,7 @@ export const CONFIG_PRESETS: Record<number, ConfigPreset[]> = {
       label: 'Three-Handed',
       description: 'Picker plays alone against two opponents.',
       fixed: {
+        name: 'three-handed',
         playerCount: 3,
         handSize: 10,
         blindSize: 2,
@@ -121,6 +114,7 @@ export const CONFIG_PRESETS: Record<number, ConfigPreset[]> = {
       label: 'Black Queens',
       description: 'Holders of the two black Queens are partners. Player with both goes alone.',
       fixed: {
+        name: 'black-queens',
         playerCount: 4,
         handSize: 8,
         blindSize: 0,
@@ -136,6 +130,7 @@ export const CONFIG_PRESETS: Record<number, ConfigPreset[]> = {
       description:
         'Queen of Clubs and 7 of Diamonds holders are partners. Player with both goes alone.',
       fixed: {
+        name: 'queen-and-7',
         playerCount: 4,
         handSize: 8,
         blindSize: 0,
@@ -150,6 +145,7 @@ export const CONFIG_PRESETS: Record<number, ConfigPreset[]> = {
       label: 'Picker Alone',
       description: 'Picker plays alone against three opponents.',
       fixed: {
+        name: 'picker-alone',
         playerCount: 4,
         handSize: 7,
         blindSize: 4,
@@ -164,15 +160,16 @@ export const CONFIG_PRESETS: Record<number, ConfigPreset[]> = {
       label: 'Called Ace',
       description: 'Black 7s removed. Picker calls a fail ace for partner.',
       fixed: {
+        name: 'called-ace',
         playerCount: 4,
         handSize: 7,
         blindSize: 2,
         pickerRule: 'autonomous',
         partnerRule: 'called-ace',
         doubleOnTheBump: true,
+        cardsRemoved: ['7c', '7s'],
       },
       defaults: { noPick: 'leaster', ...HOUSE_RULE_DEFAULTS },
-      cardsRemoved: ['7c', '7s'],
     },
   ],
   5: [
@@ -180,6 +177,7 @@ export const CONFIG_PRESETS: Record<number, ConfigPreset[]> = {
       label: 'Called Ace',
       description: 'Picker calls a fail ace for partner.',
       fixed: {
+        name: 'called-ace',
         playerCount: 5,
         handSize: 6,
         blindSize: 2,
@@ -192,6 +190,7 @@ export const CONFIG_PRESETS: Record<number, ConfigPreset[]> = {
       label: 'Jack of Diamonds',
       description: 'Holder of the Jack of Diamonds is the partner.',
       fixed: {
+        name: 'jack-of-diamonds',
         playerCount: 5,
         handSize: 6,
         blindSize: 2,
@@ -205,20 +204,22 @@ export const CONFIG_PRESETS: Record<number, ConfigPreset[]> = {
       description:
         'Black 7s removed. Queen of Spades and Jack of Clubs holders are partners. No blind.',
       fixed: {
+        name: 'queen-and-jack',
         playerCount: 5,
         handSize: 6,
         blindSize: 0,
         pickerRule: null,
         partnerRule: 'qs-jc',
         noPick: null,
+        cardsRemoved: ['7c', '7s'],
       },
       defaults: { doubleOnTheBump: false, ...HOUSE_RULE_DEFAULTS },
-      cardsRemoved: ['7c', '7s'],
     },
     {
       label: 'First Trick',
       description: 'Winner of the first trick is the partner.',
       fixed: {
+        name: 'first-trick',
         playerCount: 5,
         handSize: 6,
         blindSize: 2,
@@ -231,6 +232,7 @@ export const CONFIG_PRESETS: Record<number, ConfigPreset[]> = {
       label: 'Schiller',
       description: 'Player left of dealer must pick. Called ace for partner.',
       fixed: {
+        name: 'schiller',
         playerCount: 5,
         handSize: 6,
         blindSize: 2,
@@ -247,6 +249,7 @@ export const CONFIG_PRESETS: Record<number, ConfigPreset[]> = {
       description:
         'Partner is the Jack of Clubs. If picker has it, they can call another Jack or play alone.',
       fixed: {
+        name: 'jack-of-clubs',
         playerCount: 6,
         handSize: 5,
         blindSize: 2,
@@ -263,6 +266,7 @@ export const CONFIG_PRESETS: Record<number, ConfigPreset[]> = {
       description:
         'Partner is the Jack of Diamonds. If picker has it, they can call another Jack or play alone.',
       fixed: {
+        name: 'jack-of-diamonds',
         playerCount: 7,
         handSize: 4,
         blindSize: 4,
@@ -277,6 +281,7 @@ export const CONFIG_PRESETS: Record<number, ConfigPreset[]> = {
       description:
         'Picker draws 2 from blind. Player to their left is partner and draws the other 2.',
       fixed: {
+        name: 'partner-draft',
         playerCount: 7,
         handSize: 4,
         blindSize: 4,
@@ -291,6 +296,7 @@ export const CONFIG_PRESETS: Record<number, ConfigPreset[]> = {
       label: 'Black Queens',
       description: 'Black Queen holders are partners. Player with both goes alone. No blind.',
       fixed: {
+        name: 'black-queens',
         playerCount: 8,
         handSize: 4,
         blindSize: 0,

@@ -11,7 +11,7 @@ export {
 export { isTrump, sumPoints, cardPower, cardsEqual } from './lib/cards';
 export { createShuffledDeck, deal, hasNoAceFaceTrump } from './lib/dealing';
 export { evaluateTrick, legalPlays } from './lib/tricks';
-export { pickingTeamPoints, gotSchneidered, gotNoTricked, scoreMultiplier } from './lib/scoring';
+export { pickingTeamPoints, gotSchneidered, gotSchwarzed, scoreMultiplier } from './lib/scoring';
 export {
   determinePartnerJD,
   determinePartnerCalledAce,

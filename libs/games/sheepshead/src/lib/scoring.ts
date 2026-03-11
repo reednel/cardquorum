@@ -32,8 +32,8 @@ export function gotSchneidered(pickerTeamPts: number, pickerWon: boolean): boole
   return pickerTeamPts < 30;
 }
 
-/** Whether losing team took 0 tricks. */
-export function gotNoTricked(state: SheepsheadState): boolean {
+/** Whether losing team took 0 tricks (schwarz). */
+export function gotSchwarzed(state: SheepsheadState): boolean {
   const pickingTeam = new Set<UserID>();
   for (const player of state.players) {
     if (player.role === 'picker' || player.role === 'partner') {
@@ -51,7 +51,7 @@ export function gotNoTricked(state: SheepsheadState): boolean {
 /**
  * Compute the score multiplier for a hand.
  * Multipliers stack multiplicatively:
- *   base (1) × schneider (×2) × crack/re-crack
+ *   base (1) × schneider (×2) × schwarz (×3) × crack/re-crack
  */
 export function scoreMultiplier(state: SheepsheadState, config: SheepsheadConfig): number {
   const pickerPts = pickingTeamPoints(state);
@@ -59,7 +59,9 @@ export function scoreMultiplier(state: SheepsheadState, config: SheepsheadConfig
 
   let multiplier = 1;
 
-  if (gotSchneidered(pickerPts, pickerWon)) {
+  if (gotSchwarzed(state)) {
+    multiplier *= 3;
+  } else if (gotSchneidered(pickerPts, pickerWon)) {
     multiplier *= 2;
   }
 

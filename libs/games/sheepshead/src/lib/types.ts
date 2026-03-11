@@ -44,6 +44,7 @@ export type PartnerRule =
  * Stored as game_sessions.config (jsonb).
  */
 export interface SheepsheadConfig {
+  name: string;
   playerCount: 2 | 3 | 4 | 5 | 6 | 7 | 8;
   handSize: number;
   blindSize: number;
@@ -69,8 +70,6 @@ export interface ConfigPreset {
   fixed: Partial<SheepsheadConfig>;
   /** Values with defaults that the user can change. */
   defaults: Partial<SheepsheadConfig>;
-  /** Cards removed from the standard 32-card deck. */
-  cardsRemoved?: CardName[];
 }
 
 /**
@@ -248,7 +247,7 @@ export interface GameScoredEvent {
   payload: {
     scoreDeltas: number[];
     gotSchneidered: boolean;
-    gotNoTricked: boolean;
+    gotSchwarzed: boolean;
   };
 }
 
