@@ -23,15 +23,9 @@ function makeConfig(overrides: Partial<SheepsheadConfig> = {}): SheepsheadConfig
 }
 
 describe('SheepsheadPlugin', () => {
-  let plugin: SheepsheadPlugin;
-
-  beforeEach(() => {
-    plugin = new SheepsheadPlugin();
-  });
-
   describe('validateConfig', () => {
     it('accepts valid config', () => {
-      expect(plugin.validateConfig(makeConfig())).toBe(true);
+      expect(SheepsheadPlugin.validateConfig(makeConfig())).toBe(true);
     });
 
     it('accepts all valid partner rules', () => {
@@ -46,48 +40,54 @@ describe('SheepsheadPlugin', () => {
         'left-of-picker',
         null,
       ]) {
-        expect(plugin.validateConfig(makeConfig({ partnerRule: rule as any }))).toBe(true);
+        expect(SheepsheadPlugin.validateConfig(makeConfig({ partnerRule: rule as any }))).toBe(
+          true,
+        );
       }
     });
 
     it('rejects invalid partner rule', () => {
-      expect(plugin.validateConfig(makeConfig({ partnerRule: 'jack-of-diamonds' as any }))).toBe(
+      expect(
+        SheepsheadPlugin.validateConfig(makeConfig({ partnerRule: 'jack-of-diamonds' as any })),
+      ).toBe(false);
+      expect(SheepsheadPlugin.validateConfig(makeConfig({ partnerRule: 'none' as any }))).toBe(
         false,
       );
-      expect(plugin.validateConfig(makeConfig({ partnerRule: 'none' as any }))).toBe(false);
     });
 
     it('accepts all valid picker rules', () => {
       for (const rule of ['autonomous', 'left-of-dealer', null]) {
-        expect(plugin.validateConfig(makeConfig({ pickerRule: rule as any }))).toBe(true);
+        expect(SheepsheadPlugin.validateConfig(makeConfig({ pickerRule: rule as any }))).toBe(true);
       }
     });
 
     it('rejects invalid picker rule', () => {
-      expect(plugin.validateConfig(makeConfig({ pickerRule: 'random' as any }))).toBe(false);
+      expect(SheepsheadPlugin.validateConfig(makeConfig({ pickerRule: 'random' as any }))).toBe(
+        false,
+      );
     });
 
     it('rejects non-object', () => {
-      expect(plugin.validateConfig(null)).toBe(false);
-      expect(plugin.validateConfig('string')).toBe(false);
+      expect(SheepsheadPlugin.validateConfig(null)).toBe(false);
+      expect(SheepsheadPlugin.validateConfig('string')).toBe(false);
     });
 
     it('rejects invalid playerCount', () => {
-      expect(plugin.validateConfig(makeConfig({ playerCount: 1 as any }))).toBe(false);
-      expect(plugin.validateConfig(makeConfig({ playerCount: 9 as any }))).toBe(false);
+      expect(SheepsheadPlugin.validateConfig(makeConfig({ playerCount: 1 as any }))).toBe(false);
+      expect(SheepsheadPlugin.validateConfig(makeConfig({ playerCount: 9 as any }))).toBe(false);
     });
 
     it('rejects missing boolean fields', () => {
       const config = { ...makeConfig() } as Record<string, unknown>;
       delete config['cracking'];
-      expect(plugin.validateConfig(config)).toBe(false);
+      expect(SheepsheadPlugin.validateConfig(config)).toBe(false);
     });
   });
 
   describe('createInitialState', () => {
     it('creates correct structure', () => {
       const config = makeConfig();
-      const state = plugin.createInitialState(config, [1, 2, 3]);
+      const state = SheepsheadPlugin.createInitialState(config, [1, 2, 3]);
 
       expect(state.players).toHaveLength(3);
       expect(state.phase).toBe('deal');
@@ -98,7 +98,7 @@ describe('SheepsheadPlugin', () => {
     });
 
     it('player IDs match input', () => {
-      const state = plugin.createInitialState(makeConfig(), [10, 20, 30]);
+      const state = SheepsheadPlugin.createInitialState(makeConfig(), [10, 20, 30]);
       expect(state.players.map((p) => p.userID)).toEqual([10, 20, 30]);
     });
   });
@@ -106,7 +106,7 @@ describe('SheepsheadPlugin', () => {
   describe('getPlayerView', () => {
     it('hides other players hands', () => {
       const config = makeConfig();
-      const state = plugin.createInitialState(config, [1, 2, 3]);
+      const state = SheepsheadPlugin.createInitialState(config, [1, 2, 3]);
       // Simulate dealt hands
       const dealt: SheepsheadState = {
         ...state,
@@ -117,7 +117,7 @@ describe('SheepsheadPlugin', () => {
         })),
       };
 
-      const view = plugin.getPlayerView(dealt, 1);
+      const view = SheepsheadPlugin.getPlayerView(config, dealt, 1);
       expect(view.players![0].hand).toHaveLength(10); // own hand visible
       expect(view.players![1].hand).toHaveLength(0); // other hidden
       expect(view.players![2].hand).toHaveLength(0); // other hidden
@@ -125,20 +125,20 @@ describe('SheepsheadPlugin', () => {
 
     it('hides blind during deal/pick phases', () => {
       const config = makeConfig();
-      const state = plugin.createInitialState(config, [1, 2, 3]);
+      const state = SheepsheadPlugin.createInitialState(config, [1, 2, 3]);
       const withBlind: SheepsheadState = {
         ...state,
         phase: 'pick',
         blind: DECK.slice(0, 2),
       };
 
-      const view = plugin.getPlayerView(withBlind, 1);
+      const view = SheepsheadPlugin.getPlayerView(config, withBlind, 1);
       expect(view.blind).toEqual([]);
     });
 
     it('shows blind after pick phase', () => {
       const config = makeConfig();
-      const state = plugin.createInitialState(config, [1, 2, 3]);
+      const state = SheepsheadPlugin.createInitialState(config, [1, 2, 3]);
       const blind = DECK.slice(0, 2);
       const inPlay: SheepsheadState = {
         ...state,
@@ -146,13 +146,13 @@ describe('SheepsheadPlugin', () => {
         blind,
       };
 
-      const view = plugin.getPlayerView(inPlay, 1);
+      const view = SheepsheadPlugin.getPlayerView(config, inPlay, 1);
       expect(view.blind).toEqual(blind);
     });
 
     it('hides buried from non-picker', () => {
       const config = makeConfig();
-      const state = plugin.createInitialState(config, [1, 2, 3]);
+      const state = SheepsheadPlugin.createInitialState(config, [1, 2, 3]);
       const inPlay: SheepsheadState = {
         ...state,
         phase: 'play',
@@ -163,21 +163,21 @@ describe('SheepsheadPlugin', () => {
         })),
       };
 
-      expect(plugin.getPlayerView(inPlay, 1).buried).toBeNull();
-      expect(plugin.getPlayerView(inPlay, 2).buried).toEqual(DECK.slice(0, 2));
+      expect(SheepsheadPlugin.getPlayerView(config, inPlay, 1).buried).toBeNull();
+      expect(SheepsheadPlugin.getPlayerView(config, inPlay, 2).buried).toEqual(DECK.slice(0, 2));
     });
   });
 
   describe('isGameOver', () => {
     it('returns true when phase is score', () => {
-      const state = plugin.createInitialState(makeConfig(), [1, 2, 3]);
-      expect(plugin.isGameOver({ ...state, phase: 'score' })).toBe(true);
+      const state = SheepsheadPlugin.createInitialState(makeConfig(), [1, 2, 3]);
+      expect(SheepsheadPlugin.isGameOver({ ...state, phase: 'score' })).toBe(true);
     });
 
     it('returns false for other phases', () => {
-      const state = plugin.createInitialState(makeConfig(), [1, 2, 3]);
-      expect(plugin.isGameOver(state)).toBe(false); // 'deal'
-      expect(plugin.isGameOver({ ...state, phase: 'play' })).toBe(false);
+      const state = SheepsheadPlugin.createInitialState(makeConfig(), [1, 2, 3]);
+      expect(SheepsheadPlugin.isGameOver(state)).toBe(false); // 'deal'
+      expect(SheepsheadPlugin.isGameOver({ ...state, phase: 'play' })).toBe(false);
     });
   });
 
@@ -186,22 +186,25 @@ describe('SheepsheadPlugin', () => {
       const config = makeConfig({ partnerRule: 'jd' });
       const userIDs: UserID[] = [1, 2, 3];
 
-      let state = plugin.createInitialState(config, userIDs);
-      let store = plugin.createInitialStore(config, userIDs);
+      let state = SheepsheadPlugin.createInitialState(config, userIDs);
+      let store = SheepsheadPlugin.createInitialStore(config, userIDs);
 
       // Deal
-      [state, store] = plugin.applyEvent(state, store, { type: 'deal' });
+      [state, store] = SheepsheadPlugin.applyEvent(config, state, store, { type: 'deal' });
       expect(state.phase).toBe('pick');
       expect(state.activePlayer).toBe(2);
 
       // Player 2 picks
-      [state, store] = plugin.applyEvent(state, store, { type: 'pick', userID: 2 });
+      [state, store] = SheepsheadPlugin.applyEvent(config, state, store, {
+        type: 'pick',
+        userID: 2,
+      });
       expect(state.phase).toBe('bury');
       expect(state.players[1].role).toBe('picker');
 
       // Player 2 buries 2 cards
       const toBury = state.players[1].hand.slice(0, 2);
-      [state, store] = plugin.applyEvent(state, store, {
+      [state, store] = SheepsheadPlugin.applyEvent(config, state, store, {
         type: 'bury',
         userID: 2,
         payload: { cards: toBury },
@@ -223,7 +226,7 @@ describe('SheepsheadPlugin', () => {
         const legal = legalPlays(hand, currentTrick);
         const cardToPlay = legal[0];
 
-        [state, store] = plugin.applyEvent(state, store, {
+        [state, store] = SheepsheadPlugin.applyEvent(config, state, store, {
           type: 'play_card',
           userID: activePlayer,
           payload: { card: cardToPlay },
@@ -237,7 +240,7 @@ describe('SheepsheadPlugin', () => {
       expect(state.phase).toBe('score');
 
       // Score
-      [state, store] = plugin.applyEvent(state, store, {
+      [state, store] = SheepsheadPlugin.applyEvent(config, state, store, {
         type: 'game_scored',
         payload: { scoreDeltas: [], gotSchneidered: false, gotSchwarzed: false },
       });
@@ -252,7 +255,7 @@ describe('SheepsheadPlugin', () => {
       expect(totalDelta).toBe(0);
 
       // Game should be over
-      expect(plugin.isGameOver(state)).toBe(true);
+      expect(SheepsheadPlugin.isGameOver(state)).toBe(true);
 
       // Store should have final data
       expect(store.tricks.length).toBeGreaterThan(0);

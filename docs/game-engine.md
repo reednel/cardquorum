@@ -35,9 +35,9 @@ interface GamePlugin<TConfig, TState, TStore, TEvent extends GameEventBase> {
   validateConfig(config: unknown): config is TConfig;
   createInitialState(config: TConfig, userIDs: number[]): TState;
   createInitialStore(config: TConfig, userIDs: number[]): TStore;
-  getValidActions(state: TState, userID: number): TEvent['type'][];
-  applyEvent(state: TState, store: TStore, event: TEvent): [TState, TStore];
-  getPlayerView(state: TState, userID: number): Partial<TState>;
+  getValidActions(config: TConfig, state: TState, userID: number): TEvent['type'][];
+  applyEvent(config: TConfig, state: TState, store: TStore, event: TEvent): [TState, TStore];
+  getPlayerView(config: TConfig, state: TState, userID: number): Partial<TState>;
   isGameOver(state: TState): boolean;
 }
 ```
