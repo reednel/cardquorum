@@ -3,7 +3,10 @@
   "version": "0.0.0",
   "license": "AGPL-3.0",
   "scripts": {
-    "prepare": "husky"
+    "prepare": "husky",
+    "validate": "prettier --check '**/*.{ts,html,css,json,md}' && pnpm nx run-many -t lint test build",
+    "format": "prettier --write '**/*.{ts,html,css,json,md}'",
+    "serve": "pnpm nx serve frontend"
   },
   "private": true,
   "lint-staged": {

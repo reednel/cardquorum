@@ -16,6 +16,14 @@ docker compose -f compose.dev.yml up -d # starts Postgres and Redis
 cp .env.template .env                   # then fill in values
 ```
 
+### Quick Commands
+
+```sh
+pnpm serve    # Starts frontend on :4200, backend on :3000/api
+pnpm format   # Runs prettier formatter agaist the project
+pnpm validate # Runs all automated tests, lints, and builds the project
+```
+
 ### Running
 
 ```sh
