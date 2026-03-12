@@ -1,4 +1,5 @@
-import { DECK, TOTAL_POINTS, TRUMP_ORDER, FAIL_RANK_ORDER } from './constants';
+import { DECK, TOTAL_POINTS, TRUMP_ORDER, FAIL_RANK_ORDER, CONFIG_PRESETS } from './constants';
+import { SheepsheadPlugin } from './sheepshead-plugin';
 
 describe('constants', () => {
   it('DECK has 32 cards', () => {
@@ -30,4 +31,31 @@ describe('constants', () => {
   it('FAIL_RANK_ORDER has 6 entries', () => {
     expect(FAIL_RANK_ORDER).toHaveLength(6);
   });
+});
+
+describe('CONFIG_PRESETS', () => {
+  it.each(CONFIG_PRESETS.map((p, i) => ({ ...p, idx: i })))(
+    '$label ($fixed.playerCount players): deck math checks out',
+    (preset) => {
+      const removed = preset.fixed.cardsRemoved?.length ?? 0;
+      const deckSize = 32 - removed;
+      const { playerCount, handSize, blindSize } = preset.fixed;
+      expect(playerCount! * handSize! + blindSize!).toBe(deckSize);
+    },
+  );
+
+  it.each(CONFIG_PRESETS.map((p, i) => ({ ...p, idx: i })))(
+    '$label ($fixed.playerCount players): name has no whitespace',
+    (preset) => {
+      expect(preset.fixed.name).toMatch(/^\S+$/);
+    },
+  );
+
+  it.each(CONFIG_PRESETS.map((p, i) => ({ ...p, idx: i })))(
+    '$label ($fixed.playerCount players): merged config passes validateConfig',
+    (preset) => {
+      const merged = { ...preset.defaults, ...preset.fixed };
+      expect(SheepsheadPlugin.validateConfig(merged)).toBe(true);
+    },
+  );
 });

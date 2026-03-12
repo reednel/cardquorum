@@ -232,6 +232,19 @@ export function handleBury(
 ): SheepsheadState {
   const buriedCards = event.payload.cards;
   const pickerIdx = seatIndex(state, event.userID);
+  const pickerHand = state.players[pickerIdx].hand;
+
+  // Validate bury count matches blind size
+  if (buriedCards.length !== config.blindSize) {
+    throw new Error(`Must bury exactly ${config.blindSize} cards, got ${buriedCards.length}`);
+  }
+
+  // Validate all buried cards are in the picker's hand
+  for (const bc of buriedCards) {
+    if (!pickerHand.some((c) => cardsEqual(c, bc))) {
+      throw new Error(`Cannot bury ${bc.name} — not in picker's hand`);
+    }
+  }
 
   // Remove buried cards from picker's hand
   const newHand = state.players[pickerIdx].hand.filter(

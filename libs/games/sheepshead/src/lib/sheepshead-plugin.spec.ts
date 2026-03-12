@@ -181,6 +181,214 @@ describe('SheepsheadPlugin', () => {
     });
   });
 
+  describe('crack / re-crack / blitz events', () => {
+    function makePlayState(): SheepsheadState {
+      const config = makeConfig({ cracking: true, blitzing: true });
+      const state = SheepsheadPlugin.createInitialState(config, [1, 2, 3, 4, 5]);
+      return {
+        ...state,
+        phase: 'pick',
+        players: state.players.map((p, i) => ({
+          ...p,
+          role: i === 1 ? ('picker' as const) : ('opposition' as const),
+          hand: DECK.slice(i * 6, i * 6 + 6),
+        })),
+        activePlayer: 3,
+      };
+    }
+
+    it('crack sets crack state', () => {
+      const config = makeConfig({ cracking: true });
+      const state = makePlayState();
+      const result = SheepsheadPlugin.applyEvent(config, state, {
+        type: 'crack',
+        userID: 3,
+      });
+      expect(result.crack).toEqual({ crackedBy: 3, reCrackedBy: null });
+    });
+
+    it('re-crack sets reCrackedBy on existing crack', () => {
+      const config = makeConfig({ cracking: true });
+      const state = { ...makePlayState(), crack: { crackedBy: 3, reCrackedBy: null } };
+      const result = SheepsheadPlugin.applyEvent(config, state, {
+        type: 're_crack',
+        userID: 2,
+      });
+      expect(result.crack).toEqual({ crackedBy: 3, reCrackedBy: 2 });
+    });
+
+    it('re-crack throws when no existing crack', () => {
+      const config = makeConfig({ cracking: true });
+      const state = makePlayState();
+      expect(() =>
+        SheepsheadPlugin.applyEvent(config, state, { type: 're_crack', userID: 2 }),
+      ).toThrow('Cannot re-crack');
+    });
+
+    it('blitz sets blitz state', () => {
+      const config = makeConfig({ blitzing: true });
+      const state = { ...makePlayState(), crack: { crackedBy: 3, reCrackedBy: null } };
+      const result = SheepsheadPlugin.applyEvent(config, state, {
+        type: 'blitz',
+        userID: 1,
+        payload: { blitzType: 'black-blitz' },
+      });
+      expect(result.blitz).toEqual({ type: 'black-blitz', blitzedBy: 1 });
+    });
+
+    it('blitz throws when already declared', () => {
+      const config = makeConfig({ blitzing: true });
+      const state = {
+        ...makePlayState(),
+        blitz: { type: 'black-blitz' as const, blitzedBy: 1 },
+      };
+      expect(() =>
+        SheepsheadPlugin.applyEvent(config, state, {
+          type: 'blitz',
+          userID: 2,
+          payload: { blitzType: 'red-blitz' },
+        }),
+      ).toThrow('Blitz already declared');
+    });
+  });
+
+  describe('getValidActions', () => {
+    it('returns empty for non-active player in pick phase', () => {
+      const config = makeConfig();
+      let state = SheepsheadPlugin.createInitialState(config, [1, 2, 3, 4, 5]);
+      state = SheepsheadPlugin.applyEvent(config, state, { type: 'deal' });
+      // activePlayer is 2 (left of dealer)
+      expect(state.activePlayer).toBe(2);
+      const actions = SheepsheadPlugin.getValidActions(config, state, 3);
+      expect(actions).not.toContain('pick');
+      expect(actions).not.toContain('pass');
+    });
+
+    it('returns pick/pass for active player in pick phase', () => {
+      const config = makeConfig();
+      let state = SheepsheadPlugin.createInitialState(config, [1, 2, 3, 4, 5]);
+      state = SheepsheadPlugin.applyEvent(config, state, { type: 'deal' });
+      const actions = SheepsheadPlugin.getValidActions(config, state, 2);
+      expect(actions).toContain('pick');
+      expect(actions).toContain('pass');
+    });
+
+    it('returns play_card only for active player in play phase', () => {
+      const config = makeConfig({ partnerRule: 'jd' });
+      let state = SheepsheadPlugin.createInitialState(config, [1, 2, 3]);
+      state = SheepsheadPlugin.applyEvent(config, state, { type: 'deal' });
+      state = SheepsheadPlugin.applyEvent(config, state, { type: 'pick', userID: 2 });
+      const toBury = state.players[1].hand.slice(0, 2);
+      state = SheepsheadPlugin.applyEvent(config, state, {
+        type: 'bury',
+        userID: 2,
+        payload: { cards: toBury },
+      });
+      expect(state.phase).toBe('play');
+
+      const activeActions = SheepsheadPlugin.getValidActions(config, state, state.activePlayer!);
+      expect(activeActions).toContain('play_card');
+
+      // Non-active player gets nothing
+      const otherID = state.players.find((p) => p.userID !== state.activePlayer)!.userID;
+      expect(SheepsheadPlugin.getValidActions(config, state, otherID)).not.toContain('play_card');
+    });
+
+    it('crack available for opposition during pick phase', () => {
+      const config = makeConfig({ cracking: true });
+      let state = SheepsheadPlugin.createInitialState(config, [1, 2, 3, 4, 5]);
+      state = SheepsheadPlugin.applyEvent(config, state, { type: 'deal' });
+      state = SheepsheadPlugin.applyEvent(config, state, { type: 'pick', userID: 2 });
+      // Player 2 is picker (in bury phase now), but let's test during pick phase
+      // Re-deal and have player 2 pick so others are opposition
+      const state2 = {
+        ...state,
+        phase: 'pick' as const,
+        players: state.players.map((p) => ({
+          ...p,
+          role: p.userID === 2 ? ('picker' as const) : ('opposition' as const),
+        })),
+      };
+      const actions = SheepsheadPlugin.getValidActions(config, state2, 3);
+      expect(actions).toContain('crack');
+    });
+  });
+
+  describe('buildStore', () => {
+    it('won is true when scoreDelta > 0', () => {
+      const config = makeConfig();
+      const state = SheepsheadPlugin.createInitialState(config, [1, 2, 3]);
+      const scored = {
+        ...state,
+        players: state.players.map((p, i) => ({
+          ...p,
+          scoreDelta: i === 0 ? 2 : -1,
+        })),
+      };
+      const store = SheepsheadPlugin.buildStore(config, scored);
+      expect(store.players[0].won).toBe(true);
+      expect(store.players[1].won).toBe(false);
+      expect(store.players[2].won).toBe(false);
+    });
+
+    it('won is null when scoreDelta is null', () => {
+      const config = makeConfig();
+      const state = SheepsheadPlugin.createInitialState(config, [1, 2]);
+      const store = SheepsheadPlugin.buildStore(config, state);
+      for (const p of store.players) {
+        expect(p.won).toBeNull();
+      }
+    });
+
+    it('won is false when scoreDelta is 0', () => {
+      const config = makeConfig();
+      const state = SheepsheadPlugin.createInitialState(config, [1, 2]);
+      const scored = {
+        ...state,
+        players: state.players.map((p) => ({ ...p, scoreDelta: 0 })),
+      };
+      const store = SheepsheadPlugin.buildStore(config, scored);
+      for (const p of store.players) {
+        expect(p.won).toBe(false);
+      }
+    });
+
+    it('coerces null blind/buried to empty arrays', () => {
+      const config = makeConfig();
+      const state = {
+        ...SheepsheadPlugin.createInitialState(config, [1, 2]),
+        blind: null,
+        buried: null,
+      };
+      const store = SheepsheadPlugin.buildStore(config, state);
+      expect(store.blind).toEqual([]);
+      expect(store.buried).toEqual([]);
+    });
+  });
+
+  describe('getPlayerView schwanzer', () => {
+    it('all hands visible in schwanzer mode', () => {
+      const config = makeConfig();
+      const state = SheepsheadPlugin.createInitialState(config, [1, 2, 3]);
+      const schwanzer: SheepsheadState = {
+        ...state,
+        phase: 'score',
+        noPick: 'schwanzer',
+        players: state.players.map((p, i) => ({
+          ...p,
+          role: 'opposition' as const,
+          hand: DECK.slice(i * 10, i * 10 + 10),
+        })),
+      };
+
+      const view = SheepsheadPlugin.getPlayerView(config, schwanzer, 1);
+      // All players' hands should be visible
+      for (const p of view.players!) {
+        expect(p.hand).toHaveLength(10);
+      }
+    });
+  });
+
   describe('integration: full game flow', () => {
     it('deal → pick → bury → play → score', () => {
       const config = makeConfig({ partnerRule: 'jd' });

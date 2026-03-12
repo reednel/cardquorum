@@ -117,6 +117,60 @@ describe('handleDeal', () => {
     }
   });
 
+  it('deals correctly for 6 players', () => {
+    const config = makeConfig({ playerCount: 6, handSize: 5, blindSize: 2, partnerRule: 'jc' });
+    const state = handleDeal(makeState(6), config);
+    expect(state.players).toHaveLength(6);
+    for (const p of state.players) {
+      expect(p.hand).toHaveLength(5);
+    }
+    expect(state.blind).toHaveLength(2);
+  });
+
+  it('deals correctly for 7 players', () => {
+    const config = makeConfig({ playerCount: 7, handSize: 4, blindSize: 4, partnerRule: 'jd' });
+    const state = handleDeal(makeState(7), config);
+    expect(state.players).toHaveLength(7);
+    for (const p of state.players) {
+      expect(p.hand).toHaveLength(4);
+    }
+    expect(state.blind).toHaveLength(4);
+  });
+
+  it('deals correctly for 8 players (no blind)', () => {
+    const config = makeConfig({
+      playerCount: 8,
+      handSize: 4,
+      blindSize: 0,
+      pickerRule: null,
+      partnerRule: 'qc-qs',
+      noPick: null,
+    });
+    const state = handleDeal(makeState(8), config);
+    expect(state.players).toHaveLength(8);
+    for (const p of state.players) {
+      expect(p.hand).toHaveLength(4);
+    }
+    expect(state.blind).toHaveLength(0);
+    expect(state.phase).toBe('play'); // pickerRule=null skips to play
+  });
+
+  it('deals correctly with cardsRemoved', () => {
+    const config = makeConfig({
+      playerCount: 4,
+      handSize: 7,
+      blindSize: 2,
+      partnerRule: 'called-ace',
+      cardsRemoved: ['7c', '7s'],
+    });
+    const state = handleDeal(makeState(4), config);
+    const allCards = [...(state.blind ?? []), ...state.players.flatMap((p) => p.hand)];
+    expect(allCards).toHaveLength(30);
+    const names = allCards.map((c) => c.name);
+    expect(names).not.toContain('7c');
+    expect(names).not.toContain('7s');
+  });
+
   it('pickerRule left-of-dealer: auto-picks for player left of dealer, goes to bury', () => {
     const config = makeConfig({
       playerCount: 5,
@@ -289,6 +343,31 @@ describe('handleBury', () => {
     expect(state.phase).toBe('call');
   });
 
+  it('throws when burying wrong number of cards', () => {
+    const config = makeConfig(); // blindSize = 2
+    const dealt = handleDeal(makeState(), config);
+    const picked = pickContinue(handlePick(dealt, { type: 'pick', userID: 2 }, config));
+
+    const onlyOne = picked.players[1].hand.slice(0, 1);
+    expect(() =>
+      handleBury(picked, { type: 'bury', userID: 2, payload: { cards: onlyOne } }, config),
+    ).toThrow('Must bury exactly 2 cards');
+  });
+
+  it('throws when burying cards not in hand', () => {
+    const config = makeConfig();
+    const dealt = handleDeal(makeState(), config);
+    const picked = pickContinue(handlePick(dealt, { type: 'pick', userID: 2 }, config));
+
+    // Find a card NOT in picker's hand
+    const pickerNames = new Set(picked.players[1].hand.map((c) => c.name));
+    const notInHand = DECK.filter((c) => !pickerNames.has(c.name)).slice(0, 2);
+
+    expect(() =>
+      handleBury(picked, { type: 'bury', userID: 2, payload: { cards: notInHand } }, config),
+    ).toThrow("not in picker's hand");
+  });
+
   it('transitions to play phase for non-called-ace rules', () => {
     const config = makeConfig({ partnerRule: 'jd' });
     const dealt = handleDeal(makeState(), config);
@@ -351,6 +430,199 @@ describe('handleCall', () => {
     expect(state.players[1].role).toBe('picker');
     // Other players should have roles assigned
     expect(state.players.every((p) => p.role !== null)).toBe(true);
+  });
+
+  it('callOwnAce false: throws when picker calls an ace they hold', () => {
+    const config = makeConfig({ partnerRule: 'called-ace', callOwnAce: false });
+    // Build a state at call phase with a known hand containing 'ac'
+    const state: SheepsheadState = {
+      players: [
+        {
+          userID: 1,
+          role: 'opposition',
+          hand: [card('as'), card('ks'), card('7s'), card('8s'), card('9s')],
+          tricksWon: 0,
+          pointsWon: 0,
+          cardsWon: [],
+          scoreDelta: null,
+        },
+        {
+          userID: 2,
+          role: 'picker',
+          hand: [
+            card('ac'),
+            card('qc'),
+            card('jc'),
+            card('qd'),
+            card('jd'),
+            card('7d'),
+            card('8d'),
+            card('9d'),
+            card('kd'),
+            card('ad'),
+          ],
+          tricksWon: 0,
+          pointsWon: 0,
+          cardsWon: [],
+          scoreDelta: null,
+        },
+        {
+          userID: 3,
+          role: 'opposition',
+          hand: [card('ah'), card('kh'), card('7h'), card('8h'), card('9h')],
+          tricksWon: 0,
+          pointsWon: 0,
+          cardsWon: [],
+          scoreDelta: null,
+        },
+      ],
+      phase: 'call',
+      trickNumber: 0,
+      activePlayer: 2,
+      blind: [],
+      buried: [card('kc'), card('xc')],
+      calledCard: null,
+      hole: null,
+      tricks: [],
+      crack: null,
+      blitz: null,
+      previousGameDouble: null,
+      noPick: null,
+      redeals: [],
+    };
+
+    expect(() =>
+      handleCall(state, { type: 'call_ace', userID: 2, payload: { card: 'ac' } }, config),
+    ).toThrow('Cannot call ac');
+  });
+
+  it('callOwnAce true: allows picker to call an ace they hold', () => {
+    const config = makeConfig({ partnerRule: 'called-ace', callOwnAce: true });
+    const state: SheepsheadState = {
+      players: [
+        {
+          userID: 1,
+          role: 'opposition',
+          hand: [card('as'), card('ks'), card('7s'), card('8s'), card('9s')],
+          tricksWon: 0,
+          pointsWon: 0,
+          cardsWon: [],
+          scoreDelta: null,
+        },
+        {
+          userID: 2,
+          role: 'picker',
+          hand: [
+            card('ac'),
+            card('qc'),
+            card('jc'),
+            card('qd'),
+            card('jd'),
+            card('7d'),
+            card('8d'),
+            card('9d'),
+            card('kd'),
+            card('ad'),
+          ],
+          tricksWon: 0,
+          pointsWon: 0,
+          cardsWon: [],
+          scoreDelta: null,
+        },
+        {
+          userID: 3,
+          role: 'opposition',
+          hand: [card('ah'), card('kh'), card('7h'), card('8h'), card('9h')],
+          tricksWon: 0,
+          pointsWon: 0,
+          cardsWon: [],
+          scoreDelta: null,
+        },
+      ],
+      phase: 'call',
+      trickNumber: 0,
+      activePlayer: 2,
+      blind: [],
+      buried: [card('kc'), card('xc')],
+      calledCard: null,
+      hole: null,
+      tricks: [],
+      crack: null,
+      blitz: null,
+      previousGameDouble: null,
+      noPick: null,
+      redeals: [],
+    };
+
+    const result = handleCall(
+      state,
+      { type: 'call_ace', userID: 2, payload: { card: 'ac' } },
+      config,
+    );
+    expect(result.calledCard).toBe('ac');
+    expect(result.phase).toBe('play');
+  });
+
+  it('callOwnAce false: throws when picker calls an ace they buried', () => {
+    const config = makeConfig({ partnerRule: 'called-ace', callOwnAce: false });
+    const state: SheepsheadState = {
+      players: [
+        {
+          userID: 1,
+          role: 'opposition',
+          hand: [card('as'), card('ks'), card('7s'), card('8s'), card('9s')],
+          tricksWon: 0,
+          pointsWon: 0,
+          cardsWon: [],
+          scoreDelta: null,
+        },
+        {
+          userID: 2,
+          role: 'picker',
+          hand: [
+            card('qc'),
+            card('jc'),
+            card('qd'),
+            card('jd'),
+            card('7d'),
+            card('8d'),
+            card('9d'),
+            card('kd'),
+            card('ad'),
+          ],
+          tricksWon: 0,
+          pointsWon: 0,
+          cardsWon: [],
+          scoreDelta: null,
+        },
+        {
+          userID: 3,
+          role: 'opposition',
+          hand: [card('ah'), card('kh'), card('7h'), card('8h'), card('9h')],
+          tricksWon: 0,
+          pointsWon: 0,
+          cardsWon: [],
+          scoreDelta: null,
+        },
+      ],
+      phase: 'call',
+      trickNumber: 0,
+      activePlayer: 2,
+      blind: [],
+      buried: [card('ac'), card('xc')],
+      calledCard: null,
+      hole: null,
+      tricks: [],
+      crack: null,
+      blitz: null,
+      previousGameDouble: null,
+      noPick: null,
+      redeals: [],
+    };
+
+    expect(() =>
+      handleCall(state, { type: 'call_ace', userID: 2, payload: { card: 'ac' } }, config),
+    ).toThrow('Cannot call ac');
   });
 
   it('allows going alone', () => {
@@ -1261,6 +1533,53 @@ describe('handleScore', () => {
     expect(scored.players[2].scoreDelta).toBeGreaterThan(0);
     expect(scored.players[3].scoreDelta).toBeGreaterThan(0);
     // Zero-sum
+    const total = scored.players.reduce((s, p) => s + (p.scoreDelta ?? 0), 0);
+    expect(total).toBe(0);
+  });
+
+  it('leaster: tied fewest points — first in reduce wins', () => {
+    const config = makeConfig({ noPick: 'leaster' });
+    const state = makeNoPickScoreState([20, 20, 80], [1, 1, 5], 'leaster');
+    const scored = handleScore(state, config);
+
+    // Both player 1 and 2 have 20 pts; reduce picks the first minimum
+    expect(scored.players[0].scoreDelta).toBeGreaterThan(0);
+    expect(scored.players[1].scoreDelta).toBeLessThan(0);
+    expect(scored.players[2].scoreDelta).toBeLessThan(0);
+    const total = scored.players.reduce((s, p) => s + (p.scoreDelta ?? 0), 0);
+    expect(total).toBe(0);
+  });
+
+  it('moster: tied most points — first in reduce loses', () => {
+    const config = makeConfig({ noPick: 'moster' });
+    const state = makeNoPickScoreState([60, 60, 0], [3, 3, 1], 'moster');
+    const scored = handleScore(state, config);
+
+    // Both player 1 and 2 have 60 pts; reduce picks the first maximum → player 1 loses
+    expect(scored.players[0].scoreDelta).toBeLessThan(0);
+    expect(scored.players[1].scoreDelta).toBeGreaterThan(0);
+    expect(scored.players[2].scoreDelta).toBeGreaterThan(0);
+    const total = scored.players.reduce((s, p) => s + (p.scoreDelta ?? 0), 0);
+    expect(total).toBe(0);
+  });
+
+  it('schneidster: all players over 30 is a wash', () => {
+    const config = makeConfig({ noPick: 'schneidster' });
+    const state = makeNoPickScoreState([40, 40, 40], [2, 3, 2], 'schneidster');
+    const scored = handleScore(state, config);
+
+    for (const p of scored.players) {
+      expect(p.scoreDelta).toBe(0);
+    }
+  });
+
+  it('mittler: 5-player game picks correct middle', () => {
+    const config = makeConfig({ playerCount: 5, handSize: 6, blindSize: 2, noPick: 'mittler' });
+    const state = makeNoPickScoreState([10, 50, 30, 20, 10], [1, 3, 1, 1, 1], 'mittler');
+    const scored = handleScore(state, config);
+
+    // Sorted: [10, 10, 20, 30, 50] → middle = 20 → player 4 wins
+    expect(scored.players[3].scoreDelta).toBeGreaterThan(0);
     const total = scored.players.reduce((s, p) => s + (p.scoreDelta ?? 0), 0);
     expect(total).toBe(0);
   });

@@ -65,6 +65,65 @@ describe('deal', () => {
   });
 });
 
+describe('createShuffledDeck with cardsRemoved', () => {
+  it('removes specified cards from the deck', () => {
+    const deck = createShuffledDeck(['7c', '7s']);
+    expect(deck).toHaveLength(30);
+    const names = deck.map((c) => c.name);
+    expect(names).not.toContain('7c');
+    expect(names).not.toContain('7s');
+    // All remaining cards unique
+    expect(new Set(names).size).toBe(30);
+  });
+
+  it('returns full deck when cardsRemoved is empty', () => {
+    expect(createShuffledDeck([])).toHaveLength(32);
+  });
+});
+
+describe('deal with additional player counts', () => {
+  const layouts = [
+    { playerCount: 2, handSize: 14, blindSize: 4 },
+    { playerCount: 6, handSize: 5, blindSize: 2 },
+    { playerCount: 7, handSize: 4, blindSize: 4 },
+    { playerCount: 8, handSize: 4, blindSize: 0 },
+  ] as const;
+
+  it.each(layouts)('deals correctly for $playerCount players ($handSize/$blindSize)', (config) => {
+    const deck = createShuffledDeck();
+    const { hands, blind } = deal(deck, config);
+
+    expect(hands).toHaveLength(config.playerCount);
+    for (const hand of hands) {
+      expect(hand).toHaveLength(config.handSize);
+    }
+    expect(blind).toHaveLength(config.blindSize);
+
+    const allCards = [...blind, ...hands.flat()];
+    expect(allCards).toHaveLength(config.playerCount * config.handSize + config.blindSize);
+
+    const names = allCards.map((c) => c.name);
+    expect(new Set(names).size).toBe(names.length);
+  });
+
+  it('deals correctly with cardsRemoved', () => {
+    const deck = createShuffledDeck(['7c', '7s']);
+    const { hands, blind } = deal(deck, { playerCount: 4, handSize: 7, blindSize: 2 });
+
+    expect(hands).toHaveLength(4);
+    for (const hand of hands) {
+      expect(hand).toHaveLength(7);
+    }
+    expect(blind).toHaveLength(2);
+
+    const allCards = [...blind, ...hands.flat()];
+    expect(allCards).toHaveLength(30);
+    const names = allCards.map((c) => c.name);
+    expect(names).not.toContain('7c');
+    expect(names).not.toContain('7s');
+  });
+});
+
 describe('hasNoAceFaceTrump', () => {
   it('returns true when a hand has only low fail cards', () => {
     // Hand with only 7s, 8s, 9s of fail suits — no ace, no face, no trump

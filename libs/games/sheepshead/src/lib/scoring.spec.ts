@@ -446,6 +446,94 @@ describe('scoreMultiplier', () => {
     expect(scoreMultiplier(state, makeConfig({ cracking: true, multiplicityLimit: null }))).toBe(4);
   });
 
+  it('schneider + crack + blitz stack multiplicatively', () => {
+    const state = makeState({
+      tricks: [
+        {
+          plays: [
+            { player: 1, card: card('ac') },
+            { player: 2, card: card('7c') },
+          ],
+          winner: 1,
+        },
+        {
+          plays: [
+            { player: 2, card: card('as') },
+            { player: 1, card: card('7s') },
+          ],
+          winner: 2,
+        },
+      ],
+      crack: { crackedBy: 3, reCrackedBy: null },
+      blitz: { type: 'black-blitz', blitzedBy: 1 },
+    });
+    // schneider (2) × crack (2) × blitz (2) = 8
+    expect(scoreMultiplier(state, makeConfig({ cracking: true, blitzing: true }))).toBe(8);
+  });
+
+  it('schwarz + re-crack + blitz + doubleOnTheBump stack multiplicatively', () => {
+    // Picker took 0 tricks — schwarz applies
+    const state = makeState({
+      tricks: [
+        {
+          plays: [
+            { player: 2, card: card('ac') },
+            { player: 1, card: card('7c') },
+          ],
+          winner: 2,
+        },
+        {
+          plays: [
+            { player: 2, card: card('as') },
+            { player: 3, card: card('7s') },
+          ],
+          winner: 2,
+        },
+      ],
+      crack: { crackedBy: 2, reCrackedBy: 1 },
+      blitz: { type: 'red-blitz', blitzedBy: 2 },
+    });
+    // schwarz (3) × re-crack (4) × blitz (2) × doubleOnTheBump (2) = 48
+    expect(
+      scoreMultiplier(state, makeConfig({ cracking: true, blitzing: true, doubleOnTheBump: true })),
+    ).toBe(48);
+  });
+
+  it('multiplicityLimit caps the full stack', () => {
+    const state = makeState({
+      tricks: [
+        {
+          plays: [
+            { player: 2, card: card('ac') },
+            { player: 1, card: card('7c') },
+          ],
+          winner: 2,
+        },
+        {
+          plays: [
+            { player: 2, card: card('as') },
+            { player: 3, card: card('7s') },
+          ],
+          winner: 2,
+        },
+      ],
+      crack: { crackedBy: 2, reCrackedBy: 1 },
+      blitz: { type: 'red-blitz', blitzedBy: 2 },
+    });
+    // Would be 48 uncapped; limited to 8
+    expect(
+      scoreMultiplier(
+        state,
+        makeConfig({
+          cracking: true,
+          blitzing: true,
+          doubleOnTheBump: true,
+          multiplicityLimit: 8,
+        }),
+      ),
+    ).toBe(8);
+  });
+
   it('doubleOnTheBump does not apply when picker wins', () => {
     const state = makeState({
       buried: [card('ac'), card('as'), card('ah'), card('xc')],

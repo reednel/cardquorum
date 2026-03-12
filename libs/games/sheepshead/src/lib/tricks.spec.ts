@@ -57,6 +57,33 @@ describe('evaluateTrick', () => {
     expect(() => evaluateTrick({ plays: [], winner: null })).toThrow();
   });
 
+  it('hole card does not win the trick', () => {
+    const trick: TrickState = {
+      plays: [
+        { player: 1, card: card('qc'), isHoleCard: true }, // strongest trump, but hole card
+        { player: 2, card: card('7c') },
+        { player: 3, card: card('8c') },
+      ],
+      winner: null,
+    };
+    // 8c beats 7c in clubs; hole card is skipped
+    expect(evaluateTrick(trick)).toBe(3);
+  });
+
+  it('hole card as lead gives no trick-taking power', () => {
+    const trick: TrickState = {
+      plays: [
+        { player: 1, card: card('ac'), isHoleCard: true }, // lead but hole (clubs)
+        { player: 2, card: card('7c') }, // follows clubs
+        { player: 3, card: card('kc') }, // follows clubs, higher
+      ],
+      winner: null,
+    };
+    // Hole card lead has Infinity power — any real card beats it
+    // kc beats 7c in clubs
+    expect(evaluateTrick(trick)).toBe(3);
+  });
+
   it('handles 3+ player tricks', () => {
     const trick: TrickState = {
       plays: [
