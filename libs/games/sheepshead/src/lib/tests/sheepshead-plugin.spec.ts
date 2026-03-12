@@ -1,6 +1,6 @@
-import { SheepsheadPlugin } from './sheepshead-plugin';
-import { SheepsheadConfig, SheepsheadState, UserID } from './types';
-import { DECK } from './constants';
+import { SheepsheadPlugin } from '../sheepshead-plugin';
+import { SheepsheadConfig, SheepsheadState, UserID } from '../types';
+import { DECK } from '../constants';
 
 function makeConfig(overrides: Partial<SheepsheadConfig> = {}): SheepsheadConfig {
   return {
@@ -429,7 +429,7 @@ describe('SheepsheadPlugin', () => {
         const currentTrick = state.tricks[state.tricks.length - 1];
 
         // Pick the first legal card
-        const { legalPlays } = require('./tricks');
+        const { legalPlays } = require('../tricks');
         const legal = legalPlays(hand, currentTrick);
         const cardToPlay = legal[0];
 

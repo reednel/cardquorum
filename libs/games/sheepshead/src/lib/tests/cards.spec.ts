@@ -1,13 +1,7 @@
-import { isTrump, sumPoints, cardPower, cardsEqual } from './cards';
-import { DECK, TRUMP_ORDER, FAIL_RANK_ORDER } from './constants';
-import { Card, TrickState } from './types';
-
-/** Helper to find a card by name from the DECK. */
-function card(name: string): Card {
-  const c = DECK.find((d) => d.name === name);
-  if (!c) throw new Error(`Card not found: ${name}`);
-  return c;
-}
+import { isTrump, sumPoints, cardPower, cardsEqual } from '../cards';
+import { DECK, TRUMP_ORDER, FAIL_RANK_ORDER } from '../constants';
+import { TrickState } from '../types';
+import { card } from './test-helpers';
 
 describe('isTrump', () => {
   it('queens are trump', () => {

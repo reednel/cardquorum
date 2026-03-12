@@ -4,15 +4,9 @@ import {
   assignPartnerByRule,
   determinePartnerByCard,
   assignCardPairPartners,
-} from './partners';
-import { SheepsheadState, Card, PlayerState } from './types';
-import { DECK } from './constants';
-
-function card(name: string): Card {
-  const c = DECK.find((d) => d.name === name);
-  if (!c) throw new Error(`Card not found: ${name}`);
-  return c;
-}
+} from '../partners';
+import { SheepsheadState, Card, PlayerState } from '../types';
+import { card } from './test-helpers';
 
 function makePlayer(userID: number, hand: Card[], role: PlayerState['role'] = null): PlayerState {
   return { userID, role, hand, tricksWon: 0, pointsWon: 0, cardsWon: [], scoreDelta: null };

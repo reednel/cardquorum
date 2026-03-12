@@ -1,12 +1,6 @@
-import { evaluateTrick, legalPlays } from './tricks';
-import { DECK } from './constants';
-import { Card, TrickState } from './types';
-
-function card(name: string): Card {
-  const c = DECK.find((d) => d.name === name);
-  if (!c) throw new Error(`Card not found: ${name}`);
-  return c;
-}
+import { evaluateTrick, legalPlays } from '../tricks';
+import { TrickState } from '../types';
+import { card } from './test-helpers';
 
 describe('evaluateTrick', () => {
   it('trump beats fail', () => {

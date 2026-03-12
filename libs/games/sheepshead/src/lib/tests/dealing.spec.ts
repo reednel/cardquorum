@@ -1,12 +1,6 @@
-import { createShuffledDeck, deal, hasNoAceFaceTrump } from './dealing';
-import { DECK } from './constants';
-import { Card } from './types';
-
-function card(name: string): Card {
-  const c = DECK.find((d) => d.name === name);
-  if (!c) throw new Error(`Card not found: ${name}`);
-  return c;
-}
+import { createShuffledDeck, deal, hasNoAceFaceTrump } from '../dealing';
+import { DECK } from '../constants';
+import { card } from './test-helpers';
 
 describe('createShuffledDeck', () => {
   it('returns 32 cards', () => {

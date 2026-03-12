@@ -1,5 +1,5 @@
-import { DECK, TOTAL_POINTS, TRUMP_ORDER, FAIL_RANK_ORDER, CONFIG_PRESETS } from './constants';
-import { SheepsheadPlugin } from './sheepshead-plugin';
+import { DECK, TOTAL_POINTS, TRUMP_ORDER, FAIL_RANK_ORDER, CONFIG_PRESETS } from '../constants';
+import { SheepsheadPlugin } from '../sheepshead-plugin';
 
 describe('constants', () => {
   it('DECK has 32 cards', () => {

@@ -1,32 +1,7 @@
-import { pickingTeamPoints, gotSchneidered, gotSchwarzed, scoreMultiplier } from './scoring';
-import { DECK, TOTAL_POINTS } from './constants';
-import { Card, SheepsheadConfig, SheepsheadState, TrickState } from './types';
-
-function card(name: string): Card {
-  const c = DECK.find((d) => d.name === name);
-  if (!c) throw new Error(`Card not found: ${name}`);
-  return c;
-}
-
-function makeConfig(overrides: Partial<SheepsheadConfig> = {}): SheepsheadConfig {
-  return {
-    name: 'jack-of-diamonds',
-    playerCount: 3,
-    handSize: 10,
-    blindSize: 2,
-    pickerRule: 'autonomous',
-    partnerRule: 'jd',
-    noPick: 'leaster',
-    cracking: false,
-    blitzing: false,
-    doubleOnTheBump: false,
-    partnerOffTheHook: false,
-    noAceFaceTrump: false,
-    multiplicityLimit: null,
-    callOwnAce: null,
-    ...overrides,
-  };
-}
+import { pickingTeamPoints, gotSchneidered, gotSchwarzed, scoreMultiplier } from '../scoring';
+import { DECK, TOTAL_POINTS } from '../constants';
+import { SheepsheadConfig, SheepsheadState, TrickState } from '../types';
+import { card, makeConfig } from './test-helpers';
 
 function makeState(overrides: Partial<SheepsheadState> = {}): SheepsheadState {
   return {
