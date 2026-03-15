@@ -46,7 +46,7 @@ function setupPlayPhase() {
     blitz: null,
     previousGameDouble: null,
     noPick: null,
-    redeals: [],
+    redeals: null,
   };
   return state;
 }
@@ -176,7 +176,7 @@ describe('handlePlayCard', () => {
       blitz: null,
       previousGameDouble: null,
       noPick: null,
-      redeals: [],
+      redeals: null,
     };
 
     // Player 1 leads Ac, Player 2 plays Qc (trump wins), Player 3 plays As
@@ -240,7 +240,7 @@ describe('handlePlayCard', () => {
       blitz: null,
       previousGameDouble: null,
       noPick: null,
-      redeals: [],
+      redeals: null,
     };
 
     // Player 1 leads Ac (clubs), Player 2 plays 7c (must follow clubs), Player 3 plays As (off-suit)
@@ -304,7 +304,7 @@ describe('handlePlayCard', () => {
       blitz: null,
       previousGameDouble: null,
       noPick: 'leaster',
-      redeals: [],
+      redeals: null,
     };
 
     // Qc (trump) wins
@@ -368,7 +368,7 @@ describe('handlePlayCard', () => {
       blitz: null,
       previousGameDouble: null,
       noPick: null,
-      redeals: [],
+      redeals: null,
     };
 
     let s = handlePlayCard(

@@ -53,7 +53,7 @@ export function makeState(playerCount = 3): SheepsheadState {
     blitz: null,
     previousGameDouble: null,
     noPick: null,
-    redeals: [],
+    redeals: null,
   };
 }
 
@@ -93,6 +93,6 @@ export function makeNoPickScoreState(
     blitz: null,
     previousGameDouble: null,
     noPick,
-    redeals: [],
+    redeals: null,
   };
 }

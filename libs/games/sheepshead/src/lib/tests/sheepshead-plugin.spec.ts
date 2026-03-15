@@ -92,7 +92,7 @@ describe('SheepsheadPlugin', () => {
       expect(state.players).toHaveLength(3);
       expect(state.phase).toBe('deal');
       expect(state.trickNumber).toBe(0);
-      expect(state.activePlayer).toBeNull();
+      expect(state.activePlayer).toBe(1);
       expect(state.tricks).toEqual([]);
       expect(state.noPick).toBeNull();
     });
@@ -136,21 +136,40 @@ describe('SheepsheadPlugin', () => {
       expect(view.blind).toEqual([]);
     });
 
-    it('shows blind after pick phase', () => {
+    it('shows blind to picker during bury phase', () => {
       const config = makeConfig();
       const state = SheepsheadPlugin.createInitialState(config, [1, 2, 3]);
       const blind = DECK.slice(0, 2);
+      const inBury: SheepsheadState = {
+        ...state,
+        phase: 'bury',
+        blind,
+        players: state.players.map((p) => ({
+          ...p,
+          role: p.userID === 1 ? ('picker' as const) : ('opposition' as const),
+        })),
+      };
+
+      // Picker sees the blind during bury
+      expect(SheepsheadPlugin.getPlayerView(config, inBury, 1).blind).toEqual(blind);
+      // Non-picker does not
+      expect(SheepsheadPlugin.getPlayerView(config, inBury, 2).blind).toEqual([]);
+    });
+
+    it('hides blind during play phase', () => {
+      const config = makeConfig();
+      const state = SheepsheadPlugin.createInitialState(config, [1, 2, 3]);
       const inPlay: SheepsheadState = {
         ...state,
         phase: 'play',
-        blind,
+        blind: DECK.slice(0, 2),
       };
 
       const view = SheepsheadPlugin.getPlayerView(config, inPlay, 1);
-      expect(view.blind).toEqual(blind);
+      expect(view.blind).toEqual([]);
     });
 
-    it('hides buried from non-picker', () => {
+    it('hides buried cards from all players', () => {
       const config = makeConfig();
       const state = SheepsheadPlugin.createInitialState(config, [1, 2, 3]);
       const inPlay: SheepsheadState = {
@@ -163,8 +182,21 @@ describe('SheepsheadPlugin', () => {
         })),
       };
 
+      // Buried existence is visible (empty array) but contents are hidden from everyone
+      expect(SheepsheadPlugin.getPlayerView(config, inPlay, 1).buried).toEqual([]);
+      expect(SheepsheadPlugin.getPlayerView(config, inPlay, 2).buried).toEqual([]);
+    });
+
+    it('buried is null when no cards were buried', () => {
+      const config = makeConfig();
+      const state = SheepsheadPlugin.createInitialState(config, [1, 2, 3]);
+      const inPlay: SheepsheadState = {
+        ...state,
+        phase: 'play',
+        buried: null,
+      };
+
       expect(SheepsheadPlugin.getPlayerView(config, inPlay, 1).buried).toBeNull();
-      expect(SheepsheadPlugin.getPlayerView(config, inPlay, 2).buried).toEqual(DECK.slice(0, 2));
     });
   });
 
@@ -294,13 +326,21 @@ describe('SheepsheadPlugin', () => {
       expect(SheepsheadPlugin.getValidActions(config, state, otherID)).not.toContain('play_card');
     });
 
-    it('crack available for opposition during pick phase', () => {
+    it('only dealer can trigger deal', () => {
+      const config = makeConfig();
+      const state = SheepsheadPlugin.createInitialState(config, [1, 2, 3, 4, 5]);
+      // Dealer (player 1) can deal
+      expect(SheepsheadPlugin.getValidActions(config, state, 1)).toContain('deal');
+      // Non-dealer cannot
+      expect(SheepsheadPlugin.getValidActions(config, state, 2)).not.toContain('deal');
+    });
+
+    it('crack not available during pick phase', () => {
       const config = makeConfig({ cracking: true });
       let state = SheepsheadPlugin.createInitialState(config, [1, 2, 3, 4, 5]);
       state = SheepsheadPlugin.applyEvent(config, state, { type: 'deal' });
       state = SheepsheadPlugin.applyEvent(config, state, { type: 'pick', userID: 2 });
-      // Player 2 is picker (in bury phase now), but let's test during pick phase
-      // Re-deal and have player 2 pick so others are opposition
+      // Force back to pick phase to verify crack isn't offered there
       const state2 = {
         ...state,
         phase: 'pick' as const,
@@ -310,7 +350,116 @@ describe('SheepsheadPlugin', () => {
         })),
       };
       const actions = SheepsheadPlugin.getValidActions(config, state2, 3);
-      expect(actions).toContain('crack');
+      expect(actions).not.toContain('crack');
+    });
+
+    it('crack available in play phase for opposition who did not get to pick', () => {
+      const config = makeConfig({ cracking: true });
+      // 5 players: dealer=1, pick order: 2,3,4,5,1. Player 2 picks.
+      // Players 3,4,5,1 didn't get a chance to pick.
+      const state: SheepsheadState = {
+        ...SheepsheadPlugin.createInitialState(config, [1, 2, 3, 4, 5]),
+        phase: 'play',
+        trickNumber: 1,
+        tricks: [{ plays: [], winner: null }],
+        activePlayer: 2,
+        players: [1, 2, 3, 4, 5].map((id) => ({
+          userID: id,
+          role: id === 2 ? ('picker' as const) : ('opposition' as const),
+          hand: DECK.slice((id - 1) * 6, (id - 1) * 6 + 6),
+          tricksWon: 0,
+          pointsWon: 0,
+          cardsWon: [],
+          scoreDelta: null,
+        })),
+      };
+
+      // Player 3 didn't get to pick → can crack
+      expect(SheepsheadPlugin.getValidActions(config, state, 3)).toContain('crack');
+      // Player 5 didn't get to pick → can crack
+      expect(SheepsheadPlugin.getValidActions(config, state, 5)).toContain('crack');
+    });
+
+    it('crack not available for opposition who had a chance to pick', () => {
+      const config = makeConfig({ cracking: true });
+      // Player 4 picks (seats 2,3 passed first). Player 2 and 3 had a chance.
+      const state: SheepsheadState = {
+        ...SheepsheadPlugin.createInitialState(config, [1, 2, 3, 4, 5]),
+        phase: 'play',
+        trickNumber: 1,
+        tricks: [{ plays: [], winner: null }],
+        activePlayer: 5,
+        players: [1, 2, 3, 4, 5].map((id) => ({
+          userID: id,
+          role: id === 4 ? ('picker' as const) : ('opposition' as const),
+          hand: DECK.slice((id - 1) * 6, (id - 1) * 6 + 6),
+          tricksWon: 0,
+          pointsWon: 0,
+          cardsWon: [],
+          scoreDelta: null,
+        })),
+      };
+
+      // Players 2 and 3 passed before player 4 picked → had a chance → no crack
+      expect(SheepsheadPlugin.getValidActions(config, state, 2)).not.toContain('crack');
+      expect(SheepsheadPlugin.getValidActions(config, state, 3)).not.toContain('crack');
+      // Player 5 didn't get to pick → can crack
+      expect(SheepsheadPlugin.getValidActions(config, state, 5)).toContain('crack');
+    });
+
+    it('blitz available without crack', () => {
+      const config = makeConfig({ blitzing: true });
+      // Player has both black queens, no crack declared
+      const state: SheepsheadState = {
+        ...SheepsheadPlugin.createInitialState(config, [1, 2, 3, 4, 5]),
+        phase: 'play',
+        trickNumber: 1,
+        tricks: [{ plays: [], winner: null }],
+        activePlayer: 2,
+        crack: null,
+        players: [1, 2, 3, 4, 5].map((id) => ({
+          userID: id,
+          role: id === 2 ? ('picker' as const) : ('opposition' as const),
+          hand:
+            id === 3
+              ? [DECK.find((c) => c.name === 'qc')!, DECK.find((c) => c.name === 'qs')!]
+              : DECK.slice((id - 1) * 6, (id - 1) * 6 + 6),
+          tricksWon: 0,
+          pointsWon: 0,
+          cardsWon: [],
+          scoreDelta: null,
+        })),
+      };
+
+      const actions = SheepsheadPlugin.getValidActions(config, state, 3);
+      expect(actions).toContain('blitz');
+    });
+
+    it('crack/blitz not available after first card played', () => {
+      const config = makeConfig({ cracking: true, blitzing: true });
+      const state: SheepsheadState = {
+        ...SheepsheadPlugin.createInitialState(config, [1, 2, 3, 4, 5]),
+        phase: 'play',
+        trickNumber: 1,
+        tricks: [{ plays: [{ player: 2, card: DECK[0] }], winner: null }],
+        activePlayer: 3,
+        players: [1, 2, 3, 4, 5].map((id) => ({
+          userID: id,
+          role: id === 2 ? ('picker' as const) : ('opposition' as const),
+          hand:
+            id === 3
+              ? [DECK.find((c) => c.name === 'qc')!, DECK.find((c) => c.name === 'qs')!]
+              : DECK.slice((id - 1) * 6, (id - 1) * 6 + 6),
+          tricksWon: 0,
+          pointsWon: 0,
+          cardsWon: [],
+          scoreDelta: null,
+        })),
+      };
+
+      const actions = SheepsheadPlugin.getValidActions(config, state, 3);
+      expect(actions).not.toContain('crack');
+      expect(actions).not.toContain('blitz');
     });
   });
 
@@ -353,7 +502,7 @@ describe('SheepsheadPlugin', () => {
       }
     });
 
-    it('coerces null blind/buried to empty arrays', () => {
+    it('preserves null blind/buried in store', () => {
       const config = makeConfig();
       const state = {
         ...SheepsheadPlugin.createInitialState(config, [1, 2]),
@@ -361,8 +510,48 @@ describe('SheepsheadPlugin', () => {
         buried: null,
       };
       const store = SheepsheadPlugin.buildStore(config, state);
-      expect(store.blind).toEqual([]);
-      expect(store.buried).toEqual([]);
+      expect(store.blind).toBeNull();
+      expect(store.buried).toBeNull();
+    });
+  });
+
+  describe('getPlayerView tricks/hole', () => {
+    it('hides tricks and hole card from view', () => {
+      const config = makeConfig();
+      const state = SheepsheadPlugin.createInitialState(config, [1, 2, 3]);
+      const inPlay: SheepsheadState = {
+        ...state,
+        phase: 'play',
+        hole: 'ac',
+        tricks: [
+          {
+            plays: [{ player: 1, card: DECK[0] }],
+            winner: null,
+          },
+        ],
+      };
+
+      const view = SheepsheadPlugin.getPlayerView(config, inPlay, 1);
+      expect(view.tricks).toEqual([]);
+      expect(view.hole).toBeNull();
+    });
+
+    it('hides other players roles', () => {
+      const config = makeConfig();
+      const state = SheepsheadPlugin.createInitialState(config, [1, 2, 3]);
+      const inPlay: SheepsheadState = {
+        ...state,
+        phase: 'play',
+        players: state.players.map((p) => ({
+          ...p,
+          role: p.userID === 2 ? ('picker' as const) : ('opposition' as const),
+        })),
+      };
+
+      const view = SheepsheadPlugin.getPlayerView(config, inPlay, 1);
+      expect(view.players![0].role).toBe('opposition'); // own role visible
+      expect(view.players![1].role).toBeNull(); // other role hidden
+      expect(view.players![2].role).toBeNull(); // other role hidden
     });
   });
 
@@ -430,8 +619,7 @@ describe('SheepsheadPlugin', () => {
 
         // Pick the first legal card
         const { legalPlays } = require('../tricks');
-        const legal = legalPlays(hand, currentTrick);
-        const cardToPlay = legal[0];
+        const cardToPlay = legalPlays(state, config, activePlayer).cards[0];
 
         state = SheepsheadPlugin.applyEvent(config, state, {
           type: 'play_card',
@@ -466,8 +654,8 @@ describe('SheepsheadPlugin', () => {
 
       // Build store from final state
       const store = SheepsheadPlugin.buildStore(config, state);
-      expect(store.tricks.length).toBeGreaterThan(0);
-      expect(store.blind.length).toBeGreaterThan(0);
+      expect(store.tricks?.length).toBeGreaterThan(0);
+      expect(store.blind?.length).toBeGreaterThan(0);
     });
   });
 });

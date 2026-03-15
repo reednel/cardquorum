@@ -69,7 +69,7 @@ describe('handleScore', () => {
       blitz: null,
       previousGameDouble: null,
       noPick: null,
-      redeals: [],
+      redeals: null,
     };
 
     const scored = handleScore(state, config);
@@ -140,7 +140,7 @@ describe('handleScore', () => {
       blitz: null,
       previousGameDouble: null,
       noPick: null,
-      redeals: [],
+      redeals: null,
     };
 
     const scored = handleScore(state, config);
@@ -437,7 +437,7 @@ describe('handleScore', () => {
       blitz: null,
       previousGameDouble: null,
       noPick: null,
-      redeals: [],
+      redeals: null,
     };
     const scored = handleScore(state, config);
 

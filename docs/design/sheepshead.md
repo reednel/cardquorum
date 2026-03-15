@@ -49,7 +49,7 @@ deal → pick → bury → call → play → score
 
 ### deal
 
-Shuffle the deck, distribute cards per config's `handSize`/`blindSize`. Transition to `pick`. Active player is the player after the dealer (seat index 1).
+Shuffle the deck, distribute cards per config's `handSize`/`blindSize`. Transition to `pick`. Only the dealer (seat index 0, the active player at game start) can trigger this action. Active player advances to the player after the dealer (seat index 1).
 
 ### pick
 
@@ -157,13 +157,14 @@ When all players pass and leasters is enabled, everyone plays for themselves (al
 
 ## Visibility
 
-`getPlayerView` implements fog-of-war:
+`getPlayerView` implements fog-of-war, mirroring what a player would know at a physical table:
 
-- **Hands**: Each player sees only their own hand. Other players' hands appear as empty arrays.
-- **Blind**: Hidden (empty array) during `deal` and `pick` phases. Visible after picking.
-- **Buried cards**: Only visible to the picker. `null` for everyone else.
-- **Partner identity**: In `called-ace`, the partner's role is shown as `'opposition'` until the called card has been played.
-- **Hole card**: During play, only the picker knows the hole card's identity. Other players see `'hidden'`. The trick-taker can see the hole card's identity in their trick. All hole cards are revealed at scoring.
+- **Hands**: Each player sees only their own hand. Other players' hands appear as empty arrays (except in schwanzer, where all hands are face-up).
+- **Roles**: Other players' roles are hidden (`null`). Each player sees only their own role.
+- **Blind**: Only visible to the picker during the `bury` phase. Empty array at all other times.
+- **Buried cards**: Always hidden from all players (empty array when cards exist, `null` when no bury occurred). Like in real life, no one can look at buried cards once they're set aside.
+- **Tricks**: Not included in the view (empty array). Players must rely on memory to track played cards.
+- **Hole card**: Always hidden from the view (`null`). The hole card's identity is secret during play.
 
 ## Configuration
 
@@ -209,13 +210,13 @@ The `name` field is a unique, space-free identifier for each config (e.g. `'call
 
 ### Cracking and Re-cracking
 
-An opposition player who did not get the opportunity to pick can declare a crack before the first card is played. This doubles the stakes. A member of the picking team can respond by declaring a re-crack, which doubles the stakes again (quadrupling from the original). Re-crack must also occur before the first card is played.
+An opposition player who did not get the opportunity to pick can declare a crack before the first card is played (during the `play` phase, before any cards are on the table). "Did not get the opportunity" means the player's seat comes after the picker in pick order — players who chose to pass had their chance. This doubles the stakes. A member of the picking team can respond by declaring a re-crack, which doubles the stakes again (quadrupling from the original). Re-crack must also occur before the first card is played.
 
 > Note, this requires each player to be aware of their own team alignment, however that is determined for that game
 
 ### Blitzing
 
-A player with both black Queens can declare a blitz before the first card is played. This doubles the stakes. A player with both red Queens can declare a red blitz, also doubling the stakes. Only one blitz can be declared per game.
+A player with both black Queens can declare a blitz before the first card is played. This doubles the stakes. A player with both red Queens can declare a red blitz, also doubling the stakes. Only one blitz can be declared per game. Blitzing does not require a crack to have been declared.
 
 ### Double on the Bump
 

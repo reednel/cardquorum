@@ -9,12 +9,9 @@ import {
   PickPhaseResult,
   UserID,
   TrickState,
-  Card,
   CardName,
-  CalledCard,
-  Suit,
 } from './types';
-import { DECK, TRUMP_ORDER } from './constants';
+import { DECK, FAIL_ACES, FAIL_TENS, TRUMP_ORDER } from './constants';
 import { createShuffledDeck, deal, hasNoAceFaceTrump } from './dealing';
 import { cardsEqual, isTrump, sumPoints } from './cards';
 import { evaluateTrick, legalPlays } from './tricks';
@@ -208,7 +205,7 @@ export function handlePick(
         };
         return {
           outcome: 'doubler-redeal',
-          redeals: [...state.redeals, redealRecord],
+          redeals: [...(state.redeals ?? []), redealRecord],
         };
       }
       default:
@@ -288,22 +285,6 @@ export function handleBury(
     tricks: [{ plays: [], winner: null }],
   };
 }
-
-/** Get the suit of a called card. */
-function calledCardSuit(calledCard: CalledCard): Suit | null {
-  if (calledCard === 'alone') return null;
-  const card = DECK.find((c) => c.name === calledCard);
-  return card ? card.suit : null;
-}
-
-/** The three fail aces. */
-const FAIL_ACES: CardName[] = ['ac', 'as', 'ah'];
-
-/** The three fail 10s. */
-const FAIL_TENS: CardName[] = ['xc', 'xs', 'xh'];
-
-/** Fail suits (non-trump). */
-const FAIL_SUITS: Suit[] = ['clubs', 'spades', 'hearts'];
 
 /**
  * Call phase: picker calls a card (ace, 10, or alone), partner determined (hidden).
@@ -397,99 +378,6 @@ export function handleCall(
 }
 
 /**
- * Whether the called suit has been led in any completed trick.
- */
-function calledSuitHasBeenLed(state: SheepsheadState): boolean {
-  if (!state.calledCard || state.calledCard === 'alone') return false;
-  const suit = calledCardSuit(state.calledCard);
-  if (!suit) return false;
-  // Check completed tricks (those with a winner)
-  return state.tricks.some(
-    (t) =>
-      t.plays.length > 0 &&
-      !isTrump(t.plays[0].card) &&
-      t.plays[0].card.suit === suit &&
-      t.winner !== null,
-  );
-}
-
-/**
- * Whether the current trick is being led with the called suit.
- */
-function currentTrickLeadsCalledSuit(state: SheepsheadState, currentTrick: TrickState): boolean {
-  if (!state.calledCard || state.calledCard === 'alone') return false;
-  if (currentTrick.plays.length === 0) return false;
-  const suit = calledCardSuit(state.calledCard);
-  if (!suit) return false;
-  const leadCard = currentTrick.plays[0].card;
-  return !isTrump(leadCard) && leadCard.suit === suit;
-}
-
-/**
- * Apply called-ace constraints to narrow legal plays.
- * Returns the filtered set of legal cards, or null if the hole card must be played instead.
- */
-function applyCalledAceConstraints(
-  baseLegal: Card[],
-  state: SheepsheadState,
-  currentTrick: TrickState,
-  playerRole: string | null,
-  playerHand: Card[],
-): { legal: Card[]; playHoleCard: boolean } {
-  if (!state.calledCard || state.calledCard === 'alone') {
-    return { legal: baseLegal, playHoleCard: false };
-  }
-
-  const suit = calledCardSuit(state.calledCard);
-  if (!suit) return { legal: baseLegal, playHoleCard: false };
-
-  const isFirstLead =
-    !calledSuitHasBeenLed(state) && currentTrickLeadsCalledSuit(state, currentTrick);
-
-  if (isFirstLead) {
-    // Partner must play the called card
-    if (playerRole === 'partner') {
-      const calledCardInHand = baseLegal.find((c) => c.name === state.calledCard);
-      if (calledCardInHand) {
-        return { legal: [calledCardInHand], playHoleCard: false };
-      }
-    }
-
-    // Picker with hole card: must play the hole card
-    if (playerRole === 'picker' && state.hole) {
-      return { legal: [], playHoleCard: true };
-    }
-
-    // Picker calling a 10: must play the ace of the called suit
-    if (playerRole === 'picker' && FAIL_TENS.includes(state.calledCard)) {
-      const aceOfSuit = ('a' + suit[0]) as CardName;
-      const aceInHand = baseLegal.find((c) => c.name === aceOfSuit);
-      if (aceInHand) {
-        return { legal: [aceInHand], playHoleCard: false };
-      }
-    }
-  }
-
-  // Before the called suit has been led: picker cannot slough their last card of the called suit
-  if (playerRole === 'picker' && !calledSuitHasBeenLed(state) && !isFirstLead && !state.hole) {
-    const calledSuitCards = playerHand.filter((c) => !isTrump(c) && c.suit === suit);
-    if (calledSuitCards.length === 1) {
-      // Picker has exactly one card of the called suit — can't play it unless following suit
-      const lastCard = calledSuitCards[0];
-      const isFollowingSuit =
-        currentTrick.plays.length > 0 &&
-        !isTrump(currentTrick.plays[0].card) &&
-        currentTrick.plays[0].card.suit === suit;
-      if (!isFollowingSuit && baseLegal.length > 1) {
-        return { legal: baseLegal.filter((c) => !cardsEqual(c, lastCard)), playHoleCard: false };
-      }
-    }
-  }
-
-  return { legal: baseLegal, playHoleCard: false };
-}
-
-/**
  * Play phase: player plays a card to the current trick.
  */
 export function handlePlayCard(
@@ -501,20 +389,8 @@ export function handlePlayCard(
   const playerIdx = seatIndex(state, event.userID);
   const currentTrickIdx = state.tricks.length - 1;
   const currentTrick = state.tricks[currentTrickIdx];
-  const playerRole = state.players[playerIdx].role;
 
-  // Check if the hole card must be played instead
-  const baseLegal = legalPlays(state.players[playerIdx].hand, currentTrick);
-  const { legal, playHoleCard } =
-    config.partnerRule === 'called-ace'
-      ? applyCalledAceConstraints(
-          baseLegal,
-          state,
-          currentTrick,
-          playerRole,
-          state.players[playerIdx].hand,
-        )
-      : { legal: baseLegal, playHoleCard: false };
+  const { cards: legal, playHoleCard } = legalPlays(state, config, event.userID);
 
   if (playHoleCard) {
     // Picker must play the hole card — validate the event card matches

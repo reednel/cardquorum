@@ -1,6 +1,34 @@
 import { evaluateTrick, legalPlays } from '../tricks';
-import { TrickState } from '../types';
-import { card } from './test-helpers';
+import { SheepsheadConfig, SheepsheadState, TrickState, Card } from '../types';
+import { card, makeConfig } from './test-helpers';
+
+/** Build a minimal play-phase state for legalPlays tests. */
+function playState(
+  userID: number,
+  hand: Card[],
+  currentTrick: TrickState,
+  overrides: Partial<SheepsheadState> = {},
+): SheepsheadState {
+  return {
+    players: [
+      { userID, role: null, hand, tricksWon: 0, pointsWon: 0, cardsWon: [], scoreDelta: null },
+    ],
+    phase: 'play',
+    trickNumber: 1,
+    activePlayer: userID,
+    blind: [],
+    buried: [],
+    calledCard: null,
+    hole: null,
+    tricks: [currentTrick],
+    crack: null,
+    blitz: null,
+    previousGameDouble: null,
+    noPick: null,
+    redeals: null,
+    ...overrides,
+  };
+}
 
 describe('evaluateTrick', () => {
   it('trump beats fail', () => {
@@ -92,19 +120,36 @@ describe('evaluateTrick', () => {
 });
 
 describe('legalPlays', () => {
+  const config = makeConfig();
+
   it('any card when leading', () => {
     const hand = [card('ac'), card('qc'), card('7s')];
     const trick: TrickState = { plays: [], winner: null };
-    expect(legalPlays(hand, trick)).toEqual(hand);
+    const state = playState(1, hand, trick);
+    expect(legalPlays(state, config, 1).cards).toEqual(hand);
   });
 
   it('must follow trump when trump led', () => {
     const hand = [card('ac'), card('qc'), card('7d')];
     const trick: TrickState = {
-      plays: [{ player: 1, card: card('jc') }], // trump lead
+      plays: [{ player: 2, card: card('jc') }], // trump lead
       winner: null,
     };
-    const legal = legalPlays(hand, trick);
+    const state = playState(1, hand, trick, {
+      players: [
+        { userID: 1, role: null, hand, tricksWon: 0, pointsWon: 0, cardsWon: [], scoreDelta: null },
+        {
+          userID: 2,
+          role: null,
+          hand: [],
+          tricksWon: 0,
+          pointsWon: 0,
+          cardsWon: [],
+          scoreDelta: null,
+        },
+      ],
+    });
+    const legal = legalPlays(state, config, 1).cards;
     // qc and 7d are trump
     expect(legal).toHaveLength(2);
     expect(legal.map((c) => c.name).sort()).toEqual(['7d', 'qc']);
@@ -113,10 +158,24 @@ describe('legalPlays', () => {
   it('must follow fail suit when fail led', () => {
     const hand = [card('ac'), card('kc'), card('7s'), card('qc')];
     const trick: TrickState = {
-      plays: [{ player: 1, card: card('9c') }], // clubs lead
+      plays: [{ player: 2, card: card('9c') }], // clubs lead
       winner: null,
     };
-    const legal = legalPlays(hand, trick);
+    const state = playState(1, hand, trick, {
+      players: [
+        { userID: 1, role: null, hand, tricksWon: 0, pointsWon: 0, cardsWon: [], scoreDelta: null },
+        {
+          userID: 2,
+          role: null,
+          hand: [],
+          tricksWon: 0,
+          pointsWon: 0,
+          cardsWon: [],
+          scoreDelta: null,
+        },
+      ],
+    });
+    const legal = legalPlays(state, config, 1).cards;
     // ac and kc are the only clubs (non-trump)
     expect(legal).toHaveLength(2);
     expect(legal.map((c) => c.name).sort()).toEqual(['ac', 'kc']);
@@ -125,20 +184,48 @@ describe('legalPlays', () => {
   it('any card when void in led suit', () => {
     const hand = [card('as'), card('ks'), card('7s')];
     const trick: TrickState = {
-      plays: [{ player: 1, card: card('ac') }], // clubs lead
+      plays: [{ player: 2, card: card('ac') }], // clubs lead
       winner: null,
     };
+    const state = playState(1, hand, trick, {
+      players: [
+        { userID: 1, role: null, hand, tricksWon: 0, pointsWon: 0, cardsWon: [], scoreDelta: null },
+        {
+          userID: 2,
+          role: null,
+          hand: [],
+          tricksWon: 0,
+          pointsWon: 0,
+          cardsWon: [],
+          scoreDelta: null,
+        },
+      ],
+    });
     // No clubs in hand, can play anything
-    expect(legalPlays(hand, trick)).toEqual(hand);
+    expect(legalPlays(state, config, 1).cards).toEqual(hand);
   });
 
   it('any card when void in trump', () => {
     const hand = [card('ac'), card('as'), card('7c')];
     const trick: TrickState = {
-      plays: [{ player: 1, card: card('qc') }], // trump lead
+      plays: [{ player: 2, card: card('qc') }], // trump lead
       winner: null,
     };
+    const state = playState(1, hand, trick, {
+      players: [
+        { userID: 1, role: null, hand, tricksWon: 0, pointsWon: 0, cardsWon: [], scoreDelta: null },
+        {
+          userID: 2,
+          role: null,
+          hand: [],
+          tricksWon: 0,
+          pointsWon: 0,
+          cardsWon: [],
+          scoreDelta: null,
+        },
+      ],
+    });
     // No trump in hand
-    expect(legalPlays(hand, trick)).toEqual(hand);
+    expect(legalPlays(state, config, 1).cards).toEqual(hand);
   });
 });

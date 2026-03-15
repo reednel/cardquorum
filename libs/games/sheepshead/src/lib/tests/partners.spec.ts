@@ -27,7 +27,7 @@ function makeState(players: PlayerState[]): SheepsheadState {
     blitz: null,
     previousGameDouble: null,
     noPick: null,
-    redeals: [],
+    redeals: null,
   };
 }
 

@@ -123,7 +123,7 @@ export interface SheepsheadState {
   /** How to proceed when nobody picks.  */
   noPick: NoPick | null;
   /** Hands/blinds from previous deals when doubler caused a redeal. */
-  redeals: RedealRecord[];
+  redeals: RedealRecord[] | null;
 }
 
 /**
@@ -152,15 +152,15 @@ export type PickPhaseResult =
 export interface SheepsheadStore {
   players: PlayerStore[];
   /** Original cards in the blind. */
-  blind: Card[];
+  blind: Card[] | null;
   /** Cards buried by the picker. */
-  buried: Card[];
+  buried: Card[] | null;
   /** Called card (only used in called-ace variant). */
   calledCard: CalledCard | null;
   /** Card laid face-down in the unknown ace condition. */
   hole: CardName | null;
   /** Completed tricks. */
-  tricks: TrickState[];
+  tricks: TrickState[] | null;
   /** Crack/re-crack state. */
   crack: CrackState | null;
   /** Blitz state. */
@@ -170,7 +170,7 @@ export interface SheepsheadStore {
   /** How to proceed when nobody picks.  */
   noPick: NoPick | null;
   /** Hands/blinds from previous deals when doubler caused a redeal. */
-  redeals: RedealRecord[];
+  redeals: RedealRecord[] | null;
 }
 
 export interface TrickState {

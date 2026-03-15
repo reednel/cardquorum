@@ -8,6 +8,7 @@ import {
   UserID,
   BlitzState,
   CardName,
+  TrickState,
 } from './types';
 import {
   handleDeal,
@@ -90,7 +91,7 @@ function createInitialState(config: SheepsheadConfig, userIDs: UserID[]): Sheeps
     })),
     phase: 'deal',
     trickNumber: 0,
-    activePlayer: null,
+    activePlayer: userIDs[0],
     blind: [],
     buried: [],
     calledCard: null,
@@ -100,8 +101,23 @@ function createInitialState(config: SheepsheadConfig, userIDs: UserID[]): Sheeps
     blitz: null,
     previousGameDouble: null,
     noPick: null,
-    redeals: [],
+    redeals: null,
   };
+}
+
+/**
+ * Whether a player had a chance to pick/pass during the pick phase.
+ * Pick order goes from seat 1 (left of dealer) clockwise back to seat 0.
+ * Players up to and including the picker in this order had a chance.
+ */
+function hadChanceToPick(state: SheepsheadState, playerIdx: number): boolean {
+  const pickerIdx = state.players.findIndex((p) => p.role === 'picker');
+  if (pickerIdx === -1) return false;
+  const n = state.players.length;
+  // Position in pick order: seat 1 is position 0, seat 2 is position 1, ..., seat 0 is last
+  const playerPickPos = (playerIdx - 1 + n) % n;
+  const pickerPickPos = (pickerIdx - 1 + n) % n;
+  return playerPickPos <= pickerPickPos;
 }
 
 function getValidActions(
@@ -114,23 +130,10 @@ function getValidActions(
 
   switch (state.phase) {
     case 'deal':
-      return ['deal'];
+      return state.activePlayer === userID ? ['deal'] : [];
     case 'pick':
       if (state.activePlayer === userID) {
         actions.push('pick', 'pass');
-      }
-      // Crack: opposition player who didn't get a chance to pick can crack
-      if (config.cracking && !state.crack && player?.role === 'opposition') {
-        actions.push('crack');
-      }
-      // Re-crack: picker or partner can re-crack an existing crack
-      if (
-        config.cracking &&
-        state.crack &&
-        !state.crack.reCrackedBy &&
-        (player?.role === 'picker' || player?.role === 'partner')
-      ) {
-        actions.push('re_crack');
       }
       return actions;
     case 'bury':
@@ -141,24 +144,42 @@ function getValidActions(
       if (state.activePlayer === userID) {
         actions.push('play_card');
       }
-      // Blitz: before first card is played, a player holding both black or red queens can blitz
-      if (
-        config.blitzing &&
-        state.crack &&
-        !state.blitz &&
-        state.trickNumber === 1 &&
-        state.tricks.length === 1 &&
-        state.tricks[0].plays.length === 0 &&
-        player
-      ) {
-        const hasBlackQueens =
-          player.hand.some((c) => c.name === 'qc') && player.hand.some((c) => c.name === 'qs');
-        const hasRedQueens =
-          player.hand.some((c) => c.name === 'qh') && player.hand.some((c) => c.name === 'qd');
-        if (hasBlackQueens || hasRedQueens) {
-          actions.push('blitz');
+
+      // Before first card: crack, re-crack, and blitz are available
+      const beforeFirstCard =
+        state.trickNumber === 1 && state.tricks.length === 1 && state.tricks[0].plays.length === 0;
+
+      if (beforeFirstCard) {
+        // Crack: opposition player who didn't get a chance to pick
+        if (config.cracking && !state.crack && player?.role === 'opposition') {
+          const playerIdx = state.players.findIndex((p) => p.userID === userID);
+          if (!hadChanceToPick(state, playerIdx)) {
+            actions.push('crack');
+          }
+        }
+
+        // Re-crack: picker or partner can respond to a crack
+        if (
+          config.cracking &&
+          state.crack &&
+          !state.crack.reCrackedBy &&
+          (player?.role === 'picker' || player?.role === 'partner')
+        ) {
+          actions.push('re_crack');
+        }
+
+        // Blitz: any player holding both black or red queens
+        if (config.blitzing && !state.blitz && player) {
+          const hasBlackQueens =
+            player.hand.some((c) => c.name === 'qc') && player.hand.some((c) => c.name === 'qs');
+          const hasRedQueens =
+            player.hand.some((c) => c.name === 'qh') && player.hand.some((c) => c.name === 'qd');
+          if (hasBlackQueens || hasRedQueens) {
+            actions.push('blitz');
+          }
         }
       }
+
       return actions;
     }
     case 'score':
@@ -233,66 +254,27 @@ function getPlayerView(
   const thisPlayer = state.players.find((p) => p.userID === userID);
   const isPicker = thisPlayer?.role === 'picker';
 
-  // Schwanzer: all hands are face-up (showdown)
-  const isSchwanzer = state.noPick === 'schwanzer';
-
   // Each player only sees their own hand (unless schwanzer)
-  const players = isSchwanzer
-    ? state.players
-    : state.players.map((p) => {
-        if (p.userID === userID) return p;
+  const players = state.players.map((p) => {
+    if (p.userID === userID) return p;
 
-        // Called-ace: hide partner role until the called card has been played
-        const hideRole =
-          config.partnerRule === 'called-ace' &&
-          state.phase === 'play' &&
-          p.role === 'partner' &&
-          state.calledCard &&
-          state.calledCard !== 'alone' &&
-          !calledCardPlayed(state);
+    return {
+      userID: p.userID,
+      role: null,
+      hand: state.noPick === 'schwanzer' ? p.hand : [],
+      tricksWon: 0,
+      pointsWon: 0,
+      cardsWon: [],
+      scoreDelta: null,
+    };
+  });
 
-        return {
-          ...p,
-          hand: [],
-          role: hideRole ? ('opposition' as const) : p.role,
-        };
-      });
-
-  // Blind is face-down during deal and pick phases
-  const blind = state.phase === 'deal' || state.phase === 'pick' ? [] : state.blind;
-
-  // Buried cards are only visible to the picker
-  const buried = isPicker ? state.buried : null;
-
-  // Hole card identity: only the picker knows during play;
-  // after scoring, everyone can see it.
-  const hole =
-    state.phase === 'score' || isPicker
-      ? state.hole
-      : state.hole
-        ? ('hidden' as unknown as CardName)
-        : null;
-
-  // Hide hole card identity in tricks from everyone except the trick-taker
-  const tricks = state.hole
-    ? state.tricks.map((t) => {
-        const holePlay = t.plays.find((p) => p.isHoleCard);
-        if (!holePlay) return t;
-        // During scoring, reveal to all
-        if (state.phase === 'score') return t;
-        // Trick-taker can see the hole card
-        if (t.winner === userID) return t;
-        // Everyone else sees a blank card
-        return {
-          ...t,
-          plays: t.plays.map((p) =>
-            p.isHoleCard
-              ? { ...p, card: { ...p.card, name: 'hidden' as CardName, points: 0 as any } }
-              : p,
-          ),
-        };
-      })
-    : state.tricks;
+  // Like in real life, players must rely on memory to track these cards.
+  // TODO: account for partner-draft variant where picker pulls first 2 in blind and partner pulls second 2 in blind
+  const blind = state.phase === 'bury' && isPicker ? state.blind : [];
+  const buried = state.buried ? [] : null;
+  const hole = null;
+  const tricks: TrickState[] = [];
 
   return { ...state, players, blind, buried, hole, tricks };
 }
@@ -309,8 +291,8 @@ function buildStore(config: SheepsheadConfig, state: SheepsheadState): Sheepshea
       won: p.scoreDelta !== null ? p.scoreDelta > 0 : null,
       scoreDelta: p.scoreDelta,
     })),
-    blind: state.blind ?? [],
-    buried: state.buried ?? [],
+    blind: state.blind,
+    buried: state.buried,
     calledCard: state.calledCard,
     hole: state.hole,
     tricks: state.tricks,

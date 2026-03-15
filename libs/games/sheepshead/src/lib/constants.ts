@@ -1,4 +1,4 @@
-import { Card, Suit, Rank, CardName, SheepsheadConfig, ConfigPreset } from './types';
+import { Card, CardName, Suit, Rank, SheepsheadConfig, ConfigPreset } from './types';
 
 export const TOTAL_POINTS = 120;
 
@@ -64,6 +64,12 @@ export const TRUMP_ORDER: readonly CardName[] = [
 
 /** Non-trump rank order within a fail suit, highest to lowest. */
 export const FAIL_RANK_ORDER: readonly Rank[] = ['ace', '10', 'king', '9', '8', '7'];
+
+/** The three fail aces. */
+export const FAIL_ACES: readonly CardName[] = ['ac', 'as', 'ah'];
+
+/** The three fail 10s. */
+export const FAIL_TENS: readonly CardName[] = ['xc', 'xs', 'xh'];
 
 const HOUSE_RULE_DEFAULTS: Pick<
   SheepsheadConfig,

@@ -100,7 +100,7 @@ describe('handleCall', () => {
       blitz: null,
       previousGameDouble: null,
       noPick: null,
-      redeals: [],
+      redeals: null,
     };
 
     expect(() =>
@@ -163,7 +163,7 @@ describe('handleCall', () => {
       blitz: null,
       previousGameDouble: null,
       noPick: null,
-      redeals: [],
+      redeals: null,
     };
 
     const result = handleCall(
@@ -229,7 +229,7 @@ describe('handleCall', () => {
       blitz: null,
       previousGameDouble: null,
       noPick: null,
-      redeals: [],
+      redeals: null,
     };
 
     expect(() =>

@@ -51,7 +51,7 @@ export function gotSchwarzed(state: SheepsheadState): boolean {
 /**
  * Compute the score multiplier for a hand.
  * Multipliers stack multiplicatively:
- *   base (1) × schneider (×2) × schwarz (×3) × crack/re-crack
+ *   base (1) × schneider/schwarz (×2/×3) × crack/re-crack (×2/×4) × blitz (×2) × doubleOnTheBump (×2)
  */
 export function scoreMultiplier(state: SheepsheadState, config: SheepsheadConfig): number {
   const pickerPts = pickingTeamPoints(state);
