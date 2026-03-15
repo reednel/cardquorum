@@ -111,7 +111,7 @@ export interface SheepsheadState {
   /** Called card (only used in called-ace variant). */
   calledCard: CalledCard | null;
   /** Card laid face-down in the unknown ace condition. */
-  hole: CardName | null;
+  hole: Card | null;
   /** Completed tricks. */
   tricks: TrickState[];
   /** Crack/re-crack state. */
@@ -145,7 +145,6 @@ export interface RedealRecord {
 /** Discriminated result from the pick phase handler. */
 export type PickPhaseResult =
   | { outcome: 'continue'; state: SheepsheadState }
-  | { outcome: 'redeal' }
   | { outcome: 'doubler-redeal'; redeals: RedealRecord[] };
 
 /** State within a single game session. */
@@ -158,7 +157,7 @@ export interface SheepsheadStore {
   /** Called card (only used in called-ace variant). */
   calledCard: CalledCard | null;
   /** Card laid face-down in the unknown ace condition. */
-  hole: CardName | null;
+  hole: Card | null;
   /** Completed tricks. */
   tricks: TrickState[] | null;
   /** Crack/re-crack state. */
@@ -236,7 +235,7 @@ export interface BuryEvent {
 export interface CallAceEvent {
   type: 'call_ace';
   userID: UserID;
-  payload: { card: CalledCard; holeCard?: CardName };
+  payload: { card: CalledCard; holeCard?: Card };
 }
 
 export interface CrackEvent {

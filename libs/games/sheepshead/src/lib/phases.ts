@@ -10,8 +10,9 @@ import {
   UserID,
   TrickState,
   CardName,
+  Card,
 } from './types';
-import { DECK, FAIL_ACES, FAIL_TENS, TRUMP_ORDER } from './constants';
+import { FAIL_ACES, FAIL_TENS, TRUMP_ORDER } from './constants';
 import { createShuffledDeck, deal, hasNoAceFaceTrump } from './dealing';
 import { cardsEqual, isTrump, sumPoints } from './cards';
 import { evaluateTrick, legalPlays } from './tricks';
@@ -38,71 +39,72 @@ function seatIndex(state: SheepsheadState, userID: UserID): number {
  */
 export function handleDeal(state: SheepsheadState, config: SheepsheadConfig): SheepsheadState {
   const maxRetries = 100;
+  let hands: Card[][] = [];
+  let blind: Card[] = [];
+
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     const deck = createShuffledDeck(config.cardsRemoved);
-    const { hands, blind } = deal(deck, config);
+    const dealt = deal(deck, config);
 
-    if (config.noAceFaceTrump && hasNoAceFaceTrump(hands)) {
+    if (config.noAceFaceTrump && hasNoAceFaceTrump(dealt.hands)) {
       continue; // redeal
     }
 
-    let players = state.players.map((p, i) => ({
-      ...p,
-      hand: hands[i],
-    }));
+    hands = dealt.hands;
+    blind = dealt.blind;
+    break;
+  }
 
-    const firstPlayerIdx = nextPlayerIndex(0, config.playerCount);
+  if (hands.length === 0) {
+    throw new Error('Unable to deal a valid hand after maximum retries');
+  }
 
-    // No picking round — assign partners by card holdings and go straight to play
-    if (config.pickerRule === null) {
-      if (config.partnerRule) {
-        const withRoles = assignPartnerByRule({ ...state, players }, config.partnerRule);
-        players = withRoles.players;
-      }
-      return {
-        ...state,
-        players,
-        phase: 'play',
-        blind,
-        activePlayer: players[firstPlayerIdx].userID,
-        trickNumber: 1,
-        tricks: [{ plays: [], winner: null }],
-      };
+  let players = state.players.map((p, i) => ({
+    ...p,
+    hand: hands[i],
+  }));
+
+  const firstPlayerIdx = nextPlayerIndex(0, config.playerCount);
+
+  // No picking round — assign partners by card holdings and go straight to play
+  if (config.pickerRule === null) {
+    if (config.partnerRule) {
+      const stateWithRoles = assignPartnerByRule({ ...state, players }, config.partnerRule);
+      players = stateWithRoles.players;
     }
-
-    // Forced pick — player left of dealer must pick, go straight to bury
-    if (config.pickerRule === 'left-of-dealer') {
-      players = players.map((p, i) => {
-        if (i === firstPlayerIdx) {
-          return { ...p, role: 'picker' as const, hand: [...p.hand, ...blind] };
-        }
-        return p;
-      });
-      return {
-        ...state,
-        players,
-        phase: 'bury',
-        blind,
-        activePlayer: players[firstPlayerIdx].userID,
-      };
-    }
-
-    // Autonomous — normal pick phase
     return {
       ...state,
       players,
-      phase: 'pick',
+      phase: 'play',
+      blind,
+      activePlayer: players[firstPlayerIdx].userID,
+      trickNumber: 1,
+      tricks: [{ plays: [], winner: null }],
+    };
+  }
+
+  // Forced pick — player left of dealer must pick, go straight to bury
+  if (config.pickerRule === 'left-of-dealer') {
+    players[firstPlayerIdx].role = 'picker';
+    players[firstPlayerIdx].hand = [...players[firstPlayerIdx].hand, ...blind];
+
+    return {
+      ...state,
+      players,
+      phase: 'bury',
       blind,
       activePlayer: players[firstPlayerIdx].userID,
     };
   }
 
-  // Fallback: deal without the check to avoid infinite loop
-  const deck = createShuffledDeck(config.cardsRemoved);
-  const { hands, blind } = deal(deck, config);
-  const players = state.players.map((p, i) => ({ ...p, hand: hands[i] }));
-  const firstPlayerIdx = nextPlayerIndex(0, config.playerCount);
-  return { ...state, players, phase: 'pick', blind, activePlayer: players[firstPlayerIdx].userID };
+  // Autonomous — normal pick phase
+  return {
+    ...state,
+    players,
+    phase: 'pick',
+    blind,
+    activePlayer: players[firstPlayerIdx].userID,
+  };
 }
 
 /**
@@ -117,8 +119,32 @@ export function handlePick(
   const playerIdx = seatIndex(state, event.userID);
 
   if (event.type === 'pick') {
-    // Player picks up the blind
     const blind = state.blind ?? [];
+
+    // Partner-draft: split blind between picker and partner (left of picker)
+    if (config.name === 'partner-draft') {
+      const half = Math.floor(blind.length / 2);
+      const pickerBlind = blind.slice(0, half);
+      const partnerBlind = blind.slice(half);
+      const partnerIdx = nextPlayerIndex(playerIdx, state.players.length);
+
+      const players = state.players.map((p, i) => {
+        if (i === playerIdx) {
+          return { ...p, role: 'picker' as const, hand: [...p.hand, ...pickerBlind] };
+        }
+        if (i === partnerIdx) {
+          return { ...p, role: 'partner' as const, hand: [...p.hand, ...partnerBlind] };
+        }
+        return { ...p, role: 'opposition' as const };
+      });
+
+      return {
+        outcome: 'continue',
+        state: { ...state, players, phase: 'bury', activePlayer: event.userID },
+      };
+    }
+
+    // Standard pick: picker takes the entire blind
     const players = state.players.map((p, i) => {
       if (i === playerIdx) {
         return {
@@ -143,7 +169,7 @@ export function handlePick(
   const firstPlayerIdx = nextPlayerIndex(0, state.players.length);
   if (nextIdx === firstPlayerIdx) {
     // All players passed — handle based on noPick rule
-    switch (config.noPick) {
+    switch (config.noPick!) {
       case 'forced-pick': {
         // Last player (the one who just passed) is forced to pick
         const blind = state.blind ?? [];
@@ -208,8 +234,6 @@ export function handlePick(
           redeals: [...(state.redeals ?? []), redealRecord],
         };
       }
-      default:
-        return { outcome: 'redeal' };
     }
   }
 
@@ -220,7 +244,9 @@ export function handlePick(
 }
 
 /**
- * Bury phase: picker buries cards, then transition to call or play.
+ * Bury phase: player buries cards.
+ * For partner-draft (left-of-picker), picker buries first, then partner.
+ * Otherwise, only the picker buries, then transition to call or play.
  */
 export function handleBury(
   state: SheepsheadState,
@@ -228,32 +254,53 @@ export function handleBury(
   config: SheepsheadConfig,
 ): SheepsheadState {
   const buriedCards = event.payload.cards;
-  const pickerIdx = seatIndex(state, event.userID);
-  const pickerHand = state.players[pickerIdx].hand;
+  const playerIdx = seatIndex(state, event.userID);
+  const playerHand = state.players[playerIdx].hand;
 
-  // Validate bury count matches blind size
-  if (buriedCards.length !== config.blindSize) {
-    throw new Error(`Must bury exactly ${config.blindSize} cards, got ${buriedCards.length}`);
+  // Partner-draft: each player buries half the blind size
+  const buryCount =
+    config.name === 'partner-draft' ? Math.floor(config.blindSize / 2) : config.blindSize;
+
+  if (buriedCards.length !== buryCount) {
+    throw new Error(`Must bury exactly ${buryCount} cards, got ${buriedCards.length}`);
   }
 
-  // Validate all buried cards are in the picker's hand
+  // Validate all buried cards are in the player's hand
   for (const bc of buriedCards) {
-    if (!pickerHand.some((c) => cardsEqual(c, bc))) {
-      throw new Error(`Cannot bury ${bc.name} — not in picker's hand`);
+    if (!playerHand.some((c) => cardsEqual(c, bc))) {
+      throw new Error(`Cannot bury ${bc.name} — not in hand`);
     }
   }
 
-  // Remove buried cards from picker's hand
-  const newHand = state.players[pickerIdx].hand.filter(
-    (c) => !buriedCards.some((b) => cardsEqual(b, c)),
-  );
+  // Remove buried cards from player's hand
+  const newHand = playerHand.filter((c) => !buriedCards.some((b) => cardsEqual(b, c)));
 
   const players = state.players.map((p, i) => {
-    if (i === pickerIdx) return { ...p, hand: newHand };
+    if (i === playerIdx) return { ...p, hand: newHand };
     return p;
   });
 
-  const buried = buriedCards;
+  // Append to any previously buried cards (partner-draft has two bury actions)
+  const buried = [...(state.buried ?? []), ...buriedCards];
+
+  // Partner-draft: after picker buries, check if partner still needs to bury
+  if (config.name === 'partner-draft') {
+    const partner = players.find((p) => p.role === 'partner');
+    if (partner && partner.hand.length > config.handSize) {
+      return { ...state, players, buried, activePlayer: partner.userID };
+    }
+    // Both have buried — transition to play
+    const firstPlayerIdx = nextPlayerIndex(0, state.players.length);
+    return {
+      ...state,
+      players,
+      buried,
+      phase: 'play',
+      activePlayer: players[firstPlayerIdx].userID,
+      trickNumber: 1,
+      tricks: [{ plays: [], winner: null }],
+    };
+  }
 
   if (config.partnerRule === 'called-ace') {
     // Need to call an ace — transition to call phase
@@ -336,14 +383,14 @@ export function handleCall(
   }
 
   // Handle hole card (unknown ace condition)
-  let hole: CardName | null = null;
+  let hole: Card | null = null;
   let updatedPlayers = state.players;
   if (event.payload.holeCard) {
     hole = event.payload.holeCard;
     // Remove hole card from picker's hand
     updatedPlayers = state.players.map((p, i) => {
       if (i === pickerIdx) {
-        return { ...p, hand: p.hand.filter((c) => c.name !== hole) };
+        return { ...p, hand: p.hand.filter((c) => !cardsEqual(c, hole!)) };
       }
       return p;
     });
@@ -394,9 +441,9 @@ export function handlePlayCard(
 
   if (playHoleCard) {
     // Picker must play the hole card — validate the event card matches
-    const holeCard = DECK.find((c) => c.name === state.hole);
-    if (!holeCard || card.name !== holeCard.name) {
-      throw new Error(`Must play hole card ${state.hole} when called suit is led`);
+    const holeCard = state.hole!;
+    if (!cardsEqual(card, holeCard)) {
+      throw new Error(`Must play hole card ${holeCard.name} when called suit is led`);
     }
 
     // Add hole card play to trick (face-down, no trick-taking power)
@@ -596,22 +643,12 @@ export function handleScore(state: SheepsheadState, config: SheepsheadConfig): S
 
 /**
  * Leasters scoring: each player plays for themselves.
- * The player who takes the fewest points wins.
- * If a player takes no tricks, the player who takes the most points wins.
+ * The player who takes the fewest points while still taking at least one trick wins.
+ * If one player takes every trick (all others took none), that player wins.
  */
 function handleLeasterScore(state: SheepsheadState): SheepsheadState {
-  // In leasters, the player with the fewest points wins
-  // unless someone took no tricks — then the player with the most points wins
-  const noTrickPlayers = state.players.filter((p) => p.tricksWon === 0);
-
-  let winnerID: UserID;
-  if (noTrickPlayers.length > 0) {
-    // Someone took no tricks — player with most points wins
-    winnerID = state.players.reduce((best, p) => (p.pointsWon > best.pointsWon ? p : best)).userID;
-  } else {
-    // Player with fewest points wins
-    winnerID = state.players.reduce((best, p) => (p.pointsWon < best.pointsWon ? p : best)).userID;
-  }
+  const eligible = state.players.filter((p) => p.tricksWon > 0);
+  const winnerID = eligible.reduce((best, p) => (p.pointsWon < best.pointsWon ? p : best)).userID;
 
   const loserCount = state.players.length - 1;
 
@@ -625,7 +662,7 @@ function handleLeasterScore(state: SheepsheadState): SheepsheadState {
 
 /**
  * Moster scoring: the player who takes the most points is the only loser.
- * Everyone else wins. Zero-sum: loser pays 1 to each winner.
+ * If a player takes every trick, they win instead.
  */
 function handleMosterScore(state: SheepsheadState): SheepsheadState {
   const mostPoints = state.players.reduce((worst, p) =>
@@ -658,21 +695,37 @@ function handleMosterScore(state: SheepsheadState): SheepsheadState {
 
 /**
  * Mittler scoring: the player with the middle score wins.
- * If there's no single middle (even player count), it's a wash (all 0).
- * Zero-sum: winner receives 1 from each loser.
+ * For odd player counts, the positional middle of the sorted order.
+ * For even player counts, ties among players can create a single middle
+ * when the number of distinct score groups is odd.
+ * If no single middle exists, or multiple players share the middle score, it's a wash.
  */
 function handleMittlerScore(state: SheepsheadState): SheepsheadState {
   const sorted = [...state.players].sort((a, b) => a.pointsWon - b.pointsWon);
   const n = sorted.length;
 
-  // Even number of players — no single middle — wash
-  if (n % 2 === 0) {
+  let middleScore: number;
+
+  if (n % 2 === 1) {
+    middleScore = sorted[Math.floor(n / 2)].pointsWon;
+  } else {
+    // Even player count — check distinct score groups for a single middle
+    const distinctScores = [...new Set(sorted.map((p) => p.pointsWon))];
+    if (distinctScores.length % 2 === 0) {
+      const players = state.players.map((p) => ({ ...p, scoreDelta: 0 }));
+      return { ...state, players };
+    }
+    middleScore = distinctScores[Math.floor(distinctScores.length / 2)];
+  }
+
+  // If multiple players share the middle score, it's a wash
+  const middlePlayers = state.players.filter((p) => p.pointsWon === middleScore);
+  if (middlePlayers.length !== 1) {
     const players = state.players.map((p) => ({ ...p, scoreDelta: 0 }));
     return { ...state, players };
   }
 
-  const middleIdx = Math.floor(n / 2);
-  const winnerID = sorted[middleIdx].userID;
+  const winnerID = middlePlayers[0].userID;
   const loserCount = n - 1;
 
   const players = state.players.map((p) => ({
@@ -686,7 +739,6 @@ function handleMittlerScore(state: SheepsheadState): SheepsheadState {
 /**
  * Schneidster scoring: the player closest to 30 points without going over wins.
  * If two players tie for closest, it's a wash (all 0).
- * Zero-sum: winner receives 1 from each loser.
  */
 function handleSchneidsterScore(state: SheepsheadState): SheepsheadState {
   const eligible = state.players.filter((p) => p.pointsWon <= 30);
@@ -721,7 +773,6 @@ function handleSchneidsterScore(state: SheepsheadState): SheepsheadState {
  * Schwanzer scoring: cards are laid face-up; no tricks are played.
  * The player with the greatest trump power loses.
  * Trump power: Queens = 3, Jacks = 2, Diamonds = 1.
- * Zero-sum: loser pays 1 to each winner.
  */
 function handleSchwanzerScore(state: SheepsheadState): SheepsheadState {
   function trumpPower(player: SheepsheadState['players'][number]): number {

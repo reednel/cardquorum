@@ -38,17 +38,6 @@ describe('handlePick', () => {
     expect(state.noPick).toBe('leaster');
   });
 
-  it('all pass with null noPick: signals redeal', () => {
-    const config = makeConfig({ noPick: null });
-    const dealt = handleDeal(makeState(), config);
-
-    let s = pickContinue(handlePick(dealt, { type: 'pass', userID: 2 }, config));
-    s = pickContinue(handlePick(s, { type: 'pass', userID: 3 }, config));
-    const result = handlePick(s, { type: 'pass', userID: 1 }, config);
-
-    expect(result.outcome).toBe('redeal');
-  });
-
   it('all pass with forced-pick: last player is forced to pick', () => {
     const config = makeConfig({ noPick: 'forced-pick' });
     const dealt = handleDeal(makeState(), config);

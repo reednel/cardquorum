@@ -453,6 +453,33 @@ describe('handleScore', () => {
     expect(total).toBe(0);
   });
 
+  it('leaster: player who takes every trick wins', () => {
+    const config = makeConfig({ noPick: 'leaster' });
+    const state = makeNoPickScoreState([120, 0, 0], [7, 0, 0], 'leaster');
+    const scored = handleScore(state, config);
+
+    // Player 1 took every trick — they're the only eligible player, so they win
+    expect(scored.players[0].scoreDelta).toBeGreaterThan(0);
+    expect(scored.players[1].scoreDelta).toBeLessThan(0);
+    expect(scored.players[2].scoreDelta).toBeLessThan(0);
+    const total = scored.players.reduce((s, p) => s + (p.scoreDelta ?? 0), 0);
+    expect(total).toBe(0);
+  });
+
+  it('leaster: fewest points among players who took tricks wins', () => {
+    const config = makeConfig({ noPick: 'leaster' });
+    // Player 3 took no tricks (0 points, 0 tricks) — ineligible
+    // Player 1 (30 pts, 2 tricks) beats Player 2 (90 pts, 5 tricks)
+    const state = makeNoPickScoreState([30, 90, 0], [2, 5, 0], 'leaster');
+    const scored = handleScore(state, config);
+
+    expect(scored.players[0].scoreDelta).toBeGreaterThan(0);
+    expect(scored.players[1].scoreDelta).toBeLessThan(0);
+    expect(scored.players[2].scoreDelta).toBeLessThan(0);
+    const total = scored.players.reduce((s, p) => s + (p.scoreDelta ?? 0), 0);
+    expect(total).toBe(0);
+  });
+
   it('leaster: tied fewest points — first in reduce wins', () => {
     const config = makeConfig({ noPick: 'leaster' });
     const state = makeNoPickScoreState([20, 20, 80], [1, 1, 5], 'leaster');
@@ -482,6 +509,37 @@ describe('handleScore', () => {
   it('schneidster: all players over 30 is a wash', () => {
     const config = makeConfig({ noPick: 'schneidster' });
     const state = makeNoPickScoreState([40, 40, 40], [2, 3, 2], 'schneidster');
+    const scored = handleScore(state, config);
+
+    for (const p of scored.players) {
+      expect(p.scoreDelta).toBe(0);
+    }
+  });
+
+  it('mittler: even players with tied scores creating odd distinct groups', () => {
+    const config = makeConfig({
+      playerCount: 4,
+      handSize: 8,
+      blindSize: 0,
+      noPick: 'mittler',
+      pickerRule: null,
+      partnerRule: null,
+    });
+    // 4 players: [10, 10, 30, 60] → distinct groups [10, 30, 60] (odd) → middle = 30
+    const state = makeNoPickScoreState([10, 10, 30, 60], [1, 1, 2, 3], 'mittler');
+    const scored = handleScore(state, config);
+
+    // Player 3 (30 pts) is the single middle → wins
+    expect(scored.players[2].scoreDelta).toBeGreaterThan(0);
+    expect(scored.players[0].scoreDelta).toBeLessThan(0);
+    const total = scored.players.reduce((s, p) => s + (p.scoreDelta ?? 0), 0);
+    expect(total).toBe(0);
+  });
+
+  it('mittler: tied middle score is a wash', () => {
+    const config = makeConfig({ noPick: 'mittler' });
+    // 3 players: [20, 50, 50] → middle = 50, but 2 players share it → wash
+    const state = makeNoPickScoreState([20, 50, 50], [1, 2, 2], 'mittler');
     const scored = handleScore(state, config);
 
     for (const p of scored.players) {

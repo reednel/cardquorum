@@ -7,7 +7,6 @@ import {
   SheepsheadEventType,
   UserID,
   BlitzState,
-  CardName,
   TrickState,
 } from './types';
 import {
@@ -19,13 +18,7 @@ import {
   handleScore,
 } from './phases';
 
-/** Check if the called card has been played in any trick. */
-function calledCardPlayed(state: SheepsheadState): boolean {
-  if (!state.calledCard || state.calledCard === 'alone') return false;
-  return state.tricks.some((t) => t.plays.some((p) => p.card.name === state.calledCard));
-}
-
-/* TODO: make this useful (at time of wiring in user side) */
+/* Make this useful (at time of wiring in user side) */
 function validateConfig(config: unknown): config is SheepsheadConfig {
   if (typeof config !== 'object' || config === null) return false;
 
@@ -133,7 +126,12 @@ function getValidActions(
       return state.activePlayer === userID ? ['deal'] : [];
     case 'pick':
       if (state.activePlayer === userID) {
-        actions.push('pick', 'pass');
+        actions.push('pick');
+        // In forced-pick, the dealer (last in pick order) cannot pass
+        const playerIdx = state.players.findIndex((p) => p.userID === userID);
+        if (!(config.noPick === 'forced-pick' && playerIdx === 0)) {
+          actions.push('pass');
+        }
       }
       return actions;
     case 'bury':
@@ -200,23 +198,14 @@ function applyEvent(
     case 'pick':
     case 'pass': {
       const result = handlePick(state, event, config);
-      switch (result.outcome) {
-        case 'continue':
-          return result.state;
-        case 'redeal': {
-          const userIDs = state.players.map((p) => p.userID);
-          const freshState = createInitialState(config, userIDs);
-          return handleDeal(freshState, config);
-        }
-        case 'doubler-redeal': {
-          const userIDs = state.players.map((p) => p.userID);
-          const freshState = createInitialState(config, userIDs);
-          freshState.previousGameDouble = true;
-          freshState.redeals = result.redeals;
-          return handleDeal(freshState, config);
-        }
+      if (result.outcome === 'doubler-redeal') {
+        const userIDs = state.players.map((p) => p.userID);
+        const freshState = createInitialState(config, userIDs);
+        freshState.previousGameDouble = true;
+        freshState.redeals = result.redeals;
+        return handleDeal(freshState, config);
       }
-      break; // unreachable, but satisfies no-fallthrough
+      return result.state;
     }
     case 'bury':
       return handleBury(state, event, config);
@@ -269,9 +258,20 @@ function getPlayerView(
     };
   });
 
-  // Like in real life, players must rely on memory to track these cards.
-  // TODO: account for partner-draft variant where picker pulls first 2 in blind and partner pulls second 2 in blind
-  const blind = state.phase === 'bury' && isPicker ? state.blind : [];
+  // Partner-draft: each player sees only their half of the blind during bury.
+  let blind: typeof state.blind = [];
+  if (state.phase === 'bury' && state.blind) {
+    if (config.name === 'partner-draft') {
+      const half = Math.floor(state.blind.length / 2);
+      if (isPicker) {
+        blind = state.blind.slice(0, half);
+      } else if (thisPlayer?.role === 'partner') {
+        blind = state.blind.slice(half);
+      }
+    } else if (isPicker) {
+      blind = state.blind;
+    }
+  }
   const buried = state.buried ? [] : null;
   const hole = null;
   const tricks: TrickState[] = [];

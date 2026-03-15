@@ -156,6 +156,38 @@ describe('SheepsheadPlugin', () => {
       expect(SheepsheadPlugin.getPlayerView(config, inBury, 2).blind).toEqual([]);
     });
 
+    it('partner-draft: each player sees only their half of the blind during bury', () => {
+      const config = makeConfig({
+        name: 'partner-draft',
+        partnerRule: 'left-of-picker',
+        blindSize: 4,
+        handSize: 4,
+      });
+      const blind = DECK.slice(0, 4);
+      const state = SheepsheadPlugin.createInitialState(config, [1, 2, 3, 4, 5]);
+      const inBury: SheepsheadState = {
+        ...state,
+        phase: 'bury',
+        blind,
+        players: state.players.map((p) => ({
+          ...p,
+          role:
+            p.userID === 2
+              ? ('picker' as const)
+              : p.userID === 3
+                ? ('partner' as const)
+                : ('opposition' as const),
+        })),
+      };
+
+      // Picker sees first half
+      expect(SheepsheadPlugin.getPlayerView(config, inBury, 2).blind).toEqual(blind.slice(0, 2));
+      // Partner sees second half
+      expect(SheepsheadPlugin.getPlayerView(config, inBury, 3).blind).toEqual(blind.slice(2, 4));
+      // Opposition sees nothing
+      expect(SheepsheadPlugin.getPlayerView(config, inBury, 4).blind).toEqual([]);
+    });
+
     it('hides blind during play phase', () => {
       const config = makeConfig();
       const state = SheepsheadPlugin.createInitialState(config, [1, 2, 3]);
@@ -303,6 +335,23 @@ describe('SheepsheadPlugin', () => {
       const actions = SheepsheadPlugin.getValidActions(config, state, 2);
       expect(actions).toContain('pick');
       expect(actions).toContain('pass');
+    });
+
+    it('forced-pick: last player (dealer) can only pick, not pass', () => {
+      const config = makeConfig({ noPick: 'forced-pick' });
+      let state = SheepsheadPlugin.createInitialState(config, [1, 2, 3, 4, 5]);
+      state = SheepsheadPlugin.applyEvent(config, state, { type: 'deal' });
+
+      // Pass all players until dealer (player 1) is active
+      state = SheepsheadPlugin.applyEvent(config, state, { type: 'pass', userID: 2 });
+      state = SheepsheadPlugin.applyEvent(config, state, { type: 'pass', userID: 3 });
+      state = SheepsheadPlugin.applyEvent(config, state, { type: 'pass', userID: 4 });
+      state = SheepsheadPlugin.applyEvent(config, state, { type: 'pass', userID: 5 });
+      expect(state.activePlayer).toBe(1);
+
+      const actions = SheepsheadPlugin.getValidActions(config, state, 1);
+      expect(actions).toContain('pick');
+      expect(actions).not.toContain('pass');
     });
 
     it('returns play_card only for active player in play phase', () => {
@@ -522,7 +571,7 @@ describe('SheepsheadPlugin', () => {
       const inPlay: SheepsheadState = {
         ...state,
         phase: 'play',
-        hole: 'ac',
+        hole: DECK.find((c) => c.name === 'ac')!,
         tricks: [
           {
             plays: [{ player: 1, card: DECK[0] }],
