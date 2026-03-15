@@ -1,11 +1,11 @@
 import {
-  determinePartnerJD,
-  determinePartnerCalledAce,
+  assignCardPairPartners,
   assignPartnerByRule,
   determinePartnerByCard,
-  assignCardPairPartners,
+  determinePartnerCalledAce,
+  determinePartnerJD,
 } from '../partners';
-import { SheepsheadState, Card, PlayerState } from '../types';
+import { Card, PlayerState, SheepsheadState } from '../types';
 import { card } from './test-helpers';
 
 function makePlayer(userID: number, hand: Card[], role: PlayerState['role'] = null): PlayerState {

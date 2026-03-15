@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as jose from 'jose';
-import { UserIdentity } from '@cardquorum/shared';
 import { CredentialRepository } from '@cardquorum/db';
+import { UserIdentity } from '@cardquorum/shared';
 import { AuthStrategyService } from '../auth-strategy.interface';
 
 @Injectable()

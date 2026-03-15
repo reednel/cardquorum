@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { UserRepository, CredentialRepository } from '@cardquorum/db';
+import { CredentialRepository, UserRepository } from '@cardquorum/db';
 import { AUTH_STRATEGY_TOKEN, AuthStrategyService } from './auth-strategy.interface';
+import { AuthController } from './auth.controller';
+import { AuthService } from './auth.service';
 import { BasicAuthStrategy } from './basic/basic-auth.strategy';
 import { OidcAuthStrategy } from './oidc/oidc-auth.strategy';
-import { AuthService } from './auth.service';
-import { AuthController } from './auth.controller';
 import { WsAuthGuard } from './ws-auth.guard';
 
 @Module({

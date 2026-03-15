@@ -1,22 +1,22 @@
 import { GamePlugin } from '@cardquorum/engine';
 import {
-  SheepsheadConfig,
-  SheepsheadState,
-  SheepsheadStore,
-  SheepsheadEvent,
-  SheepsheadEventType,
-  UserID,
-  BlitzState,
-  TrickState,
-} from './types';
-import {
-  handleDeal,
-  handlePick,
   handleBury,
   handleCall,
+  handleDeal,
+  handlePick,
   handlePlayCard,
   handleScore,
 } from './phases';
+import {
+  BlitzState,
+  SheepsheadConfig,
+  SheepsheadEvent,
+  SheepsheadEventType,
+  SheepsheadState,
+  SheepsheadStore,
+  TrickState,
+  UserID,
+} from './types';
 
 /* Make this useful (at time of wiring in user side) */
 function validateConfig(config: unknown): config is SheepsheadConfig {

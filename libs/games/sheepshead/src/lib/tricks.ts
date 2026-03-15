@@ -1,15 +1,15 @@
-import {
-  Card,
-  CardName,
-  CalledCard,
-  Suit,
-  TrickState,
-  SheepsheadState,
-  SheepsheadConfig,
-  UserID,
-} from './types';
 import { cardPower, cardsEqual, isTrump } from './cards';
 import { DECK, FAIL_TENS } from './constants';
+import {
+  CalledCard,
+  Card,
+  CardName,
+  SheepsheadConfig,
+  SheepsheadState,
+  Suit,
+  TrickState,
+  UserID,
+} from './types';
 
 export interface LegalPlaysResult {
   cards: Card[];

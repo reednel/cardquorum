@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, integer, timestamp, jsonb } from 'drizzle-orm/pg-core';
+import { integer, jsonb, pgTable, serial, timestamp, varchar } from 'drizzle-orm/pg-core';
 import { rooms } from './rooms';
 
 export const gameSessions = pgTable('game_sessions', {

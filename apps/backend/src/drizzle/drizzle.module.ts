@@ -1,14 +1,14 @@
-import { Module, Global, OnApplicationShutdown } from '@nestjs/common';
+import { Global, Module, OnApplicationShutdown } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from '@cardquorum/db';
 import {
-  RoomRepository,
-  MessageRepository,
-  UserRepository,
   CredentialRepository,
   GameSessionRepository,
+  MessageRepository,
+  RoomRepository,
+  UserRepository,
 } from '@cardquorum/db';
 
 export const DRIZZLE = Symbol('DRIZZLE');

@@ -1,16 +1,16 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  OnInit,
-  OnDestroy,
-  signal,
   inject,
+  OnDestroy,
+  OnInit,
+  signal,
 } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ChatService } from '../services/chat.service';
-import { ChatMessageList } from './chat-message-list';
 import { ChatMemberList } from './chat-member-list';
+import { ChatMessageList } from './chat-message-list';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,

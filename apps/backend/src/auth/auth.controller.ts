@@ -1,15 +1,15 @@
 import {
-  Controller,
-  Post,
-  Get,
   Body,
+  Controller,
+  Get,
   Headers,
   Inject,
+  Post,
   UnauthorizedException,
 } from '@nestjs/common';
-import { AuthService } from './auth.service';
-import { AUTH_STRATEGY_TOKEN, AuthStrategyService } from './auth-strategy.interface';
 import { LoginRequest, RegisterRequest } from '@cardquorum/shared';
+import { AUTH_STRATEGY_TOKEN, AuthStrategyService } from './auth-strategy.interface';
+import { AuthService } from './auth.service';
 
 @Controller('auth')
 export class AuthController {

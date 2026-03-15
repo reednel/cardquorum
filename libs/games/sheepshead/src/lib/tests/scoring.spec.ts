@@ -1,5 +1,5 @@
-import { pickingTeamPoints, gotSchneidered, gotSchwarzed, scoreMultiplier } from '../scoring';
 import { DECK, TOTAL_POINTS } from '../constants';
+import { gotSchneidered, gotSchwarzed, pickingTeamPoints, scoreMultiplier } from '../scoring';
 import { SheepsheadConfig, SheepsheadState, TrickState } from '../types';
 import { card, makeConfig } from './test-helpers';
 

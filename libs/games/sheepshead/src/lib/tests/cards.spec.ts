@@ -1,5 +1,5 @@
-import { isTrump, sumPoints, cardPower, cardsEqual } from '../cards';
-import { DECK, TRUMP_ORDER, FAIL_RANK_ORDER } from '../constants';
+import { cardPower, cardsEqual, isTrump, sumPoints } from '../cards';
+import { DECK, FAIL_RANK_ORDER, TRUMP_ORDER } from '../constants';
 import { TrickState } from '../types';
 import { card } from './test-helpers';
 

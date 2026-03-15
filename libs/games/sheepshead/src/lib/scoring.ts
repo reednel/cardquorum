@@ -1,6 +1,6 @@
-import { SheepsheadConfig, SheepsheadState, UserID } from './types';
 import { sumPoints } from './cards';
 import { TOTAL_POINTS } from './constants';
+import { SheepsheadConfig, SheepsheadState, UserID } from './types';
 
 /**
  * Calculate the points captured by the picking team (picker + partner/s).

@@ -1,5 +1,5 @@
+import { FAIL_RANK_ORDER, TRUMP_ORDER } from './constants';
 import { Card, Rank, Suit, TrickState } from './types';
-import { TRUMP_ORDER, FAIL_RANK_ORDER } from './constants';
 
 /** Whether a card is trump (queens, jacks, or diamonds). */
 export function isTrump(card: Card): boolean {

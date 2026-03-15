@@ -1,5 +1,5 @@
-import { ChatService } from './chat.service';
 import { MessageRepository } from '@cardquorum/db';
+import { ChatService } from './chat.service';
 
 describe('ChatService', () => {
   let service: ChatService;

@@ -1,6 +1,6 @@
-import { Injectable, Inject, Logger } from '@nestjs/common';
 import { IncomingMessage } from 'http';
 import { URL } from 'url';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { UserIdentity } from '@cardquorum/shared';
 import { AUTH_STRATEGY_TOKEN, AuthStrategyService } from './auth-strategy.interface';
 

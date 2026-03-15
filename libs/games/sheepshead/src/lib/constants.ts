@@ -1,4 +1,4 @@
-import { Card, CardName, Suit, Rank, SheepsheadConfig, ConfigPreset } from './types';
+import { Card, CardName, ConfigPreset, Rank, SheepsheadConfig, Suit } from './types';
 
 export const TOTAL_POINTS = 120;
 

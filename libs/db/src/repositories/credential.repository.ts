@@ -1,5 +1,5 @@
-import { eq, and } from 'drizzle-orm';
-import { users, userCredentials } from '../schema';
+import { and, eq } from 'drizzle-orm';
+import { userCredentials, users } from '../schema';
 import { DbInstance } from '../types';
 
 export class CredentialRepository {

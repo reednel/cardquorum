@@ -1,6 +1,6 @@
+import { DECK } from '../constants';
 import { SheepsheadPlugin } from '../sheepshead-plugin';
 import { SheepsheadConfig, SheepsheadState, UserID } from '../types';
-import { DECK } from '../constants';
 
 function makeConfig(overrides: Partial<SheepsheadConfig> = {}): SheepsheadConfig {
   return {

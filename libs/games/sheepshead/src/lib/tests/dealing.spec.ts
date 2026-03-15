@@ -1,5 +1,5 @@
-import { createShuffledDeck, deal, hasNoAceFaceTrump } from '../dealing';
 import { DECK } from '../constants';
+import { createShuffledDeck, deal, hasNoAceFaceTrump } from '../dealing';
 import { card } from './test-helpers';
 
 describe('createShuffledDeck', () => {

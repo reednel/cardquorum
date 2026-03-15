@@ -1,4 +1,4 @@
-import { WS_EVENT, WS_EMIT } from './ws-events';
+import { WS_EMIT, WS_EVENT } from './ws-events';
 
 describe('WS_EVENT constants', () => {
   it('should have stable client→server event names', () => {

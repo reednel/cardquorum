@@ -1,23 +1,23 @@
-import {
-  SheepsheadConfig,
-  SheepsheadState,
-  PickEvent,
-  PassEvent,
-  BuryEvent,
-  CallAceEvent,
-  PlayCardEvent,
-  PickPhaseResult,
-  UserID,
-  TrickState,
-  CardName,
-  Card,
-} from './types';
+import { cardsEqual, isTrump, sumPoints } from './cards';
 import { FAIL_ACES, FAIL_TENS, TRUMP_ORDER } from './constants';
 import { createShuffledDeck, deal, hasNoAceFaceTrump } from './dealing';
-import { cardsEqual, isTrump, sumPoints } from './cards';
+import { assignPartnerByRule, determinePartnerCalledAce } from './partners';
+import { gotSchwarzed, pickingTeamPoints, scoreMultiplier } from './scoring';
 import { evaluateTrick, legalPlays } from './tricks';
-import { pickingTeamPoints, gotSchwarzed, scoreMultiplier } from './scoring';
-import { determinePartnerCalledAce, assignPartnerByRule } from './partners';
+import {
+  BuryEvent,
+  CallAceEvent,
+  Card,
+  CardName,
+  PassEvent,
+  PickEvent,
+  PickPhaseResult,
+  PlayCardEvent,
+  SheepsheadConfig,
+  SheepsheadState,
+  TrickState,
+  UserID,
+} from './types';
 
 /**
  * Get the next player index in seat order (wraps around).

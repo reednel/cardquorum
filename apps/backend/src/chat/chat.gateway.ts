@@ -1,22 +1,22 @@
+import { IncomingMessage } from 'http';
 import { Logger } from '@nestjs/common';
 import {
-  WebSocketGateway,
-  WebSocketServer,
-  SubscribeMessage,
+  ConnectedSocket,
+  MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
-  MessageBody,
-  ConnectedSocket,
+  SubscribeMessage,
+  WebSocketGateway,
+  WebSocketServer,
 } from '@nestjs/websockets';
-import { IncomingMessage } from 'http';
 import { Server } from 'ws';
 import {
-  WS_EVENT,
-  WS_EMIT,
   JoinRoomPayload,
   LeaveRoomPayload,
   SendMessagePayload,
   UserIdentity,
+  WS_EMIT,
+  WS_EVENT,
 } from '@cardquorum/shared';
 import { WsAuthGuard } from '../auth/ws-auth.guard';
 import { RoomService } from '../room/room.service';

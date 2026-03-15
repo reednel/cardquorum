@@ -1,4 +1,4 @@
-import { handleDeal, handlePick, handleBury, handleCall } from '../../phases';
+import { handleBury, handleCall, handleDeal, handlePick } from '../../phases';
 import { SheepsheadState } from '../../types';
 import { card, makeConfig, makeState, pickContinue } from '../test-helpers';
 

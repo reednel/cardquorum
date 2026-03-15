@@ -1,10 +1,10 @@
 import { IncomingMessage } from 'http';
 import { Socket } from 'net';
-import { ChatGateway } from './chat.gateway';
+import { UserIdentity, WS_EMIT } from '@cardquorum/shared';
 import { WsAuthGuard } from '../auth/ws-auth.guard';
 import { RoomService } from '../room/room.service';
+import { ChatGateway } from './chat.gateway';
 import { ChatService } from './chat.service';
-import { WS_EMIT, UserIdentity } from '@cardquorum/shared';
 
 function createMockRequest(token?: string): IncomingMessage {
   const socket = new Socket();

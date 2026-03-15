@@ -1,5 +1,5 @@
-import { handleDeal, handlePick, handleBury } from '../../phases';
 import { DECK } from '../../constants';
+import { handleBury, handleDeal, handlePick } from '../../phases';
 import { card, makeConfig, makeState, pickContinue } from '../test-helpers';
 
 describe('handleBury', () => {

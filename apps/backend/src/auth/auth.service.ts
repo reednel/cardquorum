@@ -1,7 +1,7 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
-import { UserRepository, CredentialRepository } from '@cardquorum/db';
-import { LoginRequest, RegisterRequest, LoginResponse } from '@cardquorum/shared';
+import { CredentialRepository, UserRepository } from '@cardquorum/db';
+import { LoginRequest, LoginResponse, RegisterRequest } from '@cardquorum/shared';
 import { BasicAuthStrategy } from './basic/basic-auth.strategy';
 
 @Injectable()

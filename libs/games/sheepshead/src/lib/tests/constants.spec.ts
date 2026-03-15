@@ -1,4 +1,4 @@
-import { DECK, TOTAL_POINTS, TRUMP_ORDER, FAIL_RANK_ORDER, CONFIG_PRESETS } from '../constants';
+import { CONFIG_PRESETS, DECK, FAIL_RANK_ORDER, TOTAL_POINTS, TRUMP_ORDER } from '../constants';
 import { SheepsheadPlugin } from '../sheepshead-plugin';
 
 describe('constants', () => {

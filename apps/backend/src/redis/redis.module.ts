@@ -1,4 +1,4 @@
-import { Module, Global, OnApplicationShutdown, Inject } from '@nestjs/common';
+import { Global, Inject, Module, OnApplicationShutdown } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 
