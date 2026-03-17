@@ -280,7 +280,7 @@ function getPlayerView(
 }
 
 function isGameOver(state: SheepsheadState): boolean {
-  return state.phase === 'score';
+  return state.phase === 'score' && state.players[0].scoreDelta !== null;
 }
 
 function buildStore(config: SheepsheadConfig, state: SheepsheadState): SheepsheadStore {

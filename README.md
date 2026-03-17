@@ -21,19 +21,14 @@ cp .env.template .env                   # then fill in values
 ```sh
 pnpm serve    # Starts frontend on :4200, backend on :3000/api
 pnpm format   # Runs prettier formatter agaist the project
-pnpm validate # Runs all automated tests, lints, and builds the project
+pnpm validate # Tests, lints, and builds the project
 ```
 
-### Running
+### More Commands
 
 ```sh
-pnpm nx serve frontend # Angular dev server on :4200 (also starts backend)
-pnpm nx serve backend  # NestJS on :3000/api (standalone)
-```
-
-### Building and Testing
-
-```sh
+pnpm nx serve frontend    # Angular dev server on :4200 (also starts backend)
+pnpm nx serve backend     # NestJS on :3000/api (standalone)
 pnpm nx run-many -t build
 pnpm nx run-many -t test
 pnpm nx run-many -t lint
@@ -48,20 +43,13 @@ pnpm prettier --write .   # fix formatting
 pnpm nx g @nx/js:lib --name=<game-name> --directory=libs/games/<game-name> --unitTestRunner=jest --bundler=none
 ```
 
-### Project Structure
+## Project Goals & AI Use
 
-```md
-apps/
-frontend/ # Angular SPA
-frontend-e2e/ # Playwright E2E tests
-backend/ # NestJS + Fastify API
-backend-e2e/ # Backend integration tests
-libs/
-shared/ # API contracts, DTOs, event types
-engine/ # Game engine infrastructure
-games/
-sheepshead/ # Sheepshead game plugin
-```
+1. To have a modern, online platform on which people can play card games (especially Sheepshead).
+2. To give something back to the self-hosting community, from which I have benefitted so much.
+3. To build expertise in areas of web-dev I lack experience with, and to use AI in a way that promotes real learning, and is sustainable for a project of this scale.
+
+Development of this software has been accelerated through the careful and restrained use of Claude AI.
 
 ## Contributing
 

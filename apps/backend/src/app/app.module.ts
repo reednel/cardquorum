@@ -5,8 +5,10 @@ import { LoggerModule } from 'nestjs-pino';
 import { AuthModule } from '../auth/auth.module';
 import { ChatModule } from '../chat/chat.module';
 import { DrizzleModule } from '../drizzle/drizzle.module';
+import { GameModule } from '../game/game.module';
 import { HealthModule } from '../health/health.module';
 import { RedisModule } from '../redis/redis.module';
+import { WsModule } from '../ws/ws.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -55,7 +57,9 @@ import { AppService } from './app.service';
     RedisModule,
     HealthModule,
     AuthModule,
+    WsModule,
     ChatModule,
+    GameModule,
   ],
   controllers: [AppController],
   providers: [AppService],

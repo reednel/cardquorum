@@ -9,6 +9,9 @@ export class BasicAuthStrategy implements AuthStrategyService {
   private readonly secret: Uint8Array;
 
   constructor(jwtSecret: string) {
+    if (jwtSecret.length < 32) {
+      throw new Error('JWT_SECRET must be at least 32 characters');
+    }
     this.secret = new TextEncoder().encode(jwtSecret);
   }
 

@@ -6,6 +6,11 @@ export const WS_EVENT = {
   ROOM_JOIN: 'room:join',
   ROOM_LEAVE: 'room:leave',
   CHAT_SEND: 'chat:send',
+  GAME_CREATE: 'game:create',
+  GAME_START: 'game:start',
+  GAME_ACTION: 'game:action',
+  GAME_REJOIN: 'game:rejoin',
+  GAME_CANCEL: 'game:cancel',
 } as const;
 
 /**
@@ -19,4 +24,10 @@ export const WS_EMIT = {
   CHAT_MESSAGE: 'chat:message',
   MESSAGE_HISTORY: 'message:history',
   ERROR: 'error',
+  GAME_CREATED: 'game:created',
+  GAME_STARTED: 'game:started',
+  GAME_STATE_UPDATE: 'game:state-update',
+  GAME_OVER: 'game:over',
+  GAME_ERROR: 'game:error',
+  GAME_CANCELLED: 'game:cancelled',
 } as const;

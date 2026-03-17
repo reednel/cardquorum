@@ -233,14 +233,24 @@ describe('SheepsheadPlugin', () => {
   });
 
   describe('isGameOver', () => {
-    it('returns true when phase is score', () => {
+    it('returns false when phase is score but scores not yet computed', () => {
       const state = SheepsheadPlugin.createInitialState(makeConfig(), [1, 2, 3]);
-      expect(SheepsheadPlugin.isGameOver({ ...state, phase: 'score' })).toBe(true);
+      expect(SheepsheadPlugin.isGameOver({ ...state, phase: 'score' })).toBe(false);
+    });
+
+    it('returns true when phase is score and scores have been computed', () => {
+      const state = SheepsheadPlugin.createInitialState(makeConfig(), [1, 2, 3]);
+      const scoredState = {
+        ...state,
+        phase: 'score' as const,
+        players: state.players.map((p) => ({ ...p, scoreDelta: 0 })),
+      };
+      expect(SheepsheadPlugin.isGameOver(scoredState)).toBe(true);
     });
 
     it('returns false for other phases', () => {
       const state = SheepsheadPlugin.createInitialState(makeConfig(), [1, 2, 3]);
-      expect(SheepsheadPlugin.isGameOver(state)).toBe(false); // 'deal'
+      expect(SheepsheadPlugin.isGameOver(state)).toBe(false);
       expect(SheepsheadPlugin.isGameOver({ ...state, phase: 'play' })).toBe(false);
     });
   });

@@ -40,4 +40,17 @@ export class GameSessionRepository {
       .returning();
     return row;
   }
+
+  async updateStatusAndTimestamp(
+    sessionId: number,
+    status: string,
+    timestampField: 'startedAt' | 'finishedAt',
+  ) {
+    const [row] = await this.db
+      .update(gameSessions)
+      .set({ status, [timestampField]: new Date() })
+      .where(eq(gameSessions.id, sessionId))
+      .returning();
+    return row;
+  }
 }
