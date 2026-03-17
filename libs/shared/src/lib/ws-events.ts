@@ -21,6 +21,7 @@ export const WS_EMIT = {
   ROOM_JOINED: 'room:joined',
   MEMBER_JOINED: 'member:joined',
   MEMBER_LEFT: 'member:left',
+  ROOM_DELETED: 'room:deleted',
   CHAT_MESSAGE: 'chat:message',
   MESSAGE_HISTORY: 'message:history',
   ERROR: 'error',

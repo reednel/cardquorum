@@ -262,6 +262,27 @@ export class GameService implements OnModuleDestroy {
     return cancelled;
   }
 
+  /**
+   * Force-cancel any active game session in a room (e.g. when the room is deleted).
+   * Skips ownership checks. Returns the cancelled sessionId, if any.
+   */
+  async forceCleanupRoom(roomId: number): Promise<number | null> {
+    const sessionId = this.roomToSession.get(roomId);
+    if (sessionId === undefined || sessionId === -1) return null;
+
+    const game = this.activeGames.get(sessionId);
+    if (!game) return null;
+
+    const finalStatus = game.status === 'active' ? 'abandoned' : 'cancelled';
+    await this.sessionRepo.updateStatusAndTimestamp(sessionId, finalStatus, 'finishedAt');
+
+    this.activeGames.delete(sessionId);
+    this.roomToSession.delete(roomId);
+
+    this.logger.log(`Game session ${sessionId} ${finalStatus} (room ${roomId} deleted)`);
+    return sessionId;
+  }
+
   getPlayerView(sessionId: number, userID: number): unknown | null {
     const game = this.activeGames.get(sessionId);
     if (!game || game.status !== 'active') return null;

@@ -5,6 +5,7 @@ import { AUTH_STRATEGY_TOKEN, AuthStrategyService } from './auth-strategy.interf
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { BasicAuthStrategy } from './basic/basic-auth.strategy';
+import { HttpAuthGuard } from './http-auth.guard';
 import { OidcAuthStrategy } from './oidc/oidc-auth.strategy';
 import { WsAuthGuard } from './ws-auth.guard';
 
@@ -47,9 +48,10 @@ import { WsAuthGuard } from './ws-auth.guard';
         basic: BasicAuthStrategy,
       ) => new AuthService(userRepo, credentialRepo, basic),
     },
+    HttpAuthGuard,
     WsAuthGuard,
   ],
   controllers: [AuthController],
-  exports: [AUTH_STRATEGY_TOKEN, WsAuthGuard],
+  exports: [AUTH_STRATEGY_TOKEN, HttpAuthGuard, WsAuthGuard],
 })
 export class AuthModule {}

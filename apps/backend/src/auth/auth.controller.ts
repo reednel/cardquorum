@@ -1,46 +1,26 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Headers,
-  Inject,
-  Post,
-  UnauthorizedException,
-} from '@nestjs/common';
-import { LoginRequest, RegisterRequest } from '@cardquorum/shared';
-import { AUTH_STRATEGY_TOKEN, AuthStrategyService } from './auth-strategy.interface';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { FastifyRequest } from 'fastify';
+import { UserIdentity } from '@cardquorum/shared';
 import { AuthService } from './auth.service';
+import { HttpAuthGuard, REQUEST_USER_KEY } from './http-auth.guard';
 
 @Controller('auth')
 export class AuthController {
-  constructor(
-    private readonly authService: AuthService,
-    @Inject(AUTH_STRATEGY_TOKEN)
-    private readonly strategy: AuthStrategyService,
-  ) {}
+  constructor(private readonly authService: AuthService) {}
 
   @Post('register')
-  register(@Body() dto: RegisterRequest) {
+  register(@Body() dto: { username: string; displayName: string; password: string }) {
     return this.authService.register(dto);
   }
 
   @Post('login')
-  login(@Body() dto: LoginRequest) {
+  login(@Body() dto: { username: string; password: string }) {
     return this.authService.login(dto);
   }
 
+  @UseGuards(HttpAuthGuard)
   @Get('me')
-  async me(@Headers('authorization') authHeader?: string) {
-    if (!authHeader?.startsWith('Bearer ')) {
-      throw new UnauthorizedException('Missing token');
-    }
-
-    const token = authHeader.slice(7);
-    const identity = await this.strategy.validateToken(token);
-    if (!identity) {
-      throw new UnauthorizedException('Invalid token');
-    }
-
-    return identity;
+  me(@Req() request: FastifyRequest): UserIdentity {
+    return (request as any)[REQUEST_USER_KEY];
   }
 }

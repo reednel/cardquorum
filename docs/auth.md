@@ -67,6 +67,24 @@ ws://localhost:3000/ws?token=<jwt>
 - Each WebSocket connection gets a unique connection ID (`conn-N`) for multi-tab support
 - The identity from the token is used for room membership and message attribution
 
+## HTTP Authentication
+
+REST endpoints that require authentication use `HttpAuthGuard`, a NestJS `CanActivate` guard. It extracts the `Bearer` token from the `Authorization` header, validates it via the active auth strategy, and attaches the `UserIdentity` to the request at `request.user`.
+
+Usage in controllers:
+
+```ts
+@UseGuards(HttpAuthGuard)
+@Controller('rooms')
+export class RoomController {
+  @Get()
+  list(@Req() request: FastifyRequest) {
+    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    // ...
+  }
+}
+```
+
 ## Key Files
 
 | File                                                 | Purpose                           |
@@ -76,6 +94,7 @@ ws://localhost:3000/ws?token=<jwt>
 | `apps/backend/src/auth/oidc/oidc-auth.strategy.ts`   | OIDC JWT validation via JWKS      |
 | `apps/backend/src/auth/auth.service.ts`              | Register/login business logic     |
 | `apps/backend/src/auth/auth.controller.ts`           | HTTP endpoints                    |
+| `apps/backend/src/auth/http-auth.guard.ts`           | HTTP Bearer token guard           |
 | `apps/backend/src/auth/ws-auth.guard.ts`             | WS handshake token validation     |
 | `apps/backend/src/auth/auth.module.ts`               | Wiring + strategy factory         |
 | `libs/db/src/schema/users.ts`                        | Users table schema                |

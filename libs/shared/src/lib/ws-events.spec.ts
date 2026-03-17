@@ -13,6 +13,7 @@ describe('WS_EMIT constants', () => {
     expect(WS_EMIT.ROOM_JOINED).toBe('room:joined');
     expect(WS_EMIT.MEMBER_JOINED).toBe('member:joined');
     expect(WS_EMIT.MEMBER_LEFT).toBe('member:left');
+    expect(WS_EMIT.ROOM_DELETED).toBe('room:deleted');
     expect(WS_EMIT.CHAT_MESSAGE).toBe('chat:message');
     expect(WS_EMIT.MESSAGE_HISTORY).toBe('message:history');
     expect(WS_EMIT.ERROR).toBe('error');

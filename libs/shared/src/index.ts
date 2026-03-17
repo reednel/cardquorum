@@ -8,6 +8,7 @@ export type {
   MemberChangePayload,
   ChatMessagePayload,
   MessageHistoryPayload,
+  RoomDeletedPayload,
   WsErrorPayload,
   GameCreatePayload,
   GameStartPayload,
@@ -21,6 +22,12 @@ export type {
   GameErrorPayload,
   GameCancelledPayload,
 } from './lib/ws-types';
-export type { Room } from './lib/room-types';
+export type {
+  Room,
+  RoomVisibility,
+  RoomResponse,
+  CreateRoomRequest,
+  UpdateRoomRequest,
+} from './lib/room-types';
 export type { AuthStrategy, LoginRequest, LoginResponse, RegisterRequest } from './lib/auth-types';
 export type { GameType, GameSessionStatus } from './lib/game-types';

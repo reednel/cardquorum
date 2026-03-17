@@ -55,10 +55,11 @@ apps/backend/src/ws/
 └── ws.module.ts              # Global module for WsConnectionService + WsGateway
 
 apps/backend/src/room/
-├── room.module.ts            # Provides RoomGateway + RoomService
+├── room.module.ts            # Provides RoomGateway + RoomController + RoomService
+├── room.controller.ts        # REST CRUD endpoints (POST/GET/PATCH/DELETE)
 ├── room.gateway.ts           # room:join, room:leave, disconnect cleanup
-├── room.dto.ts               # class-validator DTOs for room payloads
-└── room.service.ts           # RoomManager + broadcastToRoom helper
+├── room.dto.ts               # class-validator DTOs for WS + REST payloads
+└── room.service.ts           # CRUD, RoomManager, broadcastToRoom helper
 
 apps/backend/src/game/
 ├── game.module.ts            # Provides GameGateway + GameService
@@ -153,9 +154,26 @@ Responsibilities:
 - On leave: removes member, broadcasts `MEMBER_LEFT`
 - Injects `MessageRepository` directly for message history (avoids circular dependency with ChatModule)
 
+### RoomController (REST)
+
+HTTP endpoints for room CRUD, all guarded by `HttpAuthGuard`:
+
+| Method   | Path             | Auth  | Description                                          |
+| -------- | ---------------- | ----- | ---------------------------------------------------- |
+| `POST`   | `/api/rooms`     | Any   | Create a room (caller becomes owner)                 |
+| `GET`    | `/api/rooms`     | Any   | List public rooms (includes online counts)           |
+| `GET`    | `/api/rooms/:id` | Any   | Get room details                                     |
+| `PATCH`  | `/api/rooms/:id` | Owner | Update room name/visibility                          |
+| `DELETE` | `/api/rooms/:id` | Owner | Delete room (boots WS members, cancels active games) |
+
+Room names are unique. Visibility options: `public`, `friends-only`, `invite-only`.
+
 ### RoomService
 
 - Holds the `RoomManager` instance (in-memory room membership)
+- CRUD operations: `findById`, `findAll`, `create`, `update`, `delete`
+- `delete` broadcasts `ROOM_DELETED` to all connected members and removes them from the `RoomManager` before deleting from DB
+- `getOnlineCount(roomId)` — deduplicated unique user count from in-memory membership
 - `roomExists(roomId)` — checks the DB via `RoomRepository`
 - `broadcastToRoom(roomId, event, data, excludeConnId?)` — shared broadcast helper used by all gateways. Iterates room members, looks up tracked clients via `WsConnectionService`, sends with try/catch safety.
 
@@ -303,7 +321,7 @@ and the session is still in 'waiting' status.
 
 ## Out of Scope
 
-- **Room leader concept** — any room member can create for now; only the creator can start/cancel
+- **Room ownership transfer** — the room creator is the permanent owner; no transfer mechanism yet
 - **Player rotation** — all room members are players; rotation comes later
 - **`game:join`** — skipped; players are room members
 - **Event sourcing / replay** — state is in-memory only; server restart loses active games

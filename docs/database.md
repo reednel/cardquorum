@@ -33,11 +33,14 @@ Current tables:
 
 ### `rooms`
 
-| Column       | Type           | Notes                     |
-| ------------ | -------------- | ------------------------- |
-| `id`         | `serial`       | PK, auto-increment        |
-| `name`       | `varchar(255)` | Not null                  |
-| `created_at` | `timestamptz`  | Not null, default `now()` |
+| Column       | Type           | Notes                                                                  |
+| ------------ | -------------- | ---------------------------------------------------------------------- |
+| `id`         | `serial`       | PK, auto-increment                                                     |
+| `name`       | `varchar(255)` | Not null, unique                                                       |
+| `owner_id`   | `integer`      | FK → `users.id`, cascade delete, not null                              |
+| `visibility` | `varchar(20)`  | Not null, default `'public'` (`public`, `friends-only`, `invite-only`) |
+| `created_at` | `timestamptz`  | Not null, default `now()`                                              |
+| `updated_at` | `timestamptz`  | Not null, default `now()`                                              |
 
 ### `messages`
 
@@ -89,7 +92,7 @@ export class ChatService {
 
 Available repositories:
 
-- **`RoomRepository`** — `findById`, `create`
+- **`RoomRepository`** — `findById`, `findAll`, `create`, `update`, `delete`
 - **`MessageRepository`** — `insert`, `findByRoomId`
 - **`UserRepository`** — `findById`, `findByUsername`, `create`
 - **`CredentialRepository`** — `findCredentialByUserId`, `findUserByCredential`, `upsertCredential`, `findOrCreateUserByOidc`

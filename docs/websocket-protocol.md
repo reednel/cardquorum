@@ -45,9 +45,14 @@ Client                          Server
   │  (on disconnect, server auto-  │
   │   leaves all rooms and         │
   │   broadcasts departures)       │
+  │                                │
+  │  (if room owner deletes room   │
+  │   via REST API, all members    │
+  │   receive room:deleted)        │
+  │       ◄── room:deleted ────────┤
 ```
 
-**Note:** Rooms must be created explicitly before joining. Attempting to join a non-existent room returns a WS error.
+**Note:** Rooms must be created via `POST /api/rooms` before joining. Attempting to join a non-existent room returns a WS error.
 
 ## Testing with wscat
 

@@ -44,6 +44,10 @@ export interface MessageHistoryPayload {
   messages: ChatMessagePayload[];
 }
 
+export interface RoomDeletedPayload {
+  roomId: number;
+}
+
 export interface WsErrorPayload {
   message: string;
 }
