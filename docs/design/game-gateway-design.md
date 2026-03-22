@@ -244,7 +244,6 @@ Gateway catch blocks log the full error server-side and send generic messages to
 ### Connection Limits
 
 - Per-user connection cap: `MAX_CONNECTIONS_PER_USER = 5` (enforced in `WsConnectionService.trackClient`)
-- `JWT_SECRET` must be ≥ 32 characters (enforced in `BasicAuthStrategy` constructor)
 
 ### Validation Flow for `game:create`
 

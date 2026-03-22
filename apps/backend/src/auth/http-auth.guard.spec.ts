@@ -1,19 +1,19 @@
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { UserIdentity } from '@cardquorum/shared';
-import { AuthStrategyService } from './auth-strategy.interface';
 import { HttpAuthGuard, REQUEST_USER_KEY } from './http-auth.guard';
+import { SessionService } from './session.service';
 
 describe('HttpAuthGuard', () => {
   let guard: HttpAuthGuard;
-  let strategy: jest.Mocked<AuthStrategyService>;
+  let sessionService: jest.Mocked<Pick<SessionService, 'validateSession'>>;
 
   const alice: UserIdentity = { userId: 1, displayName: 'Alice' };
 
-  const createContext = (authHeader?: string): ExecutionContext => {
-    const request: Record<string, any> = { headers: {} };
-    if (authHeader !== undefined) {
-      request['headers']['authorization'] = authHeader;
-    }
+  const createContext = (sessionId?: string): ExecutionContext => {
+    const request: Record<string, any> = {
+      headers: {},
+      cookies: sessionId ? { cq_session: sessionId } : {},
+    };
     return {
       switchToHttp: () => ({
         getRequest: () => request,
@@ -22,42 +22,31 @@ describe('HttpAuthGuard', () => {
   };
 
   beforeEach(() => {
-    strategy = { validateToken: jest.fn() };
-    guard = new HttpAuthGuard(strategy);
+    sessionService = { validateSession: jest.fn() };
+    guard = new HttpAuthGuard(sessionService as unknown as SessionService);
   });
 
-  it('should allow request with valid token and attach user', async () => {
-    strategy.validateToken.mockResolvedValue(alice);
+  it('should allow request with valid session and attach user', async () => {
+    sessionService.validateSession.mockResolvedValue(alice);
 
-    const ctx = createContext('Bearer valid-token');
+    const ctx = createContext('valid-session-id');
     const result = await guard.canActivate(ctx);
 
     expect(result).toBe(true);
-    expect(strategy.validateToken).toHaveBeenCalledWith('valid-token');
+    expect(sessionService.validateSession).toHaveBeenCalledWith('valid-session-id');
 
     const request = ctx.switchToHttp().getRequest();
     expect((request as any)[REQUEST_USER_KEY]).toEqual(alice);
   });
 
-  it('should reject request with no authorization header', async () => {
+  it('should reject request with no session cookie', async () => {
     const ctx = createContext();
     await expect(guard.canActivate(ctx)).rejects.toThrow(UnauthorizedException);
   });
 
-  it('should reject request with non-Bearer header', async () => {
-    const ctx = createContext('Basic dXNlcjpwYXNz');
-    await expect(guard.canActivate(ctx)).rejects.toThrow(UnauthorizedException);
-  });
-
-  it('should reject request when token validation returns null', async () => {
-    strategy.validateToken.mockResolvedValue(null);
-    const ctx = createContext('Bearer bad-token');
-    await expect(guard.canActivate(ctx)).rejects.toThrow(UnauthorizedException);
-  });
-
-  it('should reject request when token validation throws', async () => {
-    strategy.validateToken.mockRejectedValue(new Error('expired'));
-    const ctx = createContext('Bearer expired-token');
+  it('should reject request when session validation returns null', async () => {
+    sessionService.validateSession.mockResolvedValue(null);
+    const ctx = createContext('expired-session');
     await expect(guard.canActivate(ctx)).rejects.toThrow(UnauthorizedException);
   });
 });

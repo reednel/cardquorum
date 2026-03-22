@@ -8,6 +8,7 @@ import {
   GameSessionRepository,
   MessageRepository,
   RoomRepository,
+  SessionRepository,
   UserRepository,
 } from '@cardquorum/db';
 
@@ -49,6 +50,11 @@ export const DRIZZLE = Symbol('DRIZZLE');
       inject: [DRIZZLE],
       useFactory: (db: any) => new GameSessionRepository(db),
     },
+    {
+      provide: SessionRepository,
+      inject: [DRIZZLE],
+      useFactory: (db: any) => new SessionRepository(db),
+    },
   ],
   exports: [
     DRIZZLE,
@@ -57,6 +63,7 @@ export const DRIZZLE = Symbol('DRIZZLE');
     UserRepository,
     CredentialRepository,
     GameSessionRepository,
+    SessionRepository,
   ],
 })
 export class DrizzleModule implements OnApplicationShutdown {

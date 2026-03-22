@@ -29,5 +29,10 @@ export type {
   CreateRoomRequest,
   UpdateRoomRequest,
 } from './lib/room-types';
-export type { AuthStrategy, LoginRequest, LoginResponse, RegisterRequest } from './lib/auth-types';
+export type {
+  AuthStrategy,
+  LoginRequest,
+  RegisterRequest,
+  StrategiesResponse,
+} from './lib/auth-types';
 export type { GameType, GameSessionStatus } from './lib/game-types';

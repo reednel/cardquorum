@@ -1,14 +1,12 @@
 import {
   CanActivate,
   ExecutionContext,
-  Inject,
   Injectable,
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
-import { UserIdentity } from '@cardquorum/shared';
-import { AUTH_STRATEGY_TOKEN, AuthStrategyService } from './auth-strategy.interface';
+import { SessionService } from './session.service';
 
 export const REQUEST_USER_KEY = 'user';
 
@@ -16,31 +14,22 @@ export const REQUEST_USER_KEY = 'user';
 export class HttpAuthGuard implements CanActivate {
   private readonly logger = new Logger(HttpAuthGuard.name);
 
-  constructor(
-    @Inject(AUTH_STRATEGY_TOKEN)
-    private readonly strategy: AuthStrategyService,
-  ) {}
+  constructor(private readonly sessionService: SessionService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<FastifyRequest>();
-    const authHeader = request.headers.authorization;
+    const cookies = (request as any).cookies as Record<string, string> | undefined;
+    const sessionId = cookies?.['cq_session'];
 
-    if (!authHeader?.startsWith('Bearer ')) {
-      throw new UnauthorizedException('Missing or malformed authorization header');
+    if (!sessionId) {
+      throw new UnauthorizedException('Missing session cookie');
     }
 
-    const token = authHeader.slice(7);
-    let identity: UserIdentity | null;
-
-    try {
-      identity = await this.strategy.validateToken(token);
-    } catch (err) {
-      this.logger.debug(`Token validation failed: ${err}`);
-      throw new UnauthorizedException('Invalid token');
-    }
+    const identity = await this.sessionService.validateSession(sessionId);
 
     if (!identity) {
-      throw new UnauthorizedException('Invalid token');
+      this.logger.debug('Session validation failed: expired or not found');
+      throw new UnauthorizedException('Invalid or expired session');
     }
 
     (request as any)[REQUEST_USER_KEY] = identity;

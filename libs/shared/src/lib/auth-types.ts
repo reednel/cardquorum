@@ -5,12 +5,12 @@ export interface LoginRequest {
   password: string;
 }
 
-export interface LoginResponse {
-  token: string;
-}
-
 export interface RegisterRequest {
   username: string;
   displayName: string;
   password: string;
+}
+
+export interface StrategiesResponse {
+  strategies: AuthStrategy[];
 }

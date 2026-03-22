@@ -22,22 +22,45 @@ import { AppService } from './app.service';
         LOG_LEVEL: Joi.string().valid('debug', 'info', 'warn', 'error').default('info'),
         PORT: Joi.number().default(3000),
         NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
-        AUTH_STRATEGY: Joi.string().valid('basic', 'oidc').default('basic'),
-        JWT_SECRET: Joi.string().when('AUTH_STRATEGY', {
-          is: 'basic',
+        AUTH_STRATEGIES: Joi.string()
+          .default('basic')
+          .custom((value: string, helpers) => {
+            const strategies = value.split(',').map((s: string) => s.trim());
+            const valid = ['basic', 'oidc'];
+            for (const s of strategies) {
+              if (!valid.includes(s)) {
+                return helpers.error('any.invalid');
+              }
+            }
+            if (new Set(strategies).size !== strategies.length) {
+              return helpers.error('any.invalid');
+            }
+            return value;
+          }, 'comma-separated auth strategies'),
+        OIDC_ISSUER: Joi.string()
+          .uri()
+          .when('AUTH_STRATEGIES', {
+            is: Joi.string().pattern(/oidc/),
+            then: Joi.required(),
+            otherwise: Joi.optional(),
+          }),
+        OIDC_CLIENT_ID: Joi.string().when('AUTH_STRATEGIES', {
+          is: Joi.string().pattern(/oidc/),
           then: Joi.required(),
           otherwise: Joi.optional(),
         }),
-        OIDC_ISSUER: Joi.string().uri().when('AUTH_STRATEGY', {
-          is: 'oidc',
+        OIDC_CLIENT_SECRET: Joi.string().when('AUTH_STRATEGIES', {
+          is: Joi.string().pattern(/oidc/),
           then: Joi.required(),
           otherwise: Joi.optional(),
         }),
-        OIDC_CLIENT_ID: Joi.string().when('AUTH_STRATEGY', {
-          is: 'oidc',
-          then: Joi.required(),
-          otherwise: Joi.optional(),
-        }),
+        OIDC_REDIRECT_URI: Joi.string()
+          .uri()
+          .when('AUTH_STRATEGIES', {
+            is: Joi.string().pattern(/oidc/),
+            then: Joi.required(),
+            otherwise: Joi.optional(),
+          }),
       }),
     }),
     LoggerModule.forRootAsync({

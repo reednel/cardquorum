@@ -1,57 +1,58 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { CredentialRepository, UserRepository } from '@cardquorum/db';
-import { AUTH_STRATEGY_TOKEN, AuthStrategyService } from './auth-strategy.interface';
+import { CredentialRepository, SessionRepository, UserRepository } from '@cardquorum/db';
+import { AuthStrategy } from '@cardquorum/shared';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { BasicAuthStrategy } from './basic/basic-auth.strategy';
 import { HttpAuthGuard } from './http-auth.guard';
-import { OidcAuthStrategy } from './oidc/oidc-auth.strategy';
+import { SessionService } from './session.service';
 import { WsAuthGuard } from './ws-auth.guard';
 
 @Module({
   providers: [
     {
-      provide: BasicAuthStrategy,
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) =>
-        new BasicAuthStrategy(config.getOrThrow<string>('JWT_SECRET')),
-    },
-    {
-      provide: AUTH_STRATEGY_TOKEN,
-      inject: [ConfigService, BasicAuthStrategy, CredentialRepository],
-      useFactory: (
-        config: ConfigService,
-        basic: BasicAuthStrategy,
-        credentialRepo: CredentialRepository,
-      ): AuthStrategyService => {
-        const strategy = config.get<string>('AUTH_STRATEGY', 'basic');
-        if (strategy === 'basic') {
-          return basic;
-        }
-        if (strategy === 'oidc') {
-          return new OidcAuthStrategy(
-            config.getOrThrow<string>('OIDC_ISSUER'),
-            config.getOrThrow<string>('OIDC_CLIENT_ID'),
-            credentialRepo,
-          );
-        }
-        throw new Error(`Unknown AUTH_STRATEGY: ${strategy}`);
-      },
+      provide: SessionService,
+      inject: [SessionRepository],
+      useFactory: (sessionRepo: SessionRepository) => new SessionService(sessionRepo),
     },
     {
       provide: AuthService,
-      inject: [UserRepository, CredentialRepository, BasicAuthStrategy],
-      useFactory: (
+      inject: [UserRepository, CredentialRepository, SessionService, ConfigService],
+      useFactory: async (
         userRepo: UserRepository,
         credentialRepo: CredentialRepository,
-        basic: BasicAuthStrategy,
-      ) => new AuthService(userRepo, credentialRepo, basic),
+        sessionService: SessionService,
+        config: ConfigService,
+      ) => {
+        const strategies = config
+          .get<string>('AUTH_STRATEGIES', 'basic')
+          .split(',')
+          .map((s: string) => s.trim()) as AuthStrategy[];
+
+        const service = new AuthService(userRepo, credentialRepo, sessionService, {
+          strategies,
+          oidcIssuer: config.get('OIDC_ISSUER'),
+          oidcClientId: config.get('OIDC_CLIENT_ID'),
+          oidcClientSecret: config.get('OIDC_CLIENT_SECRET'),
+          oidcRedirectUri: config.get('OIDC_REDIRECT_URI'),
+        });
+
+        await service.initOidc();
+        return service;
+      },
     },
-    HttpAuthGuard,
-    WsAuthGuard,
+    {
+      provide: HttpAuthGuard,
+      inject: [SessionService],
+      useFactory: (sessionService: SessionService) => new HttpAuthGuard(sessionService),
+    },
+    {
+      provide: WsAuthGuard,
+      inject: [SessionService],
+      useFactory: (sessionService: SessionService) => new WsAuthGuard(sessionService),
+    },
   ],
   controllers: [AuthController],
-  exports: [AUTH_STRATEGY_TOKEN, HttpAuthGuard, WsAuthGuard],
+  exports: [HttpAuthGuard, WsAuthGuard, SessionService, AuthService],
 })
 export class AuthModule {}
