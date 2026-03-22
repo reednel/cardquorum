@@ -42,6 +42,7 @@ You are an expert in TypeScript, Angular, and scalable web application developme
 - Do NOT use the `@HostBinding` and `@HostListener` decorators. Put host bindings inside the `host` object of the `@Component` or `@Directive` decorator instead
 - Use `NgOptimizedImage` for all static images.
   - `NgOptimizedImage` does not work for inline base64 images.
+- Do NOT use component-scoped CSS (`styles` or `styleUrls` with actual CSS content in `@Component`). Angular's `ViewEncapsulation.Emulated` injects runtime `<style>` tags that are blocked by our strict `style-src 'self'` CSP. Use Tailwind utility classes in templates instead.
 
 ## Accessibility Requirements
 
