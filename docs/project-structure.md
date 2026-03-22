@@ -13,7 +13,7 @@ cardquorum/
 │   ├── shared/            # Contracts, types, event constants
 │   ├── engine/            # Room management, reusable game infra
 │   └── games/
-│       └── sheepshead/    # First game plugin (not yet implemented)
+│       └── sheepshead/    # Sheepshead game plugin (complete)
 ├── compose.dev.yml        # Postgres + Redis for local dev
 ├── .env.template          # Environment variable template
 └── docs/                  # You are here
@@ -37,10 +37,12 @@ Shared types and constants consumed by both frontend and backend. Contains no ru
 
 Key exports:
 
-- `WS_EVENT` — client-to-server WebSocket event names (`room:join`, `room:leave`, `chat:send`)
-- `WS_EMIT` — server-to-client event names (`room:joined`, `member:joined`, `member:left`, `chat:message`, `message:history`, `error`)
-- Payload interfaces for every event (`JoinRoomPayload`, `ChatMessagePayload`, etc.)
-- `Room` interface
+- `WS_EVENT` — client-to-server WebSocket event names (`room:join`, `room:leave`, `chat:send`, game events)
+- `WS_EMIT` — server-to-client event names (`room:joined`, `member:joined`, `member:left`, `chat:message`, `message:history`, `room:deleted`, game events, `error`)
+- Payload interfaces for every event (`JoinRoomPayload`, `ChatMessagePayload`, `RoomDeletedPayload`, game payloads, etc.)
+- Room types: `Room`, `RoomResponse`, `RoomVisibility`, `CreateRoomRequest`, `UpdateRoomRequest`
+- Auth types: `AuthStrategy`, `LoginRequest`, `RegisterRequest`, `StrategiesResponse`, `UserIdentity`
+- Game types: `GameType`, `GameSessionStatus`
 
 ### `@cardquorum/engine`
 
@@ -60,24 +62,50 @@ Key exports:
 | `DrizzleModule` | Yes     | Provides `DRIZZLE` token — a typed Drizzle instance for Postgres |
 | `RedisModule`   | Yes     | Provides `REDIS` token (ioredis) and `RedisPubSubService`        |
 | `HealthModule`  | No      | `GET /api/healthz` — checks Postgres and Redis                   |
-| `RoomModule`    | No      | Wraps engine's `RoomManager`, persists rooms to Postgres         |
+| `AuthModule`    | No      | Register/login, session management, HTTP + WS auth guards        |
+| `RoomModule`    | No      | Room CRUD REST API, wraps engine's `RoomManager`                 |
 | `ChatModule`    | No      | Chat gateway, message persistence, Redis pub/sub broadcast       |
+| `WsModule`      | No      | WebSocket connection lifecycle, validation pipe                  |
+| `GameModule`    | No      | Game session lifecycle, game gateway                             |
 
 ## Frontend Structure
 
 ```sh
 apps/frontend/src/app/
 ├── app.ts                     # Root component (just a <router-outlet>)
-├── app.config.ts              # Providers (router)
-├── app.routes.ts              # Lazy-loaded routes
+├── app.config.ts              # Providers (router, HTTP interceptors, APP_INITIALIZER for session hydration)
+├── app.routes.ts              # Lazy-loaded routes (/login, /register, /rooms, /rooms/:roomId)
+├── auth/
+│   ├── auth.guard.ts          # Route guard — redirects to /login if unauthenticated
+│   ├── auth.interceptor.ts    # HTTP interceptor — handles 401 redirect (cookies sent automatically)
+│   ├── login.ts               # Login page
+│   └── register.ts            # Registration page
+├── shell/
+│   └── app-shell.ts           # Authenticated layout wrapper with nav bar + theme toggle
 ├── services/
+│   ├── auth.service.ts        # Session-based auth, user identity hydration (signals)
 │   ├── websocket.service.ts   # Browser-native WebSocket wrapper (signal-based)
-│   └── chat.service.ts        # Chat state management (signals)
+│   ├── chat.service.ts        # Chat state management (signals)
+│   ├── room.service.ts        # Room REST API wrapper (signals)
+│   └── theme.service.ts       # Light/dark theme toggle (persisted to localStorage)
+├── rooms/
+│   ├── room-list.ts           # Room browser table with create/config modal integration
+│   ├── room-view.ts           # In-room view (sidebar + chat + member list)
+│   ├── create-room-modal.ts   # Modal form for creating rooms
+│   └── room-config-modal.ts   # Modal for editing/deleting owned rooms
 └── chat/
-    ├── chat-lobby.ts          # Room ID + nickname form
-    ├── chat-room.ts           # Main chat view (sidebar + messages + input)
     ├── chat-message-list.ts   # Presentational message list (role="log")
     └── chat-member-list.ts    # Presentational member list
 ```
 
-All components use `ChangeDetectionStrategy.OnPush` and are standalone (Angular 21 default).
+All components use `ChangeDetectionStrategy.OnPush` and are standalone (Angular default).
+
+### Route Structure
+
+| Path             | Component  | Auth required | Description                     |
+| ---------------- | ---------- | ------------- | ------------------------------- |
+| `/login`         | `Login`    | No            | Login form                      |
+| `/register`      | `Register` | No            | Registration form               |
+| `/`              | `AppShell` | Yes           | Redirects to `/rooms`           |
+| `/rooms`         | `RoomList` | Yes           | Room browser with create button |
+| `/rooms/:roomId` | `RoomView` | Yes           | In-room chat + member sidebar   |

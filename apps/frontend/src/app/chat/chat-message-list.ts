@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { ChatMessagePayload } from '@cardquorum/shared';
+import { FormatTimePipe } from './format-time.pipe';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-chat-message-list',
+  imports: [FormatTimePipe],
   host: { role: 'log', 'aria-live': 'polite' },
   template: `
     <div class="flex flex-col gap-1 p-4 overflow-y-auto h-full">
@@ -12,7 +14,7 @@ import { ChatMessagePayload } from '@cardquorum/shared';
           <span class="font-semibold text-indigo-400 shrink-0">{{ msg.senderDisplayName }}</span>
           <span class="text-gray-200 wrap-break-word min-w-0">{{ msg.content }}</span>
           <span class="text-gray-500 text-xs shrink-0 ml-auto self-end">
-            {{ formatTime(msg.sentAt) }}
+            {{ msg.sentAt | formatTime }}
           </span>
         </div>
       } @empty {
@@ -23,8 +25,4 @@ import { ChatMessagePayload } from '@cardquorum/shared';
 })
 export class ChatMessageList {
   messages = input.required<ChatMessagePayload[]>();
-
-  formatTime(iso: string): string {
-    return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  }
 }

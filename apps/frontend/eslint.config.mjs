@@ -34,6 +34,11 @@ export default [
     rules: {
       '@angular-eslint/template/no-negated-async': 'error',
       '@angular-eslint/template/use-track-by-function': 'warn',
+      // <dialog> is natively interactive/focusable; the default rule doesn't recognize it
+      '@angular-eslint/template/interactive-supports-focus': [
+        'error',
+        { allowList: ['dialog'] },
+      ],
     },
   },
 ];
