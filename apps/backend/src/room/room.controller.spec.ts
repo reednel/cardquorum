@@ -8,7 +8,17 @@ import { RoomService } from './room.service';
 describe('RoomController', () => {
   let controller: RoomController;
   let roomService: jest.Mocked<
-    Pick<RoomService, 'findById' | 'findAll' | 'create' | 'update' | 'delete' | 'getOnlineCount'>
+    Pick<
+      RoomService,
+      | 'findById'
+      | 'findAll'
+      | 'findAllForUser'
+      | 'canAccessRoom'
+      | 'create'
+      | 'update'
+      | 'delete'
+      | 'getOnlineCount'
+    >
   >;
   let gameService: jest.Mocked<Pick<GameService, 'forceCleanupRoom'>>;
 
@@ -33,6 +43,8 @@ describe('RoomController', () => {
     roomService = {
       findById: jest.fn(),
       findAll: jest.fn(),
+      findAllForUser: jest.fn(),
+      canAccessRoom: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
@@ -79,38 +91,39 @@ describe('RoomController', () => {
   });
 
   describe('list', () => {
-    it('should return public rooms with online counts', async () => {
-      roomService.findAll.mockResolvedValue([dbRoom]);
+    it('should return rooms for the user with online counts', async () => {
+      roomService.findAllForUser.mockResolvedValue([dbRoom]);
       roomService.getOnlineCount.mockReturnValue(3);
 
-      const result = await controller.list();
+      const result = await controller.list(makeRequest(alice));
 
-      expect(roomService.findAll).toHaveBeenCalledWith('public');
+      expect(roomService.findAllForUser).toHaveBeenCalledWith(alice.userId);
       expect(result).toHaveLength(1);
       expect(result[0].onlineCount).toBe(3);
     });
 
     it('should return empty array when no rooms exist', async () => {
-      roomService.findAll.mockResolvedValue([]);
+      roomService.findAllForUser.mockResolvedValue([]);
 
-      const result = await controller.list();
+      const result = await controller.list(makeRequest(alice));
       expect(result).toEqual([]);
     });
   });
 
   describe('findOne', () => {
     it('should return a room by id', async () => {
+      roomService.canAccessRoom.mockResolvedValue(true);
       roomService.findById.mockResolvedValue(dbRoom);
 
-      const result = await controller.findOne(1);
+      const result = await controller.findOne(makeRequest(alice), 1);
       expect(result.id).toBe(1);
       expect(result.name).toBe('Test Room');
     });
 
-    it('should throw NotFoundException for missing room', async () => {
-      roomService.findById.mockResolvedValue(null);
+    it('should throw NotFoundException when user cannot access room', async () => {
+      roomService.canAccessRoom.mockResolvedValue(false);
 
-      await expect(controller.findOne(999)).rejects.toThrow(NotFoundException);
+      await expect(controller.findOne(makeRequest(alice), 999)).rejects.toThrow(NotFoundException);
     });
   });
 

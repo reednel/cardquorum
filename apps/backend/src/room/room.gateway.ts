@@ -45,6 +45,12 @@ export class RoomGateway implements OnModuleInit {
       return;
     }
 
+    const canAccess = await this.roomService.canAccessRoom(roomId, tracked.identity.userId);
+    if (!canAccess) {
+      this.send(client, WS_EMIT.ERROR, { message: 'You do not have access to this room' });
+      return;
+    }
+
     const roomKey = String(roomId);
     this.roomService.manager.joinRoom(roomKey, tracked.id, tracked.identity);
 

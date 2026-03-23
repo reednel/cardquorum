@@ -36,3 +36,5 @@ export type {
   StrategiesResponse,
 } from './lib/auth-types';
 export type { GameType, GameSessionStatus } from './lib/game-types';
+export type { UserProfile, UserSearchResult, UpdateDisplayNameRequest } from './lib/user-types';
+export type { FriendshipStatus, FriendshipResponse, FriendRequestBody } from './lib/friend-types';

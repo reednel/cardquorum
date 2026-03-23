@@ -50,8 +50,9 @@ export class RoomController {
   }
 
   @Get()
-  async list(): Promise<RoomResponse[]> {
-    const rooms = await this.roomService.findAll('public');
+  async list(@Req() request: FastifyRequest): Promise<RoomResponse[]> {
+    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const rooms = await this.roomService.findAllForUser(user.userId);
 
     return rooms.map((r) => ({
       id: r.id,
@@ -66,11 +67,17 @@ export class RoomController {
   }
 
   @Get(':id')
-  async findOne(@Param('id', ParseIntPipe) id: number): Promise<RoomResponse> {
-    const room = await this.roomService.findById(id);
-    if (!room) {
+  async findOne(
+    @Req() request: FastifyRequest,
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<RoomResponse> {
+    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const canAccess = await this.roomService.canAccessRoom(id, user.userId);
+    if (!canAccess) {
       throw new NotFoundException(`Room ${id} not found`);
     }
+
+    const room = (await this.roomService.findById(id))!;
 
     return {
       id: room.id,

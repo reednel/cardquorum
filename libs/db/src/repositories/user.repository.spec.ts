@@ -9,6 +9,9 @@ function createMockDb() {
     insert: jest.fn().mockReturnThis(),
     values: jest.fn().mockReturnThis(),
     returning: jest.fn(),
+    update: jest.fn().mockReturnThis(),
+    set: jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
   } as any;
 }
 
@@ -69,6 +72,54 @@ describe('UserRepository', () => {
 
       expect(result).toBe(user);
       expect(db.insert).toHaveBeenCalled();
+    });
+  });
+
+  describe('updateDisplayName', () => {
+    it('should update and return the user', async () => {
+      const updated = {
+        id: 1,
+        username: 'alice',
+        displayName: 'Alicia',
+        email: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      db.returning.mockResolvedValue([updated]);
+
+      const result = await repo.updateDisplayName(1, 'Alicia');
+
+      expect(result).toBe(updated);
+      expect(db.update).toHaveBeenCalled();
+      expect(db.set).toHaveBeenCalled();
+    });
+
+    it('should return null when user not found', async () => {
+      db.returning.mockResolvedValue([]);
+
+      const result = await repo.updateDisplayName(999, 'Nobody');
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('searchByUsername', () => {
+    it('should return matching users up to limit', async () => {
+      const results = [{ id: 1, username: 'alice', displayName: 'Alice' }];
+      db.limit.mockResolvedValue(results);
+
+      const result = await repo.searchByUsername('ali', 99, 20);
+
+      expect(result).toEqual(results);
+      expect(db.select).toHaveBeenCalled();
+    });
+
+    it('should return empty array when no matches', async () => {
+      db.limit.mockResolvedValue([]);
+
+      const result = await repo.searchByUsername('zzz', 1, 20);
+
+      expect(result).toEqual([]);
     });
   });
 });

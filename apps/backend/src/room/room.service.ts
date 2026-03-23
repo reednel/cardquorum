@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { RoomRepository } from '@cardquorum/db';
 import { RoomManager } from '@cardquorum/engine';
 import { RoomVisibility, WS_EMIT } from '@cardquorum/shared';
+import { FriendService } from '../friend/friend.service';
 import { WsConnectionService } from '../ws/ws-connection.service';
 
 @Injectable()
@@ -12,6 +13,7 @@ export class RoomService {
   constructor(
     private readonly rooms: RoomRepository,
     private readonly connectionService: WsConnectionService,
+    private readonly friendService: FriendService,
   ) {}
 
   async findById(roomId: number) {
@@ -20,6 +22,31 @@ export class RoomService {
 
   async findAll(visibility?: string) {
     return this.rooms.findAll(visibility);
+  }
+
+  async findAllForUser(userId: number) {
+    const allRooms = await this.rooms.findAll();
+    const friendIds = await this.friendService.findFriendIds(userId);
+    const friendIdSet = new Set(friendIds);
+
+    return allRooms.filter((room) => {
+      if (room.visibility === 'public' || room.visibility === 'invite-only') return true;
+      if (room.ownerId === userId) return true;
+      if (room.visibility === 'friends-only' && friendIdSet.has(room.ownerId)) return true;
+      return false;
+    });
+  }
+
+  async canAccessRoom(roomId: number, userId: number): Promise<boolean> {
+    const room = await this.rooms.findById(roomId);
+    if (!room) return false;
+    if (room.visibility === 'public') return true;
+    if (room.visibility === 'invite-only') return true;
+    if (room.ownerId === userId) return true;
+    if (room.visibility === 'friends-only') {
+      return this.friendService.areFriends(userId, room.ownerId);
+    }
+    return false;
   }
 
   async create(name: string, ownerId: number, visibility: RoomVisibility = 'public') {

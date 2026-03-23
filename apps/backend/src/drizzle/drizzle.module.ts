@@ -5,6 +5,7 @@ import postgres from 'postgres';
 import * as schema from '@cardquorum/db';
 import {
   CredentialRepository,
+  FriendshipRepository,
   GameSessionRepository,
   MessageRepository,
   RoomRepository,
@@ -55,6 +56,11 @@ export const DRIZZLE = Symbol('DRIZZLE');
       inject: [DRIZZLE],
       useFactory: (db: any) => new SessionRepository(db),
     },
+    {
+      provide: FriendshipRepository,
+      inject: [DRIZZLE],
+      useFactory: (db: any) => new FriendshipRepository(db),
+    },
   ],
   exports: [
     DRIZZLE,
@@ -64,6 +70,7 @@ export const DRIZZLE = Symbol('DRIZZLE');
     CredentialRepository,
     GameSessionRepository,
     SessionRepository,
+    FriendshipRepository,
   ],
 })
 export class DrizzleModule implements OnApplicationShutdown {

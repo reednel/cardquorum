@@ -13,6 +13,7 @@ describe('RoomService', () => {
     update: jest.Mock;
     delete: jest.Mock;
   };
+  let mockFriendService: { areFriends: jest.Mock; findFriendIds: jest.Mock };
 
   const alice: UserIdentity = { userId: 1, displayName: 'Alice' };
   const bob: UserIdentity = { userId: 2, displayName: 'Bob' };
@@ -30,7 +31,9 @@ describe('RoomService', () => {
       delete: jest.fn(),
     };
 
-    service = new RoomService(mockRepo as any, connectionService);
+    mockFriendService = { areFriends: jest.fn(), findFriendIds: jest.fn() };
+
+    service = new RoomService(mockRepo as any, connectionService, mockFriendService as any);
   });
 
   describe('delete', () => {
@@ -132,6 +135,116 @@ describe('RoomService', () => {
       service.manager.joinRoom('1', tracked.id, alice);
 
       expect(() => service.broadcastToRoom('1', 'test', {})).not.toThrow();
+    });
+  });
+
+  describe('findAllForUser', () => {
+    it('should include public rooms', async () => {
+      const publicRoom = {
+        id: 1,
+        name: 'Pub',
+        ownerId: 99,
+        ownerDisplayName: 'Other',
+        visibility: 'public',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      mockRepo.findAll.mockResolvedValue([publicRoom]);
+      mockFriendService.findFriendIds.mockResolvedValue([]);
+
+      const result = await service.findAllForUser(10);
+
+      expect(result).toEqual([publicRoom]);
+    });
+
+    it('should include rooms owned by user regardless of visibility', async () => {
+      const ownRoom = {
+        id: 2,
+        name: 'Mine',
+        ownerId: 10,
+        ownerDisplayName: 'Me',
+        visibility: 'friends-only',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      mockRepo.findAll.mockResolvedValue([ownRoom]);
+      mockFriendService.findFriendIds.mockResolvedValue([]);
+
+      const result = await service.findAllForUser(10);
+
+      expect(result).toEqual([ownRoom]);
+    });
+
+    it('should include friends-only rooms where user is friends with owner', async () => {
+      const friendRoom = {
+        id: 3,
+        name: 'Friend',
+        ownerId: 20,
+        ownerDisplayName: 'Friend',
+        visibility: 'friends-only',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      mockRepo.findAll.mockResolvedValue([friendRoom]);
+      mockFriendService.findFriendIds.mockResolvedValue([20]);
+
+      const result = await service.findAllForUser(10);
+
+      expect(result).toEqual([friendRoom]);
+    });
+
+    it('should exclude friends-only rooms where user is NOT friends with owner', async () => {
+      const strangerRoom = {
+        id: 4,
+        name: 'Stranger',
+        ownerId: 30,
+        ownerDisplayName: 'Stranger',
+        visibility: 'friends-only',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      mockRepo.findAll.mockResolvedValue([strangerRoom]);
+      mockFriendService.findFriendIds.mockResolvedValue([20]);
+
+      const result = await service.findAllForUser(10);
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('canAccessRoom', () => {
+    it('should allow access to public rooms', async () => {
+      mockRepo.findById.mockResolvedValue({ id: 1, visibility: 'public', ownerId: 99 });
+
+      const result = await service.canAccessRoom(1, 10);
+
+      expect(result).toBe(true);
+    });
+
+    it('should allow access to own friends-only room', async () => {
+      mockRepo.findById.mockResolvedValue({ id: 1, visibility: 'friends-only', ownerId: 10 });
+
+      const result = await service.canAccessRoom(1, 10);
+
+      expect(result).toBe(true);
+    });
+
+    it('should allow friends-only access for friend of owner', async () => {
+      mockRepo.findById.mockResolvedValue({ id: 1, visibility: 'friends-only', ownerId: 20 });
+      mockFriendService.areFriends.mockResolvedValue(true);
+
+      const result = await service.canAccessRoom(1, 10);
+
+      expect(result).toBe(true);
+    });
+
+    it('should deny friends-only access for non-friend', async () => {
+      mockRepo.findById.mockResolvedValue({ id: 1, visibility: 'friends-only', ownerId: 20 });
+      mockFriendService.areFriends.mockResolvedValue(false);
+
+      const result = await service.canAccessRoom(1, 10);
+
+      expect(result).toBe(false);
     });
   });
 });

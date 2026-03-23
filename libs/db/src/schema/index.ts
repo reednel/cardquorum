@@ -1,3 +1,4 @@
+export { friendships } from './friendships';
 export { gameSessions } from './game-sessions';
 export { messages } from './messages';
 export { rooms } from './rooms';

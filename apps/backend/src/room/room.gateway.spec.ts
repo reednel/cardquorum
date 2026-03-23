@@ -25,6 +25,7 @@ describe('RoomGateway', () => {
     roomService = {
       manager,
       roomExists: jest.fn().mockResolvedValue(true),
+      canAccessRoom: jest.fn().mockResolvedValue(true),
       broadcastToRoom: jest.fn(
         (roomId: string, event: string, data: unknown, excludeConnId?: string) => {
           const room = manager.getRoom(roomId);
