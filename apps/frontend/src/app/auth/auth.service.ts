@@ -58,6 +58,14 @@ export class AuthService {
     );
   }
 
+  /** Called by UserService when display name is updated via /api/users/me. */
+  updateDisplayName(displayName: string): void {
+    const current = this._user();
+    if (current) {
+      this._user.set({ ...current, displayName });
+    }
+  }
+
   logout(): void {
     this.http.post('/api/auth/logout', {}).subscribe();
     this._user.set(null);

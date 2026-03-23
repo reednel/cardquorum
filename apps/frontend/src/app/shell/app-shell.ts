@@ -3,10 +3,11 @@ import { RouterOutlet } from '@angular/router';
 import { AuthService } from '../auth/auth.service';
 import { WebSocketService } from '../websocket.service';
 import { ThemeService } from './theme.service';
+import { UserDropdown } from './user-dropdown';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, UserDropdown],
   selector: 'app-shell',
   template: `
     <header
@@ -44,16 +45,7 @@ import { ThemeService } from './theme.service';
         }
       </button>
 
-      <span class="text-sm text-gray-700 dark:text-gray-300">
-        {{ auth.user()?.displayName }}
-      </span>
-
-      <button
-        (click)="auth.logout()"
-        class="rounded-md px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
-      >
-        Log out
-      </button>
+      <app-user-dropdown />
     </header>
 
     <main class="min-h-0 flex-1 bg-gray-50 dark:bg-gray-950">
@@ -63,7 +55,7 @@ import { ThemeService } from './theme.service';
   host: { class: 'flex min-h-screen flex-col' },
 })
 export class AppShell implements OnInit {
-  protected readonly auth = inject(AuthService);
+  private readonly auth = inject(AuthService);
   protected readonly theme = inject(ThemeService);
   private readonly ws = inject(WebSocketService);
 

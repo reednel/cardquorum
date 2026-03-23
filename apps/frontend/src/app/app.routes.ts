@@ -27,6 +27,16 @@ export const appRoutes: Route[] = [
         title: 'Room — CardQuorum',
         loadComponent: () => import('./rooms/room-view').then((m) => m.RoomView),
       },
+      {
+        path: 'account',
+        title: 'Account — CardQuorum',
+        loadComponent: () => import('./account/account-page').then((m) => m.AccountPage),
+      },
+      {
+        path: 'account/friends',
+        title: 'Friends — CardQuorum',
+        loadComponent: () => import('./account/friends-page').then((m) => m.FriendsPage),
+      },
       { path: '', redirectTo: 'rooms', pathMatch: 'full' },
     ],
   },
