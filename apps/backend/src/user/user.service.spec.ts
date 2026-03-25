@@ -1,4 +1,8 @@
+import { ForbiddenException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import * as bcrypt from 'bcryptjs';
 import { UserService } from './user.service';
+
+jest.mock('bcryptjs');
 
 describe('UserService', () => {
   let service: UserService;
@@ -6,7 +10,10 @@ describe('UserService', () => {
     findById: jest.Mock;
     updateDisplayName: jest.Mock;
     searchByUsername: jest.Mock;
+    softDelete: jest.Mock;
   };
+  let mockCredentialRepo: { findCredentialByUserId: jest.Mock };
+  let mockRoomRepo: { findIdsByOwner: jest.Mock };
 
   const now = new Date();
   const user = {
@@ -23,9 +30,12 @@ describe('UserService', () => {
       findById: jest.fn(),
       updateDisplayName: jest.fn(),
       searchByUsername: jest.fn(),
+      softDelete: jest.fn().mockResolvedValue(undefined),
     };
+    mockCredentialRepo = { findCredentialByUserId: jest.fn() };
+    mockRoomRepo = { findIdsByOwner: jest.fn() };
 
-    service = new UserService(mockUserRepo as any);
+    service = new UserService(mockUserRepo as any, mockCredentialRepo as any, mockRoomRepo as any);
   });
 
   describe('getProfile', () => {
@@ -82,6 +92,85 @@ describe('UserService', () => {
 
       expect(result).toEqual([{ userId: 2, username: 'bob', displayName: 'Bob' }]);
       expect(mockUserRepo.searchByUsername).toHaveBeenCalledWith('bo', 1, 20);
+    });
+  });
+
+  describe('deleteAccount (basic)', () => {
+    beforeEach(() => {
+      mockUserRepo.findById.mockResolvedValue(user);
+      mockCredentialRepo.findCredentialByUserId.mockResolvedValue('hashed');
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      mockRoomRepo.findIdsByOwner.mockResolvedValue([]);
+    });
+
+    it('should verify password then call softDelete', async () => {
+      await service.deleteAccount(1, 'basic', new Date(), 'correct-password');
+
+      expect(mockCredentialRepo.findCredentialByUserId).toHaveBeenCalledWith(1, 'basic');
+      expect(bcrypt.compare).toHaveBeenCalledWith('correct-password', 'hashed');
+      expect(mockUserRepo.softDelete).toHaveBeenCalledWith(1, 'deleted_1', []);
+    });
+
+    it('should throw when password missing for basic auth', async () => {
+      await expect(service.deleteAccount(1, 'basic', new Date())).rejects.toThrow();
+    });
+
+    it('should throw on wrong password', async () => {
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+      await expect(service.deleteAccount(1, 'basic', new Date(), 'wrong')).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should throw UnauthorizedException when no credentials exist', async () => {
+      mockCredentialRepo.findCredentialByUserId.mockResolvedValue(null);
+
+      await expect(service.deleteAccount(1, 'basic', new Date(), 'any')).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should throw NotFoundException when user not found', async () => {
+      mockUserRepo.findById.mockResolvedValue(null);
+
+      await expect(service.deleteAccount(999, 'basic', new Date(), 'any')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should return owned room IDs for WS cleanup', async () => {
+      mockRoomRepo.findIdsByOwner.mockResolvedValue([10, 20]);
+
+      const result = await service.deleteAccount(1, 'basic', new Date(), 'correct-password');
+
+      expect(result).toEqual({ ownedRoomIds: [10, 20] });
+      expect(mockUserRepo.softDelete).toHaveBeenCalledWith(1, 'deleted_1', [10, 20]);
+    });
+  });
+
+  describe('deleteAccount (oidc)', () => {
+    beforeEach(() => {
+      mockUserRepo.findById.mockResolvedValue(user);
+      mockRoomRepo.findIdsByOwner.mockResolvedValue([]);
+    });
+
+    it('should delete when session is fresh (within 5 min)', async () => {
+      const freshDate = new Date(Date.now() - 2 * 60 * 1000);
+      const result = await service.deleteAccount(1, 'oidc', freshDate);
+
+      expect(mockUserRepo.softDelete).toHaveBeenCalledWith(1, 'deleted_1', []);
+      expect(result).toEqual({ ownedRoomIds: [] });
+    });
+
+    it('should throw ForbiddenException when session is stale', async () => {
+      const staleDate = new Date(Date.now() - 10 * 60 * 1000);
+      await expect(service.deleteAccount(1, 'oidc', staleDate)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should not require password for oidc', async () => {
+      const freshDate = new Date(Date.now() - 1 * 60 * 1000);
+      await service.deleteAccount(1, 'oidc', freshDate);
+      expect(mockCredentialRepo.findCredentialByUserId).not.toHaveBeenCalled();
     });
   });
 });

@@ -29,6 +29,27 @@
       "when": 1774217026766,
       "tag": "0003_illegal_dark_beast",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1774308240204,
+      "tag": "0004_majestic_stryfe",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1774308362809,
+      "tag": "0005_sturdy_medusa",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1774394800000,
+      "tag": "0006_add_session_auth_method",
+      "breakpoints": true
     }
   ]
 }

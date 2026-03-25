@@ -6,9 +6,11 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
+import { SessionIdentity } from '@cardquorum/shared';
 import { SessionService } from './session.service';
 
 export const REQUEST_USER_KEY = 'user';
+export const REQUEST_SESSION_KEY = 'sessionMeta';
 
 @Injectable()
 export class HttpAuthGuard implements CanActivate {
@@ -25,14 +27,21 @@ export class HttpAuthGuard implements CanActivate {
       throw new UnauthorizedException('Missing session cookie');
     }
 
-    const identity = await this.sessionService.validateSession(sessionId);
+    const session = await this.sessionService.validateSession(sessionId);
 
-    if (!identity) {
+    if (!session) {
       this.logger.debug('Session validation failed: expired or not found');
       throw new UnauthorizedException('Invalid or expired session');
     }
 
+    const identity: SessionIdentity = {
+      userId: session.userId,
+      displayName: session.displayName,
+      authMethod: session.authMethod as 'basic' | 'oidc',
+    };
+
     (request as any)[REQUEST_USER_KEY] = identity;
+    (request as any)[REQUEST_SESSION_KEY] = { createdAt: session.createdAt };
     return true;
   }
 }

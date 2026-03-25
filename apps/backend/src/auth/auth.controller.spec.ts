@@ -49,7 +49,7 @@ describe('AuthController', () => {
         redirect: jest.fn(),
       };
 
-      controller.oidcLogin(reply as any);
+      controller.oidcLogin(undefined, reply as any);
 
       expect(reply.header).toHaveBeenCalledWith(
         'Set-Cookie',
@@ -59,7 +59,10 @@ describe('AuthController', () => {
       expect(reply.redirect).toHaveBeenCalledWith(
         expect.stringContaining('https://provider/authorize'),
       );
-      expect(authService['getOidcAuthorizationUrl']).toHaveBeenCalledWith(expect.any(String));
+      expect(authService['getOidcAuthorizationUrl']).toHaveBeenCalledWith(
+        expect.any(String),
+        undefined,
+      );
     });
   });
 
@@ -68,34 +71,64 @@ describe('AuthController', () => {
       cookies: cookieState ? { cq_oidc_state: cookieState } : {},
     });
 
+    const makeReply = () => ({
+      header: jest.fn().mockReturnThis(),
+      status: jest.fn().mockReturnThis(),
+      redirect: jest.fn(),
+    });
+
     it('should redirect to / on success with session cookie', async () => {
-      const reply = {
-        header: jest.fn().mockReturnThis(),
-        status: jest.fn().mockReturnThis(),
-        redirect: jest.fn(),
-      };
+      const reply = makeReply();
       const request = makeRequest('valid-state');
 
-      await controller.oidcCallback('auth-code', 'valid-state', request as any, reply as any);
+      await controller.oidcCallback(
+        'auth-code',
+        'valid-state',
+        undefined as any,
+        undefined as any,
+        request as any,
+        reply as any,
+      );
 
       expect(authService['oidcCallback']).toHaveBeenCalledWith('auth-code');
-      expect(reply.header).toHaveBeenCalledWith(
-        'Set-Cookie',
-        expect.stringContaining('cq_session='),
-      );
+      expect(reply.header).toHaveBeenCalledWith('Set-Cookie', [
+        expect.stringContaining('cq_session=new-session'),
+        expect.stringContaining('cq_oidc_state=; '),
+      ]);
       expect(reply.status).toHaveBeenCalledWith(302);
       expect(reply.redirect).toHaveBeenCalledWith('/');
     });
 
+    it('should redirect to /login?error=oidc_failed when IdP returns error', async () => {
+      const reply = makeReply();
+      const request = makeRequest('valid-state');
+
+      await controller.oidcCallback(
+        undefined as any,
+        'valid-state',
+        'access_denied',
+        'User denied',
+        request as any,
+        reply as any,
+      );
+
+      expect(authService['oidcCallback']).not.toHaveBeenCalled();
+      expect(reply.status).toHaveBeenCalledWith(302);
+      expect(reply.redirect).toHaveBeenCalledWith('/login?error=oidc_failed');
+    });
+
     it('should redirect to /login?error=invalid_state on state mismatch', async () => {
-      const reply = {
-        header: jest.fn().mockReturnThis(),
-        status: jest.fn().mockReturnThis(),
-        redirect: jest.fn(),
-      };
+      const reply = makeReply();
       const request = makeRequest('wrong-state');
 
-      await controller.oidcCallback('auth-code', 'expected-state', request as any, reply as any);
+      await controller.oidcCallback(
+        'auth-code',
+        'expected-state',
+        undefined as any,
+        undefined as any,
+        request as any,
+        reply as any,
+      );
 
       expect(authService['oidcCallback']).not.toHaveBeenCalled();
       expect(reply.status).toHaveBeenCalledWith(302);
@@ -103,14 +136,17 @@ describe('AuthController', () => {
     });
 
     it('should redirect to /login?error=invalid_state when no state cookie', async () => {
-      const reply = {
-        header: jest.fn().mockReturnThis(),
-        status: jest.fn().mockReturnThis(),
-        redirect: jest.fn(),
-      };
+      const reply = makeReply();
       const request = makeRequest();
 
-      await controller.oidcCallback('auth-code', 'some-state', request as any, reply as any);
+      await controller.oidcCallback(
+        'auth-code',
+        'some-state',
+        undefined as any,
+        undefined as any,
+        request as any,
+        reply as any,
+      );
 
       expect(reply.status).toHaveBeenCalledWith(302);
       expect(reply.redirect).toHaveBeenCalledWith('/login?error=invalid_state');
@@ -120,14 +156,17 @@ describe('AuthController', () => {
       (authService['oidcCallback'] as jest.Mock).mockRejectedValue(
         new Error('token exchange failed'),
       );
-      const reply = {
-        header: jest.fn().mockReturnThis(),
-        status: jest.fn().mockReturnThis(),
-        redirect: jest.fn(),
-      };
+      const reply = makeReply();
       const request = makeRequest('valid-state');
 
-      await controller.oidcCallback('bad-code', 'valid-state', request as any, reply as any);
+      await controller.oidcCallback(
+        'bad-code',
+        'valid-state',
+        undefined as any,
+        undefined as any,
+        request as any,
+        reply as any,
+      );
 
       expect(reply.status).toHaveBeenCalledWith(302);
       expect(reply.redirect).toHaveBeenCalledWith('/login?error=oidc_failed');

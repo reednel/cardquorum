@@ -16,10 +16,10 @@ const PROFILE: UserProfile = {
 describe('UserService', () => {
   let service: UserService;
   let http: HttpTestingController;
-  let mockAuthService: { updateDisplayName: jest.Mock };
+  let mockAuthService: { updateDisplayName: jest.Mock; clearLocalState: jest.Mock };
 
   beforeEach(() => {
-    mockAuthService = { updateDisplayName: jest.fn() };
+    mockAuthService = { updateDisplayName: jest.fn(), clearLocalState: jest.fn() };
 
     TestBed.configureTestingModule({
       providers: [
@@ -61,5 +61,16 @@ describe('UserService', () => {
 
     expect(service.profile()).toEqual(updated);
     expect(mockAuthService.updateDisplayName).toHaveBeenCalledWith('Alice2');
+  });
+
+  it('deleteAccount deletes with password and calls auth.clearLocalState', () => {
+    service.deleteAccount('mypassword123').subscribe();
+
+    const req = http.expectOne('/api/users/me');
+    expect(req.request.method).toBe('DELETE');
+    expect(req.request.body).toEqual({ password: 'mypassword123' });
+    req.flush(null);
+
+    expect(mockAuthService.clearLocalState).toHaveBeenCalled();
   });
 });

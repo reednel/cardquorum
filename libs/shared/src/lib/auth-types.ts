@@ -1,4 +1,12 @@
+import { UserIdentity } from './ws-types';
+
 export type AuthStrategy = 'basic' | 'oidc';
+
+export type AuthMethod = 'basic' | 'oidc';
+
+export interface SessionIdentity extends UserIdentity {
+  authMethod: AuthMethod;
+}
 
 export interface LoginRequest {
   username: string;

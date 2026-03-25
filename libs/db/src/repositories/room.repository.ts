@@ -64,4 +64,16 @@ export class RoomRepository {
       .returning({ id: rooms.id });
     return row ?? null;
   }
+
+  async findIdsByOwner(ownerId: number): Promise<number[]> {
+    const rows = await this.db
+      .select({ id: rooms.id })
+      .from(rooms)
+      .where(eq(rooms.ownerId, ownerId));
+    return rows.map((r) => r.id);
+  }
+
+  async deleteByOwner(ownerId: number) {
+    return this.db.delete(rooms).where(eq(rooms.ownerId, ownerId)).returning({ id: rooms.id });
+  }
 }

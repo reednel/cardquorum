@@ -58,11 +58,12 @@ describe('AuthService', () => {
         email: null,
         createdAt: new Date(),
         updatedAt: new Date(),
+        deletedAt: null,
       });
       credentialRepo.findCredentialByUserId.mockResolvedValue(passwordHash);
 
       const result = await service.login({ username: 'alice', password: 'password' });
-      expect(result.user).toEqual({ userId: 1, displayName: 'Alice' });
+      expect(result.user).toEqual({ userId: 1, displayName: 'Alice', authMethod: 'basic' });
       expect(result.sessionId).toBe('session-id');
     });
 
@@ -102,6 +103,12 @@ describe('AuthService', () => {
       await expect(
         oidcOnly.register({ username: 'a', displayName: 'A', password: 'b' }),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should reject usernames starting with deleted_', async () => {
+      await expect(
+        service.register({ username: 'deleted_hacker', displayName: 'Hacker', password: 'pw123' }),
+      ).rejects.toThrow('reserved');
     });
   });
 

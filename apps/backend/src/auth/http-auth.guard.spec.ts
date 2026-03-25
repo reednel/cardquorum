@@ -1,13 +1,14 @@
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import { UserIdentity } from '@cardquorum/shared';
-import { HttpAuthGuard, REQUEST_USER_KEY } from './http-auth.guard';
+import { HttpAuthGuard, REQUEST_SESSION_KEY, REQUEST_USER_KEY } from './http-auth.guard';
 import { SessionService } from './session.service';
 
 describe('HttpAuthGuard', () => {
   let guard: HttpAuthGuard;
   let sessionService: jest.Mocked<Pick<SessionService, 'validateSession'>>;
 
-  const alice: UserIdentity = { userId: 1, displayName: 'Alice' };
+  const createdAt = new Date();
+  const aliceSession = { userId: 1, displayName: 'Alice', authMethod: 'basic' as const, createdAt };
+  const aliceIdentity = { userId: 1, displayName: 'Alice', authMethod: 'basic' as const };
 
   const createContext = (sessionId?: string): ExecutionContext => {
     const request: Record<string, any> = {
@@ -27,7 +28,7 @@ describe('HttpAuthGuard', () => {
   });
 
   it('should allow request with valid session and attach user', async () => {
-    sessionService.validateSession.mockResolvedValue(alice);
+    sessionService.validateSession.mockResolvedValue(aliceSession);
 
     const ctx = createContext('valid-session-id');
     const result = await guard.canActivate(ctx);
@@ -36,7 +37,8 @@ describe('HttpAuthGuard', () => {
     expect(sessionService.validateSession).toHaveBeenCalledWith('valid-session-id');
 
     const request = ctx.switchToHttp().getRequest();
-    expect((request as any)[REQUEST_USER_KEY]).toEqual(alice);
+    expect((request as any)[REQUEST_USER_KEY]).toEqual(aliceIdentity);
+    expect((request as any)[REQUEST_SESSION_KEY]).toEqual({ createdAt });
   });
 
   it('should reject request with no session cookie', async () => {

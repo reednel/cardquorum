@@ -15,3 +15,7 @@ export interface UserSearchResult {
 export interface UpdateDisplayNameRequest {
   displayName: string;
 }
+
+export interface DeleteAccountRequest {
+  password?: string;
+}

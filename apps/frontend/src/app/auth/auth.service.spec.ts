@@ -131,4 +131,45 @@ describe('AuthService', () => {
       expect(navigateSpy).toHaveBeenCalledWith(['/login']);
     });
   });
+
+  describe('logout re-entrancy guard', () => {
+    it('should be a no-op when user is already null', () => {
+      const navigateSpy = jest.spyOn(router, 'navigate').mockResolvedValue(true);
+
+      // User is already null (not logged in)
+      service.logout();
+
+      // No HTTP POST, no navigation
+      expect(navigateSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('clearLocalState', () => {
+    it('should clear user and disconnect without calling server', () => {
+      const navigateSpy = jest.spyOn(router, 'navigate').mockResolvedValue(true);
+
+      // Login first
+      service.login({ username: 'test', password: 'pass' }).subscribe();
+      httpTesting.expectOne('/api/auth/login').flush({ userId: 1, displayName: 'Test' });
+      expect(service.isAuthenticated()).toBe(true);
+
+      // Clear local state
+      service.clearLocalState();
+
+      // Should NOT make a POST to /api/auth/logout
+      httpTesting.expectNone('/api/auth/logout');
+
+      expect(service.isAuthenticated()).toBe(false);
+      expect(service.user()).toBeNull();
+      expect(navigateSpy).toHaveBeenCalledWith(['/login']);
+    });
+
+    it('should be a no-op when user is already null', () => {
+      const navigateSpy = jest.spyOn(router, 'navigate').mockResolvedValue(true);
+
+      service.clearLocalState();
+
+      expect(navigateSpy).not.toHaveBeenCalled();
+    });
+  });
 });

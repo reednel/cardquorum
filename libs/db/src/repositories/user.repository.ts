@@ -1,5 +1,5 @@
-import { and, eq, ilike, ne, sql } from 'drizzle-orm';
-import { users } from '../schema';
+import { and, eq, ilike, ne, notInArray, sql } from 'drizzle-orm';
+import { messages, rooms, userCredentials, users } from '../schema';
 import { DbInstance } from '../types';
 
 export class UserRepository {
@@ -41,5 +41,40 @@ export class UserRepository {
       .where(and(ilike(users.username, `${escaped}%`), ne(users.id, excludeUserId)))
       .orderBy(users.username)
       .limit(limit);
+  }
+
+  /**
+   * Soft-deletes a user in a single transaction: deletes messages (except in
+   * owned rooms), deletes owned rooms, deletes credentials, then anonymizes
+   * the user row.  CASCADE won't fire on UPDATE, so credentials must be
+   * cleaned up explicitly.
+   */
+  async softDelete(userId: number, anonUsername: string, ownedRoomIds: number[]) {
+    await this.db.transaction(async (tx) => {
+      // Delete messages in rooms the user doesn't own
+      const msgConditions = [eq(messages.senderUserId, userId)];
+      if (ownedRoomIds.length > 0) {
+        msgConditions.push(notInArray(messages.roomId, ownedRoomIds));
+      }
+      await tx.delete(messages).where(and(...msgConditions));
+
+      // Delete owned rooms (cascades to messages in those rooms)
+      await tx.delete(rooms).where(eq(rooms.ownerId, userId));
+
+      // Delete credentials (CASCADE won't fire on soft-delete)
+      await tx.delete(userCredentials).where(eq(userCredentials.userId, userId));
+
+      // Anonymize user row
+      await tx
+        .update(users)
+        .set({
+          username: anonUsername,
+          displayName: anonUsername,
+          email: null,
+          updatedAt: sql`now()`,
+          deletedAt: sql`now()`,
+        })
+        .where(eq(users.id, userId));
+    });
   }
 }

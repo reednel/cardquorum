@@ -150,4 +150,35 @@ describe('RoomRepository', () => {
       expect(result).toBeNull();
     });
   });
+
+  describe('findIdsByOwner', () => {
+    it('should return room IDs owned by user', async () => {
+      db.from.mockReturnValue({ where: db.where });
+      db.where.mockResolvedValue([{ id: 10 }, { id: 20 }]);
+
+      const result = await repo.findIdsByOwner(1);
+
+      expect(result).toEqual([10, 20]);
+    });
+
+    it('should return empty array when user owns no rooms', async () => {
+      db.from.mockReturnValue({ where: db.where });
+      db.where.mockResolvedValue([]);
+
+      const result = await repo.findIdsByOwner(999);
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('deleteByOwner', () => {
+    it('should delete all rooms owned by user', async () => {
+      db.returning.mockResolvedValue([{ id: 10 }, { id: 20 }]);
+
+      const result = await repo.deleteByOwner(1);
+
+      expect(db.delete).toHaveBeenCalled();
+      expect(result).toEqual([{ id: 10 }, { id: 20 }]);
+    });
+  });
 });

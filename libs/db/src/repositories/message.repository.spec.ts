@@ -10,6 +10,7 @@ function createMockDb() {
     where: jest.fn().mockReturnThis(),
     orderBy: jest.fn().mockReturnThis(),
     limit: jest.fn(),
+    delete: jest.fn().mockReturnThis(),
   } as any;
 }
 
@@ -85,6 +86,26 @@ describe('MessageRepository', () => {
       await repo.findByRoomId(1, 10);
 
       expect(db.limit).toHaveBeenCalledWith(10);
+    });
+  });
+
+  describe('deleteBySenderExcludingRooms', () => {
+    it('should delete messages by sender not in excluded rooms', async () => {
+      db.returning.mockResolvedValue([{ id: 5 }, { id: 7 }]);
+
+      const result = await repo.deleteBySenderExcludingRooms(1, [10, 20]);
+
+      expect(db.delete).toHaveBeenCalled();
+      expect(result).toEqual([{ id: 5 }, { id: 7 }]);
+    });
+
+    it('should delete all messages by sender when no rooms excluded', async () => {
+      db.returning.mockResolvedValue([{ id: 5 }]);
+
+      const result = await repo.deleteBySenderExcludingRooms(1, []);
+
+      expect(db.delete).toHaveBeenCalled();
+      expect(result).toEqual([{ id: 5 }]);
     });
   });
 });

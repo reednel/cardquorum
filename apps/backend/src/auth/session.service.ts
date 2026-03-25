@@ -1,19 +1,20 @@
 import { randomBytes } from 'crypto';
 import { Injectable } from '@nestjs/common';
 import { SessionRepository } from '@cardquorum/db';
-import { UserIdentity } from '@cardquorum/shared';
 
 @Injectable()
 export class SessionService {
   constructor(private readonly sessionRepo: SessionRepository) {}
 
-  async createSession(userId: number): Promise<string> {
+  async createSession(userId: number, authMethod: 'basic' | 'oidc' = 'basic'): Promise<string> {
     const id = randomBytes(32).toString('base64url');
-    await this.sessionRepo.create(id, userId);
+    await this.sessionRepo.create(id, userId, authMethod);
     return id;
   }
 
-  async validateSession(sessionId: string): Promise<UserIdentity | null> {
+  async validateSession(
+    sessionId: string,
+  ): Promise<{ userId: number; displayName: string; authMethod: string; createdAt: Date } | null> {
     return this.sessionRepo.findValidSession(sessionId);
   }
 

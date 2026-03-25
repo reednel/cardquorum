@@ -27,6 +27,7 @@ export class AuthService {
   /** Called by APP_INITIALIZER before the app bootstraps. */
   initialize(): Promise<void> {
     this.loadStrategies();
+    this.ws.onAuthFailure(() => this.logout());
     return firstValueFrom(
       this.http.get<UserIdentity>('/api/auth/me').pipe(
         tap((user) => this._user.set(user)),
@@ -67,7 +68,16 @@ export class AuthService {
   }
 
   logout(): void {
+    if (!this._user()) return;
+    this._user.set(null);
+    this.ws.disconnect();
     this.http.post('/api/auth/logout', {}).subscribe();
+    this.router.navigate(['/login']);
+  }
+
+  /** Clears local auth state without POSTing to /api/auth/logout (session already gone server-side). */
+  clearLocalState(): void {
+    if (!this._user()) return;
     this._user.set(null);
     this.ws.disconnect();
     this.router.navigate(['/login']);

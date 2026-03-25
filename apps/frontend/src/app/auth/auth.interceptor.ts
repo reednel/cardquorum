@@ -7,7 +7,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
   return next(req).pipe(
     catchError((err: HttpErrorResponse) => {
-      if (err.status === 401 && !req.url.includes('/api/auth/')) {
+      const isDeleteAccount = req.method === 'DELETE' && req.url.includes('/api/users/me');
+      if (err.status === 401 && !isDeleteAccount) {
         auth.logout();
       }
       return throwError(() => err);

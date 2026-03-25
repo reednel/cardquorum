@@ -1,4 +1,4 @@
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq, notInArray } from 'drizzle-orm';
 import { ChatMessagePayload } from '@cardquorum/shared';
 import { messages } from '../schema';
 import { DbInstance } from '../types';
@@ -43,5 +43,16 @@ export class MessageRepository {
       content: row.content,
       sentAt: row.sentAt.toISOString(),
     }));
+  }
+
+  async deleteBySenderExcludingRooms(senderUserId: number, excludeRoomIds: number[]) {
+    const conditions = [eq(messages.senderUserId, senderUserId)];
+    if (excludeRoomIds.length > 0) {
+      conditions.push(notInArray(messages.roomId, excludeRoomIds));
+    }
+    return this.db
+      .delete(messages)
+      .where(and(...conditions))
+      .returning({ id: messages.id });
   }
 }

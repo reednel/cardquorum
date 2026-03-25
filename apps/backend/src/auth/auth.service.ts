@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   Logger,
@@ -8,12 +9,12 @@ import {
 import * as bcrypt from 'bcryptjs';
 import * as jose from 'jose';
 import { CredentialRepository, UserRepository } from '@cardquorum/db';
-import { AuthStrategy, RegisterRequest, UserIdentity } from '@cardquorum/shared';
+import { AuthStrategy, RegisterRequest, SessionIdentity } from '@cardquorum/shared';
 import { SessionService } from './session.service';
 
 export interface AuthResult {
   sessionId: string;
-  user: UserIdentity;
+  user: SessionIdentity;
 }
 
 export interface AuthConfig {
@@ -92,6 +93,10 @@ export class AuthService {
   async register(dto: RegisterRequest): Promise<AuthResult> {
     this.requireStrategy('basic');
 
+    if (dto.username.toLowerCase().startsWith('deleted_')) {
+      throw new BadRequestException('Username prefix "deleted_" is reserved');
+    }
+
     const existing = await this.userRepo.findByUsername(dto.username);
     if (existing) {
       throw new ConflictException('Username already taken');
@@ -105,8 +110,11 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(dto.password, 10);
     await this.credentialRepo.upsertCredential(user.id, 'basic', passwordHash);
 
-    const sessionId = await this.sessionService.createSession(user.id);
-    return { sessionId, user: { userId: user.id, displayName: user.displayName } };
+    const sessionId = await this.sessionService.createSession(user.id, 'basic');
+    return {
+      sessionId,
+      user: { userId: user.id, displayName: user.displayName, authMethod: 'basic' as const },
+    };
   }
 
   async login(dto: { username: string; password: string }): Promise<AuthResult> {
@@ -127,8 +135,11 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const sessionId = await this.sessionService.createSession(user.id);
-    return { sessionId, user: { userId: user.id, displayName: user.displayName } };
+    const sessionId = await this.sessionService.createSession(user.id, 'basic');
+    return {
+      sessionId,
+      user: { userId: user.id, displayName: user.displayName, authMethod: 'basic' as const },
+    };
   }
 
   async oidcCallback(code: string): Promise<AuthResult> {
@@ -142,11 +153,14 @@ export class AuthService {
       identity.displayName,
     );
 
-    const sessionId = await this.sessionService.createSession(user.id);
-    return { sessionId, user: { userId: user.id, displayName: user.displayName } };
+    const sessionId = await this.sessionService.createSession(user.id, 'oidc');
+    return {
+      sessionId,
+      user: { userId: user.id, displayName: user.displayName, authMethod: 'oidc' as const },
+    };
   }
 
-  getOidcAuthorizationUrl(state: string): string {
+  getOidcAuthorizationUrl(state: string, prompt?: string): string {
     this.requireStrategy('oidc');
     const params = new URLSearchParams({
       response_type: 'code',
@@ -155,6 +169,9 @@ export class AuthService {
       scope: 'openid profile email',
       state,
     });
+    if (prompt) {
+      params.set('prompt', prompt);
+    }
     return `${this.authorizationEndpoint}?${params}`;
   }
 

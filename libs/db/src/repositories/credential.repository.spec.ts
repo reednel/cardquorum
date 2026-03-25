@@ -11,6 +11,7 @@ function createMockDb() {
     values: jest.fn().mockReturnThis(),
     returning: jest.fn(),
     onConflictDoUpdate: jest.fn().mockReturnThis(),
+    delete: jest.fn().mockReturnThis(),
   } as any;
 }
 
@@ -58,6 +59,12 @@ describe('CredentialRepository', () => {
 
       expect(result).toBeNull();
     });
+
+    it('should filter out deleted users (deletedAt check in query)', async () => {
+      db.limit.mockResolvedValue([]);
+      const result = await repo.findUserByCredential('oidc', 'deleted-user-sub');
+      expect(result).toBeNull();
+    });
   });
 
   describe('upsertCredential', () => {
@@ -87,13 +94,22 @@ describe('CredentialRepository', () => {
       db.limit.mockResolvedValue([]);
       const newUser = { id: 2, username: 'oidc-456', displayName: 'Bob' };
       db.returning.mockResolvedValue([newUser]);
-      // Second insert (credential) — values returns this for chaining
-      db.values.mockReturnThis();
 
       const result = await repo.findOrCreateUserByOidc('oidc-456', 'Bob');
 
       expect(result).toBe(newUser);
       expect(db.insert).toHaveBeenCalled();
+    });
+  });
+
+  describe('deleteAllByUserId', () => {
+    it('should delete all credentials for user', async () => {
+      db.where.mockResolvedValue(undefined);
+
+      await repo.deleteAllByUserId(42);
+
+      expect(db.delete).toHaveBeenCalled();
+      expect(db.where).toHaveBeenCalled();
     });
   });
 });

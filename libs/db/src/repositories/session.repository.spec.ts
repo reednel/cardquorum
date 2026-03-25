@@ -25,27 +25,45 @@ describe('SessionRepository', () => {
 
   describe('create', () => {
     it('should insert a session and return the row', async () => {
-      const row = { id: 'abc123', userId: 1, expiresAt: new Date() };
+      const row = { id: 'abc123', userId: 1, authMethod: 'basic', expiresAt: new Date() };
       db.returning.mockResolvedValue([row]);
 
-      const result = await repo.create('abc123', 1);
+      const result = await repo.create('abc123', 1, 'basic');
       expect(result).toEqual(row);
       expect(db.insert).toHaveBeenCalled();
+    });
+
+    it('should pass authMethod to the insert', async () => {
+      const row = { id: 'abc123', userId: 1, authMethod: 'oidc', expiresAt: new Date() };
+      db.returning.mockResolvedValue([row]);
+
+      await repo.create('abc123', 1, 'oidc');
+      expect(db.values).toHaveBeenCalledWith(expect.objectContaining({ authMethod: 'oidc' }));
     });
   });
 
   describe('findValidSession', () => {
-    it('should return user identity for a valid session', async () => {
-      db.limit.mockResolvedValue([{ userId: 1, displayName: 'Alice' }]);
+    it('should return user identity with authMethod and createdAt for a valid session', async () => {
+      const createdAt = new Date('2026-01-01');
+      db.limit.mockResolvedValue([
+        { userId: 1, displayName: 'Alice', authMethod: 'basic', createdAt },
+      ]);
 
       const result = await repo.findValidSession('abc123');
-      expect(result).toEqual({ userId: 1, displayName: 'Alice' });
+      expect(result).toEqual({ userId: 1, displayName: 'Alice', authMethod: 'basic', createdAt });
     });
 
     it('should return null when session not found', async () => {
       db.limit.mockResolvedValue([]);
 
       const result = await repo.findValidSession('nonexistent');
+      expect(result).toBeNull();
+    });
+
+    it('should return null when user is soft-deleted', async () => {
+      db.limit.mockResolvedValue([]);
+
+      const result = await repo.findValidSession('valid-session-id');
       expect(result).toBeNull();
     });
   });

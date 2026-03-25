@@ -22,6 +22,7 @@ describe('SessionService', () => {
       sessionRepo.create.mockResolvedValue({
         id: 'generated',
         userId: 1,
+        authMethod: 'basic',
         expiresAt: new Date(),
         createdAt: new Date(),
       });
@@ -30,16 +31,21 @@ describe('SessionService', () => {
 
       expect(typeof sessionId).toBe('string');
       expect(sessionId.length).toBeGreaterThan(0);
-      expect(sessionRepo.create).toHaveBeenCalledWith(sessionId, 1);
+      expect(sessionRepo.create).toHaveBeenCalledWith(sessionId, 1, 'basic');
     });
   });
 
   describe('validateSession', () => {
     it('should return identity for valid session', async () => {
-      sessionRepo.findValidSession.mockResolvedValue({ userId: 1, displayName: 'Alice' });
+      sessionRepo.findValidSession.mockResolvedValue({
+        userId: 1,
+        displayName: 'Alice',
+        authMethod: 'basic',
+        createdAt: new Date(),
+      });
 
       const result = await service.validateSession('abc');
-      expect(result).toEqual({ userId: 1, displayName: 'Alice' });
+      expect(result).toMatchObject({ userId: 1, displayName: 'Alice', authMethod: 'basic' });
     });
 
     it('should return null for invalid session', async () => {

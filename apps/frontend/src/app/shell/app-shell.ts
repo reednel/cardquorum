@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { AuthService } from '../auth/auth.service';
 import { WebSocketService } from '../websocket.service';
 import { ThemeService } from './theme.service';
 import { UserDropdown } from './user-dropdown';
@@ -55,12 +54,10 @@ import { UserDropdown } from './user-dropdown';
   host: { class: 'flex min-h-screen flex-col' },
 })
 export class AppShell implements OnInit {
-  private readonly auth = inject(AuthService);
   protected readonly theme = inject(ThemeService);
   private readonly ws = inject(WebSocketService);
 
   ngOnInit(): void {
-    this.ws.onAuthFailure(() => this.auth.logout());
     this.ws.connect();
   }
 }

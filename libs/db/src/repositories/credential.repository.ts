@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { userCredentials, users } from '../schema';
 import { DbInstance } from '../types';
 
@@ -26,7 +26,13 @@ export class CredentialRepository {
       })
       .from(userCredentials)
       .innerJoin(users, eq(userCredentials.userId, users.id))
-      .where(and(eq(userCredentials.method, method), eq(userCredentials.credential, credential)))
+      .where(
+        and(
+          eq(userCredentials.method, method),
+          eq(userCredentials.credential, credential),
+          isNull(users.deletedAt),
+        ),
+      )
       .limit(1);
     return rows[0] ?? null;
   }
@@ -57,5 +63,9 @@ export class CredentialRepository {
       .values({ userId: user.id, method: 'oidc', credential: oidcSubject });
 
     return user;
+  }
+
+  async deleteAllByUserId(userId: number) {
+    await this.db.delete(userCredentials).where(eq(userCredentials.userId, userId));
   }
 }

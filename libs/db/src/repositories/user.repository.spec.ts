@@ -12,6 +12,8 @@ function createMockDb() {
     update: jest.fn().mockReturnThis(),
     set: jest.fn().mockReturnThis(),
     orderBy: jest.fn().mockReturnThis(),
+    delete: jest.fn().mockReturnThis(),
+    transaction: jest.fn(),
   } as any;
 }
 
@@ -120,6 +122,32 @@ describe('UserRepository', () => {
       const result = await repo.searchByUsername('zzz', 1, 20);
 
       expect(result).toEqual([]);
+    });
+  });
+
+  describe('softDelete', () => {
+    it('should run all cleanup steps in a transaction', async () => {
+      const mockTx = createMockDb();
+      mockTx.where.mockResolvedValue(undefined);
+      db.transaction.mockImplementation(async (cb: any) => cb(mockTx));
+
+      await repo.softDelete(1, 'deleted_abc12345', [10]);
+
+      expect(db.transaction).toHaveBeenCalled();
+      // Should have called delete 3 times (messages, rooms, credentials)
+      // and update once (anonymize)
+      expect(mockTx.delete).toHaveBeenCalledTimes(3);
+      expect(mockTx.update).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle empty ownedRoomIds', async () => {
+      const mockTx = createMockDb();
+      mockTx.where.mockResolvedValue(undefined);
+      db.transaction.mockImplementation(async (cb: any) => cb(mockTx));
+
+      await repo.softDelete(1, 'deleted_abc12345', []);
+
+      expect(mockTx.delete).toHaveBeenCalledTimes(3);
     });
   });
 });

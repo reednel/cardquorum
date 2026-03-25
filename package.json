@@ -6,7 +6,9 @@
     "prepare": "husky",
     "validate": "prettier --check '**/*.{ts,html,css,json,md}' && pnpm nx run-many -t lint test build",
     "format": "prettier --write '**/*.{ts,html,css,json,md}'",
-    "serve": "pnpm nx serve frontend"
+    "serve": "pnpm nx serve frontend",
+    "drizzle-generate": "pnpm drizzle-kit generate --config ./libs/db/drizzle.config.ts",
+    "drizzle-migrate": "pnpm drizzle-kit migrate --config ./libs/db/drizzle.config.ts"
   },
   "private": true,
   "lint-staged": {

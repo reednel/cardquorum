@@ -1,10 +1,21 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { UserRepository } from '@cardquorum/db';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import * as bcrypt from 'bcryptjs';
+import { CredentialRepository, RoomRepository, UserRepository } from '@cardquorum/db';
 import { UserProfile, UserSearchResult } from '@cardquorum/shared';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly users: UserRepository) {}
+  constructor(
+    private readonly users: UserRepository,
+    private readonly credentials: CredentialRepository,
+    private readonly rooms: RoomRepository,
+  ) {}
 
   async getProfile(userId: number): Promise<UserProfile | null> {
     const user = await this.users.findById(userId);
@@ -49,5 +60,42 @@ export class UserService {
       username: r.username,
       displayName: r.displayName,
     }));
+  }
+
+  async deleteAccount(
+    userId: number,
+    authMethod: string,
+    sessionCreatedAt: Date,
+    password?: string,
+  ): Promise<{ ownedRoomIds: number[] }> {
+    const user = await this.users.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (authMethod === 'basic') {
+      if (!password) {
+        throw new BadRequestException('Password is required for basic auth deletion');
+      }
+      const hash = await this.credentials.findCredentialByUserId(userId, 'basic');
+      if (!hash) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+      const valid = await bcrypt.compare(password, hash);
+      if (!valid) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+    } else {
+      const FIVE_MINUTES = 5 * 60 * 1000;
+      if (Date.now() - sessionCreatedAt.getTime() > FIVE_MINUTES) {
+        throw new ForbiddenException('Re-authentication required');
+      }
+    }
+
+    const ownedRoomIds = await this.rooms.findIdsByOwner(userId);
+
+    await this.users.softDelete(userId, `deleted_${userId}`, ownedRoomIds);
+
+    return { ownedRoomIds };
   }
 }

@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
-import { UpdateDisplayNameRequest, UserProfile } from '@cardquorum/shared';
+import { DeleteAccountRequest, UpdateDisplayNameRequest, UserProfile } from '@cardquorum/shared';
 import { AuthService } from '../auth/auth.service';
 
 @Injectable({ providedIn: 'root' })
@@ -26,5 +26,12 @@ export class UserService {
         this.auth.updateDisplayName(updated.displayName);
       }),
     );
+  }
+
+  deleteAccount(password?: string): Observable<void> {
+    const body: DeleteAccountRequest = { password };
+    return this.http
+      .delete<void>('/api/users/me', { body })
+      .pipe(tap(() => this.auth.clearLocalState()));
   }
 }

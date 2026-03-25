@@ -1,7 +1,8 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { ActivatedRoute, provideRouter } from '@angular/router';
 import { UserProfile } from '@cardquorum/shared';
+import { AuthService } from '../auth/auth.service';
 import { AccountPage } from './account-page';
 import { UserService } from './user.service';
 
@@ -22,16 +23,26 @@ describe('AccountPage', () => {
     profile: profileSignal.asReadonly(),
     loadProfile: jest.fn(),
     updateDisplayName: jest.fn(),
+    deleteAccount: jest.fn(),
   };
+
+  const userSignal = signal<any>(null);
+  const mockAuthService = { user: userSignal.asReadonly() };
 
   beforeEach(async () => {
     profileSignal.set(null);
     mockUserService.loadProfile.mockClear();
     mockUserService.updateDisplayName.mockClear();
+    userSignal.set({ userId: 1, displayName: 'Alice', authMethod: 'basic' });
 
     await TestBed.configureTestingModule({
       imports: [AccountPage],
-      providers: [provideRouter([]), { provide: UserService, useValue: mockUserService }],
+      providers: [
+        provideRouter([]),
+        { provide: UserService, useValue: mockUserService },
+        { provide: AuthService, useValue: mockAuthService },
+        { provide: ActivatedRoute, useValue: { snapshot: { queryParams: {} } } },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(AccountPage);
@@ -96,5 +107,57 @@ describe('AccountPage', () => {
 
     const link = el.querySelector('[data-testid="friends-link"]') as HTMLAnchorElement;
     expect(link).toBeTruthy();
+  });
+
+  describe('delete account', () => {
+    beforeEach(() => {
+      profileSignal.set(PROFILE);
+      fixture.detectChanges();
+    });
+
+    it('shows delete section with button', () => {
+      const btn = el.querySelector('[data-testid="delete-account-btn"]') as HTMLButtonElement;
+      expect(btn).toBeTruthy();
+    });
+
+    it('shows password confirmation after clicking delete', () => {
+      const btn = el.querySelector('[data-testid="delete-account-btn"]') as HTMLButtonElement;
+      btn.click();
+      fixture.detectChanges();
+
+      expect(el.querySelector('[data-testid="delete-password-input"]')).toBeTruthy();
+      expect(el.querySelector('[data-testid="confirm-delete-btn"]')).toBeTruthy();
+      expect(el.querySelector('[data-testid="cancel-delete-btn"]')).toBeTruthy();
+    });
+
+    it('cancel hides the confirmation', () => {
+      (el.querySelector('[data-testid="delete-account-btn"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      (el.querySelector('[data-testid="cancel-delete-btn"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      expect(el.querySelector('[data-testid="delete-password-input"]')).toBeFalsy();
+    });
+  });
+
+  describe('delete account (oidc user)', () => {
+    beforeEach(() => {
+      userSignal.set({ userId: 1, displayName: 'Alice', authMethod: 'oidc' });
+      profileSignal.set(PROFILE);
+      fixture.detectChanges();
+    });
+
+    it('shows OIDC re-auth message instead of password prompt', () => {
+      const deleteBtn = el.querySelector('[data-testid="delete-account-btn"]') as HTMLButtonElement;
+      deleteBtn.click();
+      fixture.detectChanges();
+
+      expect(el.querySelector('[data-testid="delete-password-input"]')).toBeFalsy();
+      expect(el.textContent).toContain('identity provider');
+      expect(el.querySelector('[data-testid="confirm-delete-btn"]')?.textContent).toContain(
+        'Re-authenticate',
+      );
+    });
   });
 });

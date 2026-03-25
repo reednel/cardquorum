@@ -1,4 +1,4 @@
-import { index, integer, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import { index, integer, pgTable, text, timestamp, varchar } from 'drizzle-orm/pg-core';
 import { users } from './users';
 
 export const sessions = pgTable(
@@ -8,6 +8,7 @@ export const sessions = pgTable(
     userId: integer('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
+    authMethod: varchar('auth_method', { length: 16 }).notNull().default('basic'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
   },
