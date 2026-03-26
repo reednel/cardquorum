@@ -6,8 +6,8 @@ import {
   Delete,
   Get,
   Logger,
+  Patch,
   Post,
-  Put,
   Query,
   Req,
   Res,
@@ -70,7 +70,7 @@ export class AuthController {
   }
 
   @UseGuards(HttpAuthGuard)
-  @Put('oidc/register')
+  @Patch('oidc/register')
   async oidcRegister(
     @Body() dto: { username: string; displayName: string },
     @Req() request: FastifyRequest,

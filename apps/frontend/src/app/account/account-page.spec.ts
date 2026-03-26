@@ -78,14 +78,6 @@ describe('AccountPage', () => {
 
     expect(el.textContent).toContain('alice');
     expect(el.textContent).toContain('Alice');
-    expect(el.textContent).toContain('alice@example.com');
-  });
-
-  it('shows "Not set" when email is null', () => {
-    profileSignal.set({ ...PROFILE, email: null });
-    fixture.detectChanges();
-
-    expect(el.textContent).toContain('Not set');
   });
 
   it('shows edit form when Edit button is clicked', () => {

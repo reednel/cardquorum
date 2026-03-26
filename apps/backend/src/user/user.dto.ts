@@ -1,5 +1,16 @@
 import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
-import { DeleteAccountRequest, UpdateDisplayNameRequest } from '@cardquorum/shared';
+import {
+  DeleteAccountRequest,
+  UpdateDisplayNameRequest,
+  UpdateUsernameRequest,
+} from '@cardquorum/shared';
+
+export class UpdateUsernameDto implements UpdateUsernameRequest {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(50)
+  username!: string;
+}
 
 export class UpdateDisplayNameDto implements UpdateDisplayNameRequest {
   @IsString()

@@ -25,30 +25,23 @@ import { UserService } from './user.service';
         <dl class="space-y-4">
           <div>
             <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Username</dt>
-            <dd class="mt-1 text-gray-900 dark:text-gray-100">
-              {{ userService.profile()!.username }}
-            </dd>
-          </div>
-
-          <div>
-            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Display Name</dt>
             <dd class="mt-1">
-              @if (editing()) {
+              @if (usernameEditing()) {
                 <div class="flex items-center gap-2">
                   <input
-                    data-testid="display-name-input"
+                    data-testid="username-input"
                     type="text"
-                    [value]="editValue()"
-                    (input)="editValue.set($any($event.target).value)"
+                    [value]="usernameEditValue()"
+                    (input)="usernameEditValue.set($any($event.target).value)"
                     maxlength="50"
                     class="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-900
                            dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-                    aria-label="Display name"
+                    aria-label="Username"
                   />
                   <button
-                    data-testid="save-display-name-btn"
-                    (click)="save()"
-                    [disabled]="saving()"
+                    data-testid="save-username-btn"
+                    (click)="saveUsername()"
+                    [disabled]="usernameSaving()"
                     class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white
                            hover:bg-indigo-700 disabled:opacity-50"
                   >
@@ -56,23 +49,25 @@ import { UserService } from './user.service';
                   </button>
                   <button
                     data-testid="cancel-edit-btn"
-                    (click)="cancelEdit()"
+                    (click)="cancelUsernameEdit()"
                     class="rounded-md px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100
                            dark:text-gray-400 dark:hover:bg-gray-800"
                   >
                     Cancel
                   </button>
                 </div>
-                @if (errorMessage()) {
-                  <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ errorMessage() }}</p>
+                @if (usernameErrorMessage()) {
+                  <p class="mt-1 text-sm text-red-600 dark:text-red-400">
+                    {{ usernameErrorMessage() }}
+                  </p>
                 }
               } @else {
                 <span class="text-gray-900 dark:text-gray-100">
-                  {{ userService.profile()!.displayName }}
+                  {{ userService.profile()!.username }}
                 </span>
                 <button
-                  data-testid="edit-display-name-btn"
-                  (click)="startEdit()"
+                  data-testid="edit-username-btn"
+                  (click)="startUsernameEdit()"
                   class="ml-2 text-sm text-indigo-600 hover:underline dark:text-indigo-400"
                 >
                   Edit
@@ -82,9 +77,55 @@ import { UserService } from './user.service';
           </div>
 
           <div>
-            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Email</dt>
-            <dd class="mt-1 text-gray-900 dark:text-gray-100">
-              {{ userService.profile()!.email ?? 'Not set' }}
+            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Display Name</dt>
+            <dd class="mt-1">
+              @if (displayNameEditing()) {
+                <div class="flex items-center gap-2">
+                  <input
+                    data-testid="display-name-input"
+                    type="text"
+                    [value]="displayNameEditValue()"
+                    (input)="displayNameEditValue.set($any($event.target).value)"
+                    maxlength="50"
+                    class="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-900
+                           dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                    aria-label="Display name"
+                  />
+                  <button
+                    data-testid="save-display-name-btn"
+                    (click)="saveDisplayName()"
+                    [disabled]="displayNameSaving()"
+                    class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white
+                           hover:bg-indigo-700 disabled:opacity-50"
+                  >
+                    Save
+                  </button>
+                  <button
+                    data-testid="cancel-edit-btn"
+                    (click)="cancelDisplayNameEdit()"
+                    class="rounded-md px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100
+                           dark:text-gray-400 dark:hover:bg-gray-800"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                @if (displayNameErrorMessage()) {
+                  <p class="mt-1 text-sm text-red-600 dark:text-red-400">
+                    {{ displayNameErrorMessage() }}
+                  </p>
+                }
+              } @else {
+                <span class="text-gray-900 dark:text-gray-100">
+                  {{ userService.profile()!.displayName }}
+                </span>
+                <button
+                  data-testid="edit-display-name-btn"
+                  (click)="startDisplayNameEdit()"
+                  class="ml-2 text-sm text-indigo-600 hover:underline dark:text-indigo-400"
+                >
+                  Edit
+                </button>
+              }
             </dd>
           </div>
 
@@ -338,10 +379,15 @@ export class AccountPage implements OnInit {
     return user && 'authMethod' in user ? (user as any).authMethod : 'basic';
   });
 
-  protected readonly editing = signal(false);
-  protected readonly editValue = signal('');
-  protected readonly saving = signal(false);
-  protected readonly errorMessage = signal<string | null>(null);
+  protected readonly usernameEditing = signal(false);
+  protected readonly usernameEditValue = signal('');
+  protected readonly usernameSaving = signal(false);
+  protected readonly usernameErrorMessage = signal<string | null>(null);
+
+  protected readonly displayNameEditing = signal(false);
+  protected readonly displayNameEditValue = signal('');
+  protected readonly displayNameSaving = signal(false);
+  protected readonly displayNameErrorMessage = signal<string | null>(null);
 
   // Credential linking
   protected readonly linkPassword = signal('');
@@ -425,33 +471,63 @@ export class AccountPage implements OnInit {
       });
   }
 
-  protected startEdit(): void {
-    this.editValue.set(this.userService.profile()?.displayName ?? '');
-    this.errorMessage.set(null);
-    this.editing.set(true);
+  protected startUsernameEdit(): void {
+    this.usernameEditValue.set(this.userService.profile()?.username ?? '');
+    this.usernameErrorMessage.set(null);
+    this.usernameEditing.set(true);
   }
 
-  protected cancelEdit(): void {
-    this.editing.set(false);
-    this.errorMessage.set(null);
+  protected cancelUsernameEdit(): void {
+    this.usernameEditing.set(false);
+    this.usernameErrorMessage.set(null);
   }
 
-  protected save(): void {
-    const trimmed = this.editValue().trim();
+  protected saveUsername(): void {
+    const trimmed = this.usernameEditValue().trim();
     if (!trimmed || trimmed.length > 50) {
-      this.errorMessage.set('Display name must be 1-50 characters');
+      this.usernameErrorMessage.set('Username must be 1-50 characters');
       return;
     }
 
-    this.saving.set(true);
-    this.errorMessage.set(null);
+    this.usernameSaving.set(true);
+    this.usernameErrorMessage.set(null);
+
+    this.userService
+      .updateUsername(trimmed)
+      .pipe(finalize(() => this.usernameSaving.set(false)))
+      .subscribe({
+        next: () => this.usernameEditing.set(false),
+        error: () => this.usernameErrorMessage.set('Failed to update username'),
+      });
+  }
+
+  protected startDisplayNameEdit(): void {
+    this.displayNameEditValue.set(this.userService.profile()?.displayName ?? '');
+    this.displayNameErrorMessage.set(null);
+    this.displayNameEditing.set(true);
+  }
+
+  protected cancelDisplayNameEdit(): void {
+    this.displayNameEditing.set(false);
+    this.displayNameErrorMessage.set(null);
+  }
+
+  protected saveDisplayName(): void {
+    const trimmed = this.displayNameEditValue().trim();
+    if (!trimmed || trimmed.length > 50) {
+      this.displayNameErrorMessage.set('Display name must be 1-50 characters');
+      return;
+    }
+
+    this.displayNameSaving.set(true);
+    this.displayNameErrorMessage.set(null);
 
     this.userService
       .updateDisplayName(trimmed)
-      .pipe(finalize(() => this.saving.set(false)))
+      .pipe(finalize(() => this.displayNameSaving.set(false)))
       .subscribe({
-        next: () => this.editing.set(false),
-        error: () => this.errorMessage.set('Failed to update display name'),
+        next: () => this.displayNameEditing.set(false),
+        error: () => this.displayNameErrorMessage.set('Failed to update display name'),
       });
   }
 

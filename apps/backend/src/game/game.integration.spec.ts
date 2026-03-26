@@ -18,9 +18,9 @@ describe('GameService integration (full Sheepshead game)', () => {
 
   const userIDs = [1, 2, 3];
   const players = [
-    { userId: 1, displayName: 'Alice' },
-    { userId: 2, displayName: 'Bob' },
-    { userId: 3, displayName: 'Charlie' },
+    { userId: 1, username: 'alice', displayName: 'Alice' },
+    { userId: 2, username: 'bob', displayName: 'Bob' },
+    { userId: 3, username: 'charlie', displayName: 'Charlie' },
   ];
 
   const validConfig = {

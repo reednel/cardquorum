@@ -4,8 +4,8 @@ import { MAX_CONNECTIONS_PER_USER, WsConnectionService } from './ws-connection.s
 describe('WsConnectionService', () => {
   let service: WsConnectionService;
 
-  const aliceIdentity = { userId: 1, displayName: 'Alice' };
-  const bobIdentity = { userId: 2, displayName: 'Bob' };
+  const aliceIdentity = { userId: 1, username: 'alice', displayName: 'Alice' };
+  const bobIdentity = { userId: 2, username: 'bob', displayName: 'Bob' };
 
   const createMockWs = () => ({ send: jest.fn(), close: jest.fn() }) as unknown as WebSocket;
 

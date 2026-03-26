@@ -12,6 +12,10 @@ export interface UserSearchResult {
   displayName: string;
 }
 
+export interface UpdateUsernameRequest {
+  username: string;
+}
+
 export interface UpdateDisplayNameRequest {
   displayName: string;
 }

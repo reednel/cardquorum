@@ -30,6 +30,29 @@ export class UserService {
     };
   }
 
+  async updateUsername(userId: number, rawUsername: string): Promise<UserProfile> {
+    const username = rawUsername.trim();
+    if (username.length === 0) {
+      throw new BadRequestException('Username cannot be blank');
+    }
+    if (username.length > 50) {
+      throw new BadRequestException('Username must be 50 characters or fewer');
+    }
+
+    const updated = await this.users.updateUsername(userId, username);
+    if (!updated) {
+      throw new NotFoundException('User not found');
+    }
+
+    return {
+      userId: updated.id,
+      username: updated.username,
+      displayName: updated.displayName,
+      email: updated.email,
+      createdAt: updated.createdAt.toISOString(),
+    };
+  }
+
   async updateDisplayName(userId: number, rawDisplayName: string): Promise<UserProfile> {
     const displayName = rawDisplayName.trim();
     if (displayName.length === 0) {

@@ -54,7 +54,7 @@ describe('UserService', () => {
     const updated = { ...PROFILE, displayName: 'Alice2' };
     service.updateDisplayName('Alice2').subscribe();
 
-    const req = http.expectOne('/api/users/me');
+    const req = http.expectOne('/api/users/me/display-name');
     expect(req.request.method).toBe('PATCH');
     expect(req.request.body).toEqual({ displayName: 'Alice2' });
     req.flush(updated);

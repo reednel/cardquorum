@@ -10,9 +10,9 @@ describe('GameService', () => {
   >;
   let roomService: { manager: RoomManager };
 
-  const aliceIdentity = { userId: 1, displayName: 'Alice' };
-  const bobIdentity = { userId: 2, displayName: 'Bob' };
-  const charlieIdentity = { userId: 3, displayName: 'Charlie' };
+  const aliceIdentity = { userId: 1, username: 'alice', displayName: 'Alice' };
+  const bobIdentity = { userId: 2, username: 'bob', displayName: 'Bob' };
+  const charlieIdentity = { userId: 3, username: 'charlie', displayName: 'Charlie' };
 
   // Minimal valid 3-player sheepshead config
   const validConfig = {

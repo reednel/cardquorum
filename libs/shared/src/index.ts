@@ -44,6 +44,7 @@ export type { GameType, GameSessionStatus } from './lib/game-types';
 export type {
   UserProfile,
   UserSearchResult,
+  UpdateUsernameRequest,
   UpdateDisplayNameRequest,
   DeleteAccountRequest,
 } from './lib/user-types';

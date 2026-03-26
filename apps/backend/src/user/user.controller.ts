@@ -18,7 +18,12 @@ import { buildClearSessionCookie } from '../auth/cookie';
 import { HttpAuthGuard, REQUEST_SESSION_KEY, REQUEST_USER_KEY } from '../auth/http-auth.guard';
 import { RoomService } from '../room/room.service';
 import { WsConnectionService } from '../ws/ws-connection.service';
-import { DeleteAccountDto, SearchUsersDto, UpdateDisplayNameDto } from './user.dto';
+import {
+  DeleteAccountDto,
+  SearchUsersDto,
+  UpdateDisplayNameDto,
+  UpdateUsernameDto,
+} from './user.dto';
 import { UserService } from './user.service';
 
 @UseGuards(HttpAuthGuard)
@@ -42,7 +47,16 @@ export class UserController {
     return profile;
   }
 
-  @Patch('me')
+  @Patch('me/username')
+  async updateUsername(
+    @Req() request: FastifyRequest,
+    @Body() dto: UpdateUsernameDto,
+  ): Promise<UserProfile> {
+    const user = (request as any)[REQUEST_USER_KEY] as SessionIdentity;
+    return this.userService.updateUsername(user.userId, dto.username);
+  }
+
+  @Patch('me/display-name')
   async updateDisplayName(
     @Req() request: FastifyRequest,
     @Body() dto: UpdateDisplayNameDto,
