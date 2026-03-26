@@ -112,4 +112,45 @@ describe('CredentialRepository', () => {
       expect(db.where).toHaveBeenCalled();
     });
   });
+
+  describe('insertCredential', () => {
+    it('should insert and return the row', async () => {
+      const cred = { id: 2, userId: 1, method: 'basic', credential: 'hash' };
+      db.returning.mockResolvedValue([cred]);
+
+      const result = await repo.insertCredential(1, 'basic', 'hash');
+
+      expect(result).toBe(cred);
+      expect(db.insert).toHaveBeenCalled();
+    });
+  });
+
+  describe('findMethodsByUserId', () => {
+    it('should return list of methods', async () => {
+      db.where.mockResolvedValue([{ method: 'basic' }, { method: 'oidc' }]);
+
+      const result = await repo.findMethodsByUserId(1);
+
+      expect(result).toEqual(['basic', 'oidc']);
+    });
+
+    it('should return empty array when no credentials', async () => {
+      db.where.mockResolvedValue([]);
+
+      const result = await repo.findMethodsByUserId(1);
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('deleteByUserIdAndMethod', () => {
+    it('should delete the credential row', async () => {
+      db.where.mockResolvedValue(undefined);
+
+      await repo.deleteByUserIdAndMethod(1, 'basic');
+
+      expect(db.delete).toHaveBeenCalled();
+      expect(db.where).toHaveBeenCalled();
+    });
+  });
 });

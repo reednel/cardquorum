@@ -95,7 +95,7 @@ Available repositories:
 - **`RoomRepository`** — `findById`, `findAll`, `create`, `update`, `delete`
 - **`MessageRepository`** — `insert`, `findByRoomId`
 - **`UserRepository`** — `findById`, `findByUsername`, `create`
-- **`CredentialRepository`** — `findCredentialByUserId`, `findUserByCredential`, `upsertCredential`, `findOrCreateUserByOidc`
+- **`CredentialRepository`** — `findCredentialByUserId`, `findUserByCredential`, `upsertCredential`, `findOrCreateUserByOidc`, `insertCredential`, `findMethodsByUserId`, `deleteByUserIdAndMethod`, `deleteAllByUserId`
 
 ## Common Operations
 

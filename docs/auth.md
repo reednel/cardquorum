@@ -8,7 +8,7 @@ All strategies converge to the same session model:
 
 1. User authenticates (login/register or OIDC callback)
 2. Backend creates a session row in the `sessions` table (opaque ID via `randomBytes(32).toString('base64url')`, 7-day expiry)
-3. Response includes `Set-Cookie: cq_session=<id>; HttpOnly; SameSite=Strict; Path=/; Max-Age=604800` (`Secure` flag added in production)
+3. Response includes `Set-Cookie: cq_session=<id>; HttpOnly; SameSite=Lax; Path=/; Max-Age=604800` (`Secure` flag added in production)
 4. Browser sends the cookie automatically on all requests (including `/api` and `/ws` WebSocket upgrades)
 5. On logout, the session is deleted from the DB and the cookie is cleared
 
@@ -77,6 +77,34 @@ OIDC_REDIRECT_URI=...
 
 The login page shows both the username/password form and an SSO button. The frontend queries `GET /api/auth/strategies` (unguarded) to determine which options to render.
 
+## Credential Linking
+
+Users can link multiple auth methods to a single account and unlink them at will, as long as they keep at least one credential whose method is in `AUTH_STRATEGIES`.
+
+**Use case:** A selfhoster starts with basic auth and later enables OIDC. Existing users can link their OIDC identity to their account on the Account page, preserving game history, friendships, and rooms.
+
+**Design:** Link-while-authenticated — the active session proves account ownership. No re-verification is needed for linking. Unlinking requires re-verification via the credential being removed (enter password to remove basic, complete OIDC flow to remove OIDC).
+
+### Endpoints
+
+- `GET /api/auth/credentials` — returns `{ methods: AuthMethod[] }` for the authenticated user
+- `POST /api/auth/credentials/basic` — links a basic (password) credential. Body: `{ password }`. 409 if basic credential already exists.
+- `DELETE /api/auth/credentials/basic` — unlinks basic credential. Body: `{ password }` (re-verification). 401 for wrong password, 409 if it's the last credential for an enabled strategy.
+- `GET /api/auth/oidc/login?action=link` — initiates OIDC linking via redirect. Callback redirects to `/account?linked=oidc` on success, `/account?error=oidc_conflict` if the OIDC identity is already linked to another account.
+- `GET /api/auth/oidc/login?action=unlink` — initiates OIDC unlinking via redirect. Callback redirects to `/account?unlinked=oidc` on success, `/account?error=last_credential` if it's the last credential.
+
+### OIDC Callback Restructuring
+
+The `oidcCallback` method branches on the action suffix in the OIDC state parameter _before_ calling any service method. For `link`/`unlink` actions, it manually validates the session cookie (since `HttpAuthGuard` can't be used on this shared endpoint — unauthenticated login also hits it). Only the default (login) and `delete-account` branches call `authService.oidcCallback()`.
+
+### Soft Lockout
+
+If an admin removes a strategy from `AUTH_STRATEGIES`, users with only that credential can't log in. Their credential rows remain in the DB — re-enabling the strategy restores access. The admin is responsible for communicating the change.
+
+### Frontend
+
+The Account page has a "Linked Accounts" section that shows each credential type's status and offers link/unlink controls based on the user's credentials and the instance's enabled strategies. The frontend `AuthService` exposes a `credentials` signal and methods for loading and mutating credentials.
+
 ## Credential Storage
 
 Auth credentials are stored in the `user_credentials` table, separate from the `users` table. Each row has a `method` discriminator (`'basic'` or `'oidc'`) and a `credential` value (password hash or OIDC subject). This supports multiple auth methods per user and cleaner separation of concerns.
@@ -122,18 +150,18 @@ The `APP_INITIALIZER` also calls `GET /api/auth/strategies` to populate the stra
 
 ## Key Files
 
-| File                                                | Purpose                                           |
-| --------------------------------------------------- | ------------------------------------------------- |
-| `apps/backend/src/auth/auth.service.ts`             | Register/login/oidcCallback business logic        |
-| `apps/backend/src/auth/auth.controller.ts`          | HTTP endpoints (login/register/logout/me/oidc/\*) |
-| `apps/backend/src/auth/session.service.ts`          | Session creation/validation/deletion              |
-| `apps/backend/src/auth/cookie.ts`                   | Session + OIDC state cookie helpers               |
-| `apps/backend/src/auth/http-auth.guard.ts`          | HTTP cookie-based auth guard                      |
-| `apps/backend/src/auth/ws-auth.guard.ts`            | WS handshake cookie validation                    |
-| `apps/backend/src/auth/auth.module.ts`              | Wiring + service factories                        |
-| `libs/db/src/schema/users.ts`                       | Users table schema                                |
-| `libs/db/src/schema/user-credentials.ts`            | Credentials table schema                          |
-| `libs/db/src/schema/sessions.ts`                    | Sessions table schema                             |
-| `libs/db/src/repositories/user.repository.ts`       | User data access                                  |
-| `libs/db/src/repositories/credential.repository.ts` | Credential data access                            |
-| `libs/db/src/repositories/session.repository.ts`    | Session data access                               |
+| File                                                | Purpose                                                    |
+| --------------------------------------------------- | ---------------------------------------------------------- |
+| `apps/backend/src/auth/auth.service.ts`             | Register/login/oidcCallback + credential linking           |
+| `apps/backend/src/auth/auth.controller.ts`          | HTTP endpoints (login/register/logout/me/oidc/credentials) |
+| `apps/backend/src/auth/session.service.ts`          | Session creation/validation/deletion                       |
+| `apps/backend/src/auth/cookie.ts`                   | Session + OIDC state cookie helpers                        |
+| `apps/backend/src/auth/http-auth.guard.ts`          | HTTP cookie-based auth guard                               |
+| `apps/backend/src/auth/ws-auth.guard.ts`            | WS handshake cookie validation                             |
+| `apps/backend/src/auth/auth.module.ts`              | Wiring + service factories                                 |
+| `libs/db/src/schema/users.ts`                       | Users table schema                                         |
+| `libs/db/src/schema/user-credentials.ts`            | Credentials table schema                                   |
+| `libs/db/src/schema/sessions.ts`                    | Sessions table schema                                      |
+| `libs/db/src/repositories/user.repository.ts`       | User data access                                           |
+| `libs/db/src/repositories/credential.repository.ts` | Credential data access                                     |
+| `libs/db/src/repositories/session.repository.ts`    | Session data access                                        |

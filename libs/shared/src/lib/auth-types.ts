@@ -22,3 +22,15 @@ export interface RegisterRequest {
 export interface StrategiesResponse {
   strategies: AuthStrategy[];
 }
+
+export interface CredentialsResponse {
+  methods: AuthMethod[];
+}
+
+export interface LinkBasicCredentialRequest {
+  password: string;
+}
+
+export interface UnlinkBasicCredentialRequest {
+  password: string;
+}

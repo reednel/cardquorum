@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { CredentialRepository, UserRepository } from '@cardquorum/db';
 import { AuthService } from './auth.service';
@@ -15,7 +15,13 @@ describe('AuthService', () => {
   let credentialRepo: jest.Mocked<
     Pick<
       CredentialRepository,
-      'findCredentialByUserId' | 'upsertCredential' | 'findOrCreateUserByOidc'
+      | 'findCredentialByUserId'
+      | 'upsertCredential'
+      | 'findOrCreateUserByOidc'
+      | 'insertCredential'
+      | 'findMethodsByUserId'
+      | 'deleteByUserIdAndMethod'
+      | 'findUserByCredential'
     >
   >;
   let sessionService: jest.Mocked<Pick<SessionService, 'createSession'>>;
@@ -34,6 +40,10 @@ describe('AuthService', () => {
       findCredentialByUserId: jest.fn(),
       upsertCredential: jest.fn(),
       findOrCreateUserByOidc: jest.fn(),
+      insertCredential: jest.fn(),
+      findMethodsByUserId: jest.fn(),
+      deleteByUserIdAndMethod: jest.fn(),
+      findUserByCredential: jest.fn(),
     };
     sessionService = {
       createSession: jest.fn().mockResolvedValue('session-id'),
@@ -169,6 +179,220 @@ describe('AuthService', () => {
         },
       );
       expect(both.enabledStrategies).toEqual(['basic', 'oidc']);
+    });
+  });
+
+  describe('credential linking', () => {
+    let bothService: AuthService;
+
+    beforeEach(() => {
+      bothService = new AuthService(
+        userRepo as unknown as UserRepository,
+        credentialRepo as unknown as CredentialRepository,
+        sessionService as unknown as SessionService,
+        {
+          strategies: ['basic', 'oidc'],
+          oidcIssuer: 'https://example.com',
+          oidcClientId: 'id',
+          oidcClientSecret: 'secret',
+          oidcRedirectUri: 'http://localhost/callback',
+        },
+      );
+    });
+
+    describe('linkBasicCredential', () => {
+      it('should hash password and insert credential', async () => {
+        credentialRepo.findCredentialByUserId.mockResolvedValue(null);
+        credentialRepo.insertCredential.mockResolvedValue({} as any);
+        await bothService.linkBasicCredential(1, 'newpassword');
+        expect(credentialRepo.findCredentialByUserId).toHaveBeenCalledWith(1, 'basic');
+        expect(credentialRepo.insertCredential).toHaveBeenCalledWith(
+          1,
+          'basic',
+          expect.any(String),
+        );
+      });
+
+      it('should throw ConflictException if basic credential exists', async () => {
+        credentialRepo.findCredentialByUserId.mockResolvedValue('existing-hash');
+        await expect(bothService.linkBasicCredential(1, 'newpassword')).rejects.toThrow(
+          ConflictException,
+        );
+        expect(credentialRepo.insertCredential).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('unlinkCredential', () => {
+      it('should delete credential when another enabled method remains', async () => {
+        credentialRepo.findMethodsByUserId.mockResolvedValue(['basic', 'oidc']);
+        await bothService.unlinkCredential(1, 'basic');
+        expect(credentialRepo.deleteByUserIdAndMethod).toHaveBeenCalledWith(1, 'basic');
+      });
+
+      it('should throw ConflictException if it is the last enabled credential', async () => {
+        credentialRepo.findMethodsByUserId.mockResolvedValue(['basic']);
+        await expect(bothService.unlinkCredential(1, 'basic')).rejects.toThrow(ConflictException);
+        expect(credentialRepo.deleteByUserIdAndMethod).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('linkOidcCredential', () => {
+      it('should upsert OIDC credential when sub is not linked to another user', async () => {
+        const jose = require('jose');
+        const fetchSpy = jest.spyOn(globalThis, 'fetch').mockResolvedValue({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              authorization_endpoint: 'https://example.com/authorize',
+              token_endpoint: 'https://example.com/token',
+              jwks_uri: 'https://example.com/jwks',
+            }),
+        } as Response);
+        await bothService.initOidc();
+        fetchSpy.mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve({ id_token: 'mock-token' }),
+        } as Response);
+        jose.jwtVerify.mockResolvedValue({
+          payload: { sub: 'oidc-sub-123', preferred_username: 'alice' },
+        });
+        credentialRepo.findUserByCredential.mockResolvedValue(null);
+        credentialRepo.upsertCredential.mockResolvedValue({} as any);
+        await bothService.linkOidcCredential(1, 'auth-code');
+        expect(credentialRepo.findUserByCredential).toHaveBeenCalledWith('oidc', 'oidc-sub-123');
+        expect(credentialRepo.upsertCredential).toHaveBeenCalledWith(1, 'oidc', 'oidc-sub-123');
+        fetchSpy.mockRestore();
+      });
+
+      it('should throw ConflictException if sub is linked to a different user', async () => {
+        const jose = require('jose');
+        const fetchSpy = jest.spyOn(globalThis, 'fetch').mockResolvedValue({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              authorization_endpoint: 'https://example.com/authorize',
+              token_endpoint: 'https://example.com/token',
+              jwks_uri: 'https://example.com/jwks',
+            }),
+        } as Response);
+        await bothService.initOidc();
+        fetchSpy.mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve({ id_token: 'mock-token' }),
+        } as Response);
+        jose.jwtVerify.mockResolvedValue({
+          payload: { sub: 'oidc-sub-123', preferred_username: 'alice' },
+        });
+        credentialRepo.findUserByCredential.mockResolvedValue({
+          id: 99,
+          username: 'other',
+          displayName: 'Other',
+          email: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+        await expect(bothService.linkOidcCredential(1, 'auth-code')).rejects.toThrow(
+          ConflictException,
+        );
+        expect(credentialRepo.upsertCredential).not.toHaveBeenCalled();
+        fetchSpy.mockRestore();
+      });
+    });
+
+    describe('unlinkOidcCredential', () => {
+      beforeEach(async () => {
+        const fetchSpy = jest.spyOn(globalThis, 'fetch').mockResolvedValue({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              authorization_endpoint: 'https://example.com/authorize',
+              token_endpoint: 'https://example.com/token',
+              jwks_uri: 'https://example.com/jwks',
+            }),
+        } as Response);
+        await bothService.initOidc();
+        fetchSpy.mockRestore();
+      });
+
+      it('should delete OIDC credential when sub matches', async () => {
+        const jose = require('jose');
+        const fetchSpy = jest.spyOn(globalThis, 'fetch').mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve({ id_token: 'mock-token' }),
+        } as Response);
+        jose.jwtVerify.mockResolvedValue({
+          payload: { sub: 'oidc-sub-123', preferred_username: 'alice' },
+        });
+        credentialRepo.findCredentialByUserId.mockResolvedValue('oidc-sub-123');
+        credentialRepo.findMethodsByUserId.mockResolvedValue(['basic', 'oidc']);
+        credentialRepo.deleteByUserIdAndMethod.mockResolvedValue(undefined);
+        await bothService.unlinkOidcCredential(1, 'auth-code');
+        expect(credentialRepo.deleteByUserIdAndMethod).toHaveBeenCalledWith(1, 'oidc');
+        fetchSpy.mockRestore();
+      });
+
+      it('should throw UnauthorizedException when sub does not match', async () => {
+        const jose = require('jose');
+        const fetchSpy = jest.spyOn(globalThis, 'fetch').mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve({ id_token: 'mock-token' }),
+        } as Response);
+        jose.jwtVerify.mockResolvedValue({
+          payload: { sub: 'wrong-sub', preferred_username: 'alice' },
+        });
+        credentialRepo.findCredentialByUserId.mockResolvedValue('oidc-sub-123');
+        await expect(bothService.unlinkOidcCredential(1, 'auth-code')).rejects.toThrow(
+          UnauthorizedException,
+        );
+        fetchSpy.mockRestore();
+      });
+
+      it('should throw ConflictException when OIDC is the last enabled credential', async () => {
+        const jose = require('jose');
+        const fetchSpy = jest.spyOn(globalThis, 'fetch').mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve({ id_token: 'mock-token' }),
+        } as Response);
+        jose.jwtVerify.mockResolvedValue({
+          payload: { sub: 'oidc-sub-123', preferred_username: 'alice' },
+        });
+        credentialRepo.findCredentialByUserId.mockResolvedValue('oidc-sub-123');
+        credentialRepo.findMethodsByUserId.mockResolvedValue(['oidc']);
+        await expect(bothService.unlinkOidcCredential(1, 'auth-code')).rejects.toThrow(
+          ConflictException,
+        );
+        expect(credentialRepo.deleteByUserIdAndMethod).not.toHaveBeenCalled();
+        fetchSpy.mockRestore();
+      });
+    });
+
+    describe('getCredentialMethods', () => {
+      it('should return methods from repository', async () => {
+        credentialRepo.findMethodsByUserId.mockResolvedValue(['basic', 'oidc']);
+        const result = await bothService.getCredentialMethods(1);
+        expect(result).toEqual(['basic', 'oidc']);
+      });
+    });
+
+    describe('verifyBasicCredential', () => {
+      it('should not throw for valid password', async () => {
+        credentialRepo.findCredentialByUserId.mockResolvedValue(passwordHash);
+        await expect(bothService.verifyBasicCredential(1, 'password')).resolves.toBeUndefined();
+      });
+
+      it('should throw UnauthorizedException for wrong password', async () => {
+        credentialRepo.findCredentialByUserId.mockResolvedValue(passwordHash);
+        await expect(bothService.verifyBasicCredential(1, 'wrongpassword')).rejects.toThrow(
+          UnauthorizedException,
+        );
+      });
+
+      it('should throw UnauthorizedException when no basic credential exists', async () => {
+        credentialRepo.findCredentialByUserId.mockResolvedValue(null);
+        await expect(bothService.verifyBasicCredential(1, 'password')).rejects.toThrow(
+          UnauthorizedException,
+        );
+      });
     });
   });
 

@@ -109,6 +109,63 @@ describe('AuthService', () => {
     });
   });
 
+  describe('loadCredentials', () => {
+    it('should fetch and store credential methods', () => {
+      service.loadCredentials();
+      const req = httpTesting.expectOne('/api/auth/credentials');
+      expect(req.request.method).toBe('GET');
+      req.flush({ methods: ['basic', 'oidc'] });
+      expect(service.credentials()).toEqual(['basic', 'oidc']);
+    });
+
+    it('should default to empty array on error', () => {
+      service.loadCredentials();
+      httpTesting
+        .expectOne('/api/auth/credentials')
+        .flush('err', { status: 500, statusText: 'Error' });
+      expect(service.credentials()).toEqual([]);
+    });
+  });
+
+  describe('linkBasicCredential', () => {
+    it('should POST password and refresh credentials', () => {
+      let completed = false;
+      service.linkBasicCredential('newpass').subscribe(() => {
+        completed = true;
+      });
+
+      const req = httpTesting.expectOne('/api/auth/credentials/basic');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ password: 'newpass' });
+      req.flush(null, { status: 204, statusText: 'No Content' });
+
+      // Should trigger a credentials refresh
+      const refreshReq = httpTesting.expectOne('/api/auth/credentials');
+      refreshReq.flush({ methods: ['basic', 'oidc'] });
+
+      expect(completed).toBe(true);
+    });
+  });
+
+  describe('unlinkBasicCredential', () => {
+    it('should DELETE with password and refresh credentials', () => {
+      let completed = false;
+      service.unlinkBasicCredential('mypass').subscribe(() => {
+        completed = true;
+      });
+
+      const req = httpTesting.expectOne('/api/auth/credentials/basic');
+      expect(req.request.method).toBe('DELETE');
+      expect(req.request.body).toEqual({ password: 'mypass' });
+      req.flush(null, { status: 204, statusText: 'No Content' });
+
+      const refreshReq = httpTesting.expectOne('/api/auth/credentials');
+      refreshReq.flush({ methods: ['oidc'] });
+
+      expect(completed).toBe(true);
+    });
+  });
+
   describe('logout', () => {
     it('should clear user, POST logout, and navigate to /login', () => {
       const navigateSpy = jest.spyOn(router, 'navigate').mockResolvedValue(true);
@@ -117,6 +174,11 @@ describe('AuthService', () => {
       service.login({ username: 'test', password: 'pass' }).subscribe();
       httpTesting.expectOne('/api/auth/login').flush({ userId: 1, displayName: 'Test' });
       expect(service.isAuthenticated()).toBe(true);
+
+      // Set credentials to verify they get cleared
+      service.loadCredentials();
+      httpTesting.expectOne('/api/auth/credentials').flush({ methods: ['basic'] });
+      expect(service.credentials()).toEqual(['basic']);
 
       // Logout
       service.logout();
@@ -129,6 +191,7 @@ describe('AuthService', () => {
       expect(service.isAuthenticated()).toBe(false);
       expect(service.user()).toBeNull();
       expect(navigateSpy).toHaveBeenCalledWith(['/login']);
+      expect(service.credentials()).toEqual([]);
     });
   });
 
@@ -153,6 +216,11 @@ describe('AuthService', () => {
       httpTesting.expectOne('/api/auth/login').flush({ userId: 1, displayName: 'Test' });
       expect(service.isAuthenticated()).toBe(true);
 
+      // Set credentials to verify they get cleared
+      service.loadCredentials();
+      httpTesting.expectOne('/api/auth/credentials').flush({ methods: ['basic'] });
+      expect(service.credentials()).toEqual(['basic']);
+
       // Clear local state
       service.clearLocalState();
 
@@ -162,6 +230,7 @@ describe('AuthService', () => {
       expect(service.isAuthenticated()).toBe(false);
       expect(service.user()).toBeNull();
       expect(navigateSpy).toHaveBeenCalledWith(['/login']);
+      expect(service.credentials()).toEqual([]);
     });
 
     it('should be a no-op when user is already null', () => {

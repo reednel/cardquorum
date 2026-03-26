@@ -3,7 +3,9 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { firstValueFrom, map, Observable, tap } from 'rxjs';
 import {
+  AuthMethod,
   AuthStrategy,
+  CredentialsResponse,
   LoginRequest,
   RegisterRequest,
   StrategiesResponse,
@@ -23,6 +25,9 @@ export class AuthService {
 
   private readonly _strategies = signal<AuthStrategy[]>(['basic']);
   readonly strategies = this._strategies.asReadonly();
+
+  private readonly _credentials = signal<AuthMethod[]>([]);
+  readonly credentials = this._credentials.asReadonly();
 
   /** Called by APP_INITIALIZER before the app bootstraps. */
   initialize(): Promise<void> {
@@ -67,9 +72,31 @@ export class AuthService {
     }
   }
 
+  loadCredentials(): void {
+    this.http.get<CredentialsResponse>('/api/auth/credentials').subscribe({
+      next: (res) => this._credentials.set(res.methods),
+      error: () => this._credentials.set([]),
+    });
+  }
+
+  linkBasicCredential(password: string): Observable<void> {
+    return this.http.post('/api/auth/credentials/basic', { password }).pipe(
+      tap(() => this.loadCredentials()),
+      map(() => undefined),
+    );
+  }
+
+  unlinkBasicCredential(password: string): Observable<void> {
+    return this.http.delete('/api/auth/credentials/basic', { body: { password } }).pipe(
+      tap(() => this.loadCredentials()),
+      map(() => undefined),
+    );
+  }
+
   logout(): void {
     if (!this._user()) return;
     this._user.set(null);
+    this._credentials.set([]);
     this.ws.disconnect();
     this.http.post('/api/auth/logout', {}).subscribe();
     this.router.navigate(['/login']);
@@ -79,6 +106,7 @@ export class AuthService {
   clearLocalState(): void {
     if (!this._user()) return;
     this._user.set(null);
+    this._credentials.set([]);
     this.ws.disconnect();
     this.router.navigate(['/login']);
   }

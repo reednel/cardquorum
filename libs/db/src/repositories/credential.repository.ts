@@ -68,4 +68,26 @@ export class CredentialRepository {
   async deleteAllByUserId(userId: number) {
     await this.db.delete(userCredentials).where(eq(userCredentials.userId, userId));
   }
+
+  async insertCredential(userId: number, method: string, credential: string) {
+    const [row] = await this.db
+      .insert(userCredentials)
+      .values({ userId, method, credential })
+      .returning();
+    return row;
+  }
+
+  async findMethodsByUserId(userId: number): Promise<string[]> {
+    const rows = await this.db
+      .select({ method: userCredentials.method })
+      .from(userCredentials)
+      .where(eq(userCredentials.userId, userId));
+    return rows.map((r) => r.method);
+  }
+
+  async deleteByUserIdAndMethod(userId: number, method: string) {
+    await this.db
+      .delete(userCredentials)
+      .where(and(eq(userCredentials.userId, userId), eq(userCredentials.method, method)));
+  }
 }

@@ -9,7 +9,7 @@ import {
 import * as bcrypt from 'bcryptjs';
 import * as jose from 'jose';
 import { CredentialRepository, UserRepository } from '@cardquorum/db';
-import { AuthStrategy, RegisterRequest, SessionIdentity } from '@cardquorum/shared';
+import { AuthMethod, AuthStrategy, RegisterRequest, SessionIdentity } from '@cardquorum/shared';
 import { SessionService } from './session.service';
 
 export interface AuthResult {
@@ -173,6 +173,61 @@ export class AuthService {
       params.set('prompt', prompt);
     }
     return `${this.authorizationEndpoint}?${params}`;
+  }
+
+  async linkBasicCredential(userId: number, password: string): Promise<void> {
+    this.requireStrategy('basic');
+    const existing = await this.credentialRepo.findCredentialByUserId(userId, 'basic');
+    if (existing) {
+      throw new ConflictException('Basic credential already exists');
+    }
+    const hash = await bcrypt.hash(password, 10);
+    await this.credentialRepo.insertCredential(userId, 'basic', hash);
+  }
+
+  async linkOidcCredential(userId: number, code: string): Promise<void> {
+    this.requireStrategy('oidc');
+    const tokenResponse = await this.exchangeOidcCode(code);
+    const identity = await this.verifyIdToken(tokenResponse.id_token);
+    const existingUser = await this.credentialRepo.findUserByCredential('oidc', identity.sub);
+    if (existingUser && existingUser.id !== userId) {
+      throw new ConflictException('This OIDC identity is already linked to another account');
+    }
+    await this.credentialRepo.upsertCredential(userId, 'oidc', identity.sub);
+  }
+
+  async unlinkCredential(userId: number, method: AuthMethod): Promise<void> {
+    const methods = await this.credentialRepo.findMethodsByUserId(userId);
+    const remainingEnabled = methods.filter(
+      (m) => m !== method && this.strategies.has(m as AuthStrategy),
+    );
+    if (remainingEnabled.length === 0) {
+      throw new ConflictException('Cannot remove last credential for an enabled auth strategy');
+    }
+    await this.credentialRepo.deleteByUserIdAndMethod(userId, method);
+  }
+
+  async unlinkOidcCredential(userId: number, code: string): Promise<void> {
+    this.requireStrategy('oidc');
+    const tokenResponse = await this.exchangeOidcCode(code);
+    const identity = await this.verifyIdToken(tokenResponse.id_token);
+    const storedSub = await this.credentialRepo.findCredentialByUserId(userId, 'oidc');
+    if (storedSub !== identity.sub) {
+      throw new UnauthorizedException('OIDC identity does not match stored credential');
+    }
+    await this.unlinkCredential(userId, 'oidc');
+  }
+
+  async getCredentialMethods(userId: number): Promise<AuthMethod[]> {
+    const methods = await this.credentialRepo.findMethodsByUserId(userId);
+    return methods as AuthMethod[];
+  }
+
+  async verifyBasicCredential(userId: number, password: string): Promise<void> {
+    const hash = await this.credentialRepo.findCredentialByUserId(userId, 'basic');
+    if (!hash || !(await bcrypt.compare(password, hash))) {
+      throw new UnauthorizedException('Invalid password');
+    }
   }
 
   private requireStrategy(strategy: AuthStrategy): void {
