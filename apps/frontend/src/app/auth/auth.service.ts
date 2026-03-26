@@ -64,7 +64,7 @@ export class AuthService {
     );
   }
 
-  oidcRegister(req: { username: string; displayName: string }): Observable<void> {
+  oidcRegister(req: { username: string }): Observable<void> {
     return this.http.patch('/api/auth/oidc/register', req).pipe(
       tap(() => this.loadCredentials()),
       map(() => undefined),
@@ -78,7 +78,7 @@ export class AuthService {
     }
   }
 
-  updateDisplayName(displayName: string): void {
+  updateDisplayName(displayName: string | null): void {
     const current = this._user();
     if (current) {
       this._user.set({ ...current, displayName });

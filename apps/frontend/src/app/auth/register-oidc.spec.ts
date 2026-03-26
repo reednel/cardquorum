@@ -2,15 +2,15 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { Register } from './register';
+import { RegisterOidc } from './register-oidc';
 
-describe('Register', () => {
+describe('RegisterOidc', () => {
   let httpTesting: HttpTestingController;
   let router: Router;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [Register],
+      imports: [RegisterOidc],
       providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     }).compileComponents();
 
@@ -23,50 +23,59 @@ describe('Register', () => {
   });
 
   it('should create the component', () => {
-    const fixture = TestBed.createComponent(Register);
+    const fixture = TestBed.createComponent(RegisterOidc);
     expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it('should render register form with two fields', () => {
-    const fixture = TestBed.createComponent(Register);
+  it('should render username form without password field', () => {
+    const fixture = TestBed.createComponent(RegisterOidc);
     fixture.detectChanges();
     const el: HTMLElement = fixture.nativeElement;
     expect(el.querySelector('input#username')).toBeTruthy();
-    expect(el.querySelector('input#password')).toBeTruthy();
+    expect(el.querySelector('input#password')).toBeFalsy();
   });
 
-  it('should call register and navigate on success', () => {
-    const fixture = TestBed.createComponent(Register);
+  it('should call oidcRegister and navigate on success', () => {
+    const fixture = TestBed.createComponent(RegisterOidc);
     fixture.detectChanges();
     const navigateSpy = jest.spyOn(router, 'navigate').mockResolvedValue(true);
 
-    fixture.componentInstance['form'].setValue({
-      username: 'bobuser',
-      password: 'password123',
-    });
+    fixture.componentInstance['form'].setValue({ username: 'newuser' });
     fixture.componentInstance['onSubmit']();
 
-    const req = httpTesting.expectOne('/api/auth/register');
-    req.flush({ userId: 2, username: 'bobuser', displayName: null });
+    const req = httpTesting.expectOne('/api/auth/oidc/register');
+    expect(req.request.method).toBe('PATCH');
+    expect(req.request.body).toEqual({ username: 'newuser' });
+    req.flush(null);
+
+    // credentials refresh triggered by oidcRegister
+    httpTesting.expectOne('/api/auth/credentials').flush({ methods: ['oidc'] });
 
     expect(navigateSpy).toHaveBeenCalledWith(['/']);
   });
 
   it('should show error message on 409', () => {
-    const fixture = TestBed.createComponent(Register);
+    const fixture = TestBed.createComponent(RegisterOidc);
     fixture.detectChanges();
 
-    fixture.componentInstance['form'].setValue({
-      username: 'takenuser',
-      password: 'password123',
-    });
+    fixture.componentInstance['form'].setValue({ username: 'takenuser' });
     fixture.componentInstance['onSubmit']();
 
     httpTesting
-      .expectOne('/api/auth/register')
+      .expectOne('/api/auth/oidc/register')
       .flush('Conflict', { status: 409, statusText: 'Conflict' });
     fixture.detectChanges();
 
     expect(fixture.componentInstance['errorMessage']()).toBe('Username already taken');
+  });
+
+  it('should not submit when form is invalid', () => {
+    const fixture = TestBed.createComponent(RegisterOidc);
+    fixture.detectChanges();
+
+    fixture.componentInstance['form'].setValue({ username: 'ab' }); // too short
+    fixture.componentInstance['onSubmit']();
+
+    httpTesting.expectNone('/api/auth/oidc/register');
   });
 });

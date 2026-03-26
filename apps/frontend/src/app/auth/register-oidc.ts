@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
+import { USERNAME_MAX, USERNAME_MIN } from '@cardquorum/shared';
 import { AuthService } from './auth.service';
 
 @Component({
@@ -13,7 +14,7 @@ import { AuthService } from './auth.service';
     <div class="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-950">
       <div class="w-full max-w-sm rounded-lg bg-white p-8 shadow dark:bg-gray-900">
         <h1 class="mb-6 text-center text-2xl font-semibold text-gray-900 dark:text-gray-100">
-          Register
+          Choose a Username
         </h1>
 
         @if (errorMessage()) {
@@ -43,23 +44,9 @@ import { AuthService } from './auth.service';
               [attr.aria-describedby]="errorMessage() ? 'register-error' : null"
               class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
             />
-          </div>
-
-          <div class="mb-4">
-            <label
-              for="displayName"
-              class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >
-              Display Name
-            </label>
-            <input
-              id="displayName"
-              formControlName="displayName"
-              type="text"
-              autocomplete="name"
-              required
-              class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-            />
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              {{ USERNAME_MIN }}–{{ USERNAME_MAX }} characters, letters/numbers/underscores
+            </p>
           </div>
 
           <button
@@ -67,7 +54,7 @@ import { AuthService } from './auth.service';
             [disabled]="form.invalid || submitting()"
             class="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:bg-gray-400 disabled:text-gray-200"
           >
-            {{ submitting() ? 'Registering...' : 'Register' }}
+            {{ submitting() ? 'Registering...' : 'Continue' }}
           </button>
         </form>
       </div>
@@ -79,12 +66,22 @@ export class RegisterOidc {
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
 
+  protected readonly USERNAME_MIN = USERNAME_MIN;
+  protected readonly USERNAME_MAX = USERNAME_MAX;
+
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly submitting = signal(false);
 
   protected readonly form = this.fb.nonNullable.group({
-    username: ['', Validators.required],
-    displayName: ['', Validators.required],
+    username: [
+      '',
+      [
+        Validators.required,
+        Validators.minLength(USERNAME_MIN),
+        Validators.maxLength(USERNAME_MAX),
+        Validators.pattern(/^[a-zA-Z][a-zA-Z0-9_]*$/),
+      ],
+    ],
   });
 
   protected onSubmit(): void {
@@ -100,7 +97,9 @@ export class RegisterOidc {
         next: () => this.router.navigate(['/']),
         error: (err: HttpErrorResponse) => {
           this.errorMessage.set(
-            err.status === 409 ? 'Username already taken' : 'Something went wrong',
+            err.status === 409
+              ? 'Username already taken'
+              : (err.error?.message ?? 'Something went wrong'),
           );
         },
       });

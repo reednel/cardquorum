@@ -1,7 +1,7 @@
 export interface UserIdentity {
   userId: number;
   username: string;
-  displayName: string;
+  displayName: string | null;
 }
 
 // --- Client → Server payloads ---

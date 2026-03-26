@@ -22,6 +22,7 @@ describe('AccountPage', () => {
   const mockUserService = {
     profile: profileSignal.asReadonly(),
     loadProfile: jest.fn(),
+    updateUsername: jest.fn(),
     updateDisplayName: jest.fn(),
     deleteAccount: jest.fn(),
   };
@@ -41,6 +42,7 @@ describe('AccountPage', () => {
   beforeEach(async () => {
     profileSignal.set(null);
     mockUserService.loadProfile.mockClear();
+    mockUserService.updateUsername.mockClear();
     mockUserService.updateDisplayName.mockClear();
     mockAuthService.loadCredentials.mockClear();
     mockAuthService.linkBasicCredential.mockClear();
@@ -105,6 +107,51 @@ describe('AccountPage', () => {
 
     expect(el.querySelector('[data-testid="display-name-input"]')).toBeFalsy();
     expect(el.querySelector('[data-testid="edit-display-name-btn"]')).toBeTruthy();
+  });
+
+  describe('username editing', () => {
+    beforeEach(() => {
+      profileSignal.set(PROFILE);
+      fixture.detectChanges();
+    });
+
+    it('shows username edit form when Edit button is clicked', () => {
+      (el.querySelector('[data-testid="edit-username-btn"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      expect(el.querySelector('[data-testid="username-input"]')).toBeTruthy();
+      expect(el.querySelector('[data-testid="save-username-btn"]')).toBeTruthy();
+    });
+
+    it('cancel reverts username to display mode', () => {
+      (el.querySelector('[data-testid="edit-username-btn"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      (el.querySelector('[data-testid="cancel-edit-btn"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      expect(el.querySelector('[data-testid="username-input"]')).toBeFalsy();
+      expect(el.querySelector('[data-testid="edit-username-btn"]')).toBeTruthy();
+    });
+
+    it('shows validation error for invalid username', () => {
+      (el.querySelector('[data-testid="edit-username-btn"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      fixture.componentInstance['usernameEditValue'].set('ab');
+      fixture.componentInstance['saveUsername']();
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance['usernameErrorMessage']()).toBeTruthy();
+      expect(mockUserService.updateUsername).not.toHaveBeenCalled();
+    });
+  });
+
+  it('displays "Not set" when displayName is null', () => {
+    profileSignal.set({ ...PROFILE, displayName: null });
+    fixture.detectChanges();
+
+    expect(el.textContent).toContain('Not set');
   });
 
   it('has a link to friends page', () => {

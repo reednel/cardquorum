@@ -11,7 +11,7 @@ jest.mock('jose', () => ({
 
 describe('AuthService', () => {
   let service: AuthService;
-  let userRepo: jest.Mocked<Pick<UserRepository, 'findByUsername' | 'create'>>;
+  let userRepo: jest.Mocked<Pick<UserRepository, 'findByUsername' | 'create' | 'updateUsername'>>;
   let credentialRepo: jest.Mocked<
     Pick<
       CredentialRepository,
@@ -35,6 +35,7 @@ describe('AuthService', () => {
     userRepo = {
       findByUsername: jest.fn(),
       create: jest.fn(),
+      updateUsername: jest.fn(),
     };
     credentialRepo = {
       findCredentialByUserId: jest.fn(),
@@ -115,15 +116,108 @@ describe('AuthService', () => {
         },
       );
 
-      await expect(
-        oidcOnly.register({ username: 'a', displayName: 'A', password: 'b' }),
-      ).rejects.toThrow(NotFoundException);
+      await expect(oidcOnly.register({ username: 'a', password: 'b' })).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should reject usernames starting with deleted_', async () => {
       await expect(
-        service.register({ username: 'deleted_hacker', displayName: 'Hacker', password: 'pw123' }),
-      ).rejects.toThrow('reserved');
+        service.register({ username: 'deleted_hacker', password: 'pw123456' }),
+      ).rejects.toThrow('Username must be');
+    });
+
+    it('should reject invalid usernames', async () => {
+      await expect(service.register({ username: 'ab', password: 'pw123456' })).rejects.toThrow(
+        'Username must be',
+      );
+    });
+
+    it('should reject taken usernames', async () => {
+      userRepo.findByUsername.mockResolvedValue({
+        id: 1,
+        username: 'alice',
+        displayName: null,
+        email: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+      });
+      await expect(service.register({ username: 'alice', password: 'pw123456' })).rejects.toThrow(
+        'Username already taken',
+      );
+    });
+
+    it('register should create user with null displayName', async () => {
+      userRepo.findByUsername.mockResolvedValue(null);
+      userRepo.create.mockResolvedValue({
+        id: 2,
+        username: 'bob',
+        displayName: null,
+        email: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+      });
+      credentialRepo.upsertCredential.mockResolvedValue({} as any);
+
+      const result = await service.register({ username: 'bob', password: 'password' });
+      expect(result.user).toEqual({
+        userId: 2,
+        username: 'bob',
+        displayName: null,
+        authMethod: 'basic',
+      });
+    });
+  });
+
+  describe('oidcRegister', () => {
+    let oidcService: AuthService;
+
+    beforeEach(() => {
+      oidcService = new AuthService(
+        userRepo as unknown as UserRepository,
+        credentialRepo as unknown as CredentialRepository,
+        sessionService as unknown as SessionService,
+        {
+          strategies: ['oidc'],
+          oidcIssuer: 'https://example.com',
+          oidcClientId: 'id',
+          oidcClientSecret: 'secret',
+          oidcRedirectUri: 'http://localhost/callback',
+        },
+      );
+    });
+
+    it('should update username', async () => {
+      userRepo.findByUsername.mockResolvedValue(null);
+      userRepo.updateUsername.mockResolvedValue(undefined);
+
+      await oidcService.oidcRegister(1, 'newname');
+
+      expect(userRepo.updateUsername).toHaveBeenCalledWith(1, 'newname');
+    });
+
+    it('should reject invalid username', async () => {
+      await expect(oidcService.oidcRegister(1, 'ab')).rejects.toThrow('Username must be');
+    });
+
+    it('should reject taken username', async () => {
+      userRepo.findByUsername.mockResolvedValue({
+        id: 99,
+        username: 'taken',
+        displayName: null,
+        email: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+      });
+
+      await expect(oidcService.oidcRegister(1, 'taken')).rejects.toThrow('Username already taken');
+    });
+
+    it('should throw when oidc strategy is disabled', async () => {
+      await expect(service.oidcRegister(1, 'newname')).rejects.toThrow(NotFoundException);
     });
   });
 

@@ -23,8 +23,9 @@ describe('AuthController', () => {
       getOidcAuthorizationUrl: jest.fn().mockReturnValue('https://provider/authorize?state=abc'),
       oidcCallback: jest.fn().mockResolvedValue({
         sessionId: 'new-session',
-        user: { userId: 1, displayName: 'Alice' },
+        user: { userId: 1, username: 'alice', displayName: 'Alice' },
       }),
+      oidcRegister: jest.fn(),
       getCredentialMethods: jest.fn(),
       linkBasicCredential: jest.fn(),
       unlinkCredential: jest.fn(),
@@ -46,6 +47,30 @@ describe('AuthController', () => {
     it('should return enabled strategies', () => {
       const result: StrategiesResponse = controller.strategies();
       expect(result).toEqual({ strategies: ['basic', 'oidc'] });
+    });
+  });
+
+  describe('PATCH /auth/oidc/register', () => {
+    it('should call oidcRegister and redirect', async () => {
+      (authService['oidcRegister'] as jest.Mock).mockResolvedValue(undefined);
+      const request = {
+        [REQUEST_USER_KEY]: {
+          userId: 1,
+          username: 'user_abc123',
+          displayName: null,
+          authMethod: 'oidc',
+        },
+      };
+      const reply = {
+        status: jest.fn().mockReturnThis(),
+        redirect: jest.fn(),
+      };
+
+      await controller.oidcRegister({ username: 'alice' }, request as any, reply as any);
+
+      expect(authService['oidcRegister']).toHaveBeenCalledWith(1, 'alice');
+      expect(reply.status).toHaveBeenCalledWith(302);
+      expect(reply.redirect).toHaveBeenCalledWith('/');
     });
   });
 
@@ -376,6 +401,50 @@ describe('AuthController', () => {
         );
 
         expect(reply.redirect).toHaveBeenCalledWith('/account?error=last_credential');
+      });
+    });
+
+    describe('oidc callback login redirect', () => {
+      it('should redirect to /register/oidc when username starts with user_', async () => {
+        (authService['oidcCallback'] as jest.Mock).mockResolvedValue({
+          sessionId: 'new-session',
+          user: { userId: 2, username: 'user_a1b2c3d4', displayName: null },
+        });
+        const stateValue = 'nonce123';
+        const request = makeRequest(stateValue);
+        const reply = makeReply();
+
+        await controller.oidcCallback(
+          'auth-code',
+          stateValue,
+          undefined as any,
+          undefined as any,
+          request as any,
+          reply as any,
+        );
+
+        expect(reply.redirect).toHaveBeenCalledWith('/register/oidc');
+      });
+
+      it('should redirect to / when username does not start with user_', async () => {
+        (authService['oidcCallback'] as jest.Mock).mockResolvedValue({
+          sessionId: 'new-session',
+          user: { userId: 1, username: 'alice', displayName: 'Alice' },
+        });
+        const stateValue = 'nonce123';
+        const request = makeRequest(stateValue);
+        const reply = makeReply();
+
+        await controller.oidcCallback(
+          'auth-code',
+          stateValue,
+          undefined as any,
+          undefined as any,
+          request as any,
+          reply as any,
+        );
+
+        expect(reply.redirect).toHaveBeenCalledWith('/');
       });
     });
 

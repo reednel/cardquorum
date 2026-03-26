@@ -33,7 +33,7 @@ export class ChatGateway {
     const msg = await this.chatService.saveMessage(
       payload.roomId,
       tracked.identity.userId,
-      tracked.identity.displayName,
+      tracked.identity.displayName ?? tracked.identity.username,
       payload.content,
     );
 

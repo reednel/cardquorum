@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
+import { DISPLAY_NAME_MAX, isValidUsername, USERNAME_MAX, USERNAME_MIN } from '@cardquorum/shared';
 import { AuthService } from '../auth/auth.service';
 import { UserService } from './user.service';
 
@@ -33,7 +34,7 @@ import { UserService } from './user.service';
                     type="text"
                     [value]="usernameEditValue()"
                     (input)="usernameEditValue.set($any($event.target).value)"
-                    maxlength="50"
+                    [attr.maxlength]="USERNAME_MAX"
                     class="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-900
                            dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
                     aria-label="Username"
@@ -86,7 +87,7 @@ import { UserService } from './user.service';
                     type="text"
                     [value]="displayNameEditValue()"
                     (input)="displayNameEditValue.set($any($event.target).value)"
-                    maxlength="50"
+                    [attr.maxlength]="DISPLAY_NAME_MAX"
                     class="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-900
                            dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
                     aria-label="Display name"
@@ -116,7 +117,7 @@ import { UserService } from './user.service';
                 }
               } @else {
                 <span class="text-gray-900 dark:text-gray-100">
-                  {{ userService.profile()!.displayName }}
+                  {{ userService.profile()!.displayName ?? 'Not set' }}
                 </span>
                 <button
                   data-testid="edit-display-name-btn"
@@ -374,6 +375,10 @@ export class AccountPage implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
 
+  protected readonly USERNAME_MIN = USERNAME_MIN;
+  protected readonly USERNAME_MAX = USERNAME_MAX;
+  protected readonly DISPLAY_NAME_MAX = DISPLAY_NAME_MAX;
+
   protected readonly authMethod = computed(() => {
     const user = this.auth.user();
     return user && 'authMethod' in user ? (user as any).authMethod : 'basic';
@@ -484,8 +489,10 @@ export class AccountPage implements OnInit {
 
   protected saveUsername(): void {
     const trimmed = this.usernameEditValue().trim();
-    if (!trimmed || trimmed.length > 50) {
-      this.usernameErrorMessage.set('Username must be 1-50 characters');
+    if (!isValidUsername(trimmed)) {
+      this.usernameErrorMessage.set(
+        `Username must be ${USERNAME_MIN}-${USERNAME_MAX} characters, start with a letter, and contain only letters, numbers, and underscores`,
+      );
       return;
     }
 
@@ -514,8 +521,10 @@ export class AccountPage implements OnInit {
 
   protected saveDisplayName(): void {
     const trimmed = this.displayNameEditValue().trim();
-    if (!trimmed || trimmed.length > 50) {
-      this.displayNameErrorMessage.set('Display name must be 1-50 characters');
+    if (trimmed.length > DISPLAY_NAME_MAX) {
+      this.displayNameErrorMessage.set(
+        `Display name must be ${DISPLAY_NAME_MAX} characters or fewer`,
+      );
       return;
     }
 
@@ -523,7 +532,7 @@ export class AccountPage implements OnInit {
     this.displayNameErrorMessage.set(null);
 
     this.userService
-      .updateDisplayName(trimmed)
+      .updateDisplayName(trimmed || null)
       .pipe(finalize(() => this.displayNameSaving.set(false)))
       .subscribe({
         next: () => this.displayNameEditing.set(false),

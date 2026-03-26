@@ -1,7 +1,7 @@
 export interface UserProfile {
   userId: number;
   username: string;
-  displayName: string;
+  displayName: string | null;
   email: string | null;
   createdAt: string;
 }
@@ -9,7 +9,7 @@ export interface UserProfile {
 export interface UserSearchResult {
   userId: number;
   username: string;
-  displayName: string;
+  displayName: string | null;
 }
 
 export interface UpdateUsernameRequest {
@@ -17,7 +17,7 @@ export interface UpdateUsernameRequest {
 }
 
 export interface UpdateDisplayNameRequest {
-  displayName: string;
+  displayName: string | null;
 }
 
 export interface DeleteAccountRequest {

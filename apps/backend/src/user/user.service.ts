@@ -7,7 +7,12 @@ import {
 } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { CredentialRepository, RoomRepository, UserRepository } from '@cardquorum/db';
-import { UserProfile, UserSearchResult } from '@cardquorum/shared';
+import {
+  DISPLAY_NAME_MAX,
+  isValidUsername,
+  UserProfile,
+  UserSearchResult,
+} from '@cardquorum/shared';
 
 @Injectable()
 export class UserService {
@@ -32,11 +37,10 @@ export class UserService {
 
   async updateUsername(userId: number, rawUsername: string): Promise<UserProfile> {
     const username = rawUsername.trim();
-    if (username.length === 0) {
-      throw new BadRequestException('Username cannot be blank');
-    }
-    if (username.length > 50) {
-      throw new BadRequestException('Username must be 50 characters or fewer');
+    if (!isValidUsername(username)) {
+      throw new BadRequestException(
+        'Username must be 3-20 characters, start with a letter, and contain only letters, numbers, and underscores',
+      );
     }
 
     const updated = await this.users.updateUsername(userId, username);
@@ -53,16 +57,21 @@ export class UserService {
     };
   }
 
-  async updateDisplayName(userId: number, rawDisplayName: string): Promise<UserProfile> {
-    const displayName = rawDisplayName.trim();
-    if (displayName.length === 0) {
-      throw new BadRequestException('Display name cannot be blank');
-    }
-    if (displayName.length > 50) {
-      throw new BadRequestException('Display name must be 50 characters or fewer');
+  async updateDisplayName(userId: number, rawDisplayName: string | null): Promise<UserProfile> {
+    if (rawDisplayName !== null) {
+      const displayName = rawDisplayName.trim();
+      if (displayName.length === 0) {
+        throw new BadRequestException('Display name cannot be blank — use null to clear');
+      }
+      if (displayName.length > DISPLAY_NAME_MAX) {
+        throw new BadRequestException(
+          `Display name must be ${DISPLAY_NAME_MAX} characters or fewer`,
+        );
+      }
+      rawDisplayName = displayName;
     }
 
-    const updated = await this.users.updateDisplayName(userId, displayName);
+    const updated = await this.users.updateDisplayName(userId, rawDisplayName);
     if (!updated) {
       throw new NotFoundException('User not found');
     }

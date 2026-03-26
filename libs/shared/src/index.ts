@@ -49,3 +49,12 @@ export type {
   DeleteAccountRequest,
 } from './lib/user-types';
 export type { FriendshipStatus, FriendshipResponse, FriendRequestBody } from './lib/friend-types';
+export {
+  USERNAME_MIN,
+  USERNAME_MAX,
+  USERNAME_PATTERN,
+  DISPLAY_NAME_MAX,
+  PASSWORD_MIN,
+  PASSWORD_MAX,
+  isValidUsername,
+} from './lib/validation';

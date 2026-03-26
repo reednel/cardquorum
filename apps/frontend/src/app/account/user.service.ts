@@ -33,7 +33,7 @@ export class UserService {
     );
   }
 
-  updateDisplayName(displayName: string): Observable<UserProfile> {
+  updateDisplayName(displayName: string | null): Observable<UserProfile> {
     const body: UpdateDisplayNameRequest = { displayName };
     return this.http.patch<UserProfile>('/api/users/me/display-name', body).pipe(
       tap((updated) => {

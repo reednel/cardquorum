@@ -50,13 +50,23 @@ export class CredentialRepository {
     return row;
   }
 
-  async findOrCreateUserByOidc(oidcSubject: string, displayName: string) {
+  async findOrCreateUserByOidc(oidcSubject: string, preferredUsername?: string) {
     const existing = await this.findUserByCredential('oidc', oidcSubject);
     if (existing) return existing;
 
-    const username = await this.generateUniqueUsername();
+    let username: string;
+    if (preferredUsername) {
+      const taken = await this.db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.username, preferredUsername))
+        .limit(1);
+      username = taken.length === 0 ? preferredUsername : await this.generateUniqueUsername();
+    } else {
+      username = await this.generateUniqueUsername();
+    }
 
-    const [user] = await this.db.insert(users).values({ username, displayName }).returning();
+    const [user] = await this.db.insert(users).values({ username }).returning();
 
     await this.db
       .insert(userCredentials)

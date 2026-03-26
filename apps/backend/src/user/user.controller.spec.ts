@@ -31,6 +31,7 @@ describe('UserController', () => {
   let userService: {
     deleteAccount: jest.Mock;
     getProfile: jest.Mock;
+    updateUsername: jest.Mock;
     updateDisplayName: jest.Mock;
     searchUsers: jest.Mock;
   };
@@ -44,6 +45,7 @@ describe('UserController', () => {
     userService = {
       deleteAccount: jest.fn(),
       getProfile: jest.fn(),
+      updateUsername: jest.fn(),
       updateDisplayName: jest.fn(),
       searchUsers: jest.fn(),
     };
@@ -58,6 +60,24 @@ describe('UserController', () => {
       roomService as any,
       connectionService as any,
     );
+  });
+
+  describe('updateUsername', () => {
+    it('should call userService.updateUsername with userId and username', async () => {
+      const profile = {
+        userId: 1,
+        username: 'newname',
+        displayName: 'Alice',
+        email: 'alice@example.com',
+        createdAt: new Date().toISOString(),
+      };
+      userService.updateUsername.mockResolvedValue(profile);
+
+      const result = await controller.updateUsername(makeRequest(alice), { username: 'newname' });
+
+      expect(userService.updateUsername).toHaveBeenCalledWith(1, 'newname');
+      expect(result).toBe(profile);
+    });
   });
 
   describe('deleteAccount', () => {

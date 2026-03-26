@@ -16,10 +16,18 @@ const PROFILE: UserProfile = {
 describe('UserService', () => {
   let service: UserService;
   let http: HttpTestingController;
-  let mockAuthService: { updateDisplayName: jest.Mock; clearLocalState: jest.Mock };
+  let mockAuthService: {
+    updateUsername: jest.Mock;
+    updateDisplayName: jest.Mock;
+    clearLocalState: jest.Mock;
+  };
 
   beforeEach(() => {
-    mockAuthService = { updateDisplayName: jest.fn(), clearLocalState: jest.fn() };
+    mockAuthService = {
+      updateUsername: jest.fn(),
+      updateDisplayName: jest.fn(),
+      clearLocalState: jest.fn(),
+    };
 
     TestBed.configureTestingModule({
       providers: [
@@ -44,6 +52,22 @@ describe('UserService', () => {
     expect(req.request.method).toBe('GET');
     req.flush(PROFILE);
     expect(service.profile()).toEqual(PROFILE);
+  });
+
+  it('updateUsername patches and updates profile + auth', () => {
+    service.loadProfile();
+    http.expectOne('/api/users/me').flush(PROFILE);
+
+    const updated = { ...PROFILE, username: 'bob' };
+    service.updateUsername('bob').subscribe();
+
+    const req = http.expectOne('/api/users/me/username');
+    expect(req.request.method).toBe('PATCH');
+    expect(req.request.body).toEqual({ username: 'bob' });
+    req.flush(updated);
+
+    expect(service.profile()).toEqual(updated);
+    expect(mockAuthService.updateUsername).toHaveBeenCalledWith('bob');
   });
 
   it('updateDisplayName patches and updates profile + auth', () => {

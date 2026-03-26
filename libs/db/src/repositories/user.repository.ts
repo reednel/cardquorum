@@ -15,7 +15,7 @@ export class UserRepository {
     return rows[0] ?? null;
   }
 
-  async create(data: { username: string; displayName: string; email?: string }) {
+  async create(data: { username: string; displayName?: string | null; email?: string }) {
     const [row] = await this.db.insert(users).values(data).returning();
     return row;
   }
@@ -29,7 +29,7 @@ export class UserRepository {
     return row ?? null;
   }
 
-  async updateDisplayName(id: number, displayName: string) {
+  async updateDisplayName(id: number, displayName: string | null) {
     const [row] = await this.db
       .update(users)
       .set({ displayName, updatedAt: sql`now()` })
@@ -78,7 +78,7 @@ export class UserRepository {
         .update(users)
         .set({
           username: anonUsername,
-          displayName: anonUsername,
+          displayName: null,
           email: null,
           updatedAt: sql`now()`,
           deletedAt: sql`now()`,

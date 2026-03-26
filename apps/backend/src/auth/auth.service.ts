@@ -9,7 +9,13 @@ import {
 import * as bcrypt from 'bcryptjs';
 import * as jose from 'jose';
 import { CredentialRepository, UserRepository } from '@cardquorum/db';
-import { AuthMethod, AuthStrategy, RegisterRequest, SessionIdentity } from '@cardquorum/shared';
+import {
+  AuthMethod,
+  AuthStrategy,
+  isValidUsername,
+  RegisterRequest,
+  SessionIdentity,
+} from '@cardquorum/shared';
 import { SessionService } from './session.service';
 
 export interface AuthResult {
@@ -93,12 +99,10 @@ export class AuthService {
   async register(dto: RegisterRequest): Promise<AuthResult> {
     this.requireStrategy('basic');
 
-    if (dto.username.toLowerCase().startsWith('deleted_')) {
-      throw new BadRequestException('Username prefix "deleted_" is reserved');
-    }
-
-    if (dto.username.toLowerCase().startsWith('user_')) {
-      throw new BadRequestException('Username prefix "user_" is reserved');
+    if (!isValidUsername(dto.username)) {
+      throw new BadRequestException(
+        'Username must be 3-20 characters, start with a letter, and contain only letters, numbers, and underscores',
+      );
     }
 
     const existing = await this.userRepo.findByUsername(dto.username);
@@ -106,10 +110,7 @@ export class AuthService {
       throw new ConflictException('Username already taken');
     }
 
-    const user = await this.userRepo.create({
-      username: dto.username,
-      displayName: dto.displayName,
-    });
+    const user = await this.userRepo.create({ username: dto.username });
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
     await this.credentialRepo.upsertCredential(user.id, 'basic', passwordHash);
@@ -126,14 +127,13 @@ export class AuthService {
     };
   }
 
-  async oidcRegister(userId: number, username: string, displayName: string): Promise<void> {
+  async oidcRegister(userId: number, username: string): Promise<void> {
     this.requireStrategy('oidc');
 
-    if (username.toLowerCase().startsWith('deleted_')) {
-      throw new BadRequestException('Username prefix "deleted_" is reserved');
-    }
-    if (username.toLowerCase().startsWith('user_')) {
-      throw new BadRequestException('Username prefix "user_" is reserved');
+    if (!isValidUsername(username)) {
+      throw new BadRequestException(
+        'Username must be 3-20 characters, start with a letter, and contain only letters, numbers, and underscores',
+      );
     }
 
     const existing = await this.userRepo.findByUsername(username);
@@ -142,7 +142,6 @@ export class AuthService {
     }
 
     await this.userRepo.updateUsername(userId, username);
-    await this.userRepo.updateDisplayName(userId, displayName);
   }
 
   async login(dto: { username: string; password: string }): Promise<AuthResult> {
@@ -183,7 +182,7 @@ export class AuthService {
 
     const user = await this.credentialRepo.findOrCreateUserByOidc(
       identity.sub,
-      identity.displayName,
+      identity.preferredUsername,
     );
 
     const sessionId = await this.sessionService.createSession(user.id, 'oidc');
@@ -297,7 +296,9 @@ export class AuthService {
     return response.json();
   }
 
-  private async verifyIdToken(idToken: string): Promise<{ sub: string; displayName: string }> {
+  private async verifyIdToken(
+    idToken: string,
+  ): Promise<{ sub: string; preferredUsername?: string }> {
     const { payload } = await jose.jwtVerify(idToken, this.jwks!, {
       issuer: this.oidcIssuer,
       audience: this.oidcClientId,
@@ -307,9 +308,9 @@ export class AuthService {
       throw new UnauthorizedException('OIDC token missing sub claim');
     }
 
-    const displayName =
-      (payload['preferred_username'] as string) ?? (payload['name'] as string) ?? payload.sub;
+    const raw = payload['preferred_username'] as string | undefined;
+    const preferredUsername = raw && isValidUsername(raw) ? raw : undefined;
 
-    return { sub: payload.sub, displayName };
+    return { sub: payload.sub, preferredUsername };
   }
 }

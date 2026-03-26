@@ -8,6 +8,7 @@ describe('UserService', () => {
   let service: UserService;
   let mockUserRepo: {
     findById: jest.Mock;
+    updateUsername: jest.Mock;
     updateDisplayName: jest.Mock;
     searchByUsername: jest.Mock;
     softDelete: jest.Mock;
@@ -28,6 +29,7 @@ describe('UserService', () => {
   beforeEach(() => {
     mockUserRepo = {
       findById: jest.fn(),
+      updateUsername: jest.fn(),
       updateDisplayName: jest.fn(),
       searchByUsername: jest.fn(),
       softDelete: jest.fn().mockResolvedValue(undefined),
@@ -62,6 +64,32 @@ describe('UserService', () => {
     });
   });
 
+  describe('updateUsername', () => {
+    it('should trim and update username', async () => {
+      const updated = { ...user, username: 'bob' };
+      mockUserRepo.updateUsername.mockResolvedValue(updated);
+
+      const result = await service.updateUsername(1, '  bob  ');
+
+      expect(mockUserRepo.updateUsername).toHaveBeenCalledWith(1, 'bob');
+      expect(result.username).toBe('bob');
+    });
+
+    it('should throw on invalid username', async () => {
+      await expect(service.updateUsername(1, 'ab')).rejects.toThrow('Username must be');
+    });
+
+    it('should throw on reserved prefix user_', async () => {
+      await expect(service.updateUsername(1, 'user_test')).rejects.toThrow('Username must be');
+    });
+
+    it('should throw when user not found', async () => {
+      mockUserRepo.updateUsername.mockResolvedValue(null);
+
+      await expect(service.updateUsername(999, 'validname')).rejects.toThrow('User not found');
+    });
+  });
+
   describe('updateDisplayName', () => {
     it('should trim and update display name', async () => {
       const updated = { ...user, displayName: 'Alicia' };
@@ -80,6 +108,16 @@ describe('UserService', () => {
     it('should throw on too-long input after trim', async () => {
       const longName = 'a'.repeat(51);
       await expect(service.updateDisplayName(1, longName)).rejects.toThrow();
+    });
+
+    it('should allow setting displayName to null', async () => {
+      const updated = { ...user, displayName: null };
+      mockUserRepo.updateDisplayName.mockResolvedValue(updated);
+
+      const result = await service.updateDisplayName(1, null);
+
+      expect(mockUserRepo.updateDisplayName).toHaveBeenCalledWith(1, null);
+      expect(result.displayName).toBeNull();
     });
   });
 

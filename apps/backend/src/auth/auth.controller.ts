@@ -51,7 +51,7 @@ export class AuthController {
 
   @Post('register')
   async register(
-    @Body() dto: { username: string; displayName: string; password: string },
+    @Body() dto: { username: string; password: string },
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<UserIdentity> {
     const { sessionId, user } = await this.authService.register(dto);
@@ -72,12 +72,12 @@ export class AuthController {
   @UseGuards(HttpAuthGuard)
   @Patch('oidc/register')
   async oidcRegister(
-    @Body() dto: { username: string; displayName: string },
+    @Body() dto: { username: string },
     @Req() request: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<void> {
     const user = (request as any)[REQUEST_USER_KEY];
-    await this.authService.oidcRegister(user.userId, dto.username, dto.displayName);
+    await this.authService.oidcRegister(user.userId, dto.username);
     reply.status(302).redirect('/');
   }
 
