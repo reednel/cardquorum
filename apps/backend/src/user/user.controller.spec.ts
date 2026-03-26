@@ -8,7 +8,12 @@ import { UserService } from './user.service';
 
 const REQUEST_USER_KEY = 'user';
 
-const alice: SessionIdentity = { userId: 1, displayName: 'Alice', authMethod: 'basic' };
+const alice: SessionIdentity = {
+  userId: 1,
+  username: 'alice',
+  displayName: 'Alice',
+  authMethod: 'basic',
+};
 
 function makeRequest(identity: SessionIdentity, sessionCreatedAt = new Date()): any {
   return {

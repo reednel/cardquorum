@@ -13,6 +13,11 @@ export const appRoutes: Route[] = [
     loadComponent: () => import('./auth/register').then((m) => m.Register),
   },
   {
+    path: 'register/oidc',
+    title: 'Register — CardQuorum',
+    loadComponent: () => import('./auth/register-oidc').then((m) => m.RegisterOidc),
+  },
+  {
     path: '',
     loadComponent: () => import('./shell/app-shell').then((m) => m.AppShell),
     canActivate: [authGuard],

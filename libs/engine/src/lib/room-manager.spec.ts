@@ -4,8 +4,8 @@ import { RoomManager } from './room-manager';
 describe('RoomManager', () => {
   let manager: RoomManager;
 
-  const alice: UserIdentity = { userId: 1, displayName: 'Alice' };
-  const bob: UserIdentity = { userId: 2, displayName: 'Bob' };
+  const alice: UserIdentity = { userId: 1, username: 'alice', displayName: 'Alice' };
+  const bob: UserIdentity = { userId: 2, username: 'bob', displayName: 'Bob' };
 
   beforeEach(() => {
     manager = new RoomManager();

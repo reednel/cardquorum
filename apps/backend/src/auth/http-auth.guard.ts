@@ -36,6 +36,7 @@ export class HttpAuthGuard implements CanActivate {
 
     const identity: SessionIdentity = {
       userId: session.userId,
+      username: session.username,
       displayName: session.displayName,
       authMethod: session.authMethod as 'basic' | 'oidc',
     };

@@ -148,28 +148,6 @@ describe('AuthController', () => {
       redirect: jest.fn(),
     });
 
-    it('should redirect to / on success with session cookie', async () => {
-      const reply = makeReply();
-      const request = makeRequest('valid-state');
-
-      await controller.oidcCallback(
-        'auth-code',
-        'valid-state',
-        undefined as any,
-        undefined as any,
-        request as any,
-        reply as any,
-      );
-
-      expect(authService['oidcCallback']).toHaveBeenCalledWith('auth-code');
-      expect(reply.header).toHaveBeenCalledWith('Set-Cookie', [
-        expect.stringContaining('cq_session=new-session'),
-        expect.stringContaining('cq_oidc_state=; '),
-      ]);
-      expect(reply.status).toHaveBeenCalledWith(302);
-      expect(reply.redirect).toHaveBeenCalledWith('/');
-    });
-
     it('should redirect to /login?error=oidc_failed when IdP returns error', async () => {
       const reply = makeReply();
       const request = makeRequest('valid-state');

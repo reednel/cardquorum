@@ -73,7 +73,12 @@ describe('AuthService', () => {
       credentialRepo.findCredentialByUserId.mockResolvedValue(passwordHash);
 
       const result = await service.login({ username: 'alice', password: 'password' });
-      expect(result.user).toEqual({ userId: 1, displayName: 'Alice', authMethod: 'basic' });
+      expect(result.user).toEqual({
+        userId: 1,
+        username: 'alice',
+        displayName: 'Alice',
+        authMethod: 'basic',
+      });
       expect(result.sessionId).toBe('session-id');
     });
 

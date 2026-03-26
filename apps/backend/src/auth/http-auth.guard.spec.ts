@@ -7,8 +7,19 @@ describe('HttpAuthGuard', () => {
   let sessionService: jest.Mocked<Pick<SessionService, 'validateSession'>>;
 
   const createdAt = new Date();
-  const aliceSession = { userId: 1, displayName: 'Alice', authMethod: 'basic' as const, createdAt };
-  const aliceIdentity = { userId: 1, displayName: 'Alice', authMethod: 'basic' as const };
+  const aliceSession = {
+    userId: 1,
+    username: 'alice',
+    displayName: 'Alice',
+    authMethod: 'basic' as const,
+    createdAt,
+  };
+  const aliceIdentity = {
+    userId: 1,
+    username: 'alice',
+    displayName: 'Alice',
+    authMethod: 'basic' as const,
+  };
 
   const createContext = (sessionId?: string): ExecutionContext => {
     const request: Record<string, any> = {

@@ -11,8 +11,8 @@ describe('RoomGateway', () => {
   let roomService: RoomService;
   let messageRepo: jest.Mocked<Pick<MessageRepository, 'findByRoomId'>>;
 
-  const aliceIdentity: UserIdentity = { userId: 1, displayName: 'Alice' };
-  const bobIdentity: UserIdentity = { userId: 2, displayName: 'Bob' };
+  const aliceIdentity: UserIdentity = { userId: 1, username: 'alice', displayName: 'Alice' };
+  const bobIdentity: UserIdentity = { userId: 2, username: 'bob', displayName: 'Bob' };
 
   const createMockClient = () => ({ send: jest.fn(), close: jest.fn() }) as unknown as WebSocket;
 

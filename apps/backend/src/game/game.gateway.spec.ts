@@ -15,9 +15,9 @@ describe('GameGateway', () => {
     broadcastToRoom: (roomId: string, event: string, data: unknown) => void;
   };
 
-  const aliceIdentity: UserIdentity = { userId: 1, displayName: 'Alice' };
-  const bobIdentity: UserIdentity = { userId: 2, displayName: 'Bob' };
-  const charlieIdentity: UserIdentity = { userId: 3, displayName: 'Charlie' };
+  const aliceIdentity: UserIdentity = { userId: 1, username: 'alice', displayName: 'Alice' };
+  const bobIdentity: UserIdentity = { userId: 2, username: 'bob', displayName: 'Bob' };
+  const charlieIdentity: UserIdentity = { userId: 3, username: 'charlie', displayName: 'Charlie' };
 
   const createMockClient = () => ({ send: jest.fn(), close: jest.fn() }) as unknown as WebSocket;
 

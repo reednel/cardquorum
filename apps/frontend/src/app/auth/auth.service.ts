@@ -64,6 +64,13 @@ export class AuthService {
     );
   }
 
+  oidcRegister(req: { username: string; displayName: string }): Observable<void> {
+    return this.http.put('/api/auth/oidc/register', req).pipe(
+      tap(() => this.loadCredentials()),
+      map(() => undefined),
+    );
+  }
+
   /** Called by UserService when display name is updated via /api/users/me. */
   updateDisplayName(displayName: string): void {
     const current = this._user();

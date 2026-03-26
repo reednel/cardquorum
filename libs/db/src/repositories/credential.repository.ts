@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { and, eq, isNull } from 'drizzle-orm';
 import { userCredentials, users } from '../schema';
 import { DbInstance } from '../types';
@@ -53,16 +54,28 @@ export class CredentialRepository {
     const existing = await this.findUserByCredential('oidc', oidcSubject);
     if (existing) return existing;
 
-    const [user] = await this.db
-      .insert(users)
-      .values({ username: oidcSubject, displayName })
-      .returning();
+    const username = await this.generateUniqueUsername();
+
+    const [user] = await this.db.insert(users).values({ username, displayName }).returning();
 
     await this.db
       .insert(userCredentials)
       .values({ userId: user.id, method: 'oidc', credential: oidcSubject });
 
     return user;
+  }
+
+  private async generateUniqueUsername(): Promise<string> {
+    for (let i = 0; i < 10; i++) {
+      const candidate = 'user_' + randomBytes(4).toString('hex');
+      const rows = await this.db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.username, candidate))
+        .limit(1);
+      if (rows.length === 0) return candidate;
+    }
+    throw new Error('Failed to generate unique username');
   }
 
   async deleteAllByUserId(userId: number) {

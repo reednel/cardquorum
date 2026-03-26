@@ -12,9 +12,13 @@ export class SessionService {
     return id;
   }
 
-  async validateSession(
-    sessionId: string,
-  ): Promise<{ userId: number; displayName: string; authMethod: string; createdAt: Date } | null> {
+  async validateSession(sessionId: string): Promise<{
+    userId: number;
+    username: string;
+    displayName: string;
+    authMethod: string;
+    createdAt: Date;
+  } | null> {
     return this.sessionRepo.findValidSession(sessionId);
   }
 

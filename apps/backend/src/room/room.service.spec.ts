@@ -15,8 +15,8 @@ describe('RoomService', () => {
   };
   let mockFriendService: { areFriends: jest.Mock; findFriendIds: jest.Mock };
 
-  const alice: UserIdentity = { userId: 1, displayName: 'Alice' };
-  const bob: UserIdentity = { userId: 2, displayName: 'Bob' };
+  const alice: UserIdentity = { userId: 1, username: 'alice', displayName: 'Alice' };
+  const bob: UserIdentity = { userId: 2, username: 'bob', displayName: 'Bob' };
 
   const createMockClient = () => ({ send: jest.fn(), close: jest.fn() }) as unknown as WebSocket;
 

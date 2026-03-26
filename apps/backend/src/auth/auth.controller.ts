@@ -7,6 +7,7 @@ import {
   Get,
   Logger,
   Post,
+  Put,
   Query,
   Req,
   Res,
@@ -66,6 +67,18 @@ export class AuthController {
     const { sessionId, user } = await this.authService.login(dto);
     reply.header('Set-Cookie', buildSessionCookie(sessionId, this.nodeEnv));
     return user;
+  }
+
+  @UseGuards(HttpAuthGuard)
+  @Put('oidc/register')
+  async oidcRegister(
+    @Body() dto: { username: string; displayName: string },
+    @Req() request: FastifyRequest,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ): Promise<void> {
+    const user = (request as any)[REQUEST_USER_KEY];
+    await this.authService.oidcRegister(user.userId, dto.username, dto.displayName);
+    reply.status(302).redirect('/');
   }
 
   @Get('oidc/login')
@@ -142,9 +155,16 @@ export class AuthController {
         }
       } else {
         // Existing login flow
-        const { sessionId } = await this.authService.oidcCallback(code);
-        const redirectUrl =
-          actionSuffix === 'delete-account' ? '/account?action=delete-account' : '/';
+        const { sessionId, user } = await this.authService.oidcCallback(code);
+
+        let redirectUrl = null;
+        if (actionSuffix === 'delete-account') {
+          redirectUrl = '/account?action=delete-account';
+        } else if (user.username.startsWith('user_')) {
+          redirectUrl = `/register/oidc`;
+        } else {
+          redirectUrl = '/';
+        }
         reply.header('Set-Cookie', [
           buildSessionCookie(sessionId, this.nodeEnv),
           buildClearOidcStateCookie(this.nodeEnv),

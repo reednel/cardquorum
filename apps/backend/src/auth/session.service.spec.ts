@@ -39,6 +39,7 @@ describe('SessionService', () => {
     it('should return identity for valid session', async () => {
       sessionRepo.findValidSession.mockResolvedValue({
         userId: 1,
+        username: 'alice',
         displayName: 'Alice',
         authMethod: 'basic',
         createdAt: new Date(),

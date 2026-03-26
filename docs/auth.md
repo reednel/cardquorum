@@ -28,7 +28,7 @@ AUTH_STRATEGIES=basic
 
 1. Register: `POST /api/auth/register` with `{ username, displayName, password }`
 2. Login: `POST /api/auth/login` with `{ username, password }`
-3. Both return `UserIdentity` (`{ userId, displayName }`) in the response body and set the session cookie
+3. Both return `UserIdentity` (`{ userId, username, displayName }`) in the response body and set the session cookie
 4. Check identity: `GET /api/auth/me` (reads session cookie)
 5. Logout: `POST /api/auth/logout` (deletes session, clears cookie)
 

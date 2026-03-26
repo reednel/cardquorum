@@ -20,6 +20,15 @@ export class UserRepository {
     return row;
   }
 
+  async updateUsername(id: number, username: string) {
+    const [row] = await this.db
+      .update(users)
+      .set({ username, updatedAt: sql`now()` })
+      .where(eq(users.id, id))
+      .returning();
+    return row ?? null;
+  }
+
   async updateDisplayName(id: number, displayName: string) {
     const [row] = await this.db
       .update(users)

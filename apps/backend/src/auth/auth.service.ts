@@ -97,6 +97,10 @@ export class AuthService {
       throw new BadRequestException('Username prefix "deleted_" is reserved');
     }
 
+    if (dto.username.toLowerCase().startsWith('user_')) {
+      throw new BadRequestException('Username prefix "user_" is reserved');
+    }
+
     const existing = await this.userRepo.findByUsername(dto.username);
     if (existing) {
       throw new ConflictException('Username already taken');
@@ -113,8 +117,32 @@ export class AuthService {
     const sessionId = await this.sessionService.createSession(user.id, 'basic');
     return {
       sessionId,
-      user: { userId: user.id, displayName: user.displayName, authMethod: 'basic' as const },
+      user: {
+        userId: user.id,
+        username: user.username,
+        displayName: user.displayName,
+        authMethod: 'basic' as const,
+      },
     };
+  }
+
+  async oidcRegister(userId: number, username: string, displayName: string): Promise<void> {
+    this.requireStrategy('oidc');
+
+    if (username.toLowerCase().startsWith('deleted_')) {
+      throw new BadRequestException('Username prefix "deleted_" is reserved');
+    }
+    if (username.toLowerCase().startsWith('user_')) {
+      throw new BadRequestException('Username prefix "user_" is reserved');
+    }
+
+    const existing = await this.userRepo.findByUsername(username);
+    if (existing) {
+      throw new ConflictException('Username already taken');
+    }
+
+    await this.userRepo.updateUsername(userId, username);
+    await this.userRepo.updateDisplayName(userId, displayName);
   }
 
   async login(dto: { username: string; password: string }): Promise<AuthResult> {
@@ -138,7 +166,12 @@ export class AuthService {
     const sessionId = await this.sessionService.createSession(user.id, 'basic');
     return {
       sessionId,
-      user: { userId: user.id, displayName: user.displayName, authMethod: 'basic' as const },
+      user: {
+        userId: user.id,
+        username: user.username,
+        displayName: user.displayName,
+        authMethod: 'basic' as const,
+      },
     };
   }
 
@@ -156,7 +189,12 @@ export class AuthService {
     const sessionId = await this.sessionService.createSession(user.id, 'oidc');
     return {
       sessionId,
-      user: { userId: user.id, displayName: user.displayName, authMethod: 'oidc' as const },
+      user: {
+        userId: user.id,
+        username: user.username,
+        displayName: user.displayName,
+        authMethod: 'oidc' as const,
+      },
     };
   }
 

@@ -19,6 +19,7 @@ export class SessionRepository {
     const rows = await this.db
       .select({
         userId: users.id,
+        username: users.username,
         displayName: users.displayName,
         authMethod: sessions.authMethod,
         createdAt: sessions.createdAt,

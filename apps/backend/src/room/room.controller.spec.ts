@@ -22,8 +22,8 @@ describe('RoomController', () => {
   >;
   let gameService: jest.Mocked<Pick<GameService, 'forceCleanupRoom'>>;
 
-  const alice: UserIdentity = { userId: 1, displayName: 'Alice' };
-  const bob: UserIdentity = { userId: 2, displayName: 'Bob' };
+  const alice: UserIdentity = { userId: 1, username: 'alice', displayName: 'Alice' };
+  const bob: UserIdentity = { userId: 2, username: 'bob', displayName: 'Bob' };
 
   const makeRequest = (user: UserIdentity) => ({ [REQUEST_USER_KEY]: user }) as any;
 
