@@ -17,6 +17,7 @@ import { ConfigService } from '@nestjs/config';
 import { Throttle } from '@nestjs/throttler';
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { CredentialsResponse, SessionIdentity, StrategiesResponse } from '@cardquorum/shared';
+import { LoginDto, PasswordDto, RegisterDto } from './auth.dto';
 import { AuthService } from './auth.service';
 import {
   buildClearOidcStateCookie,
@@ -48,7 +49,7 @@ export class AuthController {
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @Post('register')
   async register(
-    @Body() dto: { username: string; password: string },
+    @Body() dto: RegisterDto,
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<SessionIdentity> {
     const { sessionId, user } = await this.authService.register(dto);
@@ -59,7 +60,7 @@ export class AuthController {
   @Throttle({ default: { ttl: 60_000, limit: 10 } })
   @Post('login')
   async login(
-    @Body() dto: { username: string; password: string },
+    @Body() dto: LoginDto,
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<SessionIdentity> {
     const { sessionId, user } = await this.authService.login(dto);
@@ -200,7 +201,7 @@ export class AuthController {
   @UseGuards(HttpAuthGuard)
   @Post('credentials/basic')
   async linkBasicCredential(
-    @Body() dto: { password: string },
+    @Body() dto: PasswordDto,
     @Req() request: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<void> {
@@ -212,7 +213,7 @@ export class AuthController {
   @UseGuards(HttpAuthGuard)
   @Delete('credentials/basic')
   async unlinkBasicCredential(
-    @Body() dto: { password: string },
+    @Body() dto: PasswordDto,
     @Req() request: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<void> {

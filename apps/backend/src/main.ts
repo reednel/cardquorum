@@ -1,3 +1,4 @@
+import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { WsAdapter } from '@nestjs/platform-ws';
@@ -13,6 +14,9 @@ async function bootstrap() {
   app.useLogger(app.get(Logger));
   app.useWebSocketAdapter(new WsAdapter(app));
   app.setGlobalPrefix('api');
+  app.useGlobalPipes(
+    new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }),
+  );
   await registerHelmet(app);
   await app.register(fastifyCookie);
   const port = process.env.PORT || 3000;

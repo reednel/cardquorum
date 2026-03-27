@@ -17,9 +17,7 @@
 3. Room list should show the join button in addition to the settings button, for owners
 4. Invite system for rooms
 5. Blocking other users - hide friend invites, hide rooms they own (?)
-6. Verify all inputs are properly escaped/secured in backend (and frontend).
-7. Identify rate limiting needs and options
-8. Call out password for database string
+6. Call out password for database string
 
 ## Long Term
 
