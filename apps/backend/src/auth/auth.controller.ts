@@ -15,12 +15,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { FastifyReply, FastifyRequest } from 'fastify';
-import {
-  CredentialsResponse,
-  SessionIdentity,
-  StrategiesResponse,
-  UserIdentity,
-} from '@cardquorum/shared';
+import { CredentialsResponse, SessionIdentity, StrategiesResponse } from '@cardquorum/shared';
 import { AuthService } from './auth.service';
 import {
   buildClearOidcStateCookie,
@@ -53,7 +48,7 @@ export class AuthController {
   async register(
     @Body() dto: { username: string; password: string },
     @Res({ passthrough: true }) reply: FastifyReply,
-  ): Promise<UserIdentity> {
+  ): Promise<SessionIdentity> {
     const { sessionId, user } = await this.authService.register(dto);
     reply.header('Set-Cookie', buildSessionCookie(sessionId, this.nodeEnv));
     return user;
@@ -63,7 +58,7 @@ export class AuthController {
   async login(
     @Body() dto: { username: string; password: string },
     @Res({ passthrough: true }) reply: FastifyReply,
-  ): Promise<UserIdentity> {
+  ): Promise<SessionIdentity> {
     const { sessionId, user } = await this.authService.login(dto);
     reply.header('Set-Cookie', buildSessionCookie(sessionId, this.nodeEnv));
     return user;
@@ -74,11 +69,15 @@ export class AuthController {
   async oidcRegister(
     @Body() dto: { username: string },
     @Req() request: FastifyRequest,
-    @Res({ passthrough: true }) reply: FastifyReply,
-  ): Promise<void> {
+  ): Promise<SessionIdentity> {
     const user = (request as any)[REQUEST_USER_KEY];
     await this.authService.oidcRegister(user.userId, dto.username);
-    reply.status(302).redirect('/');
+    return {
+      userId: user.userId,
+      username: dto.username,
+      displayName: null,
+      authMethod: 'oidc',
+    };
   }
 
   @Get('oidc/login')
@@ -89,8 +88,8 @@ export class AuthController {
     const nonce = randomBytes(32).toString('base64url');
     // Encode action in state using ':' delimiter (safe — base64url doesn't contain ':')
     const statePayload = action ? `${nonce}:${action}` : nonce;
-    const prompt = action === 'delete-account' ? 'login' : undefined;
-    const url = this.authService.getOidcAuthorizationUrl(statePayload, prompt);
+    const forceReauth = action === 'delete-account' || action === 'unlink';
+    const url = this.authService.getOidcAuthorizationUrl(statePayload, forceReauth);
     reply.header('Set-Cookie', buildOidcStateCookie(statePayload, this.nodeEnv));
     reply.status(302).redirect(url);
   }

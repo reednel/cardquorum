@@ -23,7 +23,7 @@ import { AuthService } from '../auth/auth.service';
         [attr.aria-expanded]="showMenu()"
         aria-haspopup="true"
       >
-        {{ auth.user()?.displayName }}
+        {{ auth.user()?.displayName ?? auth.user()?.username }}
       </button>
 
       @if (showMenu()) {

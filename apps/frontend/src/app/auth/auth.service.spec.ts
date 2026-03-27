@@ -208,7 +208,7 @@ describe('AuthService', () => {
   });
 
   describe('oidcRegister', () => {
-    it('should PATCH and refresh credentials', () => {
+    it('should PATCH and set user', () => {
       let completed = false;
       service.oidcRegister({ username: 'newname' }).subscribe(() => {
         completed = true;
@@ -217,12 +217,11 @@ describe('AuthService', () => {
       const req = httpTesting.expectOne('/api/auth/oidc/register');
       expect(req.request.method).toBe('PATCH');
       expect(req.request.body).toEqual({ username: 'newname' });
-      req.flush(null);
-
-      // Should trigger a credentials refresh
-      httpTesting.expectOne('/api/auth/credentials').flush({ methods: ['oidc'] });
+      req.flush({ userId: 1, username: 'newname', displayName: null, authMethod: 'oidc' });
 
       expect(completed).toBe(true);
+      expect(service.user()?.username).toBe('newname');
+      expect(service.user()?.authMethod).toBe('oidc');
     });
   });
 

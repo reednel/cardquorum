@@ -8,8 +8,8 @@ import {
   CredentialsResponse,
   LoginRequest,
   RegisterRequest,
+  SessionIdentity,
   StrategiesResponse,
-  UserIdentity,
 } from '@cardquorum/shared';
 import { WebSocketService } from '../websocket.service';
 
@@ -19,7 +19,7 @@ export class AuthService {
   private readonly router = inject(Router);
   private readonly ws = inject(WebSocketService);
 
-  private readonly _user = signal<UserIdentity | null>(null);
+  private readonly _user = signal<SessionIdentity | null>(null);
   readonly user = this._user.asReadonly();
   readonly isAuthenticated = computed(() => this._user() !== null);
 
@@ -34,7 +34,7 @@ export class AuthService {
     this.loadStrategies();
     this.ws.onAuthFailure(() => this.logout());
     return firstValueFrom(
-      this.http.get<UserIdentity>('/api/auth/me').pipe(
+      this.http.get<SessionIdentity>('/api/auth/me').pipe(
         tap((user) => this._user.set(user)),
         map(() => undefined),
       ),
@@ -51,22 +51,22 @@ export class AuthService {
   }
 
   login(req: LoginRequest): Observable<void> {
-    return this.http.post<UserIdentity>('/api/auth/login', req).pipe(
+    return this.http.post<SessionIdentity>('/api/auth/login', req).pipe(
       tap((user) => this._user.set(user)),
       map(() => undefined),
     );
   }
 
   register(req: RegisterRequest): Observable<void> {
-    return this.http.post<UserIdentity>('/api/auth/register', req).pipe(
+    return this.http.post<SessionIdentity>('/api/auth/register', req).pipe(
       tap((user) => this._user.set(user)),
       map(() => undefined),
     );
   }
 
   oidcRegister(req: { username: string }): Observable<void> {
-    return this.http.patch('/api/auth/oidc/register', req).pipe(
-      tap(() => this.loadCredentials()),
+    return this.http.patch<SessionIdentity>('/api/auth/oidc/register', req).pipe(
+      tap((user) => this._user.set(user)),
       map(() => undefined),
     );
   }

@@ -309,7 +309,7 @@ import { UserService } from './user.service';
 
           @if (confirmingDelete()) {
             <div class="mt-4 space-y-3">
-              @if (authMethod() === 'basic') {
+              @if (hasBasicCredential()) {
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Enter your password to confirm
                   <input
@@ -324,7 +324,7 @@ import { UserService } from './user.service';
                 </label>
               } @else {
                 <p class="text-sm text-gray-600 dark:text-gray-400">
-                  You will be redirected to your identity provider to re-authenticate.
+                  This action cannot be undone. Are you sure?
                 </p>
               }
               @if (deleteError()) {
@@ -338,10 +338,10 @@ import { UserService } from './user.service';
                   class="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white
                          hover:bg-red-700 disabled:opacity-50"
                 >
-                  @if (authMethod() === 'basic') {
+                  @if (hasBasicCredential()) {
                     Permanently Delete
                   } @else {
-                    Re-authenticate & Delete
+                    Confirm & Delete
                   }
                 </button>
                 <button
@@ -379,10 +379,7 @@ export class AccountPage implements OnInit {
   protected readonly USERNAME_MAX = USERNAME_MAX;
   protected readonly DISPLAY_NAME_MAX = DISPLAY_NAME_MAX;
 
-  protected readonly authMethod = computed(() => {
-    const user = this.auth.user();
-    return user && 'authMethod' in user ? (user as any).authMethod : 'basic';
-  });
+  protected readonly hasBasicCredential = computed(() => this.auth.credentials().includes('basic'));
 
   protected readonly usernameEditing = signal(false);
   protected readonly usernameEditValue = signal('');
@@ -446,8 +443,12 @@ export class AccountPage implements OnInit {
       this.triggerOidcDeletion();
     } else if (params['linked'] === 'oidc') {
       this.successMessage.set('OIDC account linked successfully');
+    } else if (params['linked'] === 'password') {
+      this.successMessage.set('Password login added successfully');
     } else if (params['unlinked'] === 'oidc') {
       this.successMessage.set('OIDC account unlinked successfully');
+    } else if (params['unlinked'] === 'password') {
+      this.successMessage.set('Password login removed successfully');
     } else if (params['error'] === 'oidc_conflict') {
       this.credentialError.set('This OIDC identity is already linked to another account');
     } else if (params['error'] === 'last_credential') {
@@ -552,7 +553,7 @@ export class AccountPage implements OnInit {
   }
 
   protected confirmDelete(): void {
-    if (this.authMethod() === 'oidc') {
+    if (!this.hasBasicCredential()) {
       window.location.href = '/api/auth/oidc/login?action=delete-account';
       return;
     }

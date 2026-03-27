@@ -46,10 +46,7 @@ describe('RegisterOidc', () => {
     const req = httpTesting.expectOne('/api/auth/oidc/register');
     expect(req.request.method).toBe('PATCH');
     expect(req.request.body).toEqual({ username: 'newuser' });
-    req.flush(null);
-
-    // credentials refresh triggered by oidcRegister
-    httpTesting.expectOne('/api/auth/credentials').flush({ methods: ['oidc'] });
+    req.flush({ userId: 1, username: 'newuser', displayName: null, authMethod: 'oidc' });
 
     expect(navigateSpy).toHaveBeenCalledWith(['/']);
   });

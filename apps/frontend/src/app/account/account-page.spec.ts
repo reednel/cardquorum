@@ -48,7 +48,7 @@ describe('AccountPage', () => {
     mockAuthService.linkBasicCredential.mockClear();
     mockAuthService.unlinkBasicCredential.mockClear();
     userSignal.set({ userId: 1, displayName: 'Alice', authMethod: 'basic' });
-    credentialsSignal.set([]);
+    credentialsSignal.set(['basic']);
     strategiesSignal.set(['basic', 'oidc']);
 
     await TestBed.configureTestingModule({
@@ -194,9 +194,10 @@ describe('AccountPage', () => {
     });
   });
 
-  describe('delete account (oidc user)', () => {
+  describe('delete account (oidc-only user)', () => {
     beforeEach(() => {
       userSignal.set({ userId: 1, displayName: 'Alice', authMethod: 'oidc' });
+      credentialsSignal.set(['oidc']);
       profileSignal.set(PROFILE);
       fixture.detectChanges();
     });
@@ -207,9 +208,9 @@ describe('AccountPage', () => {
       fixture.detectChanges();
 
       expect(el.querySelector('[data-testid="delete-password-input"]')).toBeFalsy();
-      expect(el.textContent).toContain('identity provider');
+      expect(el.textContent).toContain('This action cannot be undone');
       expect(el.querySelector('[data-testid="confirm-delete-btn"]')?.textContent).toContain(
-        'Re-authenticate',
+        'Confirm & Delete',
       );
     });
   });

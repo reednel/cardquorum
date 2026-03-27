@@ -197,7 +197,7 @@ export class AuthService {
     };
   }
 
-  getOidcAuthorizationUrl(state: string, prompt?: string): string {
+  getOidcAuthorizationUrl(state: string, forceReauth = false): string {
     this.requireStrategy('oidc');
     const params = new URLSearchParams({
       response_type: 'code',
@@ -206,8 +206,9 @@ export class AuthService {
       scope: 'openid profile email',
       state,
     });
-    if (prompt) {
-      params.set('prompt', prompt);
+    if (forceReauth) {
+      params.set('max_age', '0');
+      params.set('prompt', 'login');
     }
     return `${this.authorizationEndpoint}?${params}`;
   }

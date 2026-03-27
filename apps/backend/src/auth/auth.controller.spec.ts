@@ -66,11 +66,15 @@ describe('AuthController', () => {
         redirect: jest.fn(),
       };
 
-      await controller.oidcRegister({ username: 'alice' }, request as any, reply as any);
+      const result = await controller.oidcRegister({ username: 'alice' }, request as any);
 
       expect(authService['oidcRegister']).toHaveBeenCalledWith(1, 'alice');
-      expect(reply.status).toHaveBeenCalledWith(302);
-      expect(reply.redirect).toHaveBeenCalledWith('/');
+      expect(result).toEqual({
+        userId: 1,
+        username: 'alice',
+        displayName: null,
+        authMethod: 'oidc',
+      });
     });
   });
 
@@ -157,7 +161,7 @@ describe('AuthController', () => {
       );
       expect(authService['getOidcAuthorizationUrl']).toHaveBeenCalledWith(
         expect.any(String),
-        undefined,
+        false,
       );
     });
   });
