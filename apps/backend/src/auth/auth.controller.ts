@@ -14,6 +14,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Throttle } from '@nestjs/throttler';
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { CredentialsResponse, SessionIdentity, StrategiesResponse } from '@cardquorum/shared';
 import { AuthService } from './auth.service';
@@ -44,6 +45,7 @@ export class AuthController {
     return { strategies: this.authService.enabledStrategies };
   }
 
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @Post('register')
   async register(
     @Body() dto: { username: string; password: string },
@@ -54,6 +56,7 @@ export class AuthController {
     return user;
   }
 
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
   @Post('login')
   async login(
     @Body() dto: { username: string; password: string },
