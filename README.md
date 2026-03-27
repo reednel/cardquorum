@@ -12,7 +12,7 @@ Requires [Node.js](https://nodejs.org/) (v20+), [pnpm](https://pnpm.io/), and [D
 
 ```sh
 pnpm install
-docker compose -f compose.dev.yml up -d # starts Postgres and Redis
+docker compose -f compose.dev.yml up -d # starts Postgres
 cp .env.template .env                   # then fill in values
 ```
 
@@ -72,5 +72,4 @@ We owe thanks to all the projects that make CardQuorum run. (not that it runs ri
 - [Nx](https://github.com/nrwl/nx)
 - [Playwright](https://github.com/microsoft/playwright)
 - [Postgres](https://github.com/postgres)
-- [Redis](https://github.com/redis)
 - [Tailwind](https://github.com/tailwindlabs)

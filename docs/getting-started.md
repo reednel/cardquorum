@@ -25,14 +25,13 @@
 
    ```env
    DATABASE_URL=postgresql://cardquorum:cardquorum@localhost:5432/cardquorum
-   REDIS_URL=redis://localhost:6379
    AUTH_STRATEGIES=basic
    LOG_LEVEL=debug
    ```
 
    See [auth.md](auth.md) for OIDC configuration when `AUTH_STRATEGIES` includes `oidc`.
 
-3. **Start Postgres and Redis:**
+3. **Start Postgres:**
 
    ```sh
    docker compose -f compose.dev.yml up -d
@@ -54,7 +53,7 @@
 
 ## Verifying Everything Works
 
-- **Health check:** `curl http://localhost:3000/api/healthz` should return `{"status":"ok","info":{...}}` with both database and Redis showing `"up"`.
+- **Health check:** `curl http://localhost:3000/api/healthz` should return `{"status":"ok","info":{...}}` with database showing `"up"`.
 - **Build:** `pnpm nx run-many -t build`
 - **Test:** `pnpm nx run-many -t test`
 - **Lint:** `pnpm nx run-many -t lint`

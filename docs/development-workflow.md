@@ -30,7 +30,6 @@ Required variables (validated at backend startup via Joi):
 | Variable       | Required | Default       | Description                            |
 | -------------- | -------- | ------------- | -------------------------------------- |
 | `DATABASE_URL` | Yes      | —             | Postgres connection string             |
-| `REDIS_URL`    | Yes      | —             | Redis connection string                |
 | `LOG_LEVEL`    | No       | `info`        | `debug`, `info`, `warn`, or `error`    |
 | `PORT`         | No       | `3000`        | Backend listen port                    |
 | `NODE_ENV`     | No       | `development` | `development`, `production`, or `test` |
@@ -52,7 +51,7 @@ If a commit is rejected, fix the issues and commit again. Don't skip hooks with 
 4. Import the module in `apps/backend/src/app/app.module.ts`.
 5. Write tests alongside the source files (e.g. `my.service.spec.ts`).
 
-Global modules (DrizzleModule, RedisModule) are available everywhere without explicit imports.
+Global modules (DrizzleModule) are available everywhere without explicit imports.
 
 ## Adding Shared Contracts
 
@@ -93,4 +92,4 @@ pnpm nx test backend
 pnpm nx test shared
 ```
 
-Backend tests mock infrastructure (Drizzle, Redis) and test business logic directly. The gateway spec instantiates the gateway class with mock dependencies rather than bootstrapping the full NestJS app.
+Backend tests mock infrastructure (Drizzle) and test business logic directly. The gateway spec instantiates the gateway class with mock dependencies rather than bootstrapping the full NestJS app.

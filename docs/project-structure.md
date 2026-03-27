@@ -14,7 +14,7 @@ cardquorum/
 │   ├── engine/            # Room management, reusable game infra
 │   └── games/
 │       └── sheepshead/    # Sheepshead game plugin (complete)
-├── compose.dev.yml        # Postgres + Redis for local dev
+├── compose.dev.yml        # Postgres for local dev
 ├── .env.template          # Environment variable template
 └── docs/                  # You are here
 ```
@@ -57,14 +57,13 @@ Key exports:
 
 | Module          | Global? | Purpose                                                          |
 | --------------- | ------- | ---------------------------------------------------------------- |
-| `ConfigModule`  | Yes     | Validates env vars at startup (DATABASE_URL, REDIS_URL, etc.)    |
+| `ConfigModule`  | Yes     | Validates env vars at startup (DATABASE_URL, etc.)               |
 | `LoggerModule`  | Yes     | Structured logging via pino (pretty in dev, JSON in prod)        |
 | `DrizzleModule` | Yes     | Provides `DRIZZLE` token — a typed Drizzle instance for Postgres |
-| `RedisModule`   | Yes     | Provides `REDIS` token (ioredis) and `RedisPubSubService`        |
-| `HealthModule`  | No      | `GET /api/healthz` — checks Postgres and Redis                   |
+| `HealthModule`  | No      | `GET /api/healthz` — checks Postgres                             |
 | `AuthModule`    | No      | Register/login, session management, HTTP + WS auth guards        |
 | `RoomModule`    | No      | Room CRUD REST API, wraps engine's `RoomManager`                 |
-| `ChatModule`    | No      | Chat gateway, message persistence, Redis pub/sub broadcast       |
+| `ChatModule`    | No      | Chat gateway, message persistence                                |
 | `WsModule`      | No      | WebSocket connection lifecycle, validation pipe                  |
 | `GameModule`    | No      | Game session lifecycle, game gateway                             |
 

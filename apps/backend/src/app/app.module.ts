@@ -8,7 +8,6 @@ import { DrizzleModule } from '../drizzle/drizzle.module';
 import { FriendModule } from '../friend/friend.module';
 import { GameModule } from '../game/game.module';
 import { HealthModule } from '../health/health.module';
-import { RedisModule } from '../redis/redis.module';
 import { UserModule } from '../user/user.module';
 import { WsModule } from '../ws/ws.module';
 import { AppController } from './app.controller';
@@ -20,7 +19,6 @@ import { AppService } from './app.service';
       isGlobal: true,
       validationSchema: Joi.object({
         DATABASE_URL: Joi.string().uri().required(),
-        REDIS_URL: Joi.string().uri().required(),
         LOG_LEVEL: Joi.string().valid('debug', 'info', 'warn', 'error').default('info'),
         PORT: Joi.number().default(3000),
         NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
@@ -79,7 +77,6 @@ import { AppService } from './app.service';
       }),
     }),
     DrizzleModule,
-    RedisModule,
     HealthModule,
     AuthModule,
     UserModule,
