@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
@@ -49,7 +49,7 @@ import { AuthService } from './auth.service';
             </p>
           </div>
 
-          <div class="mb-6">
+          <div class="mb-4">
             <label
               for="password"
               class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
@@ -69,9 +69,29 @@ import { AuthService } from './auth.service';
             </p>
           </div>
 
+          <div class="mb-6">
+            <label
+              for="confirmPassword"
+              class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Confirm Password
+            </label>
+            <input
+              id="confirmPassword"
+              formControlName="confirmPassword"
+              type="password"
+              autocomplete="new-password"
+              required
+              class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+            />
+            @if (passwordMismatch()) {
+              <p class="mt-1 text-xs text-red-600 dark:text-red-400">Passwords do not match</p>
+            }
+          </div>
+
           <button
             type="submit"
-            [disabled]="form.invalid || submitting()"
+            [disabled]="form.invalid || passwordMismatch() || submitting()"
             class="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:bg-gray-400 disabled:text-gray-200"
           >
             {{ submitting() ? 'Registering...' : 'Register' }}
@@ -115,16 +135,28 @@ export class Register {
       '',
       [Validators.required, Validators.minLength(PASSWORD_MIN), Validators.maxLength(PASSWORD_MAX)],
     ],
+    confirmPassword: ['', Validators.required],
+  });
+
+  protected readonly passwordMismatch = computed(() => {
+    const { password, confirmPassword } = this.form.getRawValue();
+    return confirmPassword.length > 0 && password !== confirmPassword;
   });
 
   protected onSubmit(): void {
     if (this.form.invalid) return;
 
+    const { password, confirmPassword } = this.form.getRawValue();
+    if (password !== confirmPassword) {
+      this.errorMessage.set('Passwords do not match');
+      return;
+    }
+
     this.errorMessage.set(null);
     this.submitting.set(true);
 
     this.auth
-      .register(this.form.getRawValue())
+      .register({ username: this.form.getRawValue().username, password })
       .pipe(finalize(() => this.submitting.set(false)))
       .subscribe({
         next: () => this.router.navigate(['/']),

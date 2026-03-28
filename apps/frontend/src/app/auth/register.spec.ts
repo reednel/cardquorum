@@ -27,12 +27,13 @@ describe('Register', () => {
     expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it('should render register form with two fields', () => {
+  it('should render register form with three fields', () => {
     const fixture = TestBed.createComponent(Register);
     fixture.detectChanges();
     const el: HTMLElement = fixture.nativeElement;
     expect(el.querySelector('input#username')).toBeTruthy();
     expect(el.querySelector('input#password')).toBeTruthy();
+    expect(el.querySelector('input#confirmPassword')).toBeTruthy();
   });
 
   it('should call register and navigate on success', () => {
@@ -43,6 +44,7 @@ describe('Register', () => {
     fixture.componentInstance['form'].setValue({
       username: 'bobuser',
       password: 'password123',
+      confirmPassword: 'password123',
     });
     fixture.componentInstance['onSubmit']();
 
@@ -59,6 +61,7 @@ describe('Register', () => {
     fixture.componentInstance['form'].setValue({
       username: 'takenuser',
       password: 'password123',
+      confirmPassword: 'password123',
     });
     fixture.componentInstance['onSubmit']();
 

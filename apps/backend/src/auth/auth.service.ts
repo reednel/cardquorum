@@ -261,6 +261,20 @@ export class AuthService {
     return methods as AuthMethod[];
   }
 
+  async changePassword(
+    userId: number,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<void> {
+    this.requireStrategy('basic');
+    const hash = await this.credentialRepo.findCredentialByUserId(userId, 'basic');
+    if (!hash || !(await bcrypt.compare(currentPassword, hash))) {
+      throw new UnauthorizedException('Invalid password');
+    }
+    const newHash = await bcrypt.hash(newPassword, 10);
+    await this.credentialRepo.upsertCredential(userId, 'basic', newHash);
+  }
+
   async verifyBasicCredential(userId: number, password: string): Promise<void> {
     const hash = await this.credentialRepo.findCredentialByUserId(userId, 'basic');
     if (!hash || !(await bcrypt.compare(password, hash))) {

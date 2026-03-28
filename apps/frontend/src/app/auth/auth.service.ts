@@ -5,6 +5,7 @@ import { firstValueFrom, map, Observable, tap } from 'rxjs';
 import {
   AuthMethod,
   AuthStrategy,
+  ChangePasswordRequest,
   CredentialsResponse,
   LoginRequest,
   RegisterRequest,
@@ -97,6 +98,11 @@ export class AuthService {
       tap(() => this.loadCredentials()),
       map(() => undefined),
     );
+  }
+
+  changePassword(currentPassword: string, newPassword: string): Observable<void> {
+    const body: ChangePasswordRequest = { currentPassword, newPassword };
+    return this.http.patch('/api/auth/credentials/basic', body).pipe(map(() => undefined));
   }
 
   unlinkBasicCredential(password: string): Observable<void> {

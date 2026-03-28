@@ -39,6 +39,7 @@ export type {
   SessionIdentity,
   StrategiesResponse,
   UnlinkBasicCredentialRequest,
+  ChangePasswordRequest,
 } from './lib/auth-types';
 export type { GameType, GameSessionStatus } from './lib/game-types';
 export type {

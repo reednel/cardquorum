@@ -17,7 +17,7 @@ import { ConfigService } from '@nestjs/config';
 import { Throttle } from '@nestjs/throttler';
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { CredentialsResponse, SessionIdentity, StrategiesResponse } from '@cardquorum/shared';
-import { LoginDto, PasswordDto, RegisterDto } from './auth.dto';
+import { ChangePasswordDto, LoginDto, PasswordDto, RegisterDto } from './auth.dto';
 import { AuthService } from './auth.service';
 import {
   buildClearOidcStateCookie,
@@ -207,6 +207,18 @@ export class AuthController {
   ): Promise<void> {
     const user = (request as any)[REQUEST_USER_KEY];
     await this.authService.linkBasicCredential(user.userId, dto.password);
+    reply.status(204).send();
+  }
+
+  @UseGuards(HttpAuthGuard)
+  @Patch('credentials/basic')
+  async changePassword(
+    @Body() dto: ChangePasswordDto,
+    @Req() request: FastifyRequest,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ): Promise<void> {
+    const user = (request as any)[REQUEST_USER_KEY];
+    await this.authService.changePassword(user.userId, dto.currentPassword, dto.newPassword);
     reply.status(204).send();
   }
 

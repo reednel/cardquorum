@@ -224,7 +224,7 @@ describe('AccountPage', () => {
     it('shows linked accounts section after profile loads', () => {
       credentialsSignal.set(['basic']);
       fixture.detectChanges();
-      expect(el.textContent).toContain('Linked Accounts');
+      expect(el.textContent).toContain('Credentials');
     });
 
     it('shows password as linked when user has basic credential', () => {
@@ -249,9 +249,14 @@ describe('AccountPage', () => {
       expect(el.querySelector('[data-testid="link-oidc-btn"]')).toBeFalsy();
     });
 
-    it('shows set password form when user has only oidc and basic is enabled', () => {
+    it('shows link button then expands to set password form when user has only oidc and basic is enabled', () => {
       credentialsSignal.set(['oidc']);
       strategiesSignal.set(['basic', 'oidc']);
+      fixture.detectChanges();
+      expect(el.querySelector('[data-testid="link-basic-password"]')).toBeFalsy();
+      const linkBtn = el.querySelector<HTMLButtonElement>('[data-testid="link-basic-expand-btn"]');
+      expect(linkBtn).toBeTruthy();
+      linkBtn!.click();
       fixture.detectChanges();
       expect(el.querySelector('[data-testid="link-basic-password"]')).toBeTruthy();
     });

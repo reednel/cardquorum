@@ -8,7 +8,14 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
-import { DISPLAY_NAME_MAX, isValidUsername, USERNAME_MAX, USERNAME_MIN } from '@cardquorum/shared';
+import {
+  DISPLAY_NAME_MAX,
+  isValidUsername,
+  PASSWORD_MAX,
+  PASSWORD_MIN,
+  USERNAME_MAX,
+  USERNAME_MIN,
+} from '@cardquorum/shared';
 import { AuthService } from '../auth/auth.service';
 import { UserService } from './user.service';
 
@@ -152,7 +159,7 @@ import { UserService } from './user.service';
           class="mt-8 border-t border-gray-200 pt-8 dark:border-gray-700"
           data-testid="linked-accounts"
         >
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Linked Accounts</h2>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Credentials</h2>
 
           @if (successMessage()) {
             <p class="mt-2 text-sm text-green-600 dark:text-green-400">{{ successMessage() }}</p>
@@ -163,18 +170,16 @@ import { UserService } from './user.service';
 
           <div class="mt-4 space-y-4">
             <!-- Password credential -->
-            @if (strategies().includes('basic') || hasBasic()) {
+            @if (hasBasic()) {
               <div
                 class="flex items-center justify-between rounded-md border border-gray-200
                         px-4 py-3 dark:border-gray-700"
               >
                 <div>
                   <span class="font-medium text-gray-900 dark:text-gray-100">Password</span>
-                  @if (hasBasic()) {
-                    <span class="ml-2 text-sm text-green-600 dark:text-green-400">Linked</span>
-                  }
+                  <span class="ml-2 text-sm text-green-600 dark:text-green-400">Linked</span>
                 </div>
-                @if (hasBasic() && canRemoveBasic()) {
+                @if (canRemoveBasic()) {
                   @if (confirmingUnlinkBasic()) {
                     <div class="flex items-center gap-2">
                       <input
@@ -218,9 +223,95 @@ import { UserService } from './user.service';
               @if (unlinkBasicError()) {
                 <p class="text-sm text-red-600 dark:text-red-400">{{ unlinkBasicError() }}</p>
               }
-
-              @if (canAddBasic()) {
+              @if (changingPassword()) {
                 <div class="rounded-md border border-gray-200 px-4 py-3 dark:border-gray-700">
+                  <span class="font-medium text-gray-900 dark:text-gray-100">Change Password</span>
+                  <div class="mt-2 space-y-2">
+                    <input
+                      data-testid="change-pw-current"
+                      type="password"
+                      [value]="changeCurrentPassword()"
+                      (input)="changeCurrentPassword.set($any($event.target).value)"
+                      placeholder="Current password"
+                      autocomplete="current-password"
+                      class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm
+                             dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                      aria-label="Current password"
+                    />
+                    <input
+                      data-testid="change-pw-new"
+                      type="password"
+                      [value]="changeNewPassword()"
+                      (input)="changeNewPassword.set($any($event.target).value)"
+                      placeholder="New password ({{ PASSWORD_MIN }}–{{ PASSWORD_MAX }} characters)"
+                      autocomplete="new-password"
+                      class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm
+                             dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                      aria-label="New password"
+                    />
+                    <input
+                      data-testid="change-pw-confirm"
+                      type="password"
+                      [value]="changeConfirmPassword()"
+                      (input)="changeConfirmPassword.set($any($event.target).value)"
+                      placeholder="Confirm new password"
+                      autocomplete="new-password"
+                      class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm
+                             dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                      aria-label="Confirm new password"
+                    />
+                    <div class="flex gap-2">
+                      <button
+                        data-testid="change-pw-submit"
+                        (click)="submitChangePassword()"
+                        [disabled]="changingPasswordSubmitting()"
+                        class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white
+                               hover:bg-indigo-700 disabled:opacity-50"
+                      >
+                        Update Password
+                      </button>
+                      <button
+                        data-testid="change-pw-cancel"
+                        (click)="cancelChangePassword()"
+                        class="rounded-md px-4 py-2 text-sm text-gray-600 hover:bg-gray-100
+                               dark:text-gray-400 dark:hover:bg-gray-800"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                  @if (changePasswordError()) {
+                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">
+                      {{ changePasswordError() }}
+                    </p>
+                  }
+                </div>
+              } @else {
+                <button
+                  data-testid="change-pw-btn"
+                  (click)="startChangePassword()"
+                  class="text-sm text-indigo-600 hover:underline dark:text-indigo-400"
+                >
+                  Change Password
+                </button>
+              }
+            }
+
+            @if (canAddBasic()) {
+              <div class="rounded-md border border-gray-200 px-4 py-3 dark:border-gray-700">
+                @if (!linkingBasicExpanded()) {
+                  <div class="flex items-center justify-between">
+                    <span class="font-medium text-gray-900 dark:text-gray-100">Password</span>
+                    <button
+                      data-testid="link-basic-expand-btn"
+                      (click)="linkingBasicExpanded.set(true)"
+                      class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white
+                             hover:bg-indigo-700"
+                    >
+                      Link
+                    </button>
+                  </div>
+                } @else {
                   <span class="font-medium text-gray-900 dark:text-gray-100">Set Password</span>
                   <div class="mt-2 space-y-2">
                     <input
@@ -228,9 +319,9 @@ import { UserService } from './user.service';
                       type="password"
                       [value]="linkPassword()"
                       (input)="linkPassword.set($any($event.target).value)"
-                      placeholder="Password"
+                      placeholder="Password ({{ PASSWORD_MIN }}–{{ PASSWORD_MAX }} characters)"
                       class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm
-                           dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                             dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
                       aria-label="New password"
                     />
                     <input
@@ -240,26 +331,36 @@ import { UserService } from './user.service';
                       (input)="linkPasswordConfirm.set($any($event.target).value)"
                       placeholder="Confirm password"
                       class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm
-                           dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                             dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
                       aria-label="Confirm new password"
                     />
-                    <button
-                      data-testid="link-basic-btn"
-                      (click)="linkBasic()"
-                      [disabled]="linkingBasic()"
-                      class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white
-                           hover:bg-indigo-700 disabled:opacity-50"
-                    >
-                      Set Password
-                    </button>
+                    <div class="flex gap-2">
+                      <button
+                        data-testid="link-basic-btn"
+                        (click)="linkBasic()"
+                        [disabled]="linkingBasic()"
+                        class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white
+                               hover:bg-indigo-700 disabled:opacity-50"
+                      >
+                        Set Password
+                      </button>
+                      <button
+                        data-testid="cancel-link-basic-btn"
+                        (click)="cancelLinkBasic()"
+                        class="rounded-md px-4 py-2 text-sm text-gray-600 hover:bg-gray-100
+                               dark:text-gray-400 dark:hover:bg-gray-800"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                   @if (linkBasicError()) {
                     <p class="mt-1 text-sm text-red-600 dark:text-red-400">
                       {{ linkBasicError() }}
                     </p>
                   }
-                </div>
-              }
+                }
+              </div>
             }
 
             <!-- OIDC credential -->
@@ -378,6 +479,8 @@ export class AccountPage implements OnInit {
   protected readonly USERNAME_MIN = USERNAME_MIN;
   protected readonly USERNAME_MAX = USERNAME_MAX;
   protected readonly DISPLAY_NAME_MAX = DISPLAY_NAME_MAX;
+  protected readonly PASSWORD_MIN = PASSWORD_MIN;
+  protected readonly PASSWORD_MAX = PASSWORD_MAX;
 
   protected readonly hasBasicCredential = computed(() => this.auth.credentials().includes('basic'));
 
@@ -392,6 +495,7 @@ export class AccountPage implements OnInit {
   protected readonly displayNameErrorMessage = signal<string | null>(null);
 
   // Credential linking
+  protected readonly linkingBasicExpanded = signal(false);
   protected readonly linkPassword = signal('');
   protected readonly linkPasswordConfirm = signal('');
   protected readonly linkingBasic = signal(false);
@@ -427,6 +531,14 @@ export class AccountPage implements OnInit {
     );
     return otherEnabled;
   });
+
+  // Change password
+  protected readonly changingPassword = signal(false);
+  protected readonly changeCurrentPassword = signal('');
+  protected readonly changeNewPassword = signal('');
+  protected readonly changeConfirmPassword = signal('');
+  protected readonly changingPasswordSubmitting = signal(false);
+  protected readonly changePasswordError = signal<string | null>(null);
 
   // Delete account
   protected readonly confirmingDelete = signal(false);
@@ -581,6 +693,69 @@ export class AccountPage implements OnInit {
       });
   }
 
+  protected startChangePassword(): void {
+    this.successMessage.set(null);
+    this.credentialError.set(null);
+    this.changeCurrentPassword.set('');
+    this.changeNewPassword.set('');
+    this.changeConfirmPassword.set('');
+    this.changePasswordError.set(null);
+    this.changingPassword.set(true);
+  }
+
+  protected cancelChangePassword(): void {
+    this.changingPassword.set(false);
+    this.changePasswordError.set(null);
+  }
+
+  protected submitChangePassword(): void {
+    const current = this.changeCurrentPassword();
+    const newPw = this.changeNewPassword();
+    const confirm = this.changeConfirmPassword();
+
+    if (!current) {
+      this.changePasswordError.set('Current password is required');
+      return;
+    }
+    if (newPw.length < PASSWORD_MIN || newPw.length > PASSWORD_MAX) {
+      this.changePasswordError.set(
+        `New password must be ${PASSWORD_MIN}–${PASSWORD_MAX} characters`,
+      );
+      return;
+    }
+    if (newPw !== confirm) {
+      this.changePasswordError.set('New passwords do not match');
+      return;
+    }
+
+    this.changingPasswordSubmitting.set(true);
+    this.changePasswordError.set(null);
+
+    this.auth
+      .changePassword(current, newPw)
+      .pipe(finalize(() => this.changingPasswordSubmitting.set(false)))
+      .subscribe({
+        next: () => {
+          this.changingPassword.set(false);
+          this.successMessage.set('Password changed successfully');
+        },
+        error: (err) => {
+          if (err.status === 401) {
+            this.changePasswordError.set('Current password is incorrect');
+          } else {
+            this.changePasswordError.set('Failed to change password');
+          }
+        },
+      });
+  }
+
+  protected cancelLinkBasic(): void {
+    this.linkingBasicExpanded.set(false);
+    this.linkPassword.set('');
+    this.linkPasswordConfirm.set('');
+    this.linkBasicError.set(null);
+  }
+
   protected linkBasic(): void {
     this.successMessage.set(null);
     this.credentialError.set(null);
@@ -589,6 +764,10 @@ export class AccountPage implements OnInit {
     const confirm = this.linkPasswordConfirm();
     if (!pw || pw.length < 1) {
       this.linkBasicError.set('Password is required');
+      return;
+    }
+    if (pw.length < PASSWORD_MIN || pw.length > PASSWORD_MAX) {
+      this.linkBasicError.set(`Password must be ${PASSWORD_MIN}–${PASSWORD_MAX} characters`);
       return;
     }
     if (pw !== confirm) {
@@ -603,6 +782,7 @@ export class AccountPage implements OnInit {
       .pipe(finalize(() => this.linkingBasic.set(false)))
       .subscribe({
         next: () => {
+          this.linkingBasicExpanded.set(false);
           this.linkPassword.set('');
           this.linkPasswordConfirm.set('');
           this.successMessage.set('Password set successfully');
@@ -648,7 +828,7 @@ export class AccountPage implements OnInit {
           this.successMessage.set('Password removed');
         },
         error: (err) => {
-          if (err.status === 401) {
+          if (err.status === 400 || err.status === 401) {
             this.unlinkBasicError.set('Incorrect password');
           } else if (err.status === 409) {
             this.unlinkBasicError.set('Cannot remove your only login method');

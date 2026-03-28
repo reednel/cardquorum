@@ -33,3 +33,8 @@ export interface LinkBasicCredentialRequest {
 export interface UnlinkBasicCredentialRequest {
   password: string;
 }
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}

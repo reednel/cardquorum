@@ -1,12 +1,6 @@
 # Changes
 
-## Near Term - Auth
-
-1. Retype password on basic auth registration
-2. Change passwords (must re-enter current password)
-3. Fix UI when OIDC and Basic auth are enabled, and only OIDC is currently used on Linked Accounts page. (Not broken, just looks weird).
-
-## Medium Term
+## Near Term
 
 1. Account Page - switch to several tabs
    1. profile - username, display name, password, sessions, delete account
