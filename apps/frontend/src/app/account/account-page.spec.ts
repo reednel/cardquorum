@@ -154,14 +154,6 @@ describe('AccountPage', () => {
     expect(el.textContent).toContain('Not set');
   });
 
-  it('has a link to friends page', () => {
-    profileSignal.set(PROFILE);
-    fixture.detectChanges();
-
-    const link = el.querySelector('[data-testid="friends-link"]') as HTMLAnchorElement;
-    expect(link).toBeTruthy();
-  });
-
   describe('delete account', () => {
     beforeEach(() => {
       profileSignal.set(PROFILE);

@@ -34,13 +34,19 @@ export const appRoutes: Route[] = [
       },
       {
         path: 'account',
-        title: 'Account — CardQuorum',
-        loadComponent: () => import('./account/account-page').then((m) => m.AccountPage),
-      },
-      {
-        path: 'account/friends',
-        title: 'Friends — CardQuorum',
-        loadComponent: () => import('./account/friends-page').then((m) => m.FriendsPage),
+        loadComponent: () => import('./account/account-shell').then((m) => m.AccountShell),
+        children: [
+          {
+            path: '',
+            title: 'Account — CardQuorum',
+            loadComponent: () => import('./account/account-page').then((m) => m.AccountPage),
+          },
+          {
+            path: 'friends',
+            title: 'Friends — CardQuorum',
+            loadComponent: () => import('./account/friends-page').then((m) => m.FriendsPage),
+          },
+        ],
       },
       { path: '', redirectTo: 'rooms', pathMatch: 'full' },
     ],

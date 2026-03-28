@@ -6,7 +6,7 @@ import {
   OnInit,
   signal,
 } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { finalize } from 'rxjs';
 import {
   DISPLAY_NAME_MAX,
@@ -22,453 +22,438 @@ import { UserService } from './user.service';
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-account-page',
-  imports: [RouterLink],
   template: `
-    <div class="mx-auto max-w-xl px-4 py-8">
-      <h1 class="mb-6 text-2xl font-bold text-gray-900 dark:text-gray-100">Account</h1>
-
-      @if (!userService.profile()) {
-        <p class="text-sm text-gray-500 dark:text-gray-400">Loading...</p>
-      } @else {
-        <dl class="space-y-4">
-          <div>
-            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Username</dt>
-            <dd class="mt-1">
-              @if (usernameEditing()) {
-                <div class="flex items-center gap-2">
-                  <input
-                    data-testid="username-input"
-                    type="text"
-                    [value]="usernameEditValue()"
-                    (input)="usernameEditValue.set($any($event.target).value)"
-                    [attr.maxlength]="USERNAME_MAX"
-                    class="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-900
+    @if (!userService.profile()) {
+      <p class="text-sm text-gray-500 dark:text-gray-400">Loading...</p>
+    } @else {
+      <dl class="space-y-4">
+        <div>
+          <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Username</dt>
+          <dd class="mt-1">
+            @if (usernameEditing()) {
+              <div class="flex items-center gap-2">
+                <input
+                  data-testid="username-input"
+                  type="text"
+                  [value]="usernameEditValue()"
+                  (input)="usernameEditValue.set($any($event.target).value)"
+                  [attr.maxlength]="USERNAME_MAX"
+                  class="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-900
                            dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-                    aria-label="Username"
-                  />
-                  <button
-                    data-testid="save-username-btn"
-                    (click)="saveUsername()"
-                    [disabled]="usernameSaving()"
-                    class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white
-                           hover:bg-indigo-700 disabled:opacity-50"
-                  >
-                    Save
-                  </button>
-                  <button
-                    data-testid="cancel-edit-btn"
-                    (click)="cancelUsernameEdit()"
-                    class="rounded-md px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100
-                           dark:text-gray-400 dark:hover:bg-gray-800"
-                  >
-                    Cancel
-                  </button>
-                </div>
-                @if (usernameErrorMessage()) {
-                  <p class="mt-1 text-sm text-red-600 dark:text-red-400">
-                    {{ usernameErrorMessage() }}
-                  </p>
-                }
-              } @else {
-                <span class="text-gray-900 dark:text-gray-100">
-                  {{ userService.profile()!.username }}
-                </span>
+                  aria-label="Username"
+                />
                 <button
-                  data-testid="edit-username-btn"
-                  (click)="startUsernameEdit()"
-                  class="ml-2 text-sm text-indigo-600 hover:underline dark:text-indigo-400"
-                >
-                  Edit
-                </button>
-              }
-            </dd>
-          </div>
-
-          <div>
-            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Display Name</dt>
-            <dd class="mt-1">
-              @if (displayNameEditing()) {
-                <div class="flex items-center gap-2">
-                  <input
-                    data-testid="display-name-input"
-                    type="text"
-                    [value]="displayNameEditValue()"
-                    (input)="displayNameEditValue.set($any($event.target).value)"
-                    [attr.maxlength]="DISPLAY_NAME_MAX"
-                    class="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-900
-                           dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-                    aria-label="Display name"
-                  />
-                  <button
-                    data-testid="save-display-name-btn"
-                    (click)="saveDisplayName()"
-                    [disabled]="displayNameSaving()"
-                    class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white
+                  data-testid="save-username-btn"
+                  (click)="saveUsername()"
+                  [disabled]="usernameSaving()"
+                  class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white
                            hover:bg-indigo-700 disabled:opacity-50"
-                  >
-                    Save
-                  </button>
-                  <button
-                    data-testid="cancel-edit-btn"
-                    (click)="cancelDisplayNameEdit()"
-                    class="rounded-md px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100
-                           dark:text-gray-400 dark:hover:bg-gray-800"
-                  >
-                    Cancel
-                  </button>
-                </div>
-                @if (displayNameErrorMessage()) {
-                  <p class="mt-1 text-sm text-red-600 dark:text-red-400">
-                    {{ displayNameErrorMessage() }}
-                  </p>
-                }
-              } @else {
-                <span class="text-gray-900 dark:text-gray-100">
-                  {{ userService.profile()!.displayName ?? 'Not set' }}
-                </span>
-                <button
-                  data-testid="edit-display-name-btn"
-                  (click)="startDisplayNameEdit()"
-                  class="ml-2 text-sm text-indigo-600 hover:underline dark:text-indigo-400"
                 >
-                  Edit
+                  Save
                 </button>
+                <button
+                  data-testid="cancel-edit-btn"
+                  (click)="cancelUsernameEdit()"
+                  class="rounded-md px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100
+                           dark:text-gray-400 dark:hover:bg-gray-800"
+                >
+                  Cancel
+                </button>
+              </div>
+              @if (usernameErrorMessage()) {
+                <p class="mt-1 text-sm text-red-600 dark:text-red-400">
+                  {{ usernameErrorMessage() }}
+                </p>
               }
-            </dd>
-          </div>
-
-          <div>
-            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Member Since</dt>
-            <dd class="mt-1 text-gray-900 dark:text-gray-100">
-              {{ formatDate(userService.profile()!.createdAt) }}
-            </dd>
-          </div>
-        </dl>
-
-        <div class="mt-8">
-          <a
-            data-testid="friends-link"
-            routerLink="/account/friends"
-            class="text-sm font-medium text-indigo-600 hover:underline dark:text-indigo-400"
-          >
-            Manage Friends
-          </a>
+            } @else {
+              <span class="text-gray-900 dark:text-gray-100">
+                {{ userService.profile()!.username }}
+              </span>
+              <button
+                data-testid="edit-username-btn"
+                (click)="startUsernameEdit()"
+                class="ml-2 text-sm text-indigo-600 hover:underline dark:text-indigo-400"
+              >
+                Edit
+              </button>
+            }
+          </dd>
         </div>
 
-        <div
-          class="mt-8 border-t border-gray-200 pt-8 dark:border-gray-700"
-          data-testid="linked-accounts"
-        >
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Credentials</h2>
-
-          @if (successMessage()) {
-            <p class="mt-2 text-sm text-green-600 dark:text-green-400">{{ successMessage() }}</p>
-          }
-          @if (credentialError()) {
-            <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ credentialError() }}</p>
-          }
-
-          <div class="mt-4 space-y-4">
-            <!-- Password credential -->
-            @if (hasBasic()) {
-              <div
-                class="flex items-center justify-between rounded-md border border-gray-200
-                        px-4 py-3 dark:border-gray-700"
+        <div>
+          <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Display Name</dt>
+          <dd class="mt-1">
+            @if (displayNameEditing()) {
+              <div class="flex items-center gap-2">
+                <input
+                  data-testid="display-name-input"
+                  type="text"
+                  [value]="displayNameEditValue()"
+                  (input)="displayNameEditValue.set($any($event.target).value)"
+                  [attr.maxlength]="DISPLAY_NAME_MAX"
+                  class="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-900
+                           dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                  aria-label="Display name"
+                />
+                <button
+                  data-testid="save-display-name-btn"
+                  (click)="saveDisplayName()"
+                  [disabled]="displayNameSaving()"
+                  class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white
+                           hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  Save
+                </button>
+                <button
+                  data-testid="cancel-edit-btn"
+                  (click)="cancelDisplayNameEdit()"
+                  class="rounded-md px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100
+                           dark:text-gray-400 dark:hover:bg-gray-800"
+                >
+                  Cancel
+                </button>
+              </div>
+              @if (displayNameErrorMessage()) {
+                <p class="mt-1 text-sm text-red-600 dark:text-red-400">
+                  {{ displayNameErrorMessage() }}
+                </p>
+              }
+            } @else {
+              <span class="text-gray-900 dark:text-gray-100">
+                {{ userService.profile()!.displayName ?? 'Not set' }}
+              </span>
+              <button
+                data-testid="edit-display-name-btn"
+                (click)="startDisplayNameEdit()"
+                class="ml-2 text-sm text-indigo-600 hover:underline dark:text-indigo-400"
               >
-                <div>
-                  <span class="font-medium text-gray-900 dark:text-gray-100">Password</span>
-                  <span class="ml-2 text-sm text-green-600 dark:text-green-400">Linked</span>
-                </div>
-                @if (canRemoveBasic()) {
-                  @if (confirmingUnlinkBasic()) {
-                    <div class="flex items-center gap-2">
-                      <input
-                        data-testid="unlink-basic-password"
-                        type="password"
-                        [value]="unlinkPassword()"
-                        (input)="unlinkPassword.set($any($event.target).value)"
-                        placeholder="Enter password"
-                        class="rounded-md border border-gray-300 px-2 py-1 text-sm
+                Edit
+              </button>
+            }
+          </dd>
+        </div>
+
+        <div>
+          <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Member Since</dt>
+          <dd class="mt-1 text-gray-900 dark:text-gray-100">
+            {{ formatDate(userService.profile()!.createdAt) }}
+          </dd>
+        </div>
+      </dl>
+
+      <div
+        class="mt-8 border-t border-gray-200 pt-8 dark:border-gray-700"
+        data-testid="linked-accounts"
+      >
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Credentials</h2>
+
+        @if (successMessage()) {
+          <p class="mt-2 text-sm text-green-600 dark:text-green-400">{{ successMessage() }}</p>
+        }
+        @if (credentialError()) {
+          <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ credentialError() }}</p>
+        }
+
+        <div class="mt-4 space-y-4">
+          <!-- Password credential -->
+          @if (hasBasic()) {
+            <div
+              class="flex items-center justify-between rounded-md border border-gray-200
+                        px-4 py-3 dark:border-gray-700"
+            >
+              <div>
+                <span class="font-medium text-gray-900 dark:text-gray-100">Password</span>
+                <span class="ml-2 text-sm text-green-600 dark:text-green-400">Linked</span>
+              </div>
+              @if (canRemoveBasic()) {
+                @if (confirmingUnlinkBasic()) {
+                  <div class="flex items-center gap-2">
+                    <input
+                      data-testid="unlink-basic-password"
+                      type="password"
+                      [value]="unlinkPassword()"
+                      (input)="unlinkPassword.set($any($event.target).value)"
+                      placeholder="Enter password"
+                      class="rounded-md border border-gray-300 px-2 py-1 text-sm
                              dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-                        aria-label="Password to confirm removal"
-                      />
-                      <button
-                        data-testid="confirm-unlink-basic-btn"
-                        (click)="confirmUnlinkBasic()"
-                        [disabled]="unlinkingBasic()"
-                        class="rounded-md bg-red-600 px-3 py-1 text-sm font-medium text-white
-                             hover:bg-red-700 disabled:opacity-50"
-                      >
-                        Remove
-                      </button>
-                      <button
-                        data-testid="cancel-unlink-basic-btn"
-                        (click)="cancelUnlinkBasic()"
-                        class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  } @else {
+                      aria-label="Password to confirm removal"
+                    />
                     <button
-                      data-testid="unlink-basic-btn"
-                      (click)="startUnlinkBasic()"
-                      class="text-sm text-red-600 hover:underline dark:text-red-400"
+                      data-testid="confirm-unlink-basic-btn"
+                      (click)="confirmUnlinkBasic()"
+                      [disabled]="unlinkingBasic()"
+                      class="rounded-md bg-red-600 px-3 py-1 text-sm font-medium text-white
+                             hover:bg-red-700 disabled:opacity-50"
                     >
                       Remove
                     </button>
-                  }
-                }
-              </div>
-              @if (unlinkBasicError()) {
-                <p class="text-sm text-red-600 dark:text-red-400">{{ unlinkBasicError() }}</p>
-              }
-              @if (changingPassword()) {
-                <div class="rounded-md border border-gray-200 px-4 py-3 dark:border-gray-700">
-                  <span class="font-medium text-gray-900 dark:text-gray-100">Change Password</span>
-                  <div class="mt-2 space-y-2">
-                    <input
-                      data-testid="change-pw-current"
-                      type="password"
-                      [value]="changeCurrentPassword()"
-                      (input)="changeCurrentPassword.set($any($event.target).value)"
-                      placeholder="Current password"
-                      autocomplete="current-password"
-                      class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm
-                             dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-                      aria-label="Current password"
-                    />
-                    <input
-                      data-testid="change-pw-new"
-                      type="password"
-                      [value]="changeNewPassword()"
-                      (input)="changeNewPassword.set($any($event.target).value)"
-                      placeholder="New password ({{ PASSWORD_MIN }}–{{ PASSWORD_MAX }} characters)"
-                      autocomplete="new-password"
-                      class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm
-                             dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-                      aria-label="New password"
-                    />
-                    <input
-                      data-testid="change-pw-confirm"
-                      type="password"
-                      [value]="changeConfirmPassword()"
-                      (input)="changeConfirmPassword.set($any($event.target).value)"
-                      placeholder="Confirm new password"
-                      autocomplete="new-password"
-                      class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm
-                             dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-                      aria-label="Confirm new password"
-                    />
-                    <div class="flex gap-2">
-                      <button
-                        data-testid="change-pw-submit"
-                        (click)="submitChangePassword()"
-                        [disabled]="changingPasswordSubmitting()"
-                        class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white
-                               hover:bg-indigo-700 disabled:opacity-50"
-                      >
-                        Update Password
-                      </button>
-                      <button
-                        data-testid="change-pw-cancel"
-                        (click)="cancelChangePassword()"
-                        class="rounded-md px-4 py-2 text-sm text-gray-600 hover:bg-gray-100
-                               dark:text-gray-400 dark:hover:bg-gray-800"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                  @if (changePasswordError()) {
-                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">
-                      {{ changePasswordError() }}
-                    </p>
-                  }
-                </div>
-              } @else {
-                <button
-                  data-testid="change-pw-btn"
-                  (click)="startChangePassword()"
-                  class="text-sm text-indigo-600 hover:underline dark:text-indigo-400"
-                >
-                  Change Password
-                </button>
-              }
-            }
-
-            @if (canAddBasic()) {
-              <div class="rounded-md border border-gray-200 px-4 py-3 dark:border-gray-700">
-                @if (!linkingBasicExpanded()) {
-                  <div class="flex items-center justify-between">
-                    <span class="font-medium text-gray-900 dark:text-gray-100">Password</span>
                     <button
-                      data-testid="link-basic-expand-btn"
-                      (click)="linkingBasicExpanded.set(true)"
-                      class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white
-                             hover:bg-indigo-700"
+                      data-testid="cancel-unlink-basic-btn"
+                      (click)="cancelUnlinkBasic()"
+                      class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400"
                     >
-                      Link
+                      Cancel
                     </button>
                   </div>
                 } @else {
-                  <span class="font-medium text-gray-900 dark:text-gray-100">Set Password</span>
-                  <div class="mt-2 space-y-2">
-                    <input
-                      data-testid="link-basic-password"
-                      type="password"
-                      [value]="linkPassword()"
-                      (input)="linkPassword.set($any($event.target).value)"
-                      placeholder="Password ({{ PASSWORD_MIN }}–{{ PASSWORD_MAX }} characters)"
-                      class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm
-                             dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-                      aria-label="New password"
-                    />
-                    <input
-                      data-testid="link-basic-password-confirm"
-                      type="password"
-                      [value]="linkPasswordConfirm()"
-                      (input)="linkPasswordConfirm.set($any($event.target).value)"
-                      placeholder="Confirm password"
-                      class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm
-                             dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-                      aria-label="Confirm new password"
-                    />
-                    <div class="flex gap-2">
-                      <button
-                        data-testid="link-basic-btn"
-                        (click)="linkBasic()"
-                        [disabled]="linkingBasic()"
-                        class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white
-                               hover:bg-indigo-700 disabled:opacity-50"
-                      >
-                        Set Password
-                      </button>
-                      <button
-                        data-testid="cancel-link-basic-btn"
-                        (click)="cancelLinkBasic()"
-                        class="rounded-md px-4 py-2 text-sm text-gray-600 hover:bg-gray-100
-                               dark:text-gray-400 dark:hover:bg-gray-800"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                  @if (linkBasicError()) {
-                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">
-                      {{ linkBasicError() }}
-                    </p>
-                  }
-                }
-              </div>
-            }
-
-            <!-- OIDC credential -->
-            @if (strategies().includes('oidc')) {
-              <div
-                class="flex items-center justify-between rounded-md border border-gray-200
-                          px-4 py-3 dark:border-gray-700"
-              >
-                <div>
-                  <span class="font-medium text-gray-900 dark:text-gray-100"
-                    >Single Sign-On (OIDC)</span
-                  >
-                  @if (hasOidc()) {
-                    <span class="ml-2 text-sm text-green-600 dark:text-green-400">Linked</span>
-                  }
-                </div>
-                @if (canAddOidc()) {
                   <button
-                    data-testid="link-oidc-btn"
-                    (click)="linkOidc()"
-                    class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white
-                           hover:bg-indigo-700"
-                  >
-                    Link
-                  </button>
-                }
-                @if (hasOidc() && canRemoveOidc()) {
-                  <button
-                    data-testid="unlink-oidc-btn"
-                    (click)="unlinkOidc()"
+                    data-testid="unlink-basic-btn"
+                    (click)="startUnlinkBasic()"
                     class="text-sm text-red-600 hover:underline dark:text-red-400"
                   >
                     Remove
                   </button>
                 }
-              </div>
-            }
-          </div>
-        </div>
-
-        <div class="mt-12 border-t border-gray-200 pt-8 dark:border-gray-700">
-          <h2 class="text-lg font-semibold text-red-600 dark:text-red-400">Delete Account</h2>
-          <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            This will permanently delete your rooms, messages, and friends list. Your game history
-            will be preserved anonymously.
-          </p>
-
-          @if (confirmingDelete()) {
-            <div class="mt-4 space-y-3">
-              @if (hasBasicCredential()) {
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Enter your password to confirm
-                  <input
-                    data-testid="delete-password-input"
-                    type="password"
-                    [value]="deletePassword()"
-                    (input)="deletePassword.set($any($event.target).value)"
-                    class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm
-                           text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-                    aria-label="Password confirmation for account deletion"
-                  />
-                </label>
-              } @else {
-                <p class="text-sm text-gray-600 dark:text-gray-400">
-                  This action cannot be undone. Are you sure?
-                </p>
               }
-              @if (deleteError()) {
-                <p class="text-sm text-red-600 dark:text-red-400">{{ deleteError() }}</p>
-              }
-              <div class="flex gap-3">
-                <button
-                  data-testid="confirm-delete-btn"
-                  (click)="confirmDelete()"
-                  [disabled]="deleting()"
-                  class="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white
-                         hover:bg-red-700 disabled:opacity-50"
-                >
-                  @if (hasBasicCredential()) {
-                    Permanently Delete
-                  } @else {
-                    Confirm & Delete
-                  }
-                </button>
-                <button
-                  data-testid="cancel-delete-btn"
-                  (click)="cancelDelete()"
-                  class="rounded-md px-4 py-2 text-sm text-gray-600 hover:bg-gray-100
-                         dark:text-gray-400 dark:hover:bg-gray-800"
-                >
-                  Cancel
-                </button>
-              </div>
             </div>
-          } @else {
-            <button
-              data-testid="delete-account-btn"
-              (click)="startDelete()"
-              class="mt-4 rounded-md border border-red-300 px-4 py-2 text-sm font-medium
-                     text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400
-                     dark:hover:bg-red-950"
+            @if (unlinkBasicError()) {
+              <p class="text-sm text-red-600 dark:text-red-400">{{ unlinkBasicError() }}</p>
+            }
+            @if (changingPassword()) {
+              <div class="rounded-md border border-gray-200 px-4 py-3 dark:border-gray-700">
+                <span class="font-medium text-gray-900 dark:text-gray-100">Change Password</span>
+                <div class="mt-2 space-y-2">
+                  <input
+                    data-testid="change-pw-current"
+                    type="password"
+                    [value]="changeCurrentPassword()"
+                    (input)="changeCurrentPassword.set($any($event.target).value)"
+                    placeholder="Current password"
+                    autocomplete="current-password"
+                    class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm
+                             dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                    aria-label="Current password"
+                  />
+                  <input
+                    data-testid="change-pw-new"
+                    type="password"
+                    [value]="changeNewPassword()"
+                    (input)="changeNewPassword.set($any($event.target).value)"
+                    placeholder="New password ({{ PASSWORD_MIN }}–{{ PASSWORD_MAX }} characters)"
+                    autocomplete="new-password"
+                    class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm
+                             dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                    aria-label="New password"
+                  />
+                  <input
+                    data-testid="change-pw-confirm"
+                    type="password"
+                    [value]="changeConfirmPassword()"
+                    (input)="changeConfirmPassword.set($any($event.target).value)"
+                    placeholder="Confirm new password"
+                    autocomplete="new-password"
+                    class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm
+                             dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                    aria-label="Confirm new password"
+                  />
+                  <div class="flex gap-2">
+                    <button
+                      data-testid="change-pw-submit"
+                      (click)="submitChangePassword()"
+                      [disabled]="changingPasswordSubmitting()"
+                      class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white
+                               hover:bg-indigo-700 disabled:opacity-50"
+                    >
+                      Update Password
+                    </button>
+                    <button
+                      data-testid="change-pw-cancel"
+                      (click)="cancelChangePassword()"
+                      class="rounded-md px-4 py-2 text-sm text-gray-600 hover:bg-gray-100
+                               dark:text-gray-400 dark:hover:bg-gray-800"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+                @if (changePasswordError()) {
+                  <p class="mt-1 text-sm text-red-600 dark:text-red-400">
+                    {{ changePasswordError() }}
+                  </p>
+                }
+              </div>
+            } @else {
+              <button
+                data-testid="change-pw-btn"
+                (click)="startChangePassword()"
+                class="text-sm text-indigo-600 hover:underline dark:text-indigo-400"
+              >
+                Change Password
+              </button>
+            }
+          }
+
+          @if (canAddBasic()) {
+            <div class="rounded-md border border-gray-200 px-4 py-3 dark:border-gray-700">
+              @if (!linkingBasicExpanded()) {
+                <div class="flex items-center justify-between">
+                  <span class="font-medium text-gray-900 dark:text-gray-100">Password</span>
+                  <button
+                    data-testid="link-basic-expand-btn"
+                    (click)="linkingBasicExpanded.set(true)"
+                    class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white
+                             hover:bg-indigo-700"
+                  >
+                    Link
+                  </button>
+                </div>
+              } @else {
+                <span class="font-medium text-gray-900 dark:text-gray-100">Set Password</span>
+                <div class="mt-2 space-y-2">
+                  <input
+                    data-testid="link-basic-password"
+                    type="password"
+                    [value]="linkPassword()"
+                    (input)="linkPassword.set($any($event.target).value)"
+                    placeholder="Password ({{ PASSWORD_MIN }}–{{ PASSWORD_MAX }} characters)"
+                    class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm
+                             dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                    aria-label="New password"
+                  />
+                  <input
+                    data-testid="link-basic-password-confirm"
+                    type="password"
+                    [value]="linkPasswordConfirm()"
+                    (input)="linkPasswordConfirm.set($any($event.target).value)"
+                    placeholder="Confirm password"
+                    class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm
+                             dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                    aria-label="Confirm new password"
+                  />
+                  <div class="flex gap-2">
+                    <button
+                      data-testid="link-basic-btn"
+                      (click)="linkBasic()"
+                      [disabled]="linkingBasic()"
+                      class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white
+                               hover:bg-indigo-700 disabled:opacity-50"
+                    >
+                      Set Password
+                    </button>
+                    <button
+                      data-testid="cancel-link-basic-btn"
+                      (click)="cancelLinkBasic()"
+                      class="rounded-md px-4 py-2 text-sm text-gray-600 hover:bg-gray-100
+                               dark:text-gray-400 dark:hover:bg-gray-800"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+                @if (linkBasicError()) {
+                  <p class="mt-1 text-sm text-red-600 dark:text-red-400">
+                    {{ linkBasicError() }}
+                  </p>
+                }
+              }
+            </div>
+          }
+
+          <!-- OIDC credential -->
+          @if (strategies().includes('oidc')) {
+            <div
+              class="flex items-center justify-between rounded-md border border-gray-200
+                          px-4 py-3 dark:border-gray-700"
             >
-              Delete Account
-            </button>
+              <div>
+                <span class="font-medium text-gray-900 dark:text-gray-100"
+                  >Single Sign-On (OIDC)</span
+                >
+                @if (hasOidc()) {
+                  <span class="ml-2 text-sm text-green-600 dark:text-green-400">Linked</span>
+                }
+              </div>
+              @if (canAddOidc()) {
+                <button
+                  data-testid="link-oidc-btn"
+                  (click)="linkOidc()"
+                  class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white
+                           hover:bg-indigo-700"
+                >
+                  Link
+                </button>
+              }
+              @if (hasOidc() && canRemoveOidc()) {
+                <button
+                  data-testid="unlink-oidc-btn"
+                  (click)="unlinkOidc()"
+                  class="text-sm text-red-600 hover:underline dark:text-red-400"
+                >
+                  Remove
+                </button>
+              }
+            </div>
           }
         </div>
-      }
-    </div>
+      </div>
+
+      <div class="mt-12 border-t border-gray-200 pt-8 dark:border-gray-700">
+        <h2 class="text-lg font-semibold text-red-600 dark:text-red-400">Delete Account</h2>
+        <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          This will permanently delete your rooms, messages, and friends list. Your game history
+          will be preserved anonymously.
+        </p>
+
+        @if (confirmingDelete()) {
+          <div class="mt-4 space-y-3">
+            @if (hasBasicCredential()) {
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Enter your password to confirm
+                <input
+                  data-testid="delete-password-input"
+                  type="password"
+                  [value]="deletePassword()"
+                  (input)="deletePassword.set($any($event.target).value)"
+                  class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm
+                           text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                  aria-label="Password confirmation for account deletion"
+                />
+              </label>
+            } @else {
+              <p class="text-sm text-gray-600 dark:text-gray-400">
+                This action cannot be undone. Are you sure?
+              </p>
+            }
+            @if (deleteError()) {
+              <p class="text-sm text-red-600 dark:text-red-400">{{ deleteError() }}</p>
+            }
+            <div class="flex gap-3">
+              <button
+                data-testid="confirm-delete-btn"
+                (click)="confirmDelete()"
+                [disabled]="deleting()"
+                class="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white
+                         hover:bg-red-700 disabled:opacity-50"
+              >
+                @if (hasBasicCredential()) {
+                  Permanently Delete
+                } @else {
+                  Confirm & Delete
+                }
+              </button>
+              <button
+                data-testid="cancel-delete-btn"
+                (click)="cancelDelete()"
+                class="rounded-md px-4 py-2 text-sm text-gray-600 hover:bg-gray-100
+                         dark:text-gray-400 dark:hover:bg-gray-800"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        } @else {
+          <button
+            data-testid="delete-account-btn"
+            (click)="startDelete()"
+            class="mt-4 rounded-md border border-red-300 px-4 py-2 text-sm font-medium
+                     text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400
+                     dark:hover:bg-red-950"
+          >
+            Delete Account
+          </button>
+        }
+      </div>
+    }
   `,
 })
 export class AccountPage implements OnInit {

@@ -2,16 +2,11 @@
 
 ## Near Term
 
-1. Account Page - switch to several tabs
-   1. profile - username, display name, password, sessions, delete account
-   2. friends - the current account/friends page
-   3. preferences - notification settings? (not developed yet)
-   4. stats - display game stats (not developed yet)
-2. Add room/home button to top bar, else get stuck in account page
-3. Room list should show the join button in addition to the settings button, for owners
-4. Invite system for rooms
-5. Blocking other users - hide friend invites, hide rooms they own (?)
-6. Call out password for database string
+1. Add room/home button to top bar, else get stuck in account page
+2. Room list should show the join button in addition to the settings button, for owners
+3. Invite system for rooms
+4. Blocking other users - hide friend invites, hide rooms they own (?)
+5. Call out password for database string
 
 ## Long Term
 
