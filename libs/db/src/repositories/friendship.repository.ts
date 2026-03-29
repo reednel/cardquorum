@@ -1,15 +1,12 @@
-import { and, eq, or, sql } from 'drizzle-orm';
+import { and, eq, or } from 'drizzle-orm';
 import { friendships, users } from '../schema';
 import { DbInstance } from '../types';
 
 export class FriendshipRepository {
   constructor(private readonly db: DbInstance) {}
 
-  async create(requesterId: number, addresseeId: number) {
-    const [row] = await this.db
-      .insert(friendships)
-      .values({ requesterId, addresseeId })
-      .returning();
+  async create(userId1: number, userId2: number) {
+    const [row] = await this.db.insert(friendships).values({ userId1, userId2 }).returning();
     return row;
   }
 
@@ -24,8 +21,8 @@ export class FriendshipRepository {
       .from(friendships)
       .where(
         or(
-          and(eq(friendships.requesterId, userA), eq(friendships.addresseeId, userB)),
-          and(eq(friendships.requesterId, userB), eq(friendships.addresseeId, userA)),
+          and(eq(friendships.userId1, userA), eq(friendships.userId2, userB)),
+          and(eq(friendships.userId1, userB), eq(friendships.userId2, userA)),
         ),
       )
       .limit(1);
@@ -33,72 +30,24 @@ export class FriendshipRepository {
   }
 
   async findFriends(userId: number) {
-    const asRequester = await this.db
+    const rows = await this.db
       .select({
         id: friendships.id,
-        status: friendships.status,
         createdAt: friendships.createdAt,
         otherUserId: users.id,
         otherUsername: users.username,
         otherDisplayName: users.displayName,
       })
       .from(friendships)
-      .innerJoin(users, eq(friendships.addresseeId, users.id))
-      .where(and(eq(friendships.requesterId, userId), eq(friendships.status, 'accepted')));
+      .innerJoin(
+        users,
+        or(
+          and(eq(friendships.userId1, userId), eq(friendships.userId2, users.id)),
+          and(eq(friendships.userId2, userId), eq(friendships.userId1, users.id)),
+        ),
+      );
 
-    const asAddressee = await this.db
-      .select({
-        id: friendships.id,
-        status: friendships.status,
-        createdAt: friendships.createdAt,
-        otherUserId: users.id,
-        otherUsername: users.username,
-        otherDisplayName: users.displayName,
-      })
-      .from(friendships)
-      .innerJoin(users, eq(friendships.requesterId, users.id))
-      .where(and(eq(friendships.addresseeId, userId), eq(friendships.status, 'accepted')));
-
-    return [...asRequester, ...asAddressee];
-  }
-
-  async findIncomingRequests(userId: number) {
-    return this.db
-      .select({
-        id: friendships.id,
-        status: friendships.status,
-        createdAt: friendships.createdAt,
-        otherUserId: users.id,
-        otherUsername: users.username,
-        otherDisplayName: users.displayName,
-      })
-      .from(friendships)
-      .innerJoin(users, eq(friendships.requesterId, users.id))
-      .where(and(eq(friendships.addresseeId, userId), eq(friendships.status, 'pending')));
-  }
-
-  async findOutgoingRequests(userId: number) {
-    return this.db
-      .select({
-        id: friendships.id,
-        status: friendships.status,
-        createdAt: friendships.createdAt,
-        otherUserId: users.id,
-        otherUsername: users.username,
-        otherDisplayName: users.displayName,
-      })
-      .from(friendships)
-      .innerJoin(users, eq(friendships.addresseeId, users.id))
-      .where(and(eq(friendships.requesterId, userId), eq(friendships.status, 'pending')));
-  }
-
-  async accept(id: number) {
-    const [row] = await this.db
-      .update(friendships)
-      .set({ status: 'accepted', updatedAt: sql`now()` })
-      .where(eq(friendships.id, id))
-      .returning();
-    return row ?? null;
+    return rows;
   }
 
   async deleteById(id: number) {
@@ -109,17 +58,27 @@ export class FriendshipRepository {
     return row ?? null;
   }
 
+  async deleteBetweenUsers(userA: number, userB: number) {
+    const [row] = await this.db
+      .delete(friendships)
+      .where(
+        or(
+          and(eq(friendships.userId1, userA), eq(friendships.userId2, userB)),
+          and(eq(friendships.userId1, userB), eq(friendships.userId2, userA)),
+        ),
+      )
+      .returning({ id: friendships.id });
+    return row ?? null;
+  }
+
   async areFriends(userA: number, userB: number): Promise<boolean> {
     const rows = await this.db
       .select({ id: friendships.id })
       .from(friendships)
       .where(
-        and(
-          or(
-            and(eq(friendships.requesterId, userA), eq(friendships.addresseeId, userB)),
-            and(eq(friendships.requesterId, userB), eq(friendships.addresseeId, userA)),
-          ),
-          eq(friendships.status, 'accepted'),
+        or(
+          and(eq(friendships.userId1, userA), eq(friendships.userId2, userB)),
+          and(eq(friendships.userId1, userB), eq(friendships.userId2, userA)),
         ),
       )
       .limit(1);
@@ -128,14 +87,9 @@ export class FriendshipRepository {
 
   async findFriendIds(userId: number): Promise<number[]> {
     const rows = await this.db
-      .select({ requesterId: friendships.requesterId, addresseeId: friendships.addresseeId })
+      .select({ userId1: friendships.userId1, userId2: friendships.userId2 })
       .from(friendships)
-      .where(
-        and(
-          or(eq(friendships.requesterId, userId), eq(friendships.addresseeId, userId)),
-          eq(friendships.status, 'accepted'),
-        ),
-      );
-    return rows.map((r) => (r.requesterId === userId ? r.addresseeId : r.requesterId));
+      .where(or(eq(friendships.userId1, userId), eq(friendships.userId2, userId)));
+    return rows.map((r) => (r.userId1 === userId ? r.userId2 : r.userId1));
   }
 }

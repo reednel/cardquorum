@@ -10,24 +10,24 @@ import {
 } from 'drizzle-orm/pg-core';
 import { users } from './users';
 
-export const friendships = pgTable(
-  'friendships',
+export const friendshipRequests = pgTable(
+  'friendship_requests',
   {
     id: serial('id').primaryKey(),
-    userId1: integer('user_id1')
+    requesterId: integer('requester_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    userId2: integer('user_id2')
+    addresseeId: integer('addressee_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    uniqueIndex('friendships_pair_unique').on(
-      sql`LEAST(${table.userId1}, ${table.userId2})`,
-      sql`GREATEST(${table.userId1}, ${table.userId2})`,
+    uniqueIndex('friendship_requests_pair_unique').on(
+      sql`LEAST(${table.requesterId}, ${table.addresseeId})`,
+      sql`GREATEST(${table.requesterId}, ${table.addresseeId})`,
     ),
-    index('friendships_user_id2_idx').on(table.userId2),
-    check('friendships_no_self', sql`${table.userId1} <> ${table.userId2}`),
+    index('friendship_requests_addressee_id_idx').on(table.addresseeId),
+    check('friendship_requests_no_self', sql`${table.requesterId} <> ${table.addresseeId}`),
   ],
 );

@@ -11,20 +11,29 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
-import { FriendshipResponse, UserIdentity } from '@cardquorum/shared';
+import { FriendRequestResponse, FriendshipResponse, UserIdentity } from '@cardquorum/shared';
 import { HttpAuthGuard, REQUEST_USER_KEY } from '../auth/http-auth.guard';
+import { BlockService } from '../block/block.service';
 import { FriendRequestDto } from './friend.dto';
 import { FriendService } from './friend.service';
 
 @UseGuards(HttpAuthGuard)
 @Controller('friends')
 export class FriendController {
-  constructor(private readonly friendService: FriendService) {}
+  constructor(
+    private readonly friendService: FriendService,
+    private readonly blockService: BlockService,
+  ) {}
 
   @Get()
   async listFriends(@Req() request: FastifyRequest): Promise<FriendshipResponse[]> {
     const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
-    return this.friendService.listFriends(user.userId);
+    const [friends, blockedIds] = await Promise.all([
+      this.friendService.listFriends(user.userId),
+      this.blockService.getBlockedIds(user.userId),
+    ]);
+    const blockedSet = new Set(blockedIds);
+    return friends.filter((f) => !blockedSet.has(f.user.userId));
   }
 
   @Post('requests')
@@ -32,21 +41,31 @@ export class FriendController {
   async sendRequest(
     @Req() request: FastifyRequest,
     @Body() dto: FriendRequestDto,
-  ): Promise<FriendshipResponse> {
+  ): Promise<FriendRequestResponse> {
     const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
     return this.friendService.sendRequest(user.userId, dto.userId);
   }
 
   @Get('requests/incoming')
-  async listIncoming(@Req() request: FastifyRequest): Promise<FriendshipResponse[]> {
+  async listIncoming(@Req() request: FastifyRequest): Promise<FriendRequestResponse[]> {
     const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
-    return this.friendService.listIncomingRequests(user.userId);
+    const [requests, blockedIds] = await Promise.all([
+      this.friendService.listIncomingRequests(user.userId),
+      this.blockService.getBlockedIds(user.userId),
+    ]);
+    const blockedSet = new Set(blockedIds);
+    return requests.filter((r) => !blockedSet.has(r.user.userId));
   }
 
   @Get('requests/outgoing')
-  async listOutgoing(@Req() request: FastifyRequest): Promise<FriendshipResponse[]> {
+  async listOutgoing(@Req() request: FastifyRequest): Promise<FriendRequestResponse[]> {
     const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
-    return this.friendService.listOutgoingRequests(user.userId);
+    const [requests, blockedIds] = await Promise.all([
+      this.friendService.listOutgoingRequests(user.userId),
+      this.blockService.getBlockedIds(user.userId),
+    ]);
+    const blockedSet = new Set(blockedIds);
+    return requests.filter((r) => !blockedSet.has(r.user.userId));
   }
 
   @Post('requests/:id/accept')

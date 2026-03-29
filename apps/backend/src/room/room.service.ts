@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { RoomRepository } from '@cardquorum/db';
 import { RoomManager } from '@cardquorum/engine';
 import { RoomVisibility, WS_EMIT } from '@cardquorum/shared';
+import { BlockService } from '../block/block.service';
 import { FriendService } from '../friend/friend.service';
 import { WsConnectionService } from '../ws/ws-connection.service';
 
@@ -14,6 +15,7 @@ export class RoomService {
     private readonly rooms: RoomRepository,
     private readonly connectionService: WsConnectionService,
     private readonly friendService: FriendService,
+    private readonly blockService: BlockService,
   ) {}
 
   async findById(roomId: number) {
@@ -27,9 +29,12 @@ export class RoomService {
   async findAllForUser(userId: number) {
     const allRooms = await this.rooms.findAll();
     const friendIds = await this.friendService.findFriendIds(userId);
+    const blockedIds = await this.blockService.getBlockedIds(userId);
     const friendIdSet = new Set(friendIds);
+    const blockedIdSet = new Set(blockedIds);
 
     return allRooms.filter((room) => {
+      if (blockedIdSet.has(room.ownerId)) return false;
       if (room.visibility === 'public' || room.visibility === 'invite-only') return true;
       if (room.ownerId === userId) return true;
       if (room.visibility === 'friends-only' && friendIdSet.has(room.ownerId)) return true;
@@ -40,6 +45,11 @@ export class RoomService {
   async canAccessRoom(roomId: number, userId: number): Promise<boolean> {
     const room = await this.rooms.findById(roomId);
     if (!room) return false;
+
+    // Check if the room owner has blocked this user
+    const ownerBlockedUser = await this.blockService.isBlocked(room.ownerId, userId);
+    if (ownerBlockedUser) return false;
+
     if (room.visibility === 'public') return true;
     if (room.visibility === 'invite-only') return true;
     if (room.ownerId === userId) return true;

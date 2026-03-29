@@ -85,8 +85,12 @@ export class UserService {
     };
   }
 
-  async searchUsers(query: string, excludeUserId: number): Promise<UserSearchResult[]> {
-    const rows = await this.users.searchByUsername(query, excludeUserId, 20);
+  async searchUsers(
+    query: string,
+    excludeUserId: number,
+    excludeIds: number[] = [],
+  ): Promise<UserSearchResult[]> {
+    const rows = await this.users.searchByUsername(query, excludeUserId, 20, excludeIds);
     return rows.map((r) => ({
       userId: r.id,
       username: r.username,

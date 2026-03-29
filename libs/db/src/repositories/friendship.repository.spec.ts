@@ -10,8 +10,6 @@ function createMockDb() {
     insert: jest.fn().mockReturnThis(),
     values: jest.fn().mockReturnThis(),
     returning: jest.fn(),
-    update: jest.fn().mockReturnThis(),
-    set: jest.fn().mockReturnThis(),
     delete: jest.fn().mockReturnThis(),
   } as any;
 }
@@ -23,11 +21,9 @@ describe('FriendshipRepository', () => {
   const now = new Date();
   const friendship = {
     id: 1,
-    requesterId: 10,
-    addresseeId: 20,
-    status: 'pending',
+    userId1: 10,
+    userId2: 20,
     createdAt: now,
-    updatedAt: now,
   };
 
   beforeEach(() => {
@@ -36,7 +32,7 @@ describe('FriendshipRepository', () => {
   });
 
   describe('create', () => {
-    it('should insert a pending friendship and return it', async () => {
+    it('should insert a friendship and return it', async () => {
       db.returning.mockResolvedValue([friendship]);
       const result = await repo.create(10, 20);
       expect(result).toBe(friendship);
@@ -73,61 +69,17 @@ describe('FriendshipRepository', () => {
   });
 
   describe('findFriends', () => {
-    it('should return accepted friendships with user data', async () => {
+    it('should return friendships with other user data', async () => {
       const friendWithUser = {
-        ...friendship,
-        status: 'accepted',
+        id: 1,
+        createdAt: now,
         otherUserId: 20,
         otherUsername: 'bob',
         otherDisplayName: 'Bob',
       };
-      db.where.mockResolvedValue([friendWithUser]);
+      db.innerJoin.mockResolvedValue([friendWithUser]);
       const result = await repo.findFriends(10);
-      expect(result).toEqual([friendWithUser, friendWithUser]);
-    });
-  });
-
-  describe('findIncomingRequests', () => {
-    it('should return pending friendships addressed to user', async () => {
-      const request = {
-        ...friendship,
-        otherUserId: 10,
-        otherUsername: 'alice',
-        otherDisplayName: 'Alice',
-      };
-      db.where.mockResolvedValue([request]);
-      const result = await repo.findIncomingRequests(20);
-      expect(result).toEqual([request]);
-    });
-  });
-
-  describe('findOutgoingRequests', () => {
-    it('should return pending friendships sent by user', async () => {
-      const request = {
-        ...friendship,
-        otherUserId: 20,
-        otherUsername: 'bob',
-        otherDisplayName: 'Bob',
-      };
-      db.where.mockResolvedValue([request]);
-      const result = await repo.findOutgoingRequests(10);
-      expect(result).toEqual([request]);
-    });
-  });
-
-  describe('accept', () => {
-    it('should update status to accepted and return the row', async () => {
-      const accepted = { ...friendship, status: 'accepted' };
-      db.returning.mockResolvedValue([accepted]);
-      const result = await repo.accept(1);
-      expect(result).toBe(accepted);
-      expect(db.update).toHaveBeenCalled();
-    });
-
-    it('should return null when friendship not found', async () => {
-      db.returning.mockResolvedValue([]);
-      const result = await repo.accept(999);
-      expect(result).toBeNull();
+      expect(result).toEqual([friendWithUser]);
     });
   });
 
@@ -145,14 +97,29 @@ describe('FriendshipRepository', () => {
     });
   });
 
+  describe('deleteBetweenUsers', () => {
+    it('should delete and return the row', async () => {
+      db.returning.mockResolvedValue([{ id: 1 }]);
+      const result = await repo.deleteBetweenUsers(10, 20);
+      expect(result).toEqual({ id: 1 });
+      expect(db.delete).toHaveBeenCalled();
+    });
+
+    it('should return null when no friendship exists', async () => {
+      db.returning.mockResolvedValue([]);
+      const result = await repo.deleteBetweenUsers(10, 99);
+      expect(result).toBeNull();
+    });
+  });
+
   describe('areFriends', () => {
-    it('should return true when accepted friendship exists', async () => {
-      db.limit.mockResolvedValue([{ ...friendship, status: 'accepted' }]);
+    it('should return true when friendship exists', async () => {
+      db.limit.mockResolvedValue([{ id: 1 }]);
       const result = await repo.areFriends(10, 20);
       expect(result).toBe(true);
     });
 
-    it('should return false when no accepted friendship exists', async () => {
+    it('should return false when no friendship exists', async () => {
       db.limit.mockResolvedValue([]);
       const result = await repo.areFriends(10, 20);
       expect(result).toBe(false);
@@ -162,8 +129,8 @@ describe('FriendshipRepository', () => {
   describe('findFriendIds', () => {
     it('should return array of friend user IDs', async () => {
       db.where.mockResolvedValue([
-        { requesterId: 10, addresseeId: 20 },
-        { requesterId: 30, addresseeId: 10 },
+        { userId1: 10, userId2: 20 },
+        { userId1: 30, userId2: 10 },
       ]);
       const result = await repo.findFriendIds(10);
       expect(result).toEqual([20, 30]);

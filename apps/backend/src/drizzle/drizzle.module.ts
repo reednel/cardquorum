@@ -4,8 +4,10 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from '@cardquorum/db';
 import {
+  BlockRepository,
   CredentialRepository,
   FriendshipRepository,
+  FriendshipRequestRepository,
   GameSessionRepository,
   MessageRepository,
   RoomRepository,
@@ -25,6 +27,11 @@ export const DRIZZLE = Symbol('DRIZZLE');
         const client = postgres(config.get<string>('DATABASE_URL'));
         return drizzle(client, { schema });
       },
+    },
+    {
+      provide: BlockRepository,
+      inject: [DRIZZLE],
+      useFactory: (db: any) => new BlockRepository(db),
     },
     {
       provide: RoomRepository,
@@ -61,9 +68,15 @@ export const DRIZZLE = Symbol('DRIZZLE');
       inject: [DRIZZLE],
       useFactory: (db: any) => new FriendshipRepository(db),
     },
+    {
+      provide: FriendshipRequestRepository,
+      inject: [DRIZZLE],
+      useFactory: (db: any) => new FriendshipRequestRepository(db),
+    },
   ],
   exports: [
     DRIZZLE,
+    BlockRepository,
     RoomRepository,
     MessageRepository,
     UserRepository,
@@ -71,6 +84,7 @@ export const DRIZZLE = Symbol('DRIZZLE');
     GameSessionRepository,
     SessionRepository,
     FriendshipRepository,
+    FriendshipRequestRepository,
   ],
 })
 export class DrizzleModule implements OnApplicationShutdown {

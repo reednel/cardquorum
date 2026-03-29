@@ -6,7 +6,7 @@ services:
       - '5432:5432'
     environment:
       POSTGRES_USER: cardquorum
-      POSTGRES_PASSWORD: cardquorum
+      POSTGRES_PASSWORD: password
       POSTGRES_DB: cardquorum
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:

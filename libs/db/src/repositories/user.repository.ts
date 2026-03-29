@@ -38,8 +38,17 @@ export class UserRepository {
     return row ?? null;
   }
 
-  async searchByUsername(query: string, excludeUserId: number, limit = 20) {
+  async searchByUsername(
+    query: string,
+    excludeUserId: number,
+    limit = 20,
+    excludeIds: number[] = [],
+  ) {
     const escaped = query.replace(/[%_]/g, '\\$&');
+    const conditions = [ilike(users.username, `${escaped}%`), ne(users.id, excludeUserId)];
+    if (excludeIds.length > 0) {
+      conditions.push(notInArray(users.id, excludeIds));
+    }
     return this.db
       .select({
         id: users.id,
@@ -47,7 +56,7 @@ export class UserRepository {
         displayName: users.displayName,
       })
       .from(users)
-      .where(and(ilike(users.username, `${escaped}%`), ne(users.id, excludeUserId)))
+      .where(and(...conditions))
       .orderBy(users.username)
       .limit(limit);
   }

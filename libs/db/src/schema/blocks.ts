@@ -10,24 +10,21 @@ import {
 } from 'drizzle-orm/pg-core';
 import { users } from './users';
 
-export const friendships = pgTable(
-  'friendships',
+export const blocks = pgTable(
+  'blocks',
   {
     id: serial('id').primaryKey(),
-    userId1: integer('user_id1')
+    blockerId: integer('blocker_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    userId2: integer('user_id2')
+    blockedId: integer('blocked_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    uniqueIndex('friendships_pair_unique').on(
-      sql`LEAST(${table.userId1}, ${table.userId2})`,
-      sql`GREATEST(${table.userId1}, ${table.userId2})`,
-    ),
-    index('friendships_user_id2_idx').on(table.userId2),
-    check('friendships_no_self', sql`${table.userId1} <> ${table.userId2}`),
+    uniqueIndex('blocks_pair_unique').on(table.blockerId, table.blockedId),
+    index('blocks_blocked_id_idx').on(table.blockedId),
+    check('blocks_no_self', sql`${table.blockerId} <> ${table.blockedId}`),
   ],
 );

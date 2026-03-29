@@ -5,6 +5,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import * as Joi from 'joi';
 import { LoggerModule } from 'nestjs-pino';
 import { AuthModule } from '../auth/auth.module';
+import { BlockModule } from '../block/block.module';
 import { ChatModule } from '../chat/chat.module';
 import { DrizzleModule } from '../drizzle/drizzle.module';
 import { FriendModule } from '../friend/friend.module';
@@ -82,6 +83,7 @@ import { AppService } from './app.service';
     ThrottlerModule.forRoot({ throttlers: [{ ttl: 60_000, limit: 100 }] }),
     HealthModule,
     AuthModule,
+    BlockModule,
     UserModule,
     FriendModule,
     WsModule,

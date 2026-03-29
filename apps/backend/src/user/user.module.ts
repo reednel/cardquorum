@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
+import { BlockModule } from '../block/block.module';
 import { RoomModule } from '../room/room.module';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
 
 @Module({
-  imports: [AuthModule, RoomModule],
+  imports: [AuthModule, BlockModule, RoomModule],
   controllers: [UserController],
   providers: [UserService],
   exports: [UserService],

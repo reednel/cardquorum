@@ -129,7 +129,7 @@ describe('UserService', () => {
       const result = await service.searchUsers('bo', 1);
 
       expect(result).toEqual([{ userId: 2, username: 'bob', displayName: 'Bob' }]);
-      expect(mockUserRepo.searchByUsername).toHaveBeenCalledWith('bo', 1, 20);
+      expect(mockUserRepo.searchByUsername).toHaveBeenCalledWith('bo', 1, 20, []);
     });
   });
 

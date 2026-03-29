@@ -1,15 +1,20 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
-import { FriendRequestBody, FriendshipResponse, UserSearchResult } from '@cardquorum/shared';
+import {
+  FriendRequestBody,
+  FriendRequestResponse,
+  FriendshipResponse,
+  UserSearchResult,
+} from '@cardquorum/shared';
 
 @Injectable({ providedIn: 'root' })
 export class FriendService {
   private readonly http = inject(HttpClient);
 
   private readonly _friends = signal<FriendshipResponse[]>([]);
-  private readonly _incomingRequests = signal<FriendshipResponse[]>([]);
-  private readonly _outgoingRequests = signal<FriendshipResponse[]>([]);
+  private readonly _incomingRequests = signal<FriendRequestResponse[]>([]);
+  private readonly _outgoingRequests = signal<FriendRequestResponse[]>([]);
   private readonly _searchResults = signal<UserSearchResult[]>([]);
 
   readonly friends = this._friends.asReadonly();
@@ -24,13 +29,13 @@ export class FriendService {
   }
 
   loadIncomingRequests(): void {
-    this.http.get<FriendshipResponse[]>('/api/friends/requests/incoming').subscribe({
+    this.http.get<FriendRequestResponse[]>('/api/friends/requests/incoming').subscribe({
       next: (reqs) => this._incomingRequests.set(reqs),
     });
   }
 
   loadOutgoingRequests(): void {
-    this.http.get<FriendshipResponse[]>('/api/friends/requests/outgoing').subscribe({
+    this.http.get<FriendRequestResponse[]>('/api/friends/requests/outgoing').subscribe({
       next: (reqs) => this._outgoingRequests.set(reqs),
     });
   }
@@ -45,15 +50,15 @@ export class FriendService {
     });
   }
 
-  sendRequest(userId: number): Observable<FriendshipResponse> {
+  sendRequest(userId: number): Observable<FriendRequestResponse> {
     const body: FriendRequestBody = { userId };
     return this.http
-      .post<FriendshipResponse>('/api/friends/requests', body)
+      .post<FriendRequestResponse>('/api/friends/requests', body)
       .pipe(tap(() => this.loadOutgoingRequests()));
   }
 
-  acceptRequest(friendshipId: number): Observable<unknown> {
-    return this.http.post(`/api/friends/requests/${friendshipId}/accept`, {}).pipe(
+  acceptRequest(requestId: number): Observable<unknown> {
+    return this.http.post(`/api/friends/requests/${requestId}/accept`, {}).pipe(
       tap(() => {
         this.loadIncomingRequests();
         this.loadFriends();
@@ -61,15 +66,15 @@ export class FriendService {
     );
   }
 
-  denyRequest(friendshipId: number): Observable<unknown> {
+  denyRequest(requestId: number): Observable<unknown> {
     return this.http
-      .delete(`/api/friends/requests/${friendshipId}`)
+      .delete(`/api/friends/requests/${requestId}`)
       .pipe(tap(() => this.loadIncomingRequests()));
   }
 
-  cancelRequest(friendshipId: number): Observable<unknown> {
+  cancelRequest(requestId: number): Observable<unknown> {
     return this.http
-      .delete(`/api/friends/requests/${friendshipId}`)
+      .delete(`/api/friends/requests/${requestId}`)
       .pipe(tap(() => this.loadOutgoingRequests()));
   }
 

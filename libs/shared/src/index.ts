@@ -49,7 +49,9 @@ export type {
   UpdateDisplayNameRequest,
   DeleteAccountRequest,
 } from './lib/user-types';
-export type { FriendshipStatus, FriendshipResponse, FriendRequestBody } from './lib/friend-types';
+export type { FriendshipResponse } from './lib/friend-types';
+export type { FriendRequestBody, FriendRequestResponse } from './lib/friend-request-types';
+export type { BlockedUserResponse, BlockUserRequest } from './lib/block-types';
 export {
   USERNAME_MIN,
   USERNAME_MAX,

@@ -16,6 +16,7 @@ import { FastifyReply, FastifyRequest } from 'fastify';
 import { SessionIdentity, UserProfile, UserSearchResult, WS_EMIT } from '@cardquorum/shared';
 import { buildClearSessionCookie } from '../auth/cookie';
 import { HttpAuthGuard, REQUEST_SESSION_KEY, REQUEST_USER_KEY } from '../auth/http-auth.guard';
+import { BlockService } from '../block/block.service';
 import { RoomService } from '../room/room.service';
 import { WsConnectionService } from '../ws/ws-connection.service';
 import {
@@ -35,6 +36,7 @@ export class UserController {
     private readonly userService: UserService,
     private readonly roomService: RoomService,
     private readonly connectionService: WsConnectionService,
+    private readonly blockService: BlockService,
   ) {}
 
   @Get('me')
@@ -71,7 +73,8 @@ export class UserController {
     @Query() query: SearchUsersDto,
   ): Promise<UserSearchResult[]> {
     const user = (request as any)[REQUEST_USER_KEY] as SessionIdentity;
-    return this.userService.searchUsers(query.q, user.userId);
+    const blockedIds = await this.blockService.getBlockedIds(user.userId);
+    return this.userService.searchUsers(query.q, user.userId, blockedIds);
   }
 
   @Delete('me')

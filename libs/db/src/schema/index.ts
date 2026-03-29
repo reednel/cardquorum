@@ -1,4 +1,6 @@
+export { blocks } from './blocks';
 export { friendships } from './friendships';
+export { friendshipRequests } from './friendship-requests';
 export { gameSessions } from './game-sessions';
 export { messages } from './messages';
 export { rooms } from './rooms';

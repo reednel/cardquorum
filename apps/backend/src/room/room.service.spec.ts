@@ -14,6 +14,7 @@ describe('RoomService', () => {
     delete: jest.Mock;
   };
   let mockFriendService: { areFriends: jest.Mock; findFriendIds: jest.Mock };
+  let mockBlockService: { getBlockedIds: jest.Mock; isBlocked: jest.Mock };
 
   const alice: UserIdentity = { userId: 1, username: 'alice', displayName: 'Alice' };
   const bob: UserIdentity = { userId: 2, username: 'bob', displayName: 'Bob' };
@@ -32,8 +33,17 @@ describe('RoomService', () => {
     };
 
     mockFriendService = { areFriends: jest.fn(), findFriendIds: jest.fn() };
+    mockBlockService = { getBlockedIds: jest.fn(), isBlocked: jest.fn() };
 
-    service = new RoomService(mockRepo as any, connectionService, mockFriendService as any);
+    service = new RoomService(
+      mockRepo as any,
+      connectionService,
+      mockFriendService as any,
+      mockBlockService as any,
+    );
+
+    mockBlockService.getBlockedIds.mockResolvedValue([]);
+    mockBlockService.isBlocked.mockResolvedValue(false);
   });
 
   describe('delete', () => {
@@ -245,6 +255,44 @@ describe('RoomService', () => {
       const result = await service.canAccessRoom(1, 10);
 
       expect(result).toBe(false);
+    });
+  });
+
+  describe('findAllForUser - block filtering', () => {
+    it('should exclude rooms owned by blocked users', async () => {
+      mockRepo.findAll.mockResolvedValue([
+        { id: 1, ownerId: 1, visibility: 'public', ownerDisplayName: 'Alice' },
+        { id: 2, ownerId: 2, visibility: 'public', ownerDisplayName: 'Bob' },
+        { id: 3, ownerId: 3, visibility: 'public', ownerDisplayName: 'Carol' },
+      ]);
+      mockFriendService.findFriendIds.mockResolvedValue([]);
+      mockBlockService.getBlockedIds.mockResolvedValue([2]);
+
+      const result = await service.findAllForUser(10);
+
+      expect(result).toHaveLength(2);
+      expect(result.map((r: any) => r.id)).toEqual([1, 3]);
+    });
+  });
+
+  describe('canAccessRoom - block check', () => {
+    it('should deny access when room owner has blocked the user', async () => {
+      mockRepo.findById.mockResolvedValue({ id: 1, ownerId: 5, visibility: 'public' });
+      mockBlockService.isBlocked.mockResolvedValue(true);
+
+      const result = await service.canAccessRoom(1, 10);
+
+      expect(result).toBe(false);
+      expect(mockBlockService.isBlocked).toHaveBeenCalledWith(5, 10);
+    });
+
+    it('should allow access when room owner has not blocked the user', async () => {
+      mockRepo.findById.mockResolvedValue({ id: 1, ownerId: 5, visibility: 'public' });
+      mockBlockService.isBlocked.mockResolvedValue(false);
+
+      const result = await service.canAccessRoom(1, 10);
+
+      expect(result).toBe(true);
     });
   });
 });

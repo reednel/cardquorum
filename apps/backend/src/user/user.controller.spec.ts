@@ -59,6 +59,7 @@ describe('UserController', () => {
       userService as any,
       roomService as any,
       connectionService as any,
+      {} as any,
     );
   });
 

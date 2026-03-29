@@ -1,1 +1,0 @@
-ALTER TABLE "sessions" ADD COLUMN "auth_method" varchar(16) DEFAULT 'basic' NOT NULL;
