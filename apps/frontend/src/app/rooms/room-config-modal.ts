@@ -12,7 +12,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RoomResponse, RoomVisibility } from '@cardquorum/shared';
+import { RoomResponse } from '@cardquorum/shared';
 import { RoomService } from './room.service';
 
 @Component({
@@ -76,18 +76,13 @@ import { RoomService } from './room.service';
             >
               Visibility
             </label>
-            <select
+            <p
               id="config-room-visibility"
-              formControlName="visibility"
-              class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm
-                     focus:border-indigo-500 focus:outline-none focus:ring-1
-                     focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800
-                     dark:text-gray-100"
+              class="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm
+                     text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
             >
-              <option value="public">Public</option>
-              <option value="friends-only">Friends Only</option>
-              <option value="invite-only">Invite Only</option>
-            </select>
+              {{ room().visibility }}
+            </p>
           </div>
 
           <div class="flex items-center justify-between">
@@ -167,7 +162,6 @@ export class RoomConfigModal implements OnInit {
 
   protected readonly form = this.fb.nonNullable.group({
     name: ['', Validators.required],
-    visibility: ['public'],
   });
 
   constructor() {
@@ -178,7 +172,7 @@ export class RoomConfigModal implements OnInit {
 
   ngOnInit(): void {
     const r = this.room();
-    this.form.patchValue({ name: r.name, visibility: r.visibility });
+    this.form.patchValue({ name: r.name });
   }
 
   protected onSubmit(): void {
@@ -187,21 +181,19 @@ export class RoomConfigModal implements OnInit {
     this.errorMessage.set(null);
     this.submitting.set(true);
 
-    const { name, visibility } = this.form.getRawValue();
-    this.roomService
-      .updateRoom(this.room().id, { name, visibility: visibility as RoomVisibility })
-      .subscribe({
-        next: (room) => {
-          this.submitting.set(false);
-          this.updated.emit(room);
-        },
-        error: (err: HttpErrorResponse) => {
-          this.submitting.set(false);
-          this.errorMessage.set(
-            err.status === 409 ? 'A room with that name already exists' : 'Something went wrong',
-          );
-        },
-      });
+    const { name } = this.form.getRawValue();
+    this.roomService.updateRoom(this.room().id, { name }).subscribe({
+      next: (room) => {
+        this.submitting.set(false);
+        this.updated.emit(room);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.submitting.set(false);
+        this.errorMessage.set(
+          err.status === 409 ? 'A room with that name already exists' : 'Something went wrong',
+        );
+      },
+    });
   }
 
   protected onConfirmDelete(): void {

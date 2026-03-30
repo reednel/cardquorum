@@ -1,4 +1,5 @@
 import { TitleCasePipe } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -18,6 +19,7 @@ import {
   RoomInviteResponse,
   RoomResponse,
   UserIdentity,
+  UserSearchResult,
 } from '@cardquorum/shared';
 import { AuthService } from '../auth/auth.service';
 import { ChatMessageList } from '../chat/chat-message-list';
@@ -204,6 +206,57 @@ type RoomTab = 'chat' | 'members' | 'settings';
                   </ul>
                 }
 
+                <!-- Invite search — owner of invite-only room -->
+                @if (isOwner() && room()?.visibility === 'invite-only') {
+                  <div class="mb-4">
+                    <label
+                      for="invite-member-search"
+                      class="mb-1 block text-sm font-semibold uppercase tracking-wide
+                             text-gray-500 dark:text-gray-400"
+                    >
+                      Invite User
+                    </label>
+                    <input
+                      id="invite-member-search"
+                      type="text"
+                      autocomplete="off"
+                      placeholder="Search by username..."
+                      class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm
+                             focus:border-indigo-500 focus:outline-none focus:ring-1
+                             focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800
+                             dark:text-gray-100"
+                      (input)="onInviteSearch($event)"
+                    />
+                    @if (inviteSearchResults().length > 0) {
+                      <ul
+                        class="mt-1 max-h-32 overflow-y-auto rounded-md border border-gray-200
+                               bg-white dark:border-gray-700 dark:bg-gray-800"
+                        role="listbox"
+                        aria-label="User search results"
+                      >
+                        @for (user of inviteSearchResults(); track user.userId) {
+                          <li>
+                            <button
+                              type="button"
+                              role="option"
+                              [attr.aria-selected]="false"
+                              class="w-full px-3 py-1.5 text-left text-sm text-gray-700
+                                     hover:bg-gray-100 dark:text-gray-300
+                                     dark:hover:bg-gray-700"
+                              (click)="onInviteFromSearch(user)"
+                            >
+                              {{ user.displayName ?? user.username }}
+                              @if (user.displayName) {
+                                <span class="text-gray-400">({{ user.username }})</span>
+                              }
+                            </button>
+                          </li>
+                        }
+                      </ul>
+                    }
+                  </div>
+                }
+
                 <!-- Banned — owner only -->
                 @if (isOwner() && bans().length > 0) {
                   <h3
@@ -252,6 +305,7 @@ type RoomTab = 'chat' | 'members' | 'settings';
 export class RoomView implements OnInit, OnDestroy {
   readonly chatService = inject(ChatService);
   private readonly roomService = inject(RoomService);
+  private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -265,6 +319,7 @@ export class RoomView implements OnInit, OnDestroy {
   protected readonly room = signal<RoomResponse | null>(null);
   protected readonly invites = signal<RoomInviteResponse[]>([]);
   protected readonly bans = signal<RoomBanResponse[]>([]);
+  protected readonly inviteSearchResults = signal<UserSearchResult[]>([]);
   private roomId = 0;
 
   protected readonly isOwner = signal(false);
@@ -352,6 +407,30 @@ export class RoomView implements OnInit, OnDestroy {
 
   protected onUnban(userId: number): void {
     this.roomService.unbanUser(this.roomId, userId).subscribe(() => this.loadBans());
+  }
+
+  protected onInviteSearch(event: Event): void {
+    const query = (event.target as HTMLInputElement).value.trim();
+    if (!query) {
+      this.inviteSearchResults.set([]);
+      return;
+    }
+    const invitedIds = new Set(this.invites().map((i) => i.userId));
+    const memberIds = new Set(this.chatService.members().map((m) => m.userId));
+    this.http.get<UserSearchResult[]>('/api/users/search', { params: { q: query } }).subscribe({
+      next: (results) => {
+        this.inviteSearchResults.set(
+          results.filter((r) => !invitedIds.has(r.userId) && !memberIds.has(r.userId)),
+        );
+      },
+    });
+  }
+
+  protected onInviteFromSearch(user: UserSearchResult): void {
+    this.roomService.inviteUser(this.roomId, user.userId).subscribe(() => {
+      this.inviteSearchResults.set([]);
+      this.loadInvites();
+    });
   }
 
   private loadMemberData(): void {
