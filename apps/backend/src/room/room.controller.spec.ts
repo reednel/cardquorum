@@ -1,4 +1,4 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { UserIdentity } from '@cardquorum/shared';
 import { REQUEST_USER_KEY } from '../auth/http-auth.guard';
 import { GameService } from '../game/game.service';
@@ -18,6 +18,13 @@ describe('RoomController', () => {
       | 'update'
       | 'delete'
       | 'getOnlineCount'
+      | 'inviteUser'
+      | 'uninviteUser'
+      | 'banUser'
+      | 'unbanUser'
+      | 'getInvites'
+      | 'getBans'
+      | 'bulkInvite'
     >
   >;
   let gameService: jest.Mocked<Pick<GameService, 'forceCleanupRoom'>>;
@@ -49,6 +56,13 @@ describe('RoomController', () => {
       update: jest.fn(),
       delete: jest.fn(),
       getOnlineCount: jest.fn().mockReturnValue(0),
+      inviteUser: jest.fn().mockResolvedValue(undefined),
+      uninviteUser: jest.fn().mockResolvedValue(undefined),
+      banUser: jest.fn().mockResolvedValue(undefined),
+      unbanUser: jest.fn().mockResolvedValue(undefined),
+      getInvites: jest.fn().mockResolvedValue([]),
+      getBans: jest.fn().mockResolvedValue([]),
+      bulkInvite: jest.fn().mockResolvedValue(undefined),
     };
 
     gameService = {
@@ -190,6 +204,164 @@ describe('RoomController', () => {
       const cleanupOrder = gameService.forceCleanupRoom.mock.invocationCallOrder[0];
       const deleteOrder = roomService.delete.mock.invocationCallOrder[0];
       expect(cleanupOrder).toBeLessThan(deleteOrder);
+    });
+  });
+
+  describe('create with invites', () => {
+    it('should bulk invite users when invitedUserIds provided', async () => {
+      roomService.create.mockResolvedValue(dbRoom);
+
+      await controller.create(makeRequest(alice), {
+        name: 'Invite Room',
+        visibility: 'invite-only',
+        invitedUserIds: [2, 3],
+      });
+
+      expect(roomService.bulkInvite).toHaveBeenCalledWith(1, [2, 3]);
+    });
+
+    it('should filter out the owner from invitedUserIds', async () => {
+      roomService.create.mockResolvedValue(dbRoom);
+
+      await controller.create(makeRequest(alice), {
+        name: 'Invite Room',
+        visibility: 'invite-only',
+        invitedUserIds: [1, 2],
+      });
+
+      expect(roomService.bulkInvite).toHaveBeenCalledWith(1, [2]);
+    });
+
+    it('should not call bulkInvite when no invitedUserIds', async () => {
+      roomService.create.mockResolvedValue(dbRoom);
+
+      await controller.create(makeRequest(alice), { name: 'Room' });
+
+      expect(roomService.bulkInvite).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('invite', () => {
+    it('should invite a user when owner requests', async () => {
+      roomService.findById.mockResolvedValue(dbRoom);
+
+      const result = await controller.invite(makeRequest(alice), 1, { userId: 2 });
+
+      expect(roomService.inviteUser).toHaveBeenCalledWith(1, 2);
+      expect(result).toEqual({ success: true });
+    });
+
+    it('should throw ForbiddenException when non-owner invites', async () => {
+      roomService.findById.mockResolvedValue(dbRoom);
+
+      await expect(controller.invite(makeRequest(bob), 1, { userId: 3 })).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should throw BadRequestException when inviting self', async () => {
+      roomService.findById.mockResolvedValue(dbRoom);
+
+      await expect(controller.invite(makeRequest(alice), 1, { userId: 1 })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
+
+  describe('uninvite', () => {
+    it('should uninvite a user when owner requests', async () => {
+      roomService.findById.mockResolvedValue(dbRoom);
+
+      const result = await controller.uninvite(makeRequest(alice), 1, 2);
+
+      expect(roomService.uninviteUser).toHaveBeenCalledWith(1, 2);
+      expect(result).toEqual({ success: true });
+    });
+
+    it('should throw ForbiddenException when non-owner uninvites', async () => {
+      roomService.findById.mockResolvedValue(dbRoom);
+
+      await expect(controller.uninvite(makeRequest(bob), 1, 3)).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('ban', () => {
+    it('should ban a user when owner requests', async () => {
+      roomService.findById.mockResolvedValue(dbRoom);
+
+      const result = await controller.ban(makeRequest(alice), 1, { userId: 2 });
+
+      expect(roomService.banUser).toHaveBeenCalledWith(1, 2);
+      expect(result).toEqual({ success: true });
+    });
+
+    it('should throw ForbiddenException when non-owner bans', async () => {
+      roomService.findById.mockResolvedValue(dbRoom);
+
+      await expect(controller.ban(makeRequest(bob), 1, { userId: 3 })).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should throw BadRequestException when banning self', async () => {
+      roomService.findById.mockResolvedValue(dbRoom);
+
+      await expect(controller.ban(makeRequest(alice), 1, { userId: 1 })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
+
+  describe('unban', () => {
+    it('should unban a user when owner requests', async () => {
+      roomService.findById.mockResolvedValue(dbRoom);
+
+      const result = await controller.unban(makeRequest(alice), 1, 2);
+
+      expect(roomService.unbanUser).toHaveBeenCalledWith(1, 2);
+      expect(result).toEqual({ success: true });
+    });
+
+    it('should throw ForbiddenException when non-owner unbans', async () => {
+      roomService.findById.mockResolvedValue(dbRoom);
+
+      await expect(controller.unban(makeRequest(bob), 1, 3)).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('listInvites', () => {
+    it('should return invites for accessible room', async () => {
+      roomService.canAccessRoom.mockResolvedValue(true);
+      const invites = [{ userId: 2, username: 'bob', displayName: 'Bob', invitedAt: 'x' }];
+      roomService.getInvites.mockResolvedValue(invites);
+
+      const result = await controller.listInvites(makeRequest(alice), 1);
+
+      expect(result).toEqual(invites);
+    });
+
+    it('should throw NotFoundException when user cannot access room', async () => {
+      roomService.canAccessRoom.mockResolvedValue(false);
+
+      await expect(controller.listInvites(makeRequest(bob), 1)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('listBans', () => {
+    it('should return bans for owner', async () => {
+      roomService.findById.mockResolvedValue(dbRoom);
+      const bans = [{ userId: 3, username: 'carol', displayName: 'Carol', bannedAt: 'x' }];
+      roomService.getBans.mockResolvedValue(bans);
+
+      const result = await controller.listBans(makeRequest(alice), 1);
+
+      expect(result).toEqual(bans);
+    });
+
+    it('should throw ForbiddenException for non-owner', async () => {
+      roomService.findById.mockResolvedValue(dbRoom);
+
+      await expect(controller.listBans(makeRequest(bob), 1)).rejects.toThrow(ForbiddenException);
     });
   });
 });

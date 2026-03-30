@@ -13,7 +13,13 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Title } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ChatMemberList } from '../chat/chat-member-list';
+import {
+  RoomBanResponse,
+  RoomInviteResponse,
+  RoomResponse,
+  UserIdentity,
+} from '@cardquorum/shared';
+import { AuthService } from '../auth/auth.service';
 import { ChatMessageList } from '../chat/chat-message-list';
 import { ChatService } from '../chat/chat.service';
 import { RoomService } from './room.service';
@@ -23,7 +29,7 @@ type RoomTab = 'chat' | 'members' | 'settings';
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-room-view',
-  imports: [FormsModule, TitleCasePipe, ChatMemberList, ChatMessageList],
+  imports: [FormsModule, TitleCasePipe, ChatMessageList],
   template: `
     <div class="flex h-full bg-white text-gray-900 dark:bg-gray-900 dark:text-white">
       <!-- Game area (reserved) -->
@@ -74,7 +80,7 @@ type RoomTab = 'chat' | 'members' | 'settings';
                   ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400'
                   : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200')
               "
-              (click)="activeTab.set(tab)"
+              (click)="onTabClick(tab)"
             >
               {{ tab | titlecase }}
             </button>
@@ -130,9 +136,100 @@ type RoomTab = 'chat' | 'members' | 'settings';
                 id="members-panel"
                 role="tabpanel"
                 aria-label="Members"
-                class="flex-1 overflow-y-auto"
+                class="flex-1 overflow-y-auto p-4"
               >
-                <app-chat-member-list [members]="chatService.members()" />
+                <!-- Active Members -->
+                <h3
+                  class="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500
+                         dark:text-gray-400"
+                >
+                  Online ({{ chatService.members().length }})
+                </h3>
+                <ul class="mb-4 flex flex-col gap-1">
+                  @for (member of chatService.members(); track member.userId) {
+                    <li
+                      class="flex items-center justify-between text-sm text-gray-700
+                             dark:text-gray-300"
+                    >
+                      <span class="flex items-center gap-2">
+                        <span class="h-2 w-2 rounded-full bg-green-500" aria-hidden="true"></span>
+                        {{ member.displayName ?? member.username }}
+                      </span>
+                      @if (isOwner() && member.userId !== room()?.ownerId) {
+                        <button
+                          (click)="onBan(member.userId)"
+                          class="rounded px-1.5 py-0.5 text-xs text-red-600 hover:bg-red-50
+                                 dark:text-red-400 dark:hover:bg-red-900/20"
+                        >
+                          Ban
+                        </button>
+                      }
+                    </li>
+                  }
+                </ul>
+
+                <!-- Invited (not online) — visible to everyone for invite-only rooms -->
+                @if (room()?.visibility === 'invite-only' && offlineInvitees().length > 0) {
+                  <h3
+                    class="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500
+                           dark:text-gray-400"
+                  >
+                    Invited ({{ offlineInvitees().length }})
+                  </h3>
+                  <ul class="mb-4 flex flex-col gap-1">
+                    @for (inv of offlineInvitees(); track inv.userId) {
+                      <li
+                        class="flex items-center justify-between text-sm text-gray-500
+                               dark:text-gray-400"
+                      >
+                        <span class="flex items-center gap-2">
+                          <span
+                            class="h-2 w-2 rounded-full bg-gray-300 dark:bg-gray-600"
+                            aria-hidden="true"
+                          ></span>
+                          {{ inv.displayName ?? inv.username }}
+                        </span>
+                        @if (isOwner()) {
+                          <button
+                            (click)="onUninvite(inv.userId)"
+                            class="rounded px-1.5 py-0.5 text-xs text-amber-600
+                                   hover:bg-amber-50 dark:text-amber-400
+                                   dark:hover:bg-amber-900/20"
+                          >
+                            Revoke
+                          </button>
+                        }
+                      </li>
+                    }
+                  </ul>
+                }
+
+                <!-- Banned — owner only -->
+                @if (isOwner() && bans().length > 0) {
+                  <h3
+                    class="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500
+                           dark:text-gray-400"
+                  >
+                    Banned ({{ bans().length }})
+                  </h3>
+                  <ul class="flex flex-col gap-1">
+                    @for (ban of bans(); track ban.userId) {
+                      <li
+                        class="flex items-center justify-between text-sm text-gray-500
+                               dark:text-gray-400"
+                      >
+                        <span>{{ ban.displayName ?? ban.username }}</span>
+                        <button
+                          (click)="onUnban(ban.userId)"
+                          class="rounded px-1.5 py-0.5 text-xs text-green-600 hover:bg-green-50
+                                 dark:text-green-400 dark:hover:bg-green-900/20"
+                        >
+                          Unban
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                }
               </div>
             }
             @case ('settings') {
@@ -155,6 +252,7 @@ type RoomTab = 'chat' | 'members' | 'settings';
 export class RoomView implements OnInit, OnDestroy {
   readonly chatService = inject(ChatService);
   private readonly roomService = inject(RoomService);
+  private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
@@ -164,7 +262,14 @@ export class RoomView implements OnInit, OnDestroy {
   protected readonly activeTab = signal<RoomTab>('chat');
   protected readonly roomName = signal('');
   protected readonly messageText = signal('');
+  protected readonly room = signal<RoomResponse | null>(null);
+  protected readonly invites = signal<RoomInviteResponse[]>([]);
+  protected readonly bans = signal<RoomBanResponse[]>([]);
   private roomId = 0;
+
+  protected readonly isOwner = signal(false);
+
+  protected readonly offlineInvitees = signal<RoomInviteResponse[]>([]);
 
   constructor() {
     effect(() => {
@@ -172,6 +277,12 @@ export class RoomView implements OnInit, OnDestroy {
       if (deletedId !== null && deletedId === this.roomId) {
         this.router.navigate(['/rooms']);
       }
+    });
+
+    // Compute offline invitees whenever members or invites change
+    effect(() => {
+      const onlineIds = new Set(this.chatService.members().map((m) => m.userId));
+      this.offlineInvitees.set(this.invites().filter((inv) => !onlineIds.has(inv.userId)));
     });
   }
 
@@ -189,8 +300,15 @@ export class RoomView implements OnInit, OnDestroy {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (room) => {
+          this.room.set(room);
           this.roomName.set(room.name);
           this.title.setTitle(`${room.name} — CardQuorum`);
+          this.isOwner.set(room.ownerId === this.auth.user()?.userId);
+          if (this.isOwner()) {
+            this.loadMemberData();
+          } else if (room.visibility === 'invite-only') {
+            this.loadInvites();
+          }
         },
         error: () => this.router.navigate(['/rooms']),
       });
@@ -202,6 +320,17 @@ export class RoomView implements OnInit, OnDestroy {
     this.chatService.leaveRoom();
   }
 
+  protected onTabClick(tab: RoomTab): void {
+    this.activeTab.set(tab);
+    if (tab === 'members') {
+      if (this.isOwner()) {
+        this.loadMemberData();
+      } else if (this.room()?.visibility === 'invite-only') {
+        this.loadInvites();
+      }
+    }
+  }
+
   protected send(): void {
     const text = this.messageText().trim();
     if (!text) return;
@@ -211,5 +340,36 @@ export class RoomView implements OnInit, OnDestroy {
 
   protected leave(): void {
     this.router.navigate(['/rooms']);
+  }
+
+  protected onBan(userId: number): void {
+    this.roomService.banUser(this.roomId, userId).subscribe(() => this.loadMemberData());
+  }
+
+  protected onUninvite(userId: number): void {
+    this.roomService.uninviteUser(this.roomId, userId).subscribe(() => this.loadInvites());
+  }
+
+  protected onUnban(userId: number): void {
+    this.roomService.unbanUser(this.roomId, userId).subscribe(() => this.loadBans());
+  }
+
+  private loadMemberData(): void {
+    this.loadInvites();
+    this.loadBans();
+  }
+
+  private loadInvites(): void {
+    this.roomService
+      .getInvites(this.roomId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({ next: (invites) => this.invites.set(invites) });
+  }
+
+  private loadBans(): void {
+    this.roomService
+      .getBans(this.roomId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({ next: (bans) => this.bans.set(bans) });
   }
 }

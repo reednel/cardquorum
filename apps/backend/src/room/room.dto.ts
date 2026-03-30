@@ -1,4 +1,13 @@
-import { IsIn, IsInt, IsOptional, IsString, MaxLength, Min, MinLength } from 'class-validator';
+import {
+  IsArray,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+  MinLength,
+} from 'class-validator';
 import { JoinRoomPayload, LeaveRoomPayload } from '@cardquorum/shared';
 
 export class JoinRoomDto implements JoinRoomPayload {
@@ -23,6 +32,11 @@ export class CreateRoomDto {
   @IsString()
   @IsIn(['public', 'friends-only', 'invite-only'])
   visibility?: 'public' | 'friends-only' | 'invite-only';
+
+  @IsOptional()
+  @IsArray()
+  @IsInt({ each: true })
+  invitedUserIds?: number[];
 }
 
 export class UpdateRoomDto {
@@ -36,4 +50,10 @@ export class UpdateRoomDto {
   @IsString()
   @IsIn(['public', 'friends-only', 'invite-only'])
   visibility?: 'public' | 'friends-only' | 'invite-only';
+}
+
+export class RoomUserDto {
+  @IsInt()
+  @Min(1)
+  userId!: number;
 }

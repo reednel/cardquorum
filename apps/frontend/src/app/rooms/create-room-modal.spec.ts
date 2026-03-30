@@ -1,4 +1,5 @@
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { RoomResponse } from '@cardquorum/shared';
@@ -31,7 +32,11 @@ describe('CreateRoomModal', () => {
 
     await TestBed.configureTestingModule({
       imports: [CreateRoomModal],
-      providers: [{ provide: RoomService, useValue: mockRoomService }],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: RoomService, useValue: mockRoomService },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(CreateRoomModal);
@@ -83,5 +88,49 @@ describe('CreateRoomModal', () => {
     );
     cancel?.click();
     expect(spy).toHaveBeenCalled();
+  });
+
+  it('shows invite search input when visibility is invite-only', () => {
+    fixture.componentRef.instance['form'].patchValue({ visibility: 'invite-only' });
+    fixture.detectChanges();
+
+    expect(el.querySelector('#invite-search')).toBeTruthy();
+  });
+
+  it('does not show invite search input for public visibility', () => {
+    fixture.componentRef.instance['form'].patchValue({ visibility: 'public' });
+    fixture.detectChanges();
+
+    expect(el.querySelector('#invite-search')).toBeFalsy();
+  });
+
+  it('sends invitedUserIds when creating invite-only room', () => {
+    mockRoomService.createRoom.mockReturnValue(of({ ...ROOM, visibility: 'invite-only' }));
+
+    fixture.componentRef.instance['form'].patchValue({
+      name: 'Private',
+      visibility: 'invite-only',
+    });
+    fixture.componentRef.instance['invitedUsers'].set([
+      { userId: 2, username: 'bob', displayName: 'Bob' },
+    ]);
+    fixture.componentRef.instance['onSubmit']();
+
+    expect(mockRoomService.createRoom).toHaveBeenCalledWith({
+      name: 'Private',
+      visibility: 'invite-only',
+      invitedUserIds: [2],
+    });
+  });
+
+  it('adds and removes invitees', () => {
+    const instance = fixture.componentRef.instance;
+    const user = { userId: 5, username: 'eve', displayName: 'Eve' };
+
+    instance['addInvitee'](user);
+    expect(instance['invitedUsers']()).toHaveLength(1);
+
+    instance['removeInvitee'](5);
+    expect(instance['invitedUsers']()).toHaveLength(0);
   });
 });

@@ -1,4 +1,4 @@
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import {
   afterNextRender,
   ChangeDetectionStrategy,
@@ -10,7 +10,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RoomResponse, RoomVisibility } from '@cardquorum/shared';
+import { RoomResponse, RoomVisibility, UserSearchResult } from '@cardquorum/shared';
 import { RoomService } from './room.service';
 
 @Component({
@@ -67,7 +67,7 @@ import { RoomService } from './room.service';
             />
           </div>
 
-          <div class="mb-6">
+          <div class="mb-4">
             <label
               for="room-visibility"
               class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
@@ -87,6 +87,77 @@ import { RoomService } from './room.service';
               <option value="invite-only">Invite Only</option>
             </select>
           </div>
+
+          @if (form.value.visibility === 'invite-only') {
+            <div class="mb-4">
+              <label
+                for="invite-search"
+                class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Invite Users
+              </label>
+              <input
+                id="invite-search"
+                type="text"
+                autocomplete="off"
+                placeholder="Search by username..."
+                class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm
+                       focus:border-indigo-500 focus:outline-none focus:ring-1
+                       focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800
+                       dark:text-gray-100"
+                (input)="onSearchInput($event)"
+              />
+
+              @if (searchResults().length > 0) {
+                <ul
+                  class="mt-1 max-h-32 overflow-y-auto rounded-md border border-gray-200
+                         bg-white dark:border-gray-700 dark:bg-gray-800"
+                  role="listbox"
+                  aria-label="Search results"
+                >
+                  @for (user of searchResults(); track user.userId) {
+                    <li>
+                      <button
+                        type="button"
+                        role="option"
+                        [attr.aria-selected]="false"
+                        class="w-full px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-100
+                               dark:text-gray-300 dark:hover:bg-gray-700"
+                        (click)="addInvitee(user)"
+                      >
+                        {{ user.displayName ?? user.username }}
+                        @if (user.displayName) {
+                          <span class="text-gray-400">({{ user.username }})</span>
+                        }
+                      </button>
+                    </li>
+                  }
+                </ul>
+              }
+
+              @if (invitedUsers().length > 0) {
+                <div class="mt-2 flex flex-wrap gap-1">
+                  @for (user of invitedUsers(); track user.userId) {
+                    <span
+                      class="inline-flex items-center gap-1 rounded-full bg-indigo-100 px-2 py-0.5
+                             text-xs font-medium text-indigo-800 dark:bg-indigo-900/30
+                             dark:text-indigo-400"
+                    >
+                      {{ user.displayName ?? user.username }}
+                      <button
+                        type="button"
+                        (click)="removeInvitee(user.userId)"
+                        class="ml-0.5 hover:text-indigo-600 dark:hover:text-indigo-200"
+                        [attr.aria-label]="'Remove ' + (user.displayName ?? user.username)"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  }
+                </div>
+              }
+            </div>
+          }
 
           <div class="flex justify-end gap-3">
             <button
@@ -117,11 +188,14 @@ export class CreateRoomModal {
   readonly closed = output<void>();
 
   private readonly roomService = inject(RoomService);
+  private readonly http = inject(HttpClient);
   private readonly fb = inject(FormBuilder);
   private readonly dialogEl = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
 
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly submitting = signal(false);
+  protected readonly searchResults = signal<UserSearchResult[]>([]);
+  protected readonly invitedUsers = signal<UserSearchResult[]>([]);
 
   protected readonly form = this.fb.nonNullable.group({
     name: ['', Validators.required],
@@ -134,6 +208,30 @@ export class CreateRoomModal {
     });
   }
 
+  protected onSearchInput(event: Event): void {
+    const query = (event.target as HTMLInputElement).value.trim();
+    if (!query) {
+      this.searchResults.set([]);
+      return;
+    }
+    const invitedIds = new Set(this.invitedUsers().map((u) => u.userId));
+    this.http.get<UserSearchResult[]>('/api/users/search', { params: { q: query } }).subscribe({
+      next: (results) => {
+        this.searchResults.set(results.filter((r) => !invitedIds.has(r.userId)));
+      },
+    });
+  }
+
+  protected addInvitee(user: UserSearchResult): void {
+    if (this.invitedUsers().some((u) => u.userId === user.userId)) return;
+    this.invitedUsers.update((list) => [...list, user]);
+    this.searchResults.update((list) => list.filter((r) => r.userId !== user.userId));
+  }
+
+  protected removeInvitee(userId: number): void {
+    this.invitedUsers.update((list) => list.filter((u) => u.userId !== userId));
+  }
+
   protected onSubmit(): void {
     if (this.form.invalid) return;
 
@@ -141,18 +239,23 @@ export class CreateRoomModal {
     this.submitting.set(true);
 
     const { name, visibility } = this.form.getRawValue();
-    this.roomService.createRoom({ name, visibility: visibility as RoomVisibility }).subscribe({
-      next: (room) => {
-        this.submitting.set(false);
-        this.created.emit(room);
-      },
-      error: (err: HttpErrorResponse) => {
-        this.submitting.set(false);
-        this.errorMessage.set(
-          err.status === 409 ? 'A room with that name already exists' : 'Something went wrong',
-        );
-      },
-    });
+    const invitedUserIds =
+      visibility === 'invite-only' ? this.invitedUsers().map((u) => u.userId) : undefined;
+
+    this.roomService
+      .createRoom({ name, visibility: visibility as RoomVisibility, invitedUserIds })
+      .subscribe({
+        next: (room) => {
+          this.submitting.set(false);
+          this.created.emit(room);
+        },
+        error: (err: HttpErrorResponse) => {
+          this.submitting.set(false);
+          this.errorMessage.set(
+            err.status === 409 ? 'A room with that name already exists' : 'Something went wrong',
+          );
+        },
+      });
   }
 
   protected onCancel(event: Event): void {

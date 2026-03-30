@@ -50,6 +50,12 @@ Client                          Server
   │   via REST API, all members    │
   │   receive room:deleted)        │
   │       ◄── room:deleted ────────┤
+  │                                │
+  │  (if room owner bans a member  │
+  │   via REST API, that member    │
+  │   receives member:kicked and   │
+  │   is removed from the room)    │
+  │       ◄── member:kicked ───────┤
 ```
 
 **Note:** Rooms must be created via `POST /api/rooms` before joining. Attempting to join a non-existent room returns a WS error.

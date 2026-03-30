@@ -2,6 +2,7 @@ import { inject, Injectable, signal } from '@angular/core';
 import {
   ChatMessagePayload,
   MemberChangePayload,
+  MemberKickedPayload,
   MessageHistoryPayload,
   RoomDeletedPayload,
   RoomJoinedPayload,
@@ -45,6 +46,11 @@ export class ChatService {
     });
     this.ws.on<RoomDeletedPayload>(WS_EMIT.ROOM_DELETED, (data) => {
       this._roomDeleted.set(data.roomId);
+    });
+    this.ws.on<MemberKickedPayload>(WS_EMIT.MEMBER_KICKED, (data) => {
+      if (data.roomId === this._currentRoomId()) {
+        this._roomDeleted.set(data.roomId); // reuse same signal to trigger navigation
+      }
     });
 
     // Re-join active room on reconnect (WS dropped and re-established).

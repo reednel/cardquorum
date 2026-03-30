@@ -38,9 +38,9 @@ Shared types and constants consumed by both frontend and backend. Contains no ru
 Key exports:
 
 - `WS_EVENT` — client-to-server WebSocket event names (`room:join`, `room:leave`, `chat:send`, game events)
-- `WS_EMIT` — server-to-client event names (`room:joined`, `member:joined`, `member:left`, `chat:message`, `message:history`, `room:deleted`, game events, `error`)
-- Payload interfaces for every event (`JoinRoomPayload`, `ChatMessagePayload`, `RoomDeletedPayload`, game payloads, etc.)
-- Room types: `Room`, `RoomResponse`, `RoomVisibility`, `CreateRoomRequest`, `UpdateRoomRequest`
+- `WS_EMIT` — server-to-client event names (`room:joined`, `member:joined`, `member:left`, `member:kicked`, `chat:message`, `message:history`, `room:deleted`, game events, `error`)
+- Payload interfaces for every event (`JoinRoomPayload`, `ChatMessagePayload`, `RoomDeletedPayload`, `MemberKickedPayload`, game payloads, etc.)
+- Room types: `Room`, `RoomResponse`, `RoomVisibility`, `CreateRoomRequest`, `UpdateRoomRequest`, `RoomInviteResponse`, `RoomBanResponse`, `InviteUserRequest`, `BanUserRequest`
 - Auth types: `AuthStrategy`, `LoginRequest`, `RegisterRequest`, `StrategiesResponse`, `UserIdentity`
 - Game types: `GameType`, `GameSessionStatus`
 
@@ -55,17 +55,17 @@ Key exports:
 
 ## Backend Modules
 
-| Module          | Global? | Purpose                                                          |
-| --------------- | ------- | ---------------------------------------------------------------- |
-| `ConfigModule`  | Yes     | Validates env vars at startup (DATABASE_URL, etc.)               |
-| `LoggerModule`  | Yes     | Structured logging via pino (pretty in dev, JSON in prod)        |
-| `DrizzleModule` | Yes     | Provides `DRIZZLE` token — a typed Drizzle instance for Postgres |
-| `HealthModule`  | No      | `GET /api/healthz` — checks Postgres                             |
-| `AuthModule`    | No      | Register/login, session management, HTTP + WS auth guards        |
-| `RoomModule`    | No      | Room CRUD REST API, wraps engine's `RoomManager`                 |
-| `ChatModule`    | No      | Chat gateway, message persistence                                |
-| `WsModule`      | No      | WebSocket connection lifecycle, validation pipe                  |
-| `GameModule`    | No      | Game session lifecycle, game gateway                             |
+| Module          | Global? | Purpose                                                                 |
+| --------------- | ------- | ----------------------------------------------------------------------- |
+| `ConfigModule`  | Yes     | Validates env vars at startup (DATABASE_URL, etc.)                      |
+| `LoggerModule`  | Yes     | Structured logging via pino (pretty in dev, JSON in prod)               |
+| `DrizzleModule` | Yes     | Provides `DRIZZLE` token — a typed Drizzle instance for Postgres        |
+| `HealthModule`  | No      | `GET /api/healthz` — checks Postgres                                    |
+| `AuthModule`    | No      | Register/login, session management, HTTP + WS auth guards               |
+| `RoomModule`    | No      | Room CRUD REST API, invite/ban management, wraps engine's `RoomManager` |
+| `ChatModule`    | No      | Chat gateway, message persistence                                       |
+| `WsModule`      | No      | WebSocket connection lifecycle, validation pipe                         |
+| `GameModule`    | No      | Game session lifecycle, game gateway                                    |
 
 ## Frontend Structure
 

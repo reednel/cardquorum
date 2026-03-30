@@ -1,7 +1,13 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
 import { Observable } from 'rxjs';
-import { CreateRoomRequest, RoomResponse, UpdateRoomRequest } from '@cardquorum/shared';
+import {
+  CreateRoomRequest,
+  RoomBanResponse,
+  RoomInviteResponse,
+  RoomResponse,
+  UpdateRoomRequest,
+} from '@cardquorum/shared';
 
 @Injectable({ providedIn: 'root' })
 export class RoomService {
@@ -48,5 +54,33 @@ export class RoomService {
 
   removeRoomFromList(roomId: number): void {
     this._rooms.update((rooms) => rooms.filter((r) => r.id !== roomId));
+  }
+
+  // --- Invites ---
+
+  getInvites(roomId: number): Observable<RoomInviteResponse[]> {
+    return this.http.get<RoomInviteResponse[]>(`/api/rooms/${roomId}/invites`);
+  }
+
+  inviteUser(roomId: number, userId: number): Observable<unknown> {
+    return this.http.post(`/api/rooms/${roomId}/invites`, { userId });
+  }
+
+  uninviteUser(roomId: number, userId: number): Observable<unknown> {
+    return this.http.delete(`/api/rooms/${roomId}/invites/${userId}`);
+  }
+
+  // --- Bans ---
+
+  getBans(roomId: number): Observable<RoomBanResponse[]> {
+    return this.http.get<RoomBanResponse[]>(`/api/rooms/${roomId}/bans`);
+  }
+
+  banUser(roomId: number, userId: number): Observable<unknown> {
+    return this.http.post(`/api/rooms/${roomId}/bans`, { userId });
+  }
+
+  unbanUser(roomId: number, userId: number): Observable<unknown> {
+    return this.http.delete(`/api/rooms/${roomId}/bans/${userId}`);
   }
 }

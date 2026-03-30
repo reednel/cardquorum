@@ -15,6 +15,21 @@ describe('RoomService', () => {
   };
   let mockFriendService: { areFriends: jest.Mock; findFriendIds: jest.Mock };
   let mockBlockService: { getBlockedIds: jest.Mock; isBlocked: jest.Mock };
+  let mockInviteRepo: {
+    findInvitedRoomIds: jest.Mock;
+    isInvited: jest.Mock;
+    findByRoom: jest.Mock;
+    create: jest.Mock;
+    createMany: jest.Mock;
+    delete: jest.Mock;
+  };
+  let mockBanRepo: {
+    findBannedRoomIds: jest.Mock;
+    isBanned: jest.Mock;
+    findByRoom: jest.Mock;
+    create: jest.Mock;
+    delete: jest.Mock;
+  };
 
   const alice: UserIdentity = { userId: 1, username: 'alice', displayName: 'Alice' };
   const bob: UserIdentity = { userId: 2, username: 'bob', displayName: 'Bob' };
@@ -34,9 +49,26 @@ describe('RoomService', () => {
 
     mockFriendService = { areFriends: jest.fn(), findFriendIds: jest.fn() };
     mockBlockService = { getBlockedIds: jest.fn(), isBlocked: jest.fn() };
+    mockInviteRepo = {
+      findInvitedRoomIds: jest.fn().mockResolvedValue([]),
+      isInvited: jest.fn().mockResolvedValue(false),
+      findByRoom: jest.fn().mockResolvedValue([]),
+      create: jest.fn(),
+      createMany: jest.fn(),
+      delete: jest.fn(),
+    };
+    mockBanRepo = {
+      findBannedRoomIds: jest.fn().mockResolvedValue([]),
+      isBanned: jest.fn().mockResolvedValue(false),
+      findByRoom: jest.fn().mockResolvedValue([]),
+      create: jest.fn(),
+      delete: jest.fn(),
+    };
 
     service = new RoomService(
       mockRepo as any,
+      mockInviteRepo as any,
+      mockBanRepo as any,
       connectionService,
       mockFriendService as any,
       mockBlockService as any,
@@ -293,6 +325,197 @@ describe('RoomService', () => {
       const result = await service.canAccessRoom(1, 10);
 
       expect(result).toBe(true);
+    });
+  });
+
+  describe('findAllForUser - invite filtering', () => {
+    const inviteRoom = {
+      id: 5,
+      name: 'Invite',
+      ownerId: 50,
+      ownerDisplayName: 'Owner',
+      visibility: 'invite-only',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    it('should include invite-only rooms where user is invited', async () => {
+      mockRepo.findAll.mockResolvedValue([inviteRoom]);
+      mockFriendService.findFriendIds.mockResolvedValue([]);
+      mockInviteRepo.findInvitedRoomIds.mockResolvedValue([5]);
+
+      const result = await service.findAllForUser(10);
+      expect(result).toEqual([inviteRoom]);
+    });
+
+    it('should exclude invite-only rooms where user is NOT invited', async () => {
+      mockRepo.findAll.mockResolvedValue([inviteRoom]);
+      mockFriendService.findFriendIds.mockResolvedValue([]);
+      mockInviteRepo.findInvitedRoomIds.mockResolvedValue([]);
+
+      const result = await service.findAllForUser(10);
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('findAllForUser - ban filtering', () => {
+    it('should exclude rooms where user is banned', async () => {
+      const room = {
+        id: 1,
+        name: 'Pub',
+        ownerId: 99,
+        ownerDisplayName: 'Other',
+        visibility: 'public',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      mockRepo.findAll.mockResolvedValue([room]);
+      mockFriendService.findFriendIds.mockResolvedValue([]);
+      mockBanRepo.findBannedRoomIds.mockResolvedValue([1]);
+
+      const result = await service.findAllForUser(10);
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('canAccessRoom - invite-only', () => {
+    it('should allow invited user to access invite-only room', async () => {
+      mockRepo.findById.mockResolvedValue({ id: 1, visibility: 'invite-only', ownerId: 50 });
+      mockInviteRepo.isInvited.mockResolvedValue(true);
+
+      const result = await service.canAccessRoom(1, 10);
+      expect(result).toBe(true);
+    });
+
+    it('should deny non-invited user from invite-only room', async () => {
+      mockRepo.findById.mockResolvedValue({ id: 1, visibility: 'invite-only', ownerId: 50 });
+      mockInviteRepo.isInvited.mockResolvedValue(false);
+
+      const result = await service.canAccessRoom(1, 10);
+      expect(result).toBe(false);
+    });
+
+    it('should allow owner to access own invite-only room', async () => {
+      mockRepo.findById.mockResolvedValue({ id: 1, visibility: 'invite-only', ownerId: 10 });
+
+      const result = await service.canAccessRoom(1, 10);
+      expect(result).toBe(true);
+    });
+  });
+
+  describe('canAccessRoom - ban check', () => {
+    it('should deny banned user even for public rooms', async () => {
+      mockRepo.findById.mockResolvedValue({ id: 1, visibility: 'public', ownerId: 99 });
+      mockBanRepo.isBanned.mockResolvedValue(true);
+
+      const result = await service.canAccessRoom(1, 10);
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('inviteUser', () => {
+    it('should create an invite', async () => {
+      mockBanRepo.isBanned.mockResolvedValue(false);
+      mockInviteRepo.isInvited.mockResolvedValue(false);
+
+      await service.inviteUser(1, 10);
+      expect(mockInviteRepo.create).toHaveBeenCalledWith(1, 10);
+    });
+
+    it('should throw ConflictException if user is already invited', async () => {
+      mockBanRepo.isBanned.mockResolvedValue(false);
+      mockInviteRepo.isInvited.mockResolvedValue(true);
+
+      await expect(service.inviteUser(1, 10)).rejects.toThrow('User is already invited');
+    });
+
+    it('should throw ConflictException if user is banned', async () => {
+      mockBanRepo.isBanned.mockResolvedValue(true);
+
+      await expect(service.inviteUser(1, 10)).rejects.toThrow('User is banned from this room');
+    });
+  });
+
+  describe('uninviteUser', () => {
+    it('should delete the invite', async () => {
+      mockInviteRepo.delete.mockResolvedValue({ id: 1 });
+
+      await service.uninviteUser(1, 10);
+      expect(mockInviteRepo.delete).toHaveBeenCalledWith(1, 10);
+    });
+
+    it('should throw NotFoundException if invite does not exist', async () => {
+      mockInviteRepo.delete.mockResolvedValue(null);
+
+      await expect(service.uninviteUser(1, 10)).rejects.toThrow('Invite not found');
+    });
+  });
+
+  describe('banUser', () => {
+    it('should create a ban and delete any existing invite', async () => {
+      mockBanRepo.isBanned.mockResolvedValue(false);
+
+      await service.banUser(1, 10);
+
+      expect(mockBanRepo.create).toHaveBeenCalledWith(1, 10);
+      expect(mockInviteRepo.delete).toHaveBeenCalledWith(1, 10);
+    });
+
+    it('should throw ConflictException if user is already banned', async () => {
+      mockBanRepo.isBanned.mockResolvedValue(true);
+
+      await expect(service.banUser(1, 10)).rejects.toThrow('User is already banned');
+    });
+
+    it('should kick the user from the WS room', async () => {
+      mockBanRepo.isBanned.mockResolvedValue(false);
+
+      const client = createMockClient();
+      connectionService.trackClient(client, {
+        userId: 10,
+        username: 'target',
+        displayName: 'T',
+      });
+      const tracked = connectionService.getTracked(client)!;
+      service.manager.joinRoom('1', tracked.id, {
+        userId: 10,
+        username: 'target',
+        displayName: 'T',
+      });
+
+      await service.banUser(1, 10);
+
+      const calls = (client.send as jest.Mock).mock.calls;
+      const kickMsg = calls.find((c: any) => JSON.parse(c[0]).event === WS_EMIT.MEMBER_KICKED);
+      expect(kickMsg).toBeDefined();
+      expect(JSON.parse(kickMsg[0]).data).toEqual({ roomId: 1, userId: 10 });
+    });
+  });
+
+  describe('unbanUser', () => {
+    it('should delete the ban', async () => {
+      mockBanRepo.delete.mockResolvedValue({ id: 1 });
+
+      await service.unbanUser(1, 10);
+      expect(mockBanRepo.delete).toHaveBeenCalledWith(1, 10);
+    });
+
+    it('should throw NotFoundException if ban does not exist', async () => {
+      mockBanRepo.delete.mockResolvedValue(null);
+
+      await expect(service.unbanUser(1, 10)).rejects.toThrow('Ban not found');
+    });
+  });
+
+  describe('bulkInvite', () => {
+    it('should call createMany with user IDs', async () => {
+      await service.bulkInvite(1, [10, 20, 30]);
+      expect(mockInviteRepo.createMany).toHaveBeenCalledWith(1, [10, 20, 30]);
+    });
+
+    it('should no-op for empty array', async () => {
+      await service.bulkInvite(1, []);
+      expect(mockInviteRepo.createMany).not.toHaveBeenCalled();
     });
   });
 });

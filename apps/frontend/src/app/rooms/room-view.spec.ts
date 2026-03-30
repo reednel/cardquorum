@@ -3,6 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { RoomResponse } from '@cardquorum/shared';
+import { AuthService } from '../auth/auth.service';
 import { ChatService } from '../chat/chat.service';
 import { RoomView } from './room-view';
 import { RoomService } from './room.service';
@@ -34,6 +35,15 @@ describe('RoomView', () => {
 
   const mockRoomService = {
     getRoom: jest.fn().mockReturnValue(of(ROOM)),
+    getInvites: jest.fn().mockReturnValue(of([])),
+    getBans: jest.fn().mockReturnValue(of([])),
+    banUser: jest.fn().mockReturnValue(of({})),
+    uninviteUser: jest.fn().mockReturnValue(of({})),
+    unbanUser: jest.fn().mockReturnValue(of({})),
+  };
+
+  const mockAuthService = {
+    user: signal({ userId: 10, username: 'alice', displayName: 'Alice' }),
   };
 
   beforeEach(async () => {
@@ -50,6 +60,7 @@ describe('RoomView', () => {
         },
         { provide: ChatService, useValue: mockChatService },
         { provide: RoomService, useValue: mockRoomService },
+        { provide: AuthService, useValue: mockAuthService },
       ],
     }).compileComponents();
 
@@ -75,6 +86,25 @@ describe('RoomView', () => {
     fixture.destroy();
     expect(mockChatService.leaveRoom).toHaveBeenCalled();
   });
+
+  it('loads invites and bans when user is owner', () => {
+    expect(mockRoomService.getInvites).toHaveBeenCalledWith(42);
+    expect(mockRoomService.getBans).toHaveBeenCalledWith(42);
+  });
+
+  it('shows ban button next to non-owner members when user is owner', () => {
+    mockChatService.members.set([
+      { userId: 10, username: 'alice', displayName: 'Alice' },
+      { userId: 2, username: 'bob', displayName: 'Bob' },
+    ]);
+    fixture.componentInstance['activeTab'].set('members');
+    fixture.detectChanges();
+
+    const buttons = fixture.nativeElement.querySelectorAll('button');
+    const banButtons = Array.from(buttons).filter((b: any) => b.textContent?.trim() === 'Ban');
+    // Should have 1 ban button (for Bob, not for Alice who is owner)
+    expect(banButtons.length).toBe(1);
+  });
 });
 
 describe('RoomView — invalid room', () => {
@@ -92,6 +122,15 @@ describe('RoomView — invalid room', () => {
 
   const mockRoomService = {
     getRoom: jest.fn().mockReturnValue(throwError(() => new Error('Not found'))),
+    getInvites: jest.fn().mockReturnValue(of([])),
+    getBans: jest.fn().mockReturnValue(of([])),
+    banUser: jest.fn().mockReturnValue(of({})),
+    uninviteUser: jest.fn().mockReturnValue(of({})),
+    unbanUser: jest.fn().mockReturnValue(of({})),
+  };
+
+  const mockAuthService = {
+    user: signal({ userId: 99, username: 'nobody', displayName: 'Nobody' }),
   };
 
   beforeEach(async () => {
@@ -107,6 +146,7 @@ describe('RoomView — invalid room', () => {
         },
         { provide: ChatService, useValue: mockChatService },
         { provide: RoomService, useValue: mockRoomService },
+        { provide: AuthService, useValue: mockAuthService },
       ],
     }).compileComponents();
 

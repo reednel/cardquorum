@@ -115,4 +115,60 @@ describe('RoomService', () => {
     http.expectOne('/api/rooms').flush([ROOM]);
     expect(service.rooms()).toEqual([ROOM]);
   });
+
+  // --- Invite methods ---
+
+  it('getInvites fetches invites for a room', () => {
+    const invites = [{ userId: 2, username: 'bob', displayName: 'Bob', invitedAt: 'x' }];
+    service.getInvites(1).subscribe((res) => expect(res).toEqual(invites));
+
+    const req = http.expectOne('/api/rooms/1/invites');
+    expect(req.request.method).toBe('GET');
+    req.flush(invites);
+  });
+
+  it('inviteUser posts to invite endpoint', () => {
+    service.inviteUser(1, 2).subscribe();
+
+    const req = http.expectOne('/api/rooms/1/invites');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ userId: 2 });
+    req.flush({ success: true });
+  });
+
+  it('uninviteUser sends delete to invite endpoint', () => {
+    service.uninviteUser(1, 2).subscribe();
+
+    const req = http.expectOne('/api/rooms/1/invites/2');
+    expect(req.request.method).toBe('DELETE');
+    req.flush({ success: true });
+  });
+
+  // --- Ban methods ---
+
+  it('getBans fetches bans for a room', () => {
+    const bans = [{ userId: 3, username: 'carol', displayName: 'Carol', bannedAt: 'x' }];
+    service.getBans(1).subscribe((res) => expect(res).toEqual(bans));
+
+    const req = http.expectOne('/api/rooms/1/bans');
+    expect(req.request.method).toBe('GET');
+    req.flush(bans);
+  });
+
+  it('banUser posts to ban endpoint', () => {
+    service.banUser(1, 3).subscribe();
+
+    const req = http.expectOne('/api/rooms/1/bans');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ userId: 3 });
+    req.flush({ success: true });
+  });
+
+  it('unbanUser sends delete to ban endpoint', () => {
+    service.unbanUser(1, 3).subscribe();
+
+    const req = http.expectOne('/api/rooms/1/bans/3');
+    expect(req.request.method).toBe('DELETE');
+    req.flush({ success: true });
+  });
 });

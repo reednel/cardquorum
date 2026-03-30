@@ -25,6 +25,7 @@ export const WS_EMIT = {
   ROOM_DELETED: 'room:deleted',
   CHAT_MESSAGE: 'chat:message',
   MESSAGE_HISTORY: 'message:history',
+  MEMBER_KICKED: 'member:kicked',
   ERROR: 'error',
   GAME_CREATED: 'game:created',
   GAME_STARTED: 'game:started',

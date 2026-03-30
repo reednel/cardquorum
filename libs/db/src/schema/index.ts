@@ -3,6 +3,8 @@ export { friendships } from './friendships';
 export { friendshipRequests } from './friendship-requests';
 export { gameSessions } from './game-sessions';
 export { messages } from './messages';
+export { roomBans } from './room-bans';
+export { roomInvites } from './room-invites';
 export { rooms } from './rooms';
 export { sessions } from './sessions';
 export { userCredentials } from './user-credentials';

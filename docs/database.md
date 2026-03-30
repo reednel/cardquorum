@@ -42,6 +42,28 @@ Current tables:
 | `created_at` | `timestamptz`  | Not null, default `now()`                                              |
 | `updated_at` | `timestamptz`  | Not null, default `now()`                                              |
 
+### `room_invites`
+
+| Column       | Type          | Notes                                     |
+| ------------ | ------------- | ----------------------------------------- |
+| `id`         | `serial`      | PK, auto-increment                        |
+| `room_id`    | `integer`     | FK → `rooms.id`, cascade delete, not null |
+| `user_id`    | `integer`     | FK → `users.id`, cascade delete, not null |
+| `created_at` | `timestamptz` | Not null, default `now()`                 |
+
+**Constraints:** `UNIQUE(room_id, user_id)`, index on `user_id`
+
+### `room_bans`
+
+| Column       | Type          | Notes                                     |
+| ------------ | ------------- | ----------------------------------------- |
+| `id`         | `serial`      | PK, auto-increment                        |
+| `room_id`    | `integer`     | FK → `rooms.id`, cascade delete, not null |
+| `user_id`    | `integer`     | FK → `users.id`, cascade delete, not null |
+| `created_at` | `timestamptz` | Not null, default `now()`                 |
+
+**Constraints:** `UNIQUE(room_id, user_id)`, index on `user_id`
+
 ### `messages`
 
 | Column                | Type           | Notes                           |
@@ -93,6 +115,8 @@ export class ChatService {
 Available repositories:
 
 - **`RoomRepository`** — `findById`, `findAll`, `create`, `update`, `delete`
+- **`RoomInviteRepository`** — `create`, `createMany`, `delete`, `findByRoom`, `isInvited`, `findInvitedRoomIds`
+- **`RoomBanRepository`** — `create`, `delete`, `findByRoom`, `isBanned`, `findBannedRoomIds`
 - **`MessageRepository`** — `insert`, `findByRoomId`
 - **`UserRepository`** — `findById`, `findByUsername`, `create`
 - **`CredentialRepository`** — `findCredentialByUserId`, `findUserByCredential`, `upsertCredential`, `findOrCreateUserByOidc`, `insertCredential`, `findMethodsByUserId`, `deleteByUserIdAndMethod`, `deleteAllByUserId`

@@ -49,6 +49,11 @@ export interface RoomDeletedPayload {
   roomId: number;
 }
 
+export interface MemberKickedPayload {
+  roomId: number;
+  userId: number;
+}
+
 export interface WsErrorPayload {
   message: string;
 }

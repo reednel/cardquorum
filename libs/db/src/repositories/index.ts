@@ -1,5 +1,7 @@
 export { BlockRepository } from './block.repository';
 export { RoomRepository } from './room.repository';
+export { RoomBanRepository } from './room-ban.repository';
+export { RoomInviteRepository } from './room-invite.repository';
 export { MessageRepository } from './message.repository';
 export { SessionRepository } from './session.repository';
 export { UserRepository } from './user.repository';

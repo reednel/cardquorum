@@ -6,6 +6,7 @@ export type {
   SendMessagePayload,
   RoomJoinedPayload,
   MemberChangePayload,
+  MemberKickedPayload,
   ChatMessagePayload,
   MessageHistoryPayload,
   RoomDeletedPayload,
@@ -28,6 +29,11 @@ export type {
   RoomResponse,
   CreateRoomRequest,
   UpdateRoomRequest,
+  RoomMemberInfo,
+  RoomInviteResponse,
+  RoomBanResponse,
+  InviteUserRequest,
+  BanUserRequest,
 } from './lib/room-types';
 export type {
   AuthMethod,

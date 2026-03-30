@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -14,10 +15,16 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
-import { RoomResponse, RoomVisibility, UserIdentity } from '@cardquorum/shared';
+import {
+  RoomBanResponse,
+  RoomInviteResponse,
+  RoomResponse,
+  RoomVisibility,
+  UserIdentity,
+} from '@cardquorum/shared';
 import { HttpAuthGuard, REQUEST_USER_KEY } from '../auth/http-auth.guard';
 import { GameService } from '../game/game.service';
-import { CreateRoomDto, UpdateRoomDto } from './room.dto';
+import { CreateRoomDto, RoomUserDto, UpdateRoomDto } from './room.dto';
 import { RoomService } from './room.service';
 
 @UseGuards(HttpAuthGuard)
@@ -36,6 +43,11 @@ export class RoomController {
     const visibility = dto.visibility ?? 'public';
 
     const row = await this.roomService.create(dto.name, user.userId, visibility);
+
+    if (dto.invitedUserIds?.length) {
+      const filtered = dto.invitedUserIds.filter((id) => id !== user.userId);
+      await this.roomService.bulkInvite(row.id, filtered);
+    }
 
     return {
       id: row.id,
@@ -143,12 +155,105 @@ export class RoomController {
       throw new ForbiddenException('Only the room owner can delete this room');
     }
 
-    // Clean up any active game session before deleting
     await this.gameService.forceCleanupRoom(id);
-
     await this.roomService.delete(id);
     this.logger.log(`Room ${id} deleted by user ${user.userId}`);
 
     return { deleted: true };
+  }
+
+  // --- Invite endpoints ---
+
+  @Get(':id/invites')
+  async listInvites(
+    @Req() request: FastifyRequest,
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<RoomInviteResponse[]> {
+    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const canAccess = await this.roomService.canAccessRoom(id, user.userId);
+    if (!canAccess) {
+      throw new NotFoundException(`Room ${id} not found`);
+    }
+    return this.roomService.getInvites(id);
+  }
+
+  @Post(':id/invites')
+  async invite(
+    @Req() request: FastifyRequest,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: RoomUserDto,
+  ): Promise<{ success: true }> {
+    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    await this.assertOwner(id, user.userId);
+    this.assertNotSelf(user.userId, dto.userId);
+    await this.roomService.inviteUser(id, dto.userId);
+    return { success: true };
+  }
+
+  @Delete(':id/invites/:userId')
+  async uninvite(
+    @Req() request: FastifyRequest,
+    @Param('id', ParseIntPipe) id: number,
+    @Param('userId', ParseIntPipe) userId: number,
+  ): Promise<{ success: true }> {
+    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    await this.assertOwner(id, user.userId);
+    this.assertNotSelf(user.userId, userId);
+    await this.roomService.uninviteUser(id, userId);
+    return { success: true };
+  }
+
+  // --- Ban endpoints ---
+
+  @Get(':id/bans')
+  async listBans(
+    @Req() request: FastifyRequest,
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<RoomBanResponse[]> {
+    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    await this.assertOwner(id, user.userId);
+    return this.roomService.getBans(id);
+  }
+
+  @Post(':id/bans')
+  async ban(
+    @Req() request: FastifyRequest,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: RoomUserDto,
+  ): Promise<{ success: true }> {
+    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    await this.assertOwner(id, user.userId);
+    this.assertNotSelf(user.userId, dto.userId);
+    await this.roomService.banUser(id, dto.userId);
+    return { success: true };
+  }
+
+  @Delete(':id/bans/:userId')
+  async unban(
+    @Req() request: FastifyRequest,
+    @Param('id', ParseIntPipe) id: number,
+    @Param('userId', ParseIntPipe) userId: number,
+  ): Promise<{ success: true }> {
+    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    await this.assertOwner(id, user.userId);
+    this.assertNotSelf(user.userId, userId);
+    await this.roomService.unbanUser(id, userId);
+    return { success: true };
+  }
+
+  // --- Helpers ---
+
+  private async assertOwner(roomId: number, userId: number): Promise<void> {
+    const room = await this.roomService.findById(roomId);
+    if (!room) throw new NotFoundException(`Room ${roomId} not found`);
+    if (room.ownerId !== userId) {
+      throw new ForbiddenException('Only the room owner can perform this action');
+    }
+  }
+
+  private assertNotSelf(ownerId: number, targetId: number): void {
+    if (ownerId === targetId) {
+      throw new BadRequestException('Cannot perform this action on yourself');
+    }
   }
 }

@@ -9,6 +9,16 @@ This document describes the security measures in place across the CardQuorum sta
 - **OIDC** support via authorization code flow with PKCE-style state validation (random nonce in cookie, verified on callback).
 - Session cookies are `HttpOnly`, `SameSite=Lax`, and `Secure` in production.
 
+## Authorization
+
+Room invite and ban operations are restricted to the room owner:
+
+- **Invite/uninvite/ban/unban** — only the room owner can perform these actions. Attempting as a non-owner returns `403 Forbidden`.
+- **Self-targeting prevention** — the owner cannot invite, uninvite, ban, or unban themselves. Attempting returns `400 Bad Request`.
+- **Ban enforcement** — banning a user immediately removes them from the WebSocket room (via `member:kicked` event) and deletes any existing invite record. Banned users cannot see or join the room.
+- **Invite-only access** — only the room owner and explicitly invited users can see or join invite-only rooms.
+- **Invite list visibility** — any user with access to a room can view its invite list. Only the owner can view the ban list.
+
 ## Input Validation
 
 ### HTTP

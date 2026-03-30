@@ -1,7 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { RoomRepository } from '@cardquorum/db';
+import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { RoomBanRepository, RoomInviteRepository, RoomRepository } from '@cardquorum/db';
 import { RoomManager } from '@cardquorum/engine';
-import { RoomVisibility, WS_EMIT } from '@cardquorum/shared';
+import { RoomBanResponse, RoomInviteResponse, RoomVisibility, WS_EMIT } from '@cardquorum/shared';
 import { BlockService } from '../block/block.service';
 import { FriendService } from '../friend/friend.service';
 import { WsConnectionService } from '../ws/ws-connection.service';
@@ -13,6 +13,8 @@ export class RoomService {
 
   constructor(
     private readonly rooms: RoomRepository,
+    private readonly roomInvites: RoomInviteRepository,
+    private readonly roomBans: RoomBanRepository,
     private readonly connectionService: WsConnectionService,
     private readonly friendService: FriendService,
     private readonly blockService: BlockService,
@@ -30,14 +32,20 @@ export class RoomService {
     const allRooms = await this.rooms.findAll();
     const friendIds = await this.friendService.findFriendIds(userId);
     const blockedIds = await this.blockService.getBlockedIds(userId);
+    const bannedRoomIds = await this.roomBans.findBannedRoomIds(userId);
+    const invitedRoomIds = await this.roomInvites.findInvitedRoomIds(userId);
     const friendIdSet = new Set(friendIds);
     const blockedIdSet = new Set(blockedIds);
+    const bannedRoomIdSet = new Set(bannedRoomIds);
+    const invitedRoomIdSet = new Set(invitedRoomIds);
 
     return allRooms.filter((room) => {
+      if (bannedRoomIdSet.has(room.id)) return false;
       if (blockedIdSet.has(room.ownerId)) return false;
-      if (room.visibility === 'public' || room.visibility === 'invite-only') return true;
       if (room.ownerId === userId) return true;
+      if (room.visibility === 'public') return true;
       if (room.visibility === 'friends-only' && friendIdSet.has(room.ownerId)) return true;
+      if (room.visibility === 'invite-only' && invitedRoomIdSet.has(room.id)) return true;
       return false;
     });
   }
@@ -46,13 +54,17 @@ export class RoomService {
     const room = await this.rooms.findById(roomId);
     if (!room) return false;
 
-    // Check if the room owner has blocked this user
+    const isBanned = await this.roomBans.isBanned(roomId, userId);
+    if (isBanned) return false;
+
     const ownerBlockedUser = await this.blockService.isBlocked(room.ownerId, userId);
     if (ownerBlockedUser) return false;
 
-    if (room.visibility === 'public') return true;
-    if (room.visibility === 'invite-only') return true;
     if (room.ownerId === userId) return true;
+    if (room.visibility === 'public') return true;
+    if (room.visibility === 'invite-only') {
+      return this.roomInvites.isInvited(roomId, userId);
+    }
     if (room.visibility === 'friends-only') {
       return this.friendService.areFriends(userId, room.ownerId);
     }
@@ -76,11 +88,9 @@ export class RoomService {
   async delete(roomId: number) {
     const roomKey = String(roomId);
 
-    // Boot all connected members
     const room = this.manager.getRoom(roomKey);
     if (room) {
       this.broadcastToRoom(roomKey, WS_EMIT.ROOM_DELETED, { roomId });
-      // Remove all members from in-memory state
       for (const connId of [...room.members.keys()]) {
         this.manager.leaveRoom(roomKey, connId);
       }
@@ -100,7 +110,6 @@ export class RoomService {
 
   getOnlineCount(roomId: number): number {
     const members = this.manager.getRoomMembers(String(roomId));
-    // Deduplicate by userId (a user can have multiple connections)
     const uniqueUserIds = new Set(members.map((m) => m.userId));
     return uniqueUserIds.size;
   }
@@ -121,5 +130,102 @@ export class RoomService {
         }
       }
     }
+  }
+
+  // --- Invite methods ---
+
+  async inviteUser(roomId: number, userId: number): Promise<void> {
+    const isBanned = await this.roomBans.isBanned(roomId, userId);
+    if (isBanned) {
+      throw new ConflictException('User is banned from this room');
+    }
+    const already = await this.roomInvites.isInvited(roomId, userId);
+    if (already) {
+      throw new ConflictException('User is already invited');
+    }
+    await this.roomInvites.create(roomId, userId);
+  }
+
+  async uninviteUser(roomId: number, userId: number): Promise<void> {
+    const deleted = await this.roomInvites.delete(roomId, userId);
+    if (!deleted) {
+      throw new NotFoundException('Invite not found');
+    }
+  }
+
+  async getInvites(roomId: number): Promise<RoomInviteResponse[]> {
+    const rows = await this.roomInvites.findByRoom(roomId);
+    return rows.map((r) => ({
+      userId: r.userId,
+      username: r.username,
+      displayName: r.displayName,
+      invitedAt: r.createdAt.toISOString(),
+    }));
+  }
+
+  async bulkInvite(roomId: number, userIds: number[]): Promise<void> {
+    if (userIds.length === 0) return;
+    await this.roomInvites.createMany(roomId, userIds);
+  }
+
+  // --- Ban methods ---
+
+  async banUser(roomId: number, userId: number): Promise<void> {
+    const already = await this.roomBans.isBanned(roomId, userId);
+    if (already) {
+      throw new ConflictException('User is already banned');
+    }
+
+    await this.roomBans.create(roomId, userId);
+    // Also remove invite if one exists
+    await this.roomInvites.delete(roomId, userId);
+
+    // Kick from WS room
+    this.kickUserFromRoom(roomId, userId);
+  }
+
+  async unbanUser(roomId: number, userId: number): Promise<void> {
+    const deleted = await this.roomBans.delete(roomId, userId);
+    if (!deleted) {
+      throw new NotFoundException('Ban not found');
+    }
+  }
+
+  async getBans(roomId: number): Promise<RoomBanResponse[]> {
+    const rows = await this.roomBans.findByRoom(roomId);
+    return rows.map((r) => ({
+      userId: r.userId,
+      username: r.username,
+      displayName: r.displayName,
+      bannedAt: r.createdAt.toISOString(),
+    }));
+  }
+
+  private kickUserFromRoom(roomId: number, userId: number): void {
+    const roomKey = String(roomId);
+    const room = this.manager.getRoom(roomKey);
+    if (!room) return;
+
+    for (const [connId, identity] of room.members.entries()) {
+      if (identity.userId === userId) {
+        this.manager.leaveRoom(roomKey, connId);
+        const tracked = this.connectionService.getTrackedById(connId);
+        if (tracked) {
+          try {
+            tracked.ws.send(
+              JSON.stringify({ event: WS_EMIT.MEMBER_KICKED, data: { roomId, userId } }),
+            );
+          } catch (err) {
+            this.logger.warn(`Failed to send kick to ${connId}: ${err}`);
+          }
+        }
+      }
+    }
+
+    // Notify remaining members
+    this.broadcastToRoom(roomKey, WS_EMIT.MEMBER_LEFT, {
+      roomId,
+      member: { userId, username: '', displayName: null },
+    });
   }
 }
