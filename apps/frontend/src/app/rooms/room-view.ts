@@ -1,3 +1,4 @@
+import { TitleCasePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -17,72 +18,136 @@ import { ChatMessageList } from '../chat/chat-message-list';
 import { ChatService } from '../chat/chat.service';
 import { RoomService } from './room.service';
 
+type RoomTab = 'chat' | 'members' | 'settings';
+
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-room-view',
-  imports: [FormsModule, ChatMemberList, ChatMessageList],
+  imports: [FormsModule, TitleCasePipe, ChatMemberList, ChatMessageList],
   template: `
     <div class="flex h-full bg-white text-gray-900 dark:bg-gray-900 dark:text-white">
-      <!-- Sidebar -->
+      <!-- Game area (reserved) -->
+      <main class="flex-1"></main>
+
+      <!-- Right panel -->
       <aside
-        class="flex w-56 shrink-0 flex-col border-r border-gray-200 bg-gray-50
+        class="flex w-80 shrink-0 flex-col border-l border-gray-200 bg-gray-50
                dark:border-gray-700 dark:bg-gray-800"
       >
-        <div class="border-b border-gray-200 p-4 dark:border-gray-700">
-          <h1
-            class="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400"
+        <!-- Room header -->
+        <div
+          class="flex items-center justify-between border-b border-gray-200 px-4 py-3
+                 dark:border-gray-700"
+        >
+          <p
+            class="truncate text-sm font-semibold text-gray-900 dark:text-white"
+            [title]="roomName()"
           >
-            Room
-          </h1>
-          <p class="mt-1 truncate text-sm text-gray-900 dark:text-white" [title]="roomName()">
             {{ roomName() }}
           </p>
-        </div>
-        <app-chat-member-list [members]="chatService.members()" class="flex-1 overflow-y-auto" />
-        <div class="border-t border-gray-200 p-4 dark:border-gray-700">
           <button
             (click)="leave()"
-            class="w-full rounded-md bg-gray-200 px-3 py-2 text-sm text-gray-700 transition-colors
-                   hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500
-                   dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+            class="shrink-0 rounded-md px-2 py-1 text-xs text-gray-500 transition-colors
+                   hover:bg-gray-200 hover:text-gray-700 focus:outline-none focus:ring-2
+                   focus:ring-indigo-500 dark:text-gray-400 dark:hover:bg-gray-700
+                   dark:hover:text-gray-200"
           >
-            Leave Room
+            Leave
           </button>
         </div>
-      </aside>
 
-      <!-- Main chat area -->
-      <main class="flex min-w-0 flex-1 flex-col">
-        <app-chat-message-list [messages]="chatService.messages()" class="flex-1 overflow-y-auto" />
-
-        <form
-          (ngSubmit)="send()"
-          class="flex shrink-0 gap-2 border-t border-gray-200 p-4 dark:border-gray-700"
+        <!-- Tabs -->
+        <nav
+          class="flex border-b border-gray-200 dark:border-gray-700"
+          role="tablist"
+          aria-label="Room panels"
         >
-          <label class="sr-only" for="message-input">Message</label>
-          <input
-            id="message-input"
-            type="text"
-            [(ngModel)]="messageText"
-            name="message"
-            autocomplete="off"
-            placeholder="Type a message..."
-            class="flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm
-                   focus:border-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500
-                   dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-          />
-          <button
-            type="submit"
-            [disabled]="!messageText()"
-            class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white
-                   transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed
-                   disabled:bg-gray-400 disabled:text-gray-200
-                   focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            Send
-          </button>
-        </form>
-      </main>
+          @for (tab of tabs; track tab) {
+            <button
+              role="tab"
+              [attr.aria-selected]="activeTab() === tab"
+              [attr.aria-controls]="tab + '-panel'"
+              [class]="
+                'flex-1 px-3 py-2 text-sm font-medium transition-colors focus:outline-none ' +
+                'focus:ring-2 focus:ring-inset focus:ring-indigo-500 ' +
+                (activeTab() === tab
+                  ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200')
+              "
+              (click)="activeTab.set(tab)"
+            >
+              {{ tab | titlecase }}
+            </button>
+          }
+        </nav>
+
+        <!-- Tab panels -->
+        <div class="flex min-h-0 flex-1 flex-col">
+          @switch (activeTab()) {
+            @case ('chat') {
+              <div
+                id="chat-panel"
+                role="tabpanel"
+                aria-label="Chat"
+                class="flex min-h-0 flex-1 flex-col"
+              >
+                <app-chat-message-list
+                  [messages]="chatService.messages()"
+                  class="flex-1 overflow-y-auto"
+                />
+                <form
+                  (ngSubmit)="send()"
+                  class="flex shrink-0 gap-2 border-t border-gray-200 p-3 dark:border-gray-700"
+                >
+                  <label class="sr-only" for="message-input">Message</label>
+                  <input
+                    id="message-input"
+                    type="text"
+                    [(ngModel)]="messageText"
+                    name="message"
+                    autocomplete="off"
+                    placeholder="Type a message..."
+                    class="flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm
+                           focus:border-transparent focus:outline-none focus:ring-2
+                           focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800
+                           dark:text-white"
+                  />
+                  <button
+                    type="submit"
+                    [disabled]="!messageText()"
+                    class="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white
+                           transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed
+                           disabled:bg-gray-400 disabled:text-gray-200 focus:outline-none
+                           focus:ring-2 focus:ring-indigo-500"
+                  >
+                    Send
+                  </button>
+                </form>
+              </div>
+            }
+            @case ('members') {
+              <div
+                id="members-panel"
+                role="tabpanel"
+                aria-label="Members"
+                class="flex-1 overflow-y-auto"
+              >
+                <app-chat-member-list [members]="chatService.members()" />
+              </div>
+            }
+            @case ('settings') {
+              <div
+                id="settings-panel"
+                role="tabpanel"
+                aria-label="Settings"
+                class="flex-1 overflow-y-auto p-4"
+              >
+                <p class="text-sm text-gray-500 dark:text-gray-400">No settings available.</p>
+              </div>
+            }
+          }
+        </div>
+      </aside>
     </div>
   `,
   host: { class: 'block h-full' },
@@ -95,6 +160,8 @@ export class RoomView implements OnInit, OnDestroy {
   private readonly destroyRef = inject(DestroyRef);
   private readonly title = inject(Title);
 
+  protected readonly tabs: RoomTab[] = ['chat', 'members', 'settings'];
+  protected readonly activeTab = signal<RoomTab>('chat');
   protected readonly roomName = signal('');
   protected readonly messageText = signal('');
   private roomId = 0;
