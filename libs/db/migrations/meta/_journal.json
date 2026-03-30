@@ -8,6 +8,13 @@
       "when": 1774741810905,
       "tag": "0000_slippery_flatman",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1774839684766,
+      "tag": "0001_steady_deathbird",
+      "breakpoints": true
     }
   ]
 }
