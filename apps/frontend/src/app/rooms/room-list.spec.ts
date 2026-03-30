@@ -86,13 +86,13 @@ describe('RoomList', () => {
     expect(rows[1].textContent).toContain('Other Room');
   });
 
-  it('shows config button for owned rooms, join for others', () => {
+  it('shows config button for owned rooms, join for all rooms', () => {
     roomsSignal.set(ROOMS);
     fixture.detectChanges();
 
     const rows = el.querySelectorAll('[data-testid="room-row"]');
     expect(rows[0].querySelector('[data-testid="config-btn"]')).toBeTruthy();
-    expect(rows[0].querySelector('[data-testid="join-btn"]')).toBeFalsy();
+    expect(rows[0].querySelector('[data-testid="join-btn"]')).toBeTruthy();
     expect(rows[1].querySelector('[data-testid="join-btn"]')).toBeTruthy();
     expect(rows[1].querySelector('[data-testid="config-btn"]')).toBeFalsy();
   });

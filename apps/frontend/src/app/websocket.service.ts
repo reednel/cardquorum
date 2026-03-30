@@ -1,4 +1,5 @@
 import { Injectable, signal } from '@angular/core';
+import { WS_EMIT } from '@cardquorum/shared';
 
 interface WsMessage {
   event: string;
@@ -17,6 +18,8 @@ export class WebSocketService {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private intentionalClose = false;
   private authFailureHandler: (() => void) | null = null;
+  private pendingMessages: { event: string; data: unknown }[] = [];
+  private connectCallbacks = new Set<() => void>();
 
   connect(): void {
     this.intentionalClose = false;
@@ -26,6 +29,7 @@ export class WebSocketService {
 
   disconnect(): void {
     this.intentionalClose = true;
+    this.pendingMessages = [];
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
@@ -40,6 +44,12 @@ export class WebSocketService {
   /** Register a handler called when WS closes with 4001 (auth failure). */
   onAuthFailure(handler: () => void): void {
     this.authFailureHandler = handler;
+  }
+
+  /** Register a callback that fires every time the WS connection opens (including reconnects). */
+  onConnect(callback: () => void): () => void {
+    this.connectCallbacks.add(callback);
+    return () => this.connectCallbacks.delete(callback);
   }
 
   /** Subscribe to an event. Returns an unsubscribe function. */
@@ -60,8 +70,10 @@ export class WebSocketService {
   }
 
   send(event: string, data: unknown): void {
-    if (this.ws?.readyState === WebSocket.OPEN) {
+    if (this.connected() && this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify({ event, data }));
+    } else {
+      this.pendingMessages.push({ event, data });
     }
   }
 
@@ -75,7 +87,9 @@ export class WebSocketService {
     this.ws = new WebSocket(`${protocol}//${location.host}/ws`);
 
     this.ws.onopen = () => {
-      this.connected.set(true);
+      // Transport-level connection established. Don't set connected or flush
+      // the queue yet — wait for the server's ws:connected event, which confirms
+      // that handleConnection (auth + tracking) has completed.
       this.reconnectAttempts = 0;
     };
 
@@ -98,6 +112,21 @@ export class WebSocketService {
     this.ws.onmessage = (event: MessageEvent) => {
       try {
         const msg: WsMessage = JSON.parse(event.data);
+
+        // Server signals that the connection is authenticated and tracked.
+        // Now safe to flush queued messages and notify connect callbacks.
+        if (msg.event === WS_EMIT.CONNECTED) {
+          this.connected.set(true);
+          for (const pending of this.pendingMessages) {
+            this.ws!.send(JSON.stringify(pending));
+          }
+          this.pendingMessages = [];
+          for (const cb of this.connectCallbacks) {
+            cb();
+          }
+          return;
+        }
+
         const handlers = this.handlers.get(msg.event);
         if (handlers) {
           for (const handler of handlers) {

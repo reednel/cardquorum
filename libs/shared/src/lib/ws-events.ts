@@ -18,6 +18,7 @@ export const WS_EVENT = {
  * These are the message types the gateway pushes to clients.
  */
 export const WS_EMIT = {
+  CONNECTED: 'ws:connected',
   ROOM_JOINED: 'room:joined',
   MEMBER_JOINED: 'member:joined',
   MEMBER_LEFT: 'member:left',

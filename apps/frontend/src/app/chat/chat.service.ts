@@ -1,4 +1,4 @@
-import { effect, inject, Injectable, signal, untracked } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 import {
   ChatMessagePayload,
   MemberChangePayload,
@@ -47,19 +47,14 @@ export class ChatService {
       this._roomDeleted.set(data.roomId);
     });
 
-    // Re-join active room on reconnect.
-    // Only tracks ws.connected() — uses untracked() for _currentRoomId to avoid
-    // firing on room changes (joinRoom() sends its own ROOM_JOIN).
-    let wasConnected = false;
-    effect(() => {
-      const connected = this.ws.connected();
-      if (connected && !wasConnected) {
-        const roomId = untracked(() => this._currentRoomId());
-        if (roomId !== null) {
-          this.ws.send(WS_EVENT.ROOM_JOIN, { roomId });
-        }
+    // Re-join active room on reconnect (WS dropped and re-established).
+    // Uses a plain callback instead of an Angular effect so it fires reliably
+    // from the native WebSocket onopen handler regardless of zone.js presence.
+    this.ws.onConnect(() => {
+      const roomId = this._currentRoomId();
+      if (roomId !== null) {
+        this.ws.send(WS_EVENT.ROOM_JOIN, { roomId });
       }
-      wasConnected = connected;
     });
   }
 

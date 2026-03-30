@@ -24,7 +24,7 @@ import { RoomService } from './room.service';
     <dialog
       #dialog
       aria-labelledby="config-room-title"
-      class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-gray-900
+      class="m-auto w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-gray-900
              [&::backdrop]:bg-black/50"
       (cancel)="onCancel($event)"
       (click)="onBackdropClick($event)"

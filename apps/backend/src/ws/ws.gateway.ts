@@ -7,6 +7,7 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, WebSocket } from 'ws';
+import { WS_EMIT } from '@cardquorum/shared';
 import { WsAuthGuard } from '../auth/ws-auth.guard';
 import { WsConnectionService } from './ws-connection.service';
 
@@ -37,6 +38,7 @@ export class WsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
     this.logger.log(`Client connected: ${tracked.id} (user: ${identity.userId})`);
+    client.send(JSON.stringify({ event: WS_EMIT.CONNECTED, data: {} }));
   }
 
   async handleDisconnect(client: WebSocket) {
