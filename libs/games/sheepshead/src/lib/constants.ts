@@ -73,19 +73,13 @@ export const FAIL_TENS: readonly CardName[] = ['xc', 'xs', 'xh'];
 
 const HOUSE_RULE_DEFAULTS: Pick<
   SheepsheadConfig,
-  | 'cracking'
-  | 'blitzing'
-  | 'partnerOffTheHook'
-  | 'noAceFaceTrump'
-  | 'multiplicityLimit'
-  | 'callOwnAce'
+  'cracking' | 'blitzing' | 'partnerOffTheHook' | 'noAceFaceTrump' | 'multiplicityLimit'
 > = {
   cracking: false,
   blitzing: false,
   partnerOffTheHook: false,
   noAceFaceTrump: false,
   multiplicityLimit: null,
-  callOwnAce: null,
 };
 
 export const CONFIG_PRESETS: readonly ConfigPreset[] = [
@@ -102,6 +96,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
       partnerRule: null,
       noPick: null,
       doubleOnTheBump: false,
+      callOwnAce: null,
     },
     defaults: { ...HOUSE_RULE_DEFAULTS },
   },
@@ -116,6 +111,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
       blindSize: 2,
       pickerRule: 'autonomous',
       partnerRule: null,
+      callOwnAce: null,
     },
     defaults: { noPick: 'leaster', doubleOnTheBump: false, ...HOUSE_RULE_DEFAULTS },
   },
@@ -132,6 +128,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
       partnerRule: 'qc-qs',
       noPick: null,
       doubleOnTheBump: true,
+      callOwnAce: null,
     },
     defaults: { ...HOUSE_RULE_DEFAULTS },
   },
@@ -148,6 +145,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
       partnerRule: 'qc-7d',
       noPick: null,
       doubleOnTheBump: false,
+      callOwnAce: null,
     },
     defaults: { ...HOUSE_RULE_DEFAULTS },
   },
@@ -162,6 +160,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
       pickerRule: 'autonomous',
       partnerRule: null,
       doubleOnTheBump: true,
+      callOwnAce: null,
     },
     defaults: { noPick: 'leaster', ...HOUSE_RULE_DEFAULTS },
   },
@@ -209,6 +208,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
       blindSize: 2,
       pickerRule: 'autonomous',
       partnerRule: 'jd',
+      callOwnAce: null,
     },
     defaults: { noPick: 'leaster', doubleOnTheBump: false, ...HOUSE_RULE_DEFAULTS },
   },
@@ -225,6 +225,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
       partnerRule: 'qs-jc',
       noPick: null,
       cardsRemoved: ['7c', '7s'],
+      callOwnAce: null,
     },
     defaults: { doubleOnTheBump: false, ...HOUSE_RULE_DEFAULTS },
   },
@@ -238,6 +239,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
       blindSize: 2,
       pickerRule: 'autonomous',
       partnerRule: 'first-trick',
+      callOwnAce: null,
     },
     defaults: { noPick: 'leaster', doubleOnTheBump: false, ...HOUSE_RULE_DEFAULTS },
   },
@@ -268,6 +270,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
       pickerRule: 'autonomous',
       partnerRule: 'jc',
       doubleOnTheBump: false,
+      callOwnAce: null,
     },
     defaults: { noPick: 'leaster', ...HOUSE_RULE_DEFAULTS },
   },
@@ -283,6 +286,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
       blindSize: 4,
       pickerRule: 'autonomous',
       partnerRule: 'jd',
+      callOwnAce: null,
     },
     defaults: { noPick: 'leaster', doubleOnTheBump: false, ...HOUSE_RULE_DEFAULTS },
   },
@@ -297,6 +301,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
       blindSize: 4,
       pickerRule: 'autonomous',
       partnerRule: 'left-of-picker',
+      callOwnAce: null,
     },
     defaults: { noPick: 'leaster', doubleOnTheBump: false, ...HOUSE_RULE_DEFAULTS },
   },
@@ -312,6 +317,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
       pickerRule: null,
       partnerRule: 'qc-qs',
       noPick: null,
+      callOwnAce: null,
     },
     defaults: { doubleOnTheBump: false, ...HOUSE_RULE_DEFAULTS },
   },

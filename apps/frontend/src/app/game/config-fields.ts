@@ -6,23 +6,23 @@ import {
   ZodNumber,
   ZodObject,
   ZodOptional,
-  ZodType,
+  ZodTypeAny,
   ZodUnion,
 } from 'zod';
 
 export interface ConfigField {
   key: string;
-  type: 'boolean' | 'select' | 'number';
+  type: 'boolean' | 'select' | 'number' | 'nullable-number';
   options?: { value: string | number | boolean | null; label: string }[];
 }
 
 /** Extract renderable field descriptors from a ZodObject shape. */
 export function fieldsFromSchema(schema: ZodObject<any>): ConfigField[] {
-  const shape = schema.shape as Record<string, ZodType>;
+  const shape = schema.shape as Record<string, ZodTypeAny>;
   return Object.keys(shape).map((key) => parseField(key, shape[key]));
 }
 
-function parseField(key: string, zodType: ZodType): ConfigField {
+function parseField(key: string, zodType: ZodTypeAny): ConfigField {
   const unwrapped = unwrap(zodType);
   const nullable = isNullable(zodType);
 
@@ -64,22 +64,19 @@ function parseField(key: string, zodType: ZodType): ConfigField {
   }
 
   if (unwrapped instanceof ZodNumber) {
-    if (nullable) {
-      return { key, type: 'select', options: [{ value: null, label: 'None' }] };
-    }
-    return { key, type: 'number' };
+    return nullable ? { key, type: 'nullable-number' } : { key, type: 'number' };
   }
 
   return { key, type: 'boolean' };
 }
 
-function unwrap(z: ZodType): ZodType {
+function unwrap(z: ZodTypeAny): ZodTypeAny {
   if (z instanceof ZodNullable) return unwrap((z as any).unwrap());
   if (z instanceof ZodOptional) return unwrap((z as any).unwrap());
   return z;
 }
 
-function isNullable(z: ZodType): boolean {
+function isNullable(z: ZodTypeAny): boolean {
   return z instanceof ZodNullable;
 }
 

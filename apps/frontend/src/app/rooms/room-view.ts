@@ -86,19 +86,22 @@ type RoomTab = 'chat' | 'members' | 'game';
 
         <!-- Tab panels -->
         <div class="flex min-h-0 flex-1 flex-col">
-          @switch (activeTab()) {
-            @case ('chat') {
-              <app-room-chat-tab />
-            }
-            @case ('members') {
-              @if (room(); as r) {
-                <app-room-members-tab [room]="r" />
-              }
-            }
-            @case ('game') {
-              <app-room-game-tab />
-            }
+          <app-room-chat-tab
+            [class.hidden]="activeTab() !== 'chat'"
+            class="flex min-h-0 flex-1 flex-col"
+          />
+          @if (room(); as r) {
+            <app-room-members-tab
+              [room]="r"
+              [hidden]="activeTab() !== 'members'"
+              class="flex min-h-0 flex-1 flex-col"
+            />
           }
+          <app-room-game-tab
+            [isOwner]="isOwner()"
+            [hidden]="activeTab() !== 'game'"
+            class="flex min-h-0 flex-1 flex-col"
+          />
         </div>
       </aside>
     </div>
@@ -120,6 +123,7 @@ export class RoomView implements OnInit, OnDestroy {
   protected readonly activeTab = signal<RoomTab>('chat');
   protected readonly roomName = signal('');
   protected readonly room = signal<RoomResponse | null>(null);
+  protected readonly isOwner = signal(false);
   private roomId = 0;
 
   constructor() {
@@ -148,6 +152,7 @@ export class RoomView implements OnInit, OnDestroy {
           this.room.set(room);
           this.roomName.set(room.name);
           this.title.setTitle(`${room.name} — CardQuorum`);
+          this.isOwner.set(room.ownerId === this.auth.user()?.userId);
         },
         error: () => this.router.navigate(['/rooms']),
       });

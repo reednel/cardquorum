@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CONFIG_PRESETS, SheepsheadConfigSchema } from '@cardquorum/sheepshead';
 import { ConfigField, fieldsFromSchema } from '../game/config-fields';
@@ -30,8 +30,10 @@ const GAMES: GameRegistry = {
         id="game-type"
         [ngModel]="selectedGame()"
         (ngModelChange)="onGameChange($event)"
+        [disabled]="!isOwner()"
         class="mb-4 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm
                focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500
+               disabled:cursor-not-allowed disabled:opacity-60
                dark:border-gray-600 dark:bg-gray-800 dark:text-white"
       >
         <option value="">— Select a game —</option>
@@ -53,8 +55,10 @@ const GAMES: GameRegistry = {
           id="preset"
           [ngModel]="selectedPresetIndex()"
           (ngModelChange)="onPresetChange($event)"
+          [disabled]="!isOwner()"
           class="mb-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm
                  focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500
+                 disabled:cursor-not-allowed disabled:opacity-60
                  dark:border-gray-600 dark:bg-gray-800 dark:text-white"
         >
           <option [value]="-1">— Select a variant —</option>
@@ -68,12 +72,43 @@ const GAMES: GameRegistry = {
           }
         </select>
         @if (activePreset(); as preset) {
-          <p class="mb-4 text-xs text-gray-500 dark:text-gray-400">{{ preset.description }}</p>
+          <p class="mb-3 text-xs text-gray-500 dark:text-gray-400">{{ preset.description }}</p>
         }
       }
 
-      <!-- Config fields -->
+      <!-- Fixed fields (read-only context) -->
+      @if (visibleFixedFields().length > 0) {
+        <div
+          class="mb-4 rounded-md border border-gray-200 bg-gray-50 p-3
+                    dark:border-gray-700 dark:bg-gray-800/50"
+        >
+          <h4
+            class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500
+                     dark:text-gray-400"
+          >
+            Fixed Rules
+          </h4>
+          <dl class="flex flex-col gap-1">
+            @for (entry of visibleFixedFields(); track entry.key) {
+              <div class="flex items-center justify-between text-sm">
+                <dt class="text-gray-600 dark:text-gray-400">{{ labelFor(entry.key) }}</dt>
+                <dd class="font-medium text-gray-800 dark:text-gray-200">
+                  {{ displayValue(entry.value) }}
+                </dd>
+              </div>
+            }
+          </dl>
+        </div>
+      }
+
+      <!-- Editable config fields -->
       @if (editableFields().length > 0) {
+        <h4
+          class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500
+                   dark:text-gray-400"
+        >
+          House Rules
+        </h4>
         <div class="flex flex-col gap-3">
           @for (field of editableFields(); track field.key) {
             @switch (field.type) {
@@ -86,8 +121,10 @@ const GAMES: GameRegistry = {
                     type="checkbox"
                     [ngModel]="configValues()[field.key]"
                     (ngModelChange)="onFieldChange(field.key, $event)"
+                    [disabled]="!isOwner()"
                     class="h-4 w-4 rounded border-gray-300 text-indigo-600
-                           focus:ring-indigo-500 dark:border-gray-600"
+                           focus:ring-indigo-500 disabled:opacity-60
+                           dark:border-gray-600"
                   />
                 </label>
               }
@@ -103,10 +140,11 @@ const GAMES: GameRegistry = {
                     [id]="'field-' + field.key"
                     [ngModel]="configValues()[field.key]"
                     (ngModelChange)="onFieldChange(field.key, coerce(field, $event))"
+                    [disabled]="!isOwner()"
                     class="w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm
                            focus:border-indigo-500 focus:outline-none focus:ring-1
-                           focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800
-                           dark:text-white"
+                           focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-60
+                           dark:border-gray-600 dark:bg-gray-800 dark:text-white"
                   >
                     @for (opt of field.options; track opt.value) {
                       <option [ngValue]="opt.value">{{ opt.label }}</option>
@@ -127,11 +165,52 @@ const GAMES: GameRegistry = {
                     type="number"
                     [ngModel]="configValues()[field.key]"
                     (ngModelChange)="onFieldChange(field.key, $event)"
+                    [disabled]="!isOwner()"
                     class="w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm
                            focus:border-indigo-500 focus:outline-none focus:ring-1
-                           focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800
-                           dark:text-white"
+                           focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-60
+                           dark:border-gray-600 dark:bg-gray-800 dark:text-white"
                   />
+                </div>
+              }
+              @case ('nullable-number') {
+                <div>
+                  <label
+                    [attr.for]="'field-' + field.key"
+                    class="mb-1 block text-sm text-gray-700 dark:text-gray-300"
+                  >
+                    {{ labelFor(field.key) }}
+                  </label>
+                  <div class="flex items-center gap-2">
+                    <input
+                      [id]="'field-' + field.key"
+                      type="number"
+                      min="1"
+                      step="1"
+                      [ngModel]="configValues()[field.key]"
+                      (ngModelChange)="onFieldChange(field.key, $event)"
+                      [disabled]="!isOwner() || configValues()[field.key] === null"
+                      placeholder="∞"
+                      class="w-20 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm
+                             focus:border-indigo-500 focus:outline-none focus:ring-1
+                             focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-60
+                             dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                    />
+                    <label
+                      class="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400"
+                    >
+                      <input
+                        type="checkbox"
+                        [ngModel]="configValues()[field.key] === null"
+                        (ngModelChange)="onFieldChange(field.key, $event ? null : 1)"
+                        [disabled]="!isOwner()"
+                        class="h-4 w-4 rounded border-gray-300 text-indigo-600
+                               focus:ring-indigo-500 disabled:opacity-60
+                               dark:border-gray-600"
+                      />
+                      No Limit
+                    </label>
+                  </div>
                 </div>
               }
             }
@@ -142,6 +221,8 @@ const GAMES: GameRegistry = {
   `,
 })
 export class RoomGameTab {
+  readonly isOwner = input(false);
+
   protected readonly gameEntries = Object.entries(GAMES).map(([key, entry]) => ({
     key,
     label: entry.label,
@@ -162,16 +243,26 @@ export class RoomGameTab {
     return idx >= 0 && idx < list.length ? list[idx] : null;
   });
 
+  /** Fixed fields with non-null values — shown as read-only context. */
+  protected readonly visibleFixedFields = computed(() => {
+    const preset = this.activePreset();
+    if (!preset) return [];
+    return Object.entries(preset.fixed)
+      .filter(([, v]) => v != null)
+      .map(([key, value]) => ({ key, value }));
+  });
+
   private readonly allFields = computed<ConfigField[]>(() => {
     const game = GAMES[this.selectedGame()];
     return game ? fieldsFromSchema(game.configSchema) : [];
   });
 
+  /** Editable fields: everything in preset.defaults (null is a valid default, e.g. "no limit"). */
   protected readonly editableFields = computed<ConfigField[]>(() => {
     const preset = this.activePreset();
     if (!preset) return [];
-    const fixedKeys = new Set(Object.keys(preset.fixed));
-    return this.allFields().filter((f) => !fixedKeys.has(f.key));
+    const defaultKeys = new Set(Object.keys(preset.defaults));
+    return this.allFields().filter((f) => defaultKeys.has(f.key));
   });
 
   protected onGameChange(gameType: string): void {
@@ -206,5 +297,14 @@ export class RoomGameTab {
       .replace(/([A-Z])/g, ' $1')
       .replace(/^./, (c) => c.toUpperCase())
       .trim();
+  }
+
+  protected displayValue(value: unknown): string {
+    if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+    if (value === null) return '—';
+    if (typeof value === 'string') {
+      return value.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    }
+    return String(value);
   }
 }
