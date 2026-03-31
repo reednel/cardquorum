@@ -1,3 +1,7 @@
+import type { NoPick, SheepsheadConfig } from './schemas';
+
+export type { SheepsheadConfig, NoPick, PickerRule, PartnerRule } from './schemas';
+
 /**
  * The unique identifier for a player (userID).
  */
@@ -9,62 +13,11 @@ export type GamePhase = 'deal' | 'pick' | 'bury' | 'call' | 'play' | 'score';
 /** Decision made during the pick phase. */
 export type PickDecision = 'pick' | 'pass';
 
-/** How to proceed when nobody picks. */
-export type NoPick =
-  | 'forced-pick'
-  | 'leaster'
-  | 'moster'
-  | 'mittler'
-  | 'schneidster'
-  | 'doubler'
-  | 'schwanzer';
-
 /** A player's role in a game. */
 export type PlayerRole = 'picker' | 'partner' | 'opposition';
 
 /** Valid values for a called card: fail aces, fail 10s, or going alone. */
 export type CalledCard = 'ac' | 'as' | 'ah' | 'xc' | 'xs' | 'xh' | 'alone';
-
-/** How the picking round works. */
-export type PickerRule =
-  | 'autonomous' // each player in turn order chooses to pick or pass
-  | 'left-of-dealer' // one specific player must pick, no choice (Schiller)
-  | null; // no picking round (e.g. 4-player black queens)
-
-/** Rule for determining the partner/s. */
-export type PartnerRule =
-  | 'called-ace'
-  | 'jd'
-  | 'jc'
-  | 'qc-qs'
-  | 'qs-jc'
-  | 'first-trick'
-  | 'qc-7d'
-  | 'left-of-picker'
-  | null;
-
-/**
- * Stored as game_sessions.config (jsonb).
- */
-export interface SheepsheadConfig {
-  name: string;
-  playerCount: 2 | 3 | 4 | 5 | 6 | 7 | 8;
-  handSize: number;
-  blindSize: number;
-  pickerRule: PickerRule;
-  partnerRule: PartnerRule;
-  noPick: NoPick | null;
-  cracking: boolean;
-  blitzing: boolean;
-  doubleOnTheBump: boolean;
-  partnerOffTheHook: boolean;
-  noAceFaceTrump: boolean;
-  multiplicityLimit: number | null;
-  /** Whether the picker can call an ace they hold or buried. */
-  callOwnAce: boolean | null;
-  /** Cards removed from the standard 32-card deck (e.g. ['7c','7s'] for 30-card variants). */
-  cardsRemoved?: CardName[];
-}
 
 export interface ConfigPreset {
   /** Display name for the frontend. */

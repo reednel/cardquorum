@@ -87,7 +87,11 @@ describe('RoomView', () => {
     expect(mockChatService.leaveRoom).toHaveBeenCalled();
   });
 
-  it('loads invites and bans when user is owner', () => {
+  it('loads invites and bans when members tab is activated', () => {
+    fixture.componentInstance['activeTab'].set('members');
+    fixture.detectChanges();
+    // Trigger tab click which calls loadData on the members tab
+    fixture.componentInstance['onTabClick']('members');
     expect(mockRoomService.getInvites).toHaveBeenCalledWith(42);
     expect(mockRoomService.getBans).toHaveBeenCalledWith(42);
   });

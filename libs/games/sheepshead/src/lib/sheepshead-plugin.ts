@@ -7,6 +7,7 @@ import {
   handlePlayCard,
   handleScore,
 } from './phases';
+import { SheepsheadConfigSchema } from './schemas';
 import {
   BlitzState,
   SheepsheadConfig,
@@ -18,57 +19,8 @@ import {
   UserID,
 } from './types';
 
-/* Make this useful (at time of wiring in user side) */
 function validateConfig(config: unknown): config is SheepsheadConfig {
-  if (typeof config !== 'object' || config === null) return false;
-
-  const c = config as Record<string, unknown>;
-  if (typeof c['name'] !== 'string' || /\s/.test(c['name'] as string)) return false;
-  if (typeof c['playerCount'] !== 'number') return false;
-  if (c['playerCount'] < 2 || c['playerCount'] > 8) return false;
-
-  const validPickerRules = ['autonomous', 'left-of-dealer', null];
-  if (!validPickerRules.includes(c['pickerRule'] as string | null)) return false;
-
-  const validPartnerRules = [
-    'called-ace',
-    'jd',
-    'jc',
-    'qc-qs',
-    'qs-jc',
-    'first-trick',
-    'qc-7d',
-    'left-of-picker',
-    null,
-  ];
-  if (!validPartnerRules.includes(c['partnerRule'] as string | null)) return false;
-
-  const validNoPick = [
-    'forced-pick',
-    'leaster',
-    'moster',
-    'mittler',
-    'schneidster',
-    'doubler',
-    'schwanzer',
-    null,
-  ];
-  if (!validNoPick.includes(c['noPick'] as string | null)) return false;
-
-  if (typeof c['handSize'] !== 'number' || typeof c['blindSize'] !== 'number') return false;
-
-  return (
-    typeof c['cracking'] === 'boolean' &&
-    typeof c['blitzing'] === 'boolean' &&
-    typeof c['doubleOnTheBump'] === 'boolean' &&
-    typeof c['partnerOffTheHook'] === 'boolean' &&
-    typeof c['noAceFaceTrump'] === 'boolean' &&
-    (c['multiplicityLimit'] === null || typeof c['multiplicityLimit'] === 'number') &&
-    (c['callOwnAce'] === null || typeof c['callOwnAce'] === 'boolean') &&
-    (c['cardsRemoved'] === undefined ||
-      (Array.isArray(c['cardsRemoved']) &&
-        c['cardsRemoved'].every((v: unknown) => typeof v === 'string')))
-  );
+  return SheepsheadConfigSchema.safeParse(config).success;
 }
 
 function createInitialState(config: SheepsheadConfig, userIDs: UserID[]): SheepsheadState {

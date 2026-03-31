@@ -1,5 +1,12 @@
 export * from './lib/types';
 export {
+  SheepsheadConfigSchema,
+  NoPickSchema,
+  PickerRuleSchema,
+  PartnerRuleSchema,
+  CardNameSchema,
+} from './lib/schemas';
+export {
   SUITS,
   RANKS,
   DECK,
