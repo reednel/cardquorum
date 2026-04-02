@@ -1,4 +1,5 @@
 import { GamePlugin } from '@cardquorum/engine';
+import { SheepsheadConfigSchema } from './config';
 import {
   handleBury,
   handleCall,
@@ -7,7 +8,6 @@ import {
   handlePlayCard,
   handleScore,
 } from './phases';
-import { SheepsheadConfigSchema } from './schemas';
 import {
   BlitzState,
   SheepsheadConfig,

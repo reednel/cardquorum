@@ -1,3 +1,4 @@
+import { CONFIG_PRESETS } from '../config';
 import { DECK } from '../constants';
 import { Card, PickPhaseResult, SheepsheadConfig, SheepsheadState } from '../types';
 
@@ -25,6 +26,7 @@ export function makeConfig(overrides: Partial<SheepsheadConfig> = {}): Sheepshea
     noAceFaceTrump: false,
     multiplicityLimit: null,
     callOwnAce: null,
+    cardsRemoved: [],
     ...overrides,
   };
 }
@@ -94,5 +96,16 @@ export function makeNoPickScoreState(
     previousGameDouble: null,
     noPick,
     redeals: null,
+  };
+}
+
+/** Helper to build a flat SheepsheadConfig from a preset. */
+export function configFromPreset(preset: (typeof CONFIG_PRESETS)[number]): Record<string, unknown> {
+  return {
+    name: preset.name,
+    playerCount: preset.playerCount,
+    ...Object.fromEntries(
+      Object.entries(preset.fields).map(([k, f]) => [k, (f as { value: unknown }).value]),
+    ),
   };
 }

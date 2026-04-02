@@ -168,16 +168,23 @@ When all players pass and leasters is enabled, everyone plays for themselves (al
 
 ## Configuration
 
-Game configuration is defined by `SheepsheadConfig` (stored in `game_sessions.config`). Valid configurations are expressed as **presets** (`ConfigPreset` in `constants.ts`) in a flat array `CONFIG_PRESETS`.
+Game configuration is defined by `SheepsheadConfig` (validated by `SheepsheadConfigSchema`, stored in `game_sessions.config`). All config-related code lives in a single file: `libs/games/sheepshead/src/lib/config.ts`.
 
-Each preset has:
+### Config File Organization
 
-- **`fixed`** — values locked by the preset (`name`, `playerCount`, `handSize`, `blindSize`, `pickerRule`, `partnerRule`, and optionally `cardsRemoved`)
-- **`defaults`** — house rules the players can toggle (`noPick`, `cracking`, `blitzing`, `doubleOnTheBump`, `callOwnAce`, etc.)
+`config.ts` contains everything related to game configuration in one place:
 
-The `name` field is a unique, space-free identifier for each config (e.g. `'called-ace'`, `'jack-of-diamonds'`). It is stored in `SheepsheadConfig` alongside the other fixed values.
+- Zod validation schemas (`SheepsheadConfigSchema`, `NoPickSchema`, `PickerRuleSchema`, `PartnerRuleSchema`)
+- Inferred types (`SheepsheadConfig`, `NoPick`, `PickerRule`, `PartnerRule`)
+- `SheepsheadFieldKey` — union of the 13 config field keys
+- `ConfigPreset` — strongly-typed preset interface
+- `FIELD_REGISTRY` — UI metadata (display names, descriptions, render types) for each field
+- `CONFIG_PRESETS` — the 15 preset configurations
+- `SheepsheadConfigPlugin` — wires everything together for the frontend
 
 ### Presets
+
+Each preset is a `ConfigPreset` with a `fields` record where every field specifies its `value`, `mode` (`'hidden'` / `'locked'` / `'editable'`), and optionally `options` (for select fields). Presets are fully explicit — no merging or inheritance.
 
 | Players | Preset           | Name               | Hand | Blind | Picker         | Partner          | Cards Removed |
 | ------- | ---------------- | ------------------ | ---- | ----- | -------------- | ---------------- | ------------- |
@@ -196,6 +203,18 @@ The `name` field is a unique, space-free identifier for each config (e.g. `'call
 | 7       | Jack of Diamonds | `jack-of-diamonds` | 4    | 4     | autonomous     | `jd`             |               |
 | 7       | Partner Draft    | `partner-draft`    | 4    | 4     | autonomous     | `left-of-picker` |               |
 | 8       | Black Queens     | `black-queens`     | 4    | 0     | —              | `qc-qs`          |               |
+
+### Field Modes
+
+Each field in a preset has a mode that controls how the frontend renders it:
+
+- `'hidden'` — not shown to the user (e.g. `cardsRemoved`, or rules that don't apply to this variant)
+- `'locked'` — shown as read-only (e.g. `handSize`, `blindSize` — fixed by the variant)
+- `'editable'` — the user can change it (house rules like `cracking`, `blitzing`)
+
+### Field Registry
+
+`FIELD_REGISTRY` maps each of the 13 field keys to UI metadata: a `displayName`, `description` (shown as a tooltip), and `renderType` (`'boolean'` / `'select'` / `'number'` / `'nullable-number'` / `'hidden-array'`). The registry is metadata-only — it does not define default values or modes. See [Game Config Plugin System](../game-engine.md#game-config-plugin-system) for the generic architecture.
 
 ### Non-Picking
 

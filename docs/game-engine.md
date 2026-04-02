@@ -110,18 +110,86 @@ The browser-side `WebSocketService` is game-agnostic:
 
 Game components use this same service. No separate WebSocket connection per game.
 
+## Game Config Plugin System
+
+Separate from the runtime `GamePlugin`, each game exports a `GameConfigPlugin` that tells the frontend how to render game configuration UI. This is defined in `@cardquorum/engine` alongside the runtime plugin types.
+
+### Types (from `@cardquorum/engine`)
+
+```typescript
+type FieldMode = 'hidden' | 'locked' | 'editable';
+
+interface ConfigFieldDef<T> {
+  readonly value: T;
+  readonly mode: FieldMode;
+}
+
+interface SelectFieldDef<T> extends ConfigFieldDef<T> {
+  readonly options: T[];
+}
+
+interface FieldMetadata {
+  readonly displayName: string;
+  readonly description: string;
+  readonly renderType: 'boolean' | 'select' | 'number' | 'nullable-number' | 'hidden-array';
+}
+
+type FieldRegistry<K extends string = string> = Readonly<Record<K, FieldMetadata>>;
+
+interface GenericConfigPreset {
+  readonly name: string;
+  readonly label: string;
+  readonly description: string;
+  readonly playerCount: number;
+  readonly fields: Readonly<Record<string, ConfigFieldDef<unknown>>>;
+}
+
+interface GameConfigPlugin<K extends string = string> {
+  readonly label: string;
+  readonly fieldRegistry: FieldRegistry<K>;
+  readonly presets: readonly GenericConfigPreset[];
+  readonly configSchema: z.ZodType;
+}
+```
+
+### How It Works
+
+Each game library exports a `GameConfigPlugin` that bundles four things:
+
+1. A `label` (display name for the game)
+2. A `FieldRegistry` mapping each config field key to UI metadata (display name, tooltip description, render type)
+3. An array of fully-explicit `GenericConfigPreset` objects (each preset specifies every field's value, mode, and options)
+4. A Zod `configSchema` for validating flat config values
+
+The frontend's `GameRegistry` maps game identifiers to `GameConfigPlugin` instances. The `RoomGameTab` component reads a plugin, lets the user pick a preset, and builds field entries by joining preset field data with registry metadata. No game-specific rendering code exists in the frontend — it's all driven by the plugin.
+
+### Key Design Decisions
+
+**Metadata-only registry.** The `FieldRegistry` contains only UI metadata (display name, description, render type). It does not define default values, modes, or options. This keeps the registry simple and avoids any merge/override complexity.
+
+**Fully explicit presets.** Every preset lists all fields with their complete definition (value + mode + options). No inheritance, no defaults, no `resolvePreset` utility. This makes presets self-contained and easy to reason about.
+
+**Separate from runtime plugin.** `GameConfigPlugin` is intentionally separate from `GamePlugin`. The runtime plugin handles game logic (state, events, validation). The config plugin handles UI rendering (labels, tooltips, field types). They share a Zod schema but otherwise have no coupling.
+
+### Frontend Rendering
+
+The `RoomGameTab` component uses `buildFieldEntries(preset, registry)` to produce an array of `FieldEntry` objects for rendering. Each entry combines the preset's field data (value, mode, options) with the registry's metadata (displayName, description, renderType). The template uses `@switch` on `renderType` to render the appropriate control (checkbox, select, number input, etc.).
+
+Fields with `mode: 'hidden'` are filtered out. Fields with `mode: 'locked'` appear in a read-only "Fixed Rules" section. Fields with `mode: 'editable'` appear in the "House Rules" section with interactive controls.
+
 ## Adding a New Game
 
 ### Directory Structure
 
-```
+```text
 libs/games/<game-name>/
 ├── src/
 │   ├── index.ts              # Public API (re-exports)
 │   └── lib/
-│       ├── types.ts           # TConfig, TState, TStore, TEvent unions
-│       ├── constants.ts       # Immutable data (deck, rule tables)
-│       ├── <game>-plugin.ts   # GamePlugin implementation
+│       ├── types.ts           # Game-logic types (state, events, cards)
+│       ├── constants.ts       # Game-logic constants (deck, rule tables)
+│       ├── config.ts          # Config schemas, types, field registry, presets, GameConfigPlugin
+│       ├── <game>-plugin.ts   # GamePlugin implementation (runtime logic)
 │       └── *.spec.ts          # Tests
 ```
 
@@ -129,7 +197,7 @@ Game rules live in `libs/` — pure TypeScript, no framework dependencies, fully
 
 Infrastructure lives in `apps/backend/`:
 
-```
+```text
 apps/backend/src/<game-name>/
 ├── <game-name>.module.ts
 ├── <game-name>.service.ts     # Holds state, calls plugin methods
@@ -138,10 +206,11 @@ apps/backend/src/<game-name>/
 
 ### Implementation Checklist
 
-1. Define types: `TConfig`, `TState`, `TStore`, event union
-2. Implement `GamePlugin` — start with `validateConfig`, `createInitialState`, `isGameOver`, `buildStore`
-3. Build game logic as pure functions, called from `applyEvent`
-4. Implement `getValidActions` and `getPlayerView`
-5. Add event constants and payload types to `@cardquorum/shared`
-6. Create backend gateway and service
-7. Write tests — unit tests for pure logic, integration test for a full game flow
+1. Define game-logic types in `types.ts`: `TState`, `TStore`, event union, card/piece models
+2. Define game-logic constants in `constants.ts`: deck, rule tables, scoring tables
+3. Define config in `config.ts`: Zod schema, config type, field key union, `FieldRegistry`, presets, `GameConfigPlugin`
+4. Implement `GamePlugin` in `<game>-plugin.ts` — `validateConfig`, `createInitialState`, `applyEvent`, etc.
+5. Build game logic as pure functions, called from `applyEvent`
+6. Add event constants and payload types to `@cardquorum/shared`
+7. Create backend gateway and service
+8. Write tests — unit tests for pure logic, integration test for a full game flow

@@ -1,6 +1,14 @@
-import type { NoPick, SheepsheadConfig } from './schemas';
+import type { NoPick } from './config';
 
-export type { SheepsheadConfig, NoPick, PickerRule, PartnerRule } from './schemas';
+export type { FieldMode, ConfigFieldDef, SelectFieldDef } from '@cardquorum/engine';
+export type {
+  SheepsheadConfig,
+  NoPick,
+  PickerRule,
+  PartnerRule,
+  SheepsheadFieldKey,
+  ConfigPreset,
+} from './config';
 
 /**
  * The unique identifier for a player (userID).
@@ -18,17 +26,6 @@ export type PlayerRole = 'picker' | 'partner' | 'opposition';
 
 /** Valid values for a called card: fail aces, fail 10s, or going alone. */
 export type CalledCard = 'ac' | 'as' | 'ah' | 'xc' | 'xs' | 'xh' | 'alone';
-
-export interface ConfigPreset {
-  /** Display name for the frontend. */
-  label: string;
-  /** Short description, e.g. for a tooltip. */
-  description: string;
-  /** Values locked by this preset — not user-editable. */
-  fixed: Partial<SheepsheadConfig>;
-  /** Values with defaults that the user can change. */
-  defaults: Partial<SheepsheadConfig>;
-}
 
 /**
  * The ordered list of players (userIDs) in the game.

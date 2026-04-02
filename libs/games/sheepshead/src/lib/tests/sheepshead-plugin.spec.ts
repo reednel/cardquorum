@@ -18,6 +18,7 @@ function makeConfig(overrides: Partial<SheepsheadConfig> = {}): SheepsheadConfig
     noAceFaceTrump: false,
     multiplicityLimit: null,
     callOwnAce: null,
+    cardsRemoved: [],
     ...overrides,
   };
 }

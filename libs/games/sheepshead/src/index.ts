@@ -4,17 +4,11 @@ export {
   NoPickSchema,
   PickerRuleSchema,
   PartnerRuleSchema,
-  CardNameSchema,
-} from './lib/schemas';
-export {
-  SUITS,
-  RANKS,
-  DECK,
-  TOTAL_POINTS,
-  TRUMP_ORDER,
-  FAIL_RANK_ORDER,
   CONFIG_PRESETS,
-} from './lib/constants';
+  FIELD_REGISTRY,
+  SheepsheadConfigPlugin,
+} from './lib/config';
+export { SUITS, RANKS, DECK, TOTAL_POINTS, TRUMP_ORDER, FAIL_RANK_ORDER } from './lib/constants';
 export { isTrump, sumPoints, cardPower, cardsEqual } from './lib/cards';
 export { createShuffledDeck, deal, hasNoAceFaceTrump } from './lib/dealing';
 export { evaluateTrick, legalPlays } from './lib/tricks';

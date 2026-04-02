@@ -1,5 +1,13 @@
 # Changes
 
+## Fixes
+
+1. The login page should redirect to the home page when a user already has an authenticated session.
+2. Rooms page owner shoud display displayName ?? username.
+3. Remove fragile, useless tests.
+
+## Features
+
 1. Games
    1. Game selection and configuration menu(s)
    2. Game UI

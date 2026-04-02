@@ -46,12 +46,16 @@ Key exports:
 
 ### `@cardquorum/engine`
 
-Pure TypeScript with no framework dependency. Provides reusable room/connection tracking that game plugins will build on.
+Pure TypeScript with no framework dependency. Provides reusable room/connection tracking and the generic game config plugin contract.
 
 Key exports:
 
 - `RoomManager` — tracks rooms, members (by connection ID), and handles disconnect cleanup
 - `RoomState` — the shape of a room's in-memory state
+- `GamePlugin`, `GameEventBase` — runtime game plugin interface and event base type
+- `GameConfigPlugin` — config-side plugin contract (label, field registry, presets, validation schema)
+- `FieldMetadata`, `FieldRegistry`, `GenericConfigPreset` — generic config types consumed by the frontend
+- `FieldMode`, `ConfigFieldDef`, `SelectFieldDef` — field definition types used in presets
 
 ## Backend Modules
 

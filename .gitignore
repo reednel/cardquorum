@@ -50,3 +50,14 @@ data
 .github/instructions/nx.instructions.md
 
 .angular
+
+# AI agents
+.claude/
+.kiro/
+.cursorrules
+.cursor/
+.aider*
+.codeium/
+CLAUDE.md
+.windsurfrules
+.superpowers/

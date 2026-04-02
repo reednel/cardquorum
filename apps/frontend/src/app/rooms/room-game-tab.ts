@@ -1,16 +1,45 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { CONFIG_PRESETS, SheepsheadConfigSchema } from '@cardquorum/sheepshead';
-import { ConfigField, fieldsFromSchema } from '../game/config-fields';
-import { GamePreset, GameRegistry } from '../game/game-registry';
+import {
+  ConfigFieldDef,
+  FieldRegistry,
+  GenericConfigPreset,
+  SelectFieldDef,
+} from '@cardquorum/engine';
+import { SheepsheadConfigPlugin } from '@cardquorum/sheepshead';
+import { GameRegistry } from '../game/game-registry';
 
 const GAMES: GameRegistry = {
-  sheepshead: {
-    label: 'Sheepshead',
-    configSchema: SheepsheadConfigSchema,
-    presets: CONFIG_PRESETS,
-  },
+  sheepshead: SheepsheadConfigPlugin,
 };
+
+type FieldEntry = {
+  key: string;
+  displayName: string;
+  description: string;
+  mode: string;
+  value: unknown;
+  options?: unknown[];
+  renderType: 'boolean' | 'select' | 'number' | 'nullable-number' | 'hidden-array';
+};
+
+export function buildFieldEntries(
+  preset: GenericConfigPreset,
+  registry: FieldRegistry,
+): FieldEntry[] {
+  return Object.entries(preset.fields).map(([key, field]) => {
+    const meta = registry[key];
+    return {
+      key,
+      displayName: meta?.displayName ?? key,
+      description: meta?.description ?? '',
+      mode: field.mode,
+      value: field.value,
+      options: 'options' in field ? (field as SelectFieldDef<unknown>).options : undefined,
+      renderType: meta?.renderType ?? 'number',
+    };
+  });
+}
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -22,7 +51,7 @@ const GAMES: GameRegistry = {
       <label
         for="game-type"
         class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500
-               dark:text-gray-400"
+               dark:text-gray-200"
       >
         Game
       </label>
@@ -63,12 +92,7 @@ const GAMES: GameRegistry = {
         >
           <option [value]="-1">— Select a variant —</option>
           @for (preset of presets(); track $index) {
-            <option [value]="$index">
-              {{ preset.label }}
-              @if (preset.fixed['playerCount']) {
-                ({{ preset.fixed['playerCount'] }}p)
-              }
-            </option>
+            <option [value]="$index">{{ preset.label }}</option>
           }
         </select>
         @if (activePreset(); as preset) {
@@ -76,8 +100,8 @@ const GAMES: GameRegistry = {
         }
       }
 
-      <!-- Fixed fields (read-only context) -->
-      @if (visibleFixedFields().length > 0) {
+      <!-- Locked fields (read-only context) -->
+      @if (lockedFields().length > 0) {
         <div
           class="mb-4 rounded-md border border-gray-200 bg-gray-50 p-3
                     dark:border-gray-700 dark:bg-gray-800/50"
@@ -89,11 +113,13 @@ const GAMES: GameRegistry = {
             Fixed Rules
           </h4>
           <dl class="flex flex-col gap-1">
-            @for (entry of visibleFixedFields(); track entry.key) {
+            @for (entry of lockedFields(); track entry.key) {
               <div class="flex items-center justify-between text-sm">
-                <dt class="text-gray-600 dark:text-gray-400">{{ labelFor(entry.key) }}</dt>
+                <dt class="text-gray-600 dark:text-gray-400" [title]="entry.description">
+                  {{ entry.displayName }}
+                </dt>
                 <dd class="font-medium text-gray-800 dark:text-gray-200">
-                  {{ displayValue(entry.value) }}
+                  {{ displayValue(configValues()[entry.key]) }}
                 </dd>
               </div>
             }
@@ -111,12 +137,12 @@ const GAMES: GameRegistry = {
         </h4>
         <div class="flex flex-col gap-3">
           @for (field of editableFields(); track field.key) {
-            @switch (field.type) {
+            @switch (field.renderType) {
               @case ('boolean') {
                 <label
                   class="flex items-center justify-between text-sm text-gray-700 dark:text-gray-300"
                 >
-                  <span>{{ labelFor(field.key) }}</span>
+                  <span [title]="field.description">{{ field.displayName }}</span>
                   <input
                     type="checkbox"
                     [ngModel]="configValues()[field.key]"
@@ -132,22 +158,23 @@ const GAMES: GameRegistry = {
                 <div>
                   <label
                     [attr.for]="'field-' + field.key"
+                    [title]="field.description"
                     class="mb-1 block text-sm text-gray-700 dark:text-gray-300"
                   >
-                    {{ labelFor(field.key) }}
+                    {{ field.displayName }}
                   </label>
                   <select
                     [id]="'field-' + field.key"
                     [ngModel]="configValues()[field.key]"
-                    (ngModelChange)="onFieldChange(field.key, coerce(field, $event))"
+                    (ngModelChange)="onFieldChange(field.key, coerce($event))"
                     [disabled]="!isOwner()"
                     class="w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm
                            focus:border-indigo-500 focus:outline-none focus:ring-1
                            focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-60
                            dark:border-gray-600 dark:bg-gray-800 dark:text-white"
                   >
-                    @for (opt of field.options; track opt.value) {
-                      <option [ngValue]="opt.value">{{ opt.label }}</option>
+                    @for (opt of field.options; track opt) {
+                      <option [ngValue]="opt">{{ displayValue(opt) }}</option>
                     }
                   </select>
                 </div>
@@ -156,9 +183,10 @@ const GAMES: GameRegistry = {
                 <div>
                   <label
                     [attr.for]="'field-' + field.key"
+                    [title]="field.description"
                     class="mb-1 block text-sm text-gray-700 dark:text-gray-300"
                   >
-                    {{ labelFor(field.key) }}
+                    {{ field.displayName }}
                   </label>
                   <input
                     [id]="'field-' + field.key"
@@ -177,9 +205,10 @@ const GAMES: GameRegistry = {
                 <div>
                   <label
                     [attr.for]="'field-' + field.key"
+                    [title]="field.description"
                     class="mb-1 block text-sm text-gray-700 dark:text-gray-300"
                   >
-                    {{ labelFor(field.key) }}
+                    {{ field.displayName }}
                   </label>
                   <div class="flex items-center gap-2">
                     <input
@@ -232,38 +261,30 @@ export class RoomGameTab {
   protected readonly selectedPresetIndex = signal(-1);
   protected readonly configValues = signal<Record<string, unknown>>({});
 
-  protected readonly presets = computed<readonly GamePreset[]>(() => {
+  protected readonly presets = computed<readonly GenericConfigPreset[]>(() => {
     const game = GAMES[this.selectedGame()];
     return game?.presets ?? [];
   });
 
-  protected readonly activePreset = computed<GamePreset | null>(() => {
+  protected readonly activePreset = computed<GenericConfigPreset | null>(() => {
     const idx = this.selectedPresetIndex();
     const list = this.presets();
     return idx >= 0 && idx < list.length ? list[idx] : null;
   });
 
-  /** Fixed fields with non-null values — shown as read-only context. */
-  protected readonly visibleFixedFields = computed(() => {
+  private readonly fieldEntries = computed<FieldEntry[]>(() => {
     const preset = this.activePreset();
-    if (!preset) return [];
-    return Object.entries(preset.fixed)
-      .filter(([, v]) => v != null)
-      .map(([key, value]) => ({ key, value }));
-  });
-
-  private readonly allFields = computed<ConfigField[]>(() => {
     const game = GAMES[this.selectedGame()];
-    return game ? fieldsFromSchema(game.configSchema) : [];
+    return preset && game ? buildFieldEntries(preset, game.fieldRegistry) : [];
   });
 
-  /** Editable fields: everything in preset.defaults (null is a valid default, e.g. "no limit"). */
-  protected readonly editableFields = computed<ConfigField[]>(() => {
-    const preset = this.activePreset();
-    if (!preset) return [];
-    const defaultKeys = new Set(Object.keys(preset.defaults));
-    return this.allFields().filter((f) => defaultKeys.has(f.key));
-  });
+  protected readonly lockedFields = computed(() =>
+    this.fieldEntries().filter((f) => f.mode === 'locked'),
+  );
+
+  protected readonly editableFields = computed(() =>
+    this.fieldEntries().filter((f) => f.mode === 'editable'),
+  );
 
   protected onGameChange(gameType: string): void {
     this.selectedGame.set(gameType);
@@ -276,7 +297,14 @@ export class RoomGameTab {
     this.selectedPresetIndex.set(idx);
     const preset = this.presets()[idx];
     if (preset) {
-      this.configValues.set({ ...preset.fixed, ...preset.defaults });
+      const values: Record<string, unknown> = {
+        name: preset.name,
+        playerCount: preset.playerCount,
+      };
+      for (const [key, field] of Object.entries(preset.fields)) {
+        values[key] = (field as ConfigFieldDef<unknown>).value;
+      }
+      this.configValues.set(values);
     }
   }
 
@@ -284,24 +312,16 @@ export class RoomGameTab {
     this.configValues.update((v) => ({ ...v, [key]: value }));
   }
 
-  protected coerce(field: ConfigField, value: unknown): unknown {
+  protected coerce(value: unknown): unknown {
     if (value === 'null') return null;
     if (value === 'true') return true;
     if (value === 'false') return false;
-    if (field.type === 'number' && typeof value === 'string') return Number(value);
     return value;
-  }
-
-  protected labelFor(key: string): string {
-    return key
-      .replace(/([A-Z])/g, ' $1')
-      .replace(/^./, (c) => c.toUpperCase())
-      .trim();
   }
 
   protected displayValue(value: unknown): string {
     if (typeof value === 'boolean') return value ? 'Yes' : 'No';
-    if (value === null) return '—';
+    if (value === null) return 'None';
     if (typeof value === 'string') {
       return value.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
     }
