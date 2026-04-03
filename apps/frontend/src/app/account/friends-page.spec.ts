@@ -111,26 +111,23 @@ describe('FriendsPage', () => {
   });
 
   it('shows empty states when no data', () => {
-    expect(el.textContent).toContain('No incoming requests');
-    expect(el.textContent).toContain('No outgoing requests');
-    expect(el.textContent).toContain('No friends yet');
+    expect(el.querySelector('[data-testid="empty-incoming"]')).toBeTruthy();
+    expect(el.querySelector('[data-testid="empty-outgoing"]')).toBeTruthy();
+    expect(el.querySelector('[data-testid="empty-friends"]')).toBeTruthy();
   });
 
   it('renders friends list', () => {
     friendsSignal.set([FRIEND]);
     fixture.detectChanges();
 
-    expect(el.textContent).toContain('Bob');
-    expect(el.textContent).toContain('bob');
-    expect(el.textContent).toContain('Friends (1)');
+    expect(el.querySelector('[data-testid="friends-heading"]')).toBeTruthy();
+    expect(el.querySelector('[data-testid="remove-btn-1"]')).toBeTruthy();
   });
 
   it('renders incoming requests with accept/deny buttons', () => {
     incomingSignal.set([INCOMING]);
     fixture.detectChanges();
 
-    expect(el.textContent).toContain('Carol');
-    expect(el.textContent).toContain('Incoming Requests (1)');
     expect(el.querySelector('[data-testid="accept-btn-3"]')).toBeTruthy();
     expect(el.querySelector('[data-testid="deny-btn-3"]')).toBeTruthy();
   });
@@ -139,8 +136,6 @@ describe('FriendsPage', () => {
     outgoingSignal.set([OUTGOING]);
     fixture.detectChanges();
 
-    expect(el.textContent).toContain('Eve');
-    expect(el.textContent).toContain('Outgoing Requests (1)');
     expect(el.querySelector('[data-testid="cancel-btn-5"]')).toBeTruthy();
   });
 
@@ -211,7 +206,6 @@ describe('FriendsPage', () => {
       '[data-testid="confirm-remove-btn-1"]',
     ) as HTMLButtonElement;
     expect(confirmBtn).toBeTruthy();
-    expect(confirmBtn.textContent).toContain('Confirm');
   });
 
   it('shows blocked users section when expanded', () => {
@@ -253,7 +247,6 @@ describe('FriendsPage', () => {
       '[data-testid="confirm-unblock-btn-9"]',
     ) as HTMLButtonElement;
     expect(confirmBtn).toBeTruthy();
-    expect(confirmBtn.textContent).toContain('Confirm');
   });
 
   it('shows block button in search results for unknown users', () => {

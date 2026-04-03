@@ -76,16 +76,16 @@ describe('CreateRoomModal', () => {
     fixture.componentRef.instance['onSubmit']();
     fixture.detectChanges();
 
-    expect(el.textContent).toContain('A room with that name already exists');
+    expect(
+      el.querySelector('[role="alert"]') || el.querySelector('[data-testid="error-message"]'),
+    ).toBeTruthy();
   });
 
   it('emits closed on cancel click', () => {
     const spy = jest.fn();
     fixture.componentRef.instance.closed.subscribe(spy);
 
-    const cancel = Array.from(el.querySelectorAll('button')).find(
-      (b) => b.textContent?.trim() === 'Cancel',
-    );
+    const cancel = el.querySelector('[data-testid="cancel-btn"]') as HTMLButtonElement;
     cancel?.click();
     expect(spy).toHaveBeenCalled();
   });

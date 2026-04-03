@@ -23,11 +23,6 @@ describe('Login', () => {
     httpTesting.verify();
   });
 
-  it('should create the component', () => {
-    const fixture = TestBed.createComponent(Login);
-    expect(fixture.componentInstance).toBeTruthy();
-  });
-
   it('should render login form', () => {
     const fixture = TestBed.createComponent(Login);
     fixture.detectChanges();

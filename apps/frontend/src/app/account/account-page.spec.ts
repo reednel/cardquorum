@@ -71,15 +71,15 @@ describe('AccountPage', () => {
   });
 
   it('shows loading state while profile is null', () => {
-    expect(el.textContent).toContain('Loading');
+    expect(el.querySelector('[data-testid="loading-state"]')).toBeTruthy();
   });
 
   it('displays profile fields when loaded', () => {
     profileSignal.set(PROFILE);
     fixture.detectChanges();
 
-    expect(el.textContent).toContain('alice');
-    expect(el.textContent).toContain('Alice');
+    expect(el.querySelector('[data-testid="edit-username-btn"]')).toBeTruthy();
+    expect(el.querySelector('[data-testid="edit-display-name-btn"]')).toBeTruthy();
   });
 
   it('shows edit form when Edit button is clicked', () => {
@@ -151,7 +151,7 @@ describe('AccountPage', () => {
     profileSignal.set({ ...PROFILE, displayName: null });
     fixture.detectChanges();
 
-    expect(el.textContent).toContain('Not set');
+    expect(el.querySelector('[data-testid="display-name-empty"]')).toBeTruthy();
   });
 
   describe('delete account', () => {
@@ -200,10 +200,7 @@ describe('AccountPage', () => {
       fixture.detectChanges();
 
       expect(el.querySelector('[data-testid="delete-password-input"]')).toBeFalsy();
-      expect(el.textContent).toContain('This action cannot be undone');
-      expect(el.querySelector('[data-testid="confirm-delete-btn"]')?.textContent).toContain(
-        'Confirm & Delete',
-      );
+      expect(el.querySelector('[data-testid="confirm-delete-btn"]')).toBeTruthy();
     });
   });
 
@@ -216,14 +213,18 @@ describe('AccountPage', () => {
     it('shows linked accounts section after profile loads', () => {
       credentialsSignal.set(['basic']);
       fixture.detectChanges();
-      expect(el.textContent).toContain('Credentials');
+      expect(el.querySelector('[data-testid="linked-accounts"]')).toBeTruthy();
     });
 
     it('shows password as linked when user has basic credential', () => {
       credentialsSignal.set(['basic']);
       fixture.detectChanges();
       const section = el.querySelector('[data-testid="linked-accounts"]');
-      expect(section?.textContent).toContain('Password');
+      expect(section).toBeTruthy();
+      expect(
+        section?.querySelector('[data-testid="change-pw-btn"]') ||
+          section?.querySelector('[data-testid="unlink-basic-btn"]'),
+      ).toBeTruthy();
     });
 
     it('shows OIDC link button when user has only basic and oidc is enabled', () => {

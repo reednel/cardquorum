@@ -103,23 +103,21 @@ describe('RoomConfigModal', () => {
     submit.click();
     fixture.detectChanges();
 
-    expect(el.textContent).toContain('A room with that name already exists');
+    expect(
+      el.querySelector('[data-testid="error-message"]') || el.querySelector('[role="alert"]'),
+    ).toBeTruthy();
   });
 
   it('delete flow: shows confirmation, then emits deleted', () => {
     mockRoomService.deleteRoom.mockReturnValue(of(undefined));
 
-    const deleteBtn = Array.from(el.querySelectorAll('button')).find(
-      (b) => b.textContent?.trim() === 'Delete Room',
-    );
+    const deleteBtn = el.querySelector('[data-testid="delete-room-btn"]') as HTMLButtonElement;
     deleteBtn?.click();
     fixture.detectChanges();
 
-    expect(el.textContent).toContain('Are you sure?');
-
-    const confirmBtn = Array.from(el.querySelectorAll('button')).find(
-      (b) => b.textContent?.trim() === 'Confirm',
-    );
+    const confirmBtn = el.querySelector(
+      '[data-testid="confirm-delete-room-btn"]',
+    ) as HTMLButtonElement;
     confirmBtn?.click();
     fixture.detectChanges();
 
@@ -129,15 +127,13 @@ describe('RoomConfigModal', () => {
   it('prevents double-click on confirm delete', () => {
     mockRoomService.deleteRoom.mockReturnValue(of(undefined));
 
-    const deleteBtn = Array.from(el.querySelectorAll('button')).find(
-      (b) => b.textContent?.trim() === 'Delete Room',
-    );
+    const deleteBtn = el.querySelector('[data-testid="delete-room-btn"]') as HTMLButtonElement;
     deleteBtn?.click();
     fixture.detectChanges();
 
-    const confirmBtn = Array.from(el.querySelectorAll('button')).find(
-      (b) => b.textContent?.trim() === 'Confirm',
-    );
+    const confirmBtn = el.querySelector(
+      '[data-testid="confirm-delete-room-btn"]',
+    ) as HTMLButtonElement;
     confirmBtn?.click();
     confirmBtn?.click();
     fixture.detectChanges();

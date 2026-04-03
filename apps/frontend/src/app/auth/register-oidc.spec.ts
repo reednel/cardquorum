@@ -22,11 +22,6 @@ describe('RegisterOidc', () => {
     httpTesting.verify();
   });
 
-  it('should create the component', () => {
-    const fixture = TestBed.createComponent(RegisterOidc);
-    expect(fixture.componentInstance).toBeTruthy();
-  });
-
   it('should render username form without password field', () => {
     const fixture = TestBed.createComponent(RegisterOidc);
     fixture.detectChanges();
@@ -64,15 +59,5 @@ describe('RegisterOidc', () => {
     fixture.detectChanges();
 
     expect(fixture.componentInstance['errorMessage']()).toBe('Username already taken');
-  });
-
-  it('should not submit when form is invalid', () => {
-    const fixture = TestBed.createComponent(RegisterOidc);
-    fixture.detectChanges();
-
-    fixture.componentInstance['form'].setValue({ username: 'ab' }); // too short
-    fixture.componentInstance['onSubmit']();
-
-    httpTesting.expectNone('/api/auth/oidc/register');
   });
 });

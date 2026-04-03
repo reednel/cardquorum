@@ -38,6 +38,7 @@ import { RoomService } from './room.service';
         @if (errorMessage()) {
           <div
             id="create-room-error"
+            data-testid="error-message"
             class="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700
                    dark:bg-red-900/30 dark:text-red-400"
             role="alert"
@@ -162,6 +163,7 @@ import { RoomService } from './room.service';
           <div class="flex justify-end gap-3">
             <button
               type="button"
+              data-testid="cancel-btn"
               (click)="close()"
               class="rounded-md px-4 py-2 text-sm text-gray-700 hover:bg-gray-100
                      dark:text-gray-300 dark:hover:bg-gray-800"

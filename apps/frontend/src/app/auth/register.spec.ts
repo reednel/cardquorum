@@ -22,11 +22,6 @@ describe('Register', () => {
     httpTesting.verify();
   });
 
-  it('should create the component', () => {
-    const fixture = TestBed.createComponent(Register);
-    expect(fixture.componentInstance).toBeTruthy();
-  });
-
   it('should render register form with three fields', () => {
     const fixture = TestBed.createComponent(Register);
     fixture.detectChanges();

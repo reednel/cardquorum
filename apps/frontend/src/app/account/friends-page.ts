@@ -83,11 +83,16 @@ import { FriendService } from './friend.service';
 
     <!-- Incoming Requests -->
     <section class="mb-8">
-      <h2 class="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
+      <h2
+        data-testid="incoming-heading"
+        class="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100"
+      >
         Incoming Requests ({{ friendService.incomingRequests().length }})
       </h2>
       @if (friendService.incomingRequests().length === 0) {
-        <p class="text-sm text-gray-500 dark:text-gray-400">No incoming requests</p>
+        <p data-testid="empty-incoming" class="text-sm text-gray-500 dark:text-gray-400">
+          No incoming requests
+        </p>
       } @else {
         <ul
           class="divide-y divide-gray-100 rounded-md border border-gray-200
@@ -132,11 +137,16 @@ import { FriendService } from './friend.service';
 
     <!-- Outgoing Requests -->
     <section class="mb-8">
-      <h2 class="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
+      <h2
+        data-testid="outgoing-heading"
+        class="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100"
+      >
         Outgoing Requests ({{ friendService.outgoingRequests().length }})
       </h2>
       @if (friendService.outgoingRequests().length === 0) {
-        <p class="text-sm text-gray-500 dark:text-gray-400">No outgoing requests</p>
+        <p data-testid="empty-outgoing" class="text-sm text-gray-500 dark:text-gray-400">
+          No outgoing requests
+        </p>
       } @else {
         <ul
           class="divide-y divide-gray-100 rounded-md border border-gray-200
@@ -170,11 +180,16 @@ import { FriendService } from './friend.service';
 
     <!-- Friends List -->
     <section>
-      <h2 class="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
+      <h2
+        data-testid="friends-heading"
+        class="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100"
+      >
         Friends ({{ friendService.friends().length }})
       </h2>
       @if (friendService.friends().length === 0) {
-        <p class="text-sm text-gray-500 dark:text-gray-400">No friends yet</p>
+        <p data-testid="empty-friends" class="text-sm text-gray-500 dark:text-gray-400">
+          No friends yet
+        </p>
       } @else {
         <ul
           class="divide-y divide-gray-100 rounded-md border border-gray-200

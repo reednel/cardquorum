@@ -40,6 +40,7 @@ import { RoomService } from './room.service';
         @if (errorMessage()) {
           <div
             id="config-room-error"
+            data-testid="error-message"
             class="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700
                    dark:bg-red-900/30 dark:text-red-400"
             role="alert"
@@ -93,6 +94,7 @@ import { RoomService } from './room.service';
                 </span>
                 <button
                   type="button"
+                  data-testid="confirm-delete-room-btn"
                   (click)="onConfirmDelete()"
                   [disabled]="submitting()"
                   class="mr-1 rounded-md bg-red-600 px-3 py-1 text-xs font-medium text-white
@@ -112,6 +114,7 @@ import { RoomService } from './room.service';
               } @else {
                 <button
                   type="button"
+                  data-testid="delete-room-btn"
                   (click)="confirmDelete.set(true)"
                   class="rounded-md px-3 py-1 text-sm text-red-600 hover:bg-red-50
                          dark:text-red-400 dark:hover:bg-red-900/20"

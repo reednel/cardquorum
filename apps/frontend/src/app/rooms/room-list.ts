@@ -27,9 +27,10 @@ import { RoomService } from './room.service';
       @if (roomService.loading()) {
         <p class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">Loading rooms...</p>
       } @else if (roomService.error()) {
-        <div class="py-8 text-center">
+        <div data-testid="error-state" class="py-8 text-center">
           <p class="text-sm text-red-600 dark:text-red-400">{{ roomService.error() }}</p>
           <button
+            data-testid="retry-btn"
             (click)="roomService.loadRooms()"
             class="mt-2 text-sm text-indigo-600 hover:underline dark:text-indigo-400"
           >
@@ -37,7 +38,10 @@ import { RoomService } from './room.service';
           </button>
         </div>
       } @else if (roomService.rooms().length === 0) {
-        <p class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+        <p
+          data-testid="empty-rooms"
+          class="py-8 text-center text-sm text-gray-500 dark:text-gray-400"
+        >
           No rooms yet. Create one to get started.
         </p>
       } @else {

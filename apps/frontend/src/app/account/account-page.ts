@@ -24,7 +24,7 @@ import { UserService } from './user.service';
   selector: 'app-account-page',
   template: `
     @if (!userService.profile()) {
-      <p class="text-sm text-gray-500 dark:text-gray-400">Loading...</p>
+      <p data-testid="loading-state" class="text-sm text-gray-500 dark:text-gray-400">Loading...</p>
     } @else {
       <dl class="space-y-4">
         <div>
@@ -120,7 +120,11 @@ import { UserService } from './user.service';
               }
             } @else {
               <span class="text-gray-900 dark:text-gray-100">
-                {{ userService.profile()!.displayName ?? 'Not set' }}
+                @if (userService.profile()!.displayName) {
+                  {{ userService.profile()!.displayName }}
+                } @else {
+                  <span data-testid="display-name-empty">Not set</span>
+                }
               </span>
               <button
                 data-testid="edit-display-name-btn"
