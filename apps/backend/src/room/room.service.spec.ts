@@ -1,3 +1,5 @@
+import { ConflictException, ForbiddenException } from '@nestjs/common';
+import * as fc from 'fast-check';
 import { WebSocket } from 'ws';
 import { UserIdentity, WS_EMIT } from '@cardquorum/shared';
 import { WsConnectionService } from '../ws/ws-connection.service';
@@ -29,6 +31,14 @@ describe('RoomService', () => {
     findByRoom: jest.Mock;
     create: jest.Mock;
     delete: jest.Mock;
+  };
+  let mockRosterRepo: {
+    findByRoom: jest.Mock;
+    addMember: jest.Mock;
+    removeMember: jest.Mock;
+    replaceRoster: jest.Mock;
+    countMembers: jest.Mock;
+    isMember: jest.Mock;
   };
 
   const alice: UserIdentity = { userId: 1, username: 'alice', displayName: 'Alice' };
@@ -64,11 +74,20 @@ describe('RoomService', () => {
       create: jest.fn(),
       delete: jest.fn(),
     };
+    mockRosterRepo = {
+      findByRoom: jest.fn().mockResolvedValue([]),
+      addMember: jest.fn(),
+      removeMember: jest.fn().mockResolvedValue(true),
+      replaceRoster: jest.fn(),
+      countMembers: jest.fn().mockResolvedValue(0),
+      isMember: jest.fn().mockResolvedValue(false),
+    };
 
     service = new RoomService(
       mockRepo as any,
       mockInviteRepo as any,
       mockBanRepo as any,
+      mockRosterRepo as any,
       connectionService,
       mockFriendService as any,
       mockBlockService as any,
@@ -516,6 +535,60 @@ describe('RoomService', () => {
     it('should no-op for empty array', async () => {
       await service.bulkInvite(1, []);
       expect(mockInviteRepo.createMany).not.toHaveBeenCalled();
+    });
+  });
+
+  /**
+   * Property 8: Owner cannot leave roster
+   * For any room, a leave-roster request from the room owner should be rejected
+   * with a forbidden error, and the roster should remain unchanged.
+   *
+   * Validates: Requirements 6.6
+   */
+  describe('P8: Owner cannot leave roster', () => {
+    it('should reject removeFromRoster when userId is the room owner', async () => {
+      await fc.assert(
+        fc.asyncProperty(fc.integer({ min: 1, max: 10000 }), async (ownerId) => {
+          mockRepo.findById.mockResolvedValue({
+            id: 1,
+            ownerId,
+            visibility: 'public',
+            name: 'Test Room',
+          });
+          mockRosterRepo.removeMember.mockClear();
+
+          await expect(service.removeFromRoster(1, ownerId)).rejects.toThrow(ForbiddenException);
+          expect(mockRosterRepo.removeMember).not.toHaveBeenCalled();
+        }),
+        { numRuns: 100 },
+      );
+    });
+  });
+
+  /**
+   * Property 10: Roster reorder rejected during active game
+   * For any room with an active game session, a roster reorder request should be
+   * rejected with an error, and the roster should remain unchanged.
+   *
+   * Validates: Requirements 9.9
+   */
+  describe('P10: Roster reorder rejected during active game', () => {
+    it('should reject reorderRoster when game is active', async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.uniqueArray(fc.integer({ min: 1, max: 10000 }), { minLength: 0, maxLength: 5 }),
+          fc.uniqueArray(fc.integer({ min: 1, max: 10000 }), { minLength: 0, maxLength: 5 }),
+          async (players, spectators) => {
+            mockRosterRepo.replaceRoster.mockClear();
+
+            await expect(
+              service.reorderRoster(1, players, spectators, { gameActive: true }),
+            ).rejects.toThrow(ConflictException);
+            expect(mockRosterRepo.replaceRoster).not.toHaveBeenCalled();
+          },
+        ),
+        { numRuns: 100 },
+      );
     });
   });
 });

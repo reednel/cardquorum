@@ -1,3 +1,10 @@
+import {
+  CdkDrag,
+  CdkDragDrop,
+  CdkDropList,
+  moveItemInArray,
+  transferArrayItem,
+} from '@angular/cdk/drag-drop';
 import { HttpClient } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
@@ -13,77 +20,158 @@ import {
   RoomBanResponse,
   RoomInviteResponse,
   RoomResponse,
+  RosterMember,
   UserSearchResult,
 } from '@cardquorum/shared';
 import { AuthService } from '../auth/auth.service';
 import { ChatService } from '../chat/chat.service';
+import { GameService } from '../game/game.service';
+import { OverflowAction, OverflowMenuComponent } from './overflow-menu';
 import { RoomService } from './room.service';
+import {
+  computeInvitedList,
+  computeStatus,
+  formatRosterCount,
+  RosterService,
+} from './roster.service';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-room-members-tab',
+  imports: [CdkDropList, CdkDrag, OverflowMenuComponent],
   template: `
     <div id="members-panel" role="tabpanel" aria-label="Members" class="flex-1 overflow-y-auto p-4">
-      <!-- Active Members -->
-      <h3
-        class="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500
-               dark:text-gray-400"
+      <!-- Roster count -->
+      <p
+        class="mb-3 text-sm font-medium text-gray-600 dark:text-gray-300"
+        data-testid="roster-count"
       >
-        Online ({{ chatService.members().length }})
+        Members: {{ rosterCount() }}
+      </p>
+
+      <!-- Rotate Players toggle (owner only) -->
+      @if (isOwner()) {
+        <label
+          class="mb-3 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300"
+          data-testid="rotate-toggle"
+        >
+          <input
+            type="checkbox"
+            [checked]="rosterService.rotatePlayers()"
+            (change)="onToggleRotate($event)"
+            class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+          />
+          Rotate Players
+        </label>
+      }
+
+      <!-- Players section -->
+      <h3
+        class="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400"
+        data-testid="players-section"
+      >
+        Players ({{ rosterService.players().length }})
       </h3>
-      <ul class="mb-4 flex flex-col gap-1">
-        @for (member of chatService.members(); track member.userId) {
+      <ul
+        cdkDropList
+        #playersList="cdkDropList"
+        [cdkDropListData]="rosterService.players()"
+        [cdkDropListConnectedTo]="[spectatorsList]"
+        [cdkDropListDisabled]="!dragEnabled()"
+        (cdkDropListDropped)="onDrop($event)"
+        data-testid="players-list"
+        class="mb-4 flex min-h-8 flex-col gap-1"
+      >
+        @for (member of rosterService.players(); track member.userId) {
           <li
-            class="flex items-center justify-between text-sm text-gray-700
-                   dark:text-gray-300"
+            cdkDrag
+            [cdkDragData]="member"
+            class="flex items-center justify-between rounded px-1 py-0.5 text-sm text-gray-700 dark:text-gray-300"
           >
             <span class="flex items-center gap-2">
-              <span class="h-2 w-2 rounded-full bg-green-500" aria-hidden="true"></span>
+              <span
+                [class]="
+                  'inline-block h-2 w-2 shrink-0 rounded-full ' + statusDotClass(member.userId)
+                "
+                [title]="statusTooltip(member.userId)"
+                [attr.aria-label]="statusTooltip(member.userId)"
+                role="img"
+                [attr.data-testid]="'status-dot-' + member.userId"
+              ></span>
               {{ member.displayName ?? member.username }}
             </span>
             @if (isOwner() && member.userId !== room().ownerId) {
-              <button
-                (click)="onBan(member.userId)"
-                class="rounded px-1.5 py-0.5 text-xs text-red-600 hover:bg-red-50
-                       dark:text-red-400 dark:hover:bg-red-900/20"
-              >
-                Ban
-              </button>
+              <app-overflow-menu [actions]="rosterMemberActions(member.userId)" />
             }
           </li>
         }
       </ul>
 
-      <!-- Invited (not online) — visible to everyone for invite-only rooms -->
-      @if (room().visibility === 'invite-only' && offlineInvitees().length > 0) {
+      <!-- Spectators section -->
+      <h3
+        class="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400"
+        data-testid="spectators-section"
+      >
+        Spectators ({{ rosterService.spectators().length }})
+      </h3>
+      <ul
+        cdkDropList
+        #spectatorsList="cdkDropList"
+        [cdkDropListData]="rosterService.spectators()"
+        [cdkDropListConnectedTo]="[playersList]"
+        [cdkDropListDisabled]="!dragEnabled()"
+        (cdkDropListDropped)="onDrop($event)"
+        data-testid="spectators-list"
+        class="mb-4 flex min-h-8 flex-col gap-1"
+      >
+        @for (member of rosterService.spectators(); track member.userId) {
+          <li
+            cdkDrag
+            [cdkDragData]="member"
+            class="flex items-center justify-between rounded px-1 py-0.5 text-sm text-gray-700 dark:text-gray-300"
+          >
+            <span class="flex items-center gap-2">
+              <span
+                [class]="
+                  'inline-block h-2 w-2 shrink-0 rounded-full ' + statusDotClass(member.userId)
+                "
+                [title]="statusTooltip(member.userId)"
+                [attr.aria-label]="statusTooltip(member.userId)"
+                role="img"
+                [attr.data-testid]="'status-dot-' + member.userId"
+              ></span>
+              {{ member.displayName ?? member.username }}
+            </span>
+            @if (isOwner() && member.userId !== room().ownerId) {
+              <app-overflow-menu [actions]="rosterMemberActions(member.userId)" />
+            }
+          </li>
+        }
+      </ul>
+
+      <!-- Invited section (invite-only rooms only) -->
+      @if (room().visibility === 'invite-only' && invitedList().length > 0) {
         <h3
-          class="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500
-                 dark:text-gray-400"
+          class="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400"
+          data-testid="invited-section"
         >
-          Invited ({{ offlineInvitees().length }})
+          Invited ({{ invitedList().length }})
         </h3>
         <ul class="mb-4 flex flex-col gap-1">
-          @for (inv of offlineInvitees(); track inv.userId) {
-            <li
-              class="flex items-center justify-between text-sm text-gray-500
-                     dark:text-gray-400"
-            >
+          @for (inv of invitedList(); track inv.userId) {
+            <li class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
               <span class="flex items-center gap-2">
                 <span
-                  class="h-2 w-2 rounded-full bg-gray-300 dark:bg-gray-600"
-                  aria-hidden="true"
+                  class="inline-block h-2 w-2 shrink-0 rounded-full bg-gray-300 dark:bg-gray-600"
+                  title="Not in room"
+                  aria-label="Not in room"
+                  role="img"
+                  [attr.data-testid]="'status-dot-' + inv.userId"
                 ></span>
                 {{ inv.displayName ?? inv.username }}
               </span>
               @if (isOwner()) {
-                <button
-                  (click)="onUninvite(inv.userId)"
-                  class="rounded px-1.5 py-0.5 text-xs text-amber-600
-                         hover:bg-amber-50 dark:text-amber-400
-                         dark:hover:bg-amber-900/20"
-                >
-                  Revoke
-                </button>
+                <app-overflow-menu [actions]="invitedMemberActions(inv.userId)" />
               }
             </li>
           }
@@ -95,8 +183,7 @@ import { RoomService } from './room.service';
         <div class="mb-4">
           <label
             for="invite-member-search"
-            class="mb-1 block text-sm font-semibold uppercase tracking-wide
-                   text-gray-500 dark:text-gray-400"
+            class="mb-1 block text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400"
           >
             Invite User
           </label>
@@ -141,20 +228,17 @@ import { RoomService } from './room.service';
         </div>
       }
 
-      <!-- Banned — owner only -->
+      <!-- Banned section — owner only -->
       @if (isOwner() && bans().length > 0) {
         <h3
-          class="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500
-                 dark:text-gray-400"
+          class="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400"
+          data-testid="banned-section"
         >
           Banned ({{ bans().length }})
         </h3>
         <ul class="flex flex-col gap-1">
           @for (ban of bans(); track ban.userId) {
-            <li
-              class="flex items-center justify-between text-sm text-gray-500
-                     dark:text-gray-400"
-            >
+            <li class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
               <span>{{ ban.displayName ?? ban.username }}</span>
               <button
                 (click)="onUnban(ban.userId)"
@@ -173,7 +257,9 @@ import { RoomService } from './room.service';
 export class RoomMembersTab {
   readonly room = input.required<RoomResponse>();
 
-  readonly chatService = inject(ChatService);
+  protected readonly rosterService = inject(RosterService);
+  private readonly chatService = inject(ChatService);
+  private readonly gameService = inject(GameService);
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
   private readonly roomService = inject(RoomService);
@@ -185,10 +271,26 @@ export class RoomMembersTab {
 
   protected readonly isOwner = computed(() => this.room().ownerId === this.auth.user()?.userId);
 
-  protected readonly offlineInvitees = computed(() => {
-    const onlineIds = new Set(this.chatService.members().map((m) => m.userId));
-    return this.invites().filter((inv) => !onlineIds.has(inv.userId));
-  });
+  protected readonly onlineUserIds = computed(
+    () => new Set(this.chatService.members().map((m) => m.userId)),
+  );
+
+  protected readonly invitedList = computed(() =>
+    computeInvitedList(this.invites(), {
+      players: this.rosterService.players(),
+      spectators: this.rosterService.spectators(),
+      rotatePlayers: this.rosterService.rotatePlayers(),
+    }),
+  );
+
+  protected readonly rosterCount = computed(() =>
+    formatRosterCount(
+      this.rosterService.players().length + this.rosterService.spectators().length,
+      this.room().memberLimit,
+    ),
+  );
+
+  protected readonly dragEnabled = computed(() => this.isOwner() && !this.gameService.sessionId());
 
   loadData(): void {
     if (this.isOwner()) {
@@ -197,6 +299,54 @@ export class RoomMembersTab {
     } else if (this.room().visibility === 'invite-only') {
       this.loadInvites();
     }
+  }
+
+  protected statusDotClass(userId: number): string {
+    const status = computeStatus(userId, this.onlineUserIds());
+    return status === 'online' ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600';
+  }
+
+  protected statusTooltip(userId: number): string {
+    return computeStatus(userId, this.onlineUserIds()) === 'online' ? 'In room' : 'Not in room';
+  }
+
+  protected rosterMemberActions(userId: number): OverflowAction[] {
+    return [
+      { label: 'Kick', handler: () => this.onKick(userId) },
+      { label: 'Ban', handler: () => this.onBan(userId) },
+    ];
+  }
+
+  protected invitedMemberActions(userId: number): OverflowAction[] {
+    return [{ label: 'Revoke', handler: () => this.onUninvite(userId) }];
+  }
+
+  protected onDrop(event: CdkDragDrop<RosterMember[]>): void {
+    if (event.previousContainer === event.container) {
+      moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
+    } else {
+      transferArrayItem(
+        event.previousContainer.data,
+        event.container.data,
+        event.previousIndex,
+        event.currentIndex,
+      );
+    }
+
+    const playerIds = this.rosterService.players().map((m) => m.userId);
+    const spectatorIds = this.rosterService.spectators().map((m) => m.userId);
+    this.rosterService.reorderRoster(this.room().id, playerIds, spectatorIds).subscribe();
+  }
+
+  protected onToggleRotate(event: Event): void {
+    const enabled = (event.target as HTMLInputElement).checked;
+    this.rosterService.toggleRotate(this.room().id, enabled).subscribe();
+  }
+
+  protected onKick(userId: number): void {
+    this.rosterService.kickUser(this.room().id, userId).subscribe(() => {
+      this.loadInvites();
+    });
   }
 
   protected onBan(userId: number): void {

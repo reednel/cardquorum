@@ -9,6 +9,7 @@ import {
   UserIdentity,
   WS_EMIT,
   WS_EVENT,
+  WsErrorPayload,
 } from '@cardquorum/shared';
 import { WebSocketService } from '../websocket.service';
 
@@ -18,11 +19,13 @@ export class ChatService {
   private readonly _members = signal<UserIdentity[]>([]);
   private readonly _currentRoomId = signal<number | null>(null);
   private readonly _roomDeleted = signal<number | null>(null);
+  private readonly _joinError = signal<string | null>(null);
 
   readonly messages = this._messages.asReadonly();
   readonly members = this._members.asReadonly();
   readonly currentRoomId = this._currentRoomId.asReadonly();
   readonly roomDeleted = this._roomDeleted.asReadonly();
+  readonly joinError = this._joinError.asReadonly();
 
   private readonly ws = inject(WebSocketService);
 
@@ -30,6 +33,7 @@ export class ChatService {
     // Event subscriptions live for the app lifetime (singleton service).
     // No unsubscribe needed — handlers are idempotent and persist across reconnects.
     this.ws.on<RoomJoinedPayload>(WS_EMIT.ROOM_JOINED, (data) => {
+      this._joinError.set(null);
       this._members.set(data.members);
     });
     this.ws.on<MessageHistoryPayload>(WS_EMIT.MESSAGE_HISTORY, (data) => {
@@ -52,6 +56,12 @@ export class ChatService {
         this._roomDeleted.set(data.roomId); // reuse same signal to trigger navigation
       }
     });
+    this.ws.on<WsErrorPayload>(WS_EMIT.ERROR, (data) => {
+      if (this._currentRoomId() !== null && this._members().length === 0) {
+        // Error arrived while waiting to join (no members received yet) — treat as join failure
+        this._joinError.set(data.message);
+      }
+    });
 
     // Re-join active room on reconnect (WS dropped and re-established).
     // Uses a plain callback instead of an Angular effect so it fires reliably
@@ -66,6 +76,7 @@ export class ChatService {
 
   joinRoom(roomId: number): void {
     this._roomDeleted.set(null);
+    this._joinError.set(null);
     this._currentRoomId.set(roomId);
     this._messages.set([]);
     this._members.set([]);

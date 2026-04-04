@@ -15,6 +15,9 @@ const ROOM: RoomResponse = {
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
   onlineCount: 2,
+  memberLimit: null,
+  rosterCount: 0,
+  isOnRoster: false,
 };
 
 @Component({

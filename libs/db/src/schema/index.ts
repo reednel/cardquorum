@@ -5,6 +5,7 @@ export { gameSessions } from './game-sessions';
 export { messages } from './messages';
 export { roomBans } from './room-bans';
 export { roomInvites } from './room-invites';
+export { roomRosters } from './room-rosters';
 export { rooms } from './rooms';
 export { sessions } from './sessions';
 export { userCredentials } from './user-credentials';

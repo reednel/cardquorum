@@ -52,7 +52,7 @@ import { RoomService } from './room.service';
             >
               <th scope="col" class="pb-2 font-medium">Name</th>
               <th scope="col" class="pb-2 font-medium">Owner</th>
-              <th scope="col" class="pb-2 font-medium text-center">Online</th>
+              <th scope="col" class="pb-2 font-medium text-center">Members</th>
               <th scope="col" class="pb-2 font-medium">Visibility</th>
               <th scope="col" class="pb-2 font-medium"><span class="sr-only">Actions</span></th>
             </tr>
@@ -63,7 +63,7 @@ import { RoomService } from './room.service';
                 <td class="py-3 font-medium text-gray-900 dark:text-gray-100">{{ room.name }}</td>
                 <td class="py-3 text-gray-600 dark:text-gray-400">{{ room.ownerDisplayName }}</td>
                 <td class="py-3 text-center text-gray-600 dark:text-gray-400">
-                  {{ room.onlineCount }}
+                  {{ formatMemberCount(room) }}
                 </td>
                 <td class="py-3">
                   <span
@@ -101,10 +101,15 @@ import { RoomService } from './room.service';
                     <button
                       data-testid="join-btn"
                       (click)="joinRoom(room.id)"
-                      class="rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white
-                             hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      [disabled]="isRoomFull(room)"
+                      [class]="
+                        'rounded-md px-3 py-1 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 ' +
+                        (isRoomFull(room)
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
+                          : 'bg-indigo-600 text-white hover:bg-indigo-700')
+                      "
                     >
-                      Join
+                      {{ isRoomFull(room) ? 'Full' : 'Join' }}
                     </button>
                   </div>
                 </td>
@@ -143,6 +148,18 @@ export class RoomList implements OnInit {
 
   protected isOwner(room: RoomResponse): boolean {
     return room.ownerId === this.auth.user()?.userId;
+  }
+
+  protected isRoomFull(room: RoomResponse): boolean {
+    if (room.isOnRoster) return false;
+    return room.memberLimit != null && room.memberLimit > 0 && room.rosterCount >= room.memberLimit;
+  }
+
+  protected formatMemberCount(room: RoomResponse): string {
+    if (room.memberLimit != null && room.memberLimit > 0) {
+      return `${room.rosterCount} / ${room.memberLimit}`;
+    }
+    return `${room.rosterCount}`;
   }
 
   protected visibilityClass(visibility: string): string {

@@ -9,3 +9,5 @@ export { CredentialRepository } from './credential.repository';
 export { GameSessionRepository } from './game-session.repository';
 export { FriendshipRepository } from './friendship.repository';
 export { FriendshipRequestRepository } from './friendship-request.repository';
+export { RoomRosterRepository } from './room-roster.repository';
+export type { RosterMember, RosterSection } from './room-roster.repository';

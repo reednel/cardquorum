@@ -15,6 +15,9 @@ const ROOM: RoomResponse = {
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
   onlineCount: 0,
+  memberLimit: null,
+  rosterCount: 0,
+  isOnRoster: false,
 };
 
 describe('CreateRoomModal', () => {
@@ -120,6 +123,7 @@ describe('CreateRoomModal', () => {
       name: 'Private',
       visibility: 'invite-only',
       invitedUserIds: [2],
+      memberLimit: null,
     });
   });
 
@@ -132,5 +136,37 @@ describe('CreateRoomModal', () => {
 
     instance['removeInvitee'](5);
     expect(instance['invitedUsers']()).toHaveLength(0);
+  });
+
+  it('renders member limit input', () => {
+    expect(el.querySelector('[data-testid="member-limit-input"]')).toBeTruthy();
+  });
+
+  it('passes memberLimit to createRoom when set', () => {
+    mockRoomService.createRoom.mockReturnValue(of({ ...ROOM, memberLimit: 8 }));
+
+    fixture.componentRef.instance['form'].patchValue({ name: 'Limited', memberLimit: 8 });
+    fixture.componentRef.instance['onSubmit']();
+
+    expect(mockRoomService.createRoom).toHaveBeenCalledWith({
+      name: 'Limited',
+      visibility: 'public',
+      invitedUserIds: undefined,
+      memberLimit: 8,
+    });
+  });
+
+  it('passes null memberLimit when field is empty', () => {
+    mockRoomService.createRoom.mockReturnValue(of(ROOM));
+
+    fixture.componentRef.instance['form'].patchValue({ name: 'Unlimited', memberLimit: null });
+    fixture.componentRef.instance['onSubmit']();
+
+    expect(mockRoomService.createRoom).toHaveBeenCalledWith({
+      name: 'Unlimited',
+      visibility: 'public',
+      invitedUserIds: undefined,
+      memberLimit: null,
+    });
   });
 });

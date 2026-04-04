@@ -13,6 +13,8 @@ export class RoomRepository {
         ownerId: rooms.ownerId,
         ownerDisplayName: users.displayName,
         visibility: rooms.visibility,
+        memberLimit: rooms.memberLimit,
+        rotatePlayers: rooms.rotatePlayers,
         createdAt: rooms.createdAt,
         updatedAt: rooms.updatedAt,
       })
@@ -31,6 +33,7 @@ export class RoomRepository {
         ownerId: rooms.ownerId,
         ownerDisplayName: users.displayName,
         visibility: rooms.visibility,
+        memberLimit: rooms.memberLimit,
         createdAt: rooms.createdAt,
         updatedAt: rooms.updatedAt,
       })
@@ -43,12 +46,28 @@ export class RoomRepository {
     return query;
   }
 
-  async create(name: string, ownerId: number, visibility = 'public') {
-    const [row] = await this.db.insert(rooms).values({ name, ownerId, visibility }).returning();
+  async create(name: string, ownerId: number, visibility = 'public', memberLimit?: number | null) {
+    const values: {
+      name: string;
+      ownerId: number;
+      visibility: string;
+      memberLimit?: number | null;
+    } = {
+      name,
+      ownerId,
+      visibility,
+    };
+    if (memberLimit != null && memberLimit > 0) {
+      values.memberLimit = memberLimit;
+    }
+    const [row] = await this.db.insert(rooms).values(values).returning();
     return row;
   }
 
-  async update(roomId: number, fields: { name?: string; visibility?: string }) {
+  async update(
+    roomId: number,
+    fields: { name?: string; visibility?: string; rotatePlayers?: boolean },
+  ) {
     const [row] = await this.db
       .update(rooms)
       .set({ ...fields, updatedAt: sql`now()` })

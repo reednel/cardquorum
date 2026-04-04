@@ -1,7 +1,25 @@
-import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { RoomBanRepository, RoomInviteRepository, RoomRepository } from '@cardquorum/db';
-import { RoomManager } from '@cardquorum/engine';
-import { RoomBanResponse, RoomInviteResponse, RoomVisibility, WS_EMIT } from '@cardquorum/shared';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  RoomBanRepository,
+  RoomInviteRepository,
+  RoomRepository,
+  RoomRosterRepository,
+} from '@cardquorum/db';
+import { RoomManager, rotateSeat as rosterRotateSeat } from '@cardquorum/engine';
+import {
+  RoomBanResponse,
+  RoomInviteResponse,
+  RoomVisibility,
+  RosterMember,
+  RosterState,
+  WS_EMIT,
+} from '@cardquorum/shared';
 import { BlockService } from '../block/block.service';
 import { FriendService } from '../friend/friend.service';
 import { WsConnectionService } from '../ws/ws-connection.service';
@@ -15,6 +33,7 @@ export class RoomService {
     private readonly rooms: RoomRepository,
     private readonly roomInvites: RoomInviteRepository,
     private readonly roomBans: RoomBanRepository,
+    private readonly roomRosters: RoomRosterRepository,
     private readonly connectionService: WsConnectionService,
     private readonly friendService: FriendService,
     private readonly blockService: BlockService,
@@ -71,8 +90,13 @@ export class RoomService {
     return false;
   }
 
-  async create(name: string, ownerId: number, visibility: RoomVisibility = 'public') {
-    const room = await this.rooms.create(name, ownerId, visibility);
+  async create(
+    name: string,
+    ownerId: number,
+    visibility: RoomVisibility = 'public',
+    memberLimit?: number | null,
+  ) {
+    const room = await this.rooms.create(name, ownerId, visibility, memberLimit);
     this.logger.log(`Room ${room.id} "${name}" created by user ${ownerId}`);
     return room;
   }
@@ -180,6 +204,20 @@ export class RoomService {
     // Also remove invite if one exists
     await this.roomInvites.delete(roomId, userId);
 
+    // Remove from roster if on it
+    const isOnRoster = await this.roomRosters.isMember(roomId, userId);
+    if (isOnRoster) {
+      await this.roomRosters.removeMember(roomId, userId);
+      // Reindex positions
+      const members = await this.roomRosters.findByRoom(roomId);
+      const players = members.filter((m) => m.section === 'players').map((m) => m.userId);
+      const spectators = members.filter((m) => m.section === 'spectators').map((m) => m.userId);
+      await this.roomRosters.replaceRoster(roomId, players, spectators);
+
+      const roster = await this.getRoster(roomId);
+      this.broadcastToRoom(String(roomId), WS_EMIT.ROSTER_UPDATED, { roomId, roster });
+    }
+
     // Kick from WS room
     this.kickUserFromRoom(roomId, userId);
   }
@@ -199,6 +237,131 @@ export class RoomService {
       displayName: r.displayName,
       bannedAt: r.createdAt.toISOString(),
     }));
+  }
+
+  // --- Roster methods ---
+
+  async getRoster(roomId: number): Promise<RosterState> {
+    const members = await this.roomRosters.findByRoom(roomId);
+    const room = await this.rooms.findById(roomId);
+    const rotatePlayers = room?.rotatePlayers ?? false;
+
+    const players: RosterMember[] = members
+      .filter((m) => m.section === 'players')
+      .map((m, i) => ({ ...m, position: i }));
+
+    const spectators: RosterMember[] = members
+      .filter((m) => m.section === 'spectators')
+      .map((m, i) => ({ ...m, position: i }));
+
+    return { players, spectators, rotatePlayers };
+  }
+
+  async addToRoster(roomId: number, userId: number): Promise<RosterState> {
+    const room = await this.rooms.findById(roomId);
+    if (!room) {
+      throw new NotFoundException('Room not found');
+    }
+
+    const currentCount = await this.roomRosters.countMembers(roomId);
+    if (room.memberLimit != null && room.memberLimit > 0 && currentCount >= room.memberLimit) {
+      throw new ConflictException(`Room is full (limit: ${room.memberLimit})`);
+    }
+
+    // Get user info for the roster member
+    const existingMembers = await this.roomRosters.findByRoom(roomId);
+    const spectatorCount = existingMembers.filter((m) => m.section === 'spectators').length;
+
+    await this.roomRosters.addMember(roomId, userId, 'spectators', spectatorCount);
+
+    const roster = await this.getRoster(roomId);
+    this.broadcastToRoom(String(roomId), WS_EMIT.ROSTER_UPDATED, { roomId, roster });
+    return roster;
+  }
+
+  async removeFromRoster(roomId: number, userId: number): Promise<RosterState> {
+    const room = await this.rooms.findById(roomId);
+    if (!room) {
+      throw new NotFoundException('Room not found');
+    }
+
+    if (room.ownerId === userId) {
+      throw new ForbiddenException('Room owner cannot leave the room');
+    }
+
+    await this.roomRosters.removeMember(roomId, userId);
+
+    // Reindex positions: read current roster and replace to fix positions
+    const members = await this.roomRosters.findByRoom(roomId);
+    const players = members.filter((m) => m.section === 'players').map((m) => m.userId);
+    const spectators = members.filter((m) => m.section === 'spectators').map((m) => m.userId);
+    await this.roomRosters.replaceRoster(roomId, players, spectators);
+
+    const roster = await this.getRoster(roomId);
+    this.broadcastToRoom(String(roomId), WS_EMIT.ROSTER_UPDATED, { roomId, roster });
+    return roster;
+  }
+
+  async reorderRoster(
+    roomId: number,
+    players: number[],
+    spectators: number[],
+    options?: { gameActive?: boolean },
+  ): Promise<RosterState> {
+    if (options?.gameActive) {
+      throw new ConflictException('Cannot reorder roster while a game is active');
+    }
+
+    // Validate all members present
+    const currentMembers = await this.roomRosters.findByRoom(roomId);
+    const currentIds = new Set(currentMembers.map((m) => m.userId));
+    const newIds = new Set([...players, ...spectators]);
+
+    if (currentIds.size !== newIds.size || [...currentIds].some((id) => !newIds.has(id))) {
+      throw new ConflictException('Roster update must contain all current members');
+    }
+
+    // Check for duplicates
+    if (players.length + spectators.length !== newIds.size) {
+      throw new ConflictException('Roster update must contain all current members');
+    }
+
+    await this.roomRosters.replaceRoster(roomId, players, spectators);
+
+    const roster = await this.getRoster(roomId);
+    this.broadcastToRoom(String(roomId), WS_EMIT.ROSTER_UPDATED, { roomId, roster });
+    return roster;
+  }
+
+  async kickUser(roomId: number, userId: number): Promise<RosterState> {
+    const roster = await this.removeFromRoster(roomId, userId);
+
+    // Disconnect WS and send MEMBER_KICKED to kicked user
+    this.kickUserFromRoom(roomId, userId);
+
+    return roster;
+  }
+
+  async toggleRotatePlayers(roomId: number, enabled: boolean): Promise<RosterState> {
+    await this.rooms.update(roomId, { rotatePlayers: enabled });
+
+    const roster = await this.getRoster(roomId);
+    this.broadcastToRoom(String(roomId), WS_EMIT.ROSTER_UPDATED, { roomId, roster });
+    return roster;
+  }
+
+  async rotateSeat(roomId: number): Promise<RosterState> {
+    const roster = await this.getRoster(roomId);
+
+    const rotated = rosterRotateSeat(roster);
+
+    const players = rotated.players.map((m) => m.userId);
+    const spectators = rotated.spectators.map((m) => m.userId);
+    await this.roomRosters.replaceRoster(roomId, players, spectators);
+
+    const updatedRoster = await this.getRoster(roomId);
+    this.broadcastToRoom(String(roomId), WS_EMIT.ROSTER_UPDATED, { roomId, roster: updatedRoster });
+    return updatedRoster;
   }
 
   private kickUserFromRoom(roomId: number, userId: number): void {

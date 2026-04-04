@@ -1,4 +1,5 @@
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { RoomRosterRepository } from '@cardquorum/db';
 import { UserIdentity } from '@cardquorum/shared';
 import { REQUEST_USER_KEY } from '../auth/http-auth.guard';
 import { GameService } from '../game/game.service';
@@ -25,9 +26,14 @@ describe('RoomController', () => {
       | 'getInvites'
       | 'getBans'
       | 'bulkInvite'
+      | 'kickUser'
+      | 'getRoster'
+      | 'reorderRoster'
+      | 'toggleRotatePlayers'
     >
   >;
-  let gameService: jest.Mocked<Pick<GameService, 'forceCleanupRoom'>>;
+  let gameService: jest.Mocked<Pick<GameService, 'forceCleanupRoom' | 'isGameActive'>>;
+  let roomRosters: jest.Mocked<Pick<RoomRosterRepository, 'countMembers' | 'isMember'>>;
 
   const alice: UserIdentity = { userId: 1, username: 'alice', displayName: 'Alice' };
   const bob: UserIdentity = { userId: 2, username: 'bob', displayName: 'Bob' };
@@ -42,6 +48,8 @@ describe('RoomController', () => {
     ownerId: 1,
     ownerDisplayName: 'Alice',
     visibility: 'public',
+    memberLimit: null as number | null,
+    rotatePlayers: false,
     createdAt: now,
     updatedAt: now,
   };
@@ -63,15 +71,30 @@ describe('RoomController', () => {
       getInvites: jest.fn().mockResolvedValue([]),
       getBans: jest.fn().mockResolvedValue([]),
       bulkInvite: jest.fn().mockResolvedValue(undefined),
+      kickUser: jest.fn().mockResolvedValue({ players: [], spectators: [], rotatePlayers: false }),
+      getRoster: jest.fn().mockResolvedValue({ players: [], spectators: [], rotatePlayers: false }),
+      reorderRoster: jest
+        .fn()
+        .mockResolvedValue({ players: [], spectators: [], rotatePlayers: false }),
+      toggleRotatePlayers: jest
+        .fn()
+        .mockResolvedValue({ players: [], spectators: [], rotatePlayers: false }),
     };
 
     gameService = {
       forceCleanupRoom: jest.fn().mockResolvedValue(null),
+      isGameActive: jest.fn().mockReturnValue(false),
+    };
+
+    roomRosters = {
+      countMembers: jest.fn().mockResolvedValue(0),
+      isMember: jest.fn().mockResolvedValue(false),
     };
 
     controller = new RoomController(
       roomService as unknown as RoomService,
       gameService as unknown as GameService,
+      roomRosters as unknown as RoomRosterRepository,
     );
   });
 
@@ -83,7 +106,7 @@ describe('RoomController', () => {
         name: 'Test Room',
       });
 
-      expect(roomService.create).toHaveBeenCalledWith('Test Room', 1, 'public');
+      expect(roomService.create).toHaveBeenCalledWith('Test Room', 1, 'public', undefined);
       expect(result.id).toBe(1);
       expect(result.name).toBe('Test Room');
       expect(result.ownerId).toBe(1);
@@ -100,7 +123,7 @@ describe('RoomController', () => {
         visibility: 'invite-only',
       });
 
-      expect(roomService.create).toHaveBeenCalledWith('Private Room', 1, 'invite-only');
+      expect(roomService.create).toHaveBeenCalledWith('Private Room', 1, 'invite-only', undefined);
     });
   });
 
@@ -329,6 +352,33 @@ describe('RoomController', () => {
     });
   });
 
+  describe('kick', () => {
+    it('should kick a user when owner requests', async () => {
+      roomService.findById.mockResolvedValue(dbRoom);
+
+      const result = await controller.kick(makeRequest(alice), 1, { userId: 2 });
+
+      expect(roomService.kickUser).toHaveBeenCalledWith(1, 2);
+      expect(result).toEqual({ success: true });
+    });
+
+    it('should throw ForbiddenException when non-owner kicks', async () => {
+      roomService.findById.mockResolvedValue(dbRoom);
+
+      await expect(controller.kick(makeRequest(bob), 1, { userId: 3 })).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should throw BadRequestException when kicking self', async () => {
+      roomService.findById.mockResolvedValue(dbRoom);
+
+      await expect(controller.kick(makeRequest(alice), 1, { userId: 1 })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
+
   describe('listInvites', () => {
     it('should return invites for accessible room', async () => {
       roomService.canAccessRoom.mockResolvedValue(true);
@@ -362,6 +412,149 @@ describe('RoomController', () => {
       roomService.findById.mockResolvedValue(dbRoom);
 
       await expect(controller.listBans(makeRequest(bob), 1)).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('getRoster', () => {
+    const rosterState = {
+      players: [
+        {
+          userId: 1,
+          username: 'alice',
+          displayName: 'Alice',
+          section: 'players' as const,
+          position: 0,
+        },
+      ],
+      spectators: [
+        {
+          userId: 2,
+          username: 'bob',
+          displayName: 'Bob',
+          section: 'spectators' as const,
+          position: 0,
+        },
+      ],
+      rotatePlayers: false,
+    };
+
+    it('should return roster for accessible room', async () => {
+      roomService.canAccessRoom.mockResolvedValue(true);
+      roomService.getRoster.mockResolvedValue(rosterState);
+
+      const result = await controller.getRoster(makeRequest(alice), 1);
+
+      expect(roomService.canAccessRoom).toHaveBeenCalledWith(1, alice.userId);
+      expect(roomService.getRoster).toHaveBeenCalledWith(1);
+      expect(result).toEqual(rosterState);
+    });
+
+    it('should throw NotFoundException when user cannot access room', async () => {
+      roomService.canAccessRoom.mockResolvedValue(false);
+
+      await expect(controller.getRoster(makeRequest(bob), 1)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('updateRoster', () => {
+    const updatedRoster = {
+      players: [
+        {
+          userId: 2,
+          username: 'bob',
+          displayName: 'Bob',
+          section: 'players' as const,
+          position: 0,
+        },
+      ],
+      spectators: [
+        {
+          userId: 1,
+          username: 'alice',
+          displayName: 'Alice',
+          section: 'spectators' as const,
+          position: 0,
+        },
+      ],
+      rotatePlayers: false,
+    };
+
+    it('should reorder roster when owner requests', async () => {
+      roomService.findById.mockResolvedValue(dbRoom);
+      gameService.isGameActive.mockReturnValue(false);
+      roomService.reorderRoster.mockResolvedValue(updatedRoster);
+
+      const result = await controller.updateRoster(makeRequest(alice), 1, {
+        players: [2],
+        spectators: [1],
+      });
+
+      expect(gameService.isGameActive).toHaveBeenCalledWith(1);
+      expect(roomService.reorderRoster).toHaveBeenCalledWith(1, [2], [1], { gameActive: false });
+      expect(result).toEqual(updatedRoster);
+    });
+
+    it('should pass gameActive true when a game is active', async () => {
+      roomService.findById.mockResolvedValue(dbRoom);
+      gameService.isGameActive.mockReturnValue(true);
+      roomService.reorderRoster.mockResolvedValue(updatedRoster);
+
+      await controller.updateRoster(makeRequest(alice), 1, {
+        players: [2],
+        spectators: [1],
+      });
+
+      expect(roomService.reorderRoster).toHaveBeenCalledWith(1, [2], [1], { gameActive: true });
+    });
+
+    it('should throw ForbiddenException when non-owner reorders', async () => {
+      roomService.findById.mockResolvedValue(dbRoom);
+
+      await expect(
+        controller.updateRoster(makeRequest(bob), 1, { players: [2], spectators: [1] }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw NotFoundException for missing room', async () => {
+      roomService.findById.mockResolvedValue(null);
+
+      await expect(
+        controller.updateRoster(makeRequest(alice), 999, { players: [], spectators: [] }),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('toggleRotate', () => {
+    const rosterWithRotate = {
+      players: [],
+      spectators: [],
+      rotatePlayers: true,
+    };
+
+    it('should toggle rotation when owner requests', async () => {
+      roomService.findById.mockResolvedValue(dbRoom);
+      roomService.toggleRotatePlayers.mockResolvedValue(rosterWithRotate);
+
+      const result = await controller.toggleRotate(makeRequest(alice), 1, { enabled: true });
+
+      expect(roomService.toggleRotatePlayers).toHaveBeenCalledWith(1, true);
+      expect(result).toEqual(rosterWithRotate);
+    });
+
+    it('should throw ForbiddenException when non-owner toggles', async () => {
+      roomService.findById.mockResolvedValue(dbRoom);
+
+      await expect(controller.toggleRotate(makeRequest(bob), 1, { enabled: true })).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should throw NotFoundException for missing room', async () => {
+      roomService.findById.mockResolvedValue(null);
+
+      await expect(
+        controller.toggleRotate(makeRequest(alice), 999, { enabled: false }),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });

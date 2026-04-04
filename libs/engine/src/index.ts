@@ -1,5 +1,12 @@
 export { RoomManager } from './lib/room-manager';
 export type { RoomState } from './lib/room-manager';
+export {
+  addMember,
+  removeMember,
+  reorderRoster,
+  rotateSeat,
+  handleDisconnect,
+} from './lib/roster-logic';
 export type { GamePlugin, GameEventBase } from './lib/game-plugin';
 export type {
   FieldMode,

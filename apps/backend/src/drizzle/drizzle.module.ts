@@ -13,6 +13,7 @@ import {
   RoomBanRepository,
   RoomInviteRepository,
   RoomRepository,
+  RoomRosterRepository,
   SessionRepository,
   UserRepository,
 } from '@cardquorum/db';
@@ -85,6 +86,11 @@ export const DRIZZLE = Symbol('DRIZZLE');
       inject: [DRIZZLE],
       useFactory: (db: any) => new FriendshipRequestRepository(db),
     },
+    {
+      provide: RoomRosterRepository,
+      inject: [DRIZZLE],
+      useFactory: (db: any) => new RoomRosterRepository(db),
+    },
   ],
   exports: [
     DRIZZLE,
@@ -92,6 +98,7 @@ export const DRIZZLE = Symbol('DRIZZLE');
     RoomRepository,
     RoomBanRepository,
     RoomInviteRepository,
+    RoomRosterRepository,
     MessageRepository,
     UserRepository,
     CredentialRepository,

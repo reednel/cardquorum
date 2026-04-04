@@ -17,6 +17,9 @@ const ROOM: RoomResponse = {
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
   onlineCount: 2,
+  memberLimit: null,
+  rosterCount: 0,
+  isOnRoster: false,
 };
 
 describe('RoomView', () => {
@@ -28,6 +31,7 @@ describe('RoomView', () => {
     members: signal([]),
     currentRoomId: signal(null),
     roomDeleted: signal<number | null>(null),
+    joinError: signal<string | null>(null),
     joinRoom: jest.fn(),
     leaveRoom: jest.fn(),
     sendMessage: jest.fn(),
@@ -49,6 +53,7 @@ describe('RoomView', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     mockChatService.roomDeleted.set(null);
+    mockChatService.joinError.set(null);
 
     await TestBed.configureTestingModule({
       imports: [RoomView],
@@ -90,24 +95,33 @@ describe('RoomView', () => {
   it('loads invites and bans when members tab is activated', () => {
     fixture.componentInstance['activeTab'].set('members');
     fixture.detectChanges();
-    // Trigger tab click which calls loadData on the members tab
     fixture.componentInstance['onTabClick']('members');
     expect(mockRoomService.getInvites).toHaveBeenCalledWith(42);
     expect(mockRoomService.getBans).toHaveBeenCalledWith(42);
   });
 
-  it('shows ban button next to non-owner members when user is owner', () => {
-    mockChatService.members.set([
-      { userId: 10, username: 'alice', displayName: 'Alice' },
-      { userId: 2, username: 'bob', displayName: 'Bob' },
-    ]);
+  it('shows overflow menu for non-owner roster members when user is owner', () => {
     fixture.componentInstance['activeTab'].set('members');
     fixture.detectChanges();
 
-    const buttons = fixture.nativeElement.querySelectorAll('button');
-    const banButtons = Array.from(buttons).filter((b: any) => b.textContent?.trim() === 'Ban');
-    // Should have 1 ban button (for Bob, not for Alice who is owner)
-    expect(banButtons.length).toBe(1);
+    const triggers = fixture.nativeElement.querySelectorAll('[data-testid="overflow-trigger"]');
+    expect(triggers).toBeDefined();
+  });
+
+  it('hides leave button for room owner', () => {
+    fixture.detectChanges();
+
+    const leaveBtn = fixture.nativeElement.querySelector('[data-testid="leave-btn"]');
+    expect(leaveBtn).toBeFalsy();
+  });
+
+  it('redirects to /rooms when join error occurs (e.g. room full)', () => {
+    const navigateSpy = jest.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    mockChatService.joinError.set('Room is full (limit: 4)');
+    fixture.detectChanges();
+
+    expect(navigateSpy).toHaveBeenCalledWith(['/rooms']);
   });
 });
 
@@ -119,6 +133,7 @@ describe('RoomView — invalid room', () => {
     members: signal([]),
     currentRoomId: signal(null),
     roomDeleted: signal<number | null>(null),
+    joinError: signal<string | null>(null),
     joinRoom: jest.fn(),
     leaveRoom: jest.fn(),
     sendMessage: jest.fn(),

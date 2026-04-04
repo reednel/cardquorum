@@ -70,22 +70,6 @@ import { RoomService } from './room.service';
             />
           </div>
 
-          <div class="mb-6">
-            <label
-              for="config-room-visibility"
-              class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >
-              Visibility
-            </label>
-            <p
-              id="config-room-visibility"
-              class="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm
-                     text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
-            >
-              {{ room().visibility }}
-            </p>
-          </div>
-
           <div class="flex items-center justify-between">
             <div>
               @if (confirmDelete()) {

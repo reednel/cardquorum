@@ -2,6 +2,7 @@ import { TitleCasePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   DestroyRef,
   effect,
   inject,
@@ -13,9 +14,12 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Title } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
-import { RoomResponse } from '@cardquorum/shared';
+import { RoomResponse, WS_EVENT } from '@cardquorum/shared';
 import { AuthService } from '../auth/auth.service';
 import { ChatService } from '../chat/chat.service';
+import { GameTable } from '../game/game-table';
+import { GameService } from '../game/game.service';
+import { WebSocketService } from '../websocket.service';
 import { RoomChatTab } from './room-chat-tab';
 import { RoomGameTab } from './room-game-tab';
 import { RoomMembersTab } from './room-members-tab';
@@ -26,11 +30,15 @@ type RoomTab = 'chat' | 'members' | 'game';
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-room-view',
-  imports: [TitleCasePipe, RoomChatTab, RoomMembersTab, RoomGameTab],
+  imports: [TitleCasePipe, RoomChatTab, RoomMembersTab, RoomGameTab, GameTable],
   template: `
     <div class="flex h-full bg-white text-gray-900 dark:bg-gray-900 dark:text-white">
-      <!-- Game area (reserved) -->
-      <main class="flex-1"></main>
+      <!-- Game area -->
+      <main class="flex-1">
+        @if (gameService.state()) {
+          <app-game-table [myUserID]="myUserID()" [members]="chatService.members()" />
+        }
+      </main>
 
       <!-- Right panel -->
       <aside
@@ -48,15 +56,18 @@ type RoomTab = 'chat' | 'members' | 'game';
           >
             {{ roomName() }}
           </p>
-          <button
-            (click)="leave()"
-            class="shrink-0 rounded-md px-2 py-1 text-xs text-gray-500 transition-colors
-                   hover:bg-gray-200 hover:text-gray-700 focus:outline-none focus:ring-2
-                   focus:ring-indigo-500 dark:text-gray-400 dark:hover:bg-gray-700
-                   dark:hover:text-gray-200"
-          >
-            Leave
-          </button>
+          @if (!isOwner()) {
+            <button
+              data-testid="leave-btn"
+              (click)="leave()"
+              class="shrink-0 rounded-md px-2 py-1 text-xs text-gray-500 transition-colors
+                     hover:bg-gray-200 hover:text-gray-700 focus:outline-none focus:ring-2
+                     focus:ring-indigo-500 dark:text-gray-400 dark:hover:bg-gray-700
+                     dark:hover:text-gray-200"
+            >
+              Leave
+            </button>
+          }
         </div>
 
         <!-- Tabs -->
@@ -109,16 +120,19 @@ type RoomTab = 'chat' | 'members' | 'game';
   host: { class: 'block h-full' },
 })
 export class RoomView implements OnInit, OnDestroy {
-  private readonly chatService = inject(ChatService);
+  protected readonly chatService = inject(ChatService);
+  protected readonly gameService = inject(GameService);
   private readonly roomService = inject(RoomService);
   private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly title = inject(Title);
+  private readonly ws = inject(WebSocketService);
 
   private readonly membersTab = viewChild(RoomMembersTab);
 
+  protected readonly myUserID = computed(() => this.auth.user()?.userId ?? 0);
   protected readonly tabs: RoomTab[] = ['chat', 'members', 'game'];
   protected readonly activeTab = signal<RoomTab>('chat');
   protected readonly roomName = signal('');
@@ -130,6 +144,12 @@ export class RoomView implements OnInit, OnDestroy {
     effect(() => {
       const deletedId = this.chatService.roomDeleted();
       if (deletedId !== null && deletedId === this.roomId) {
+        this.router.navigate(['/rooms']);
+      }
+    });
+    effect(() => {
+      const err = this.chatService.joinError();
+      if (err !== null) {
         this.router.navigate(['/rooms']);
       }
     });
@@ -172,6 +192,7 @@ export class RoomView implements OnInit, OnDestroy {
   }
 
   protected leave(): void {
+    this.ws.send(WS_EVENT.ROOM_LEAVE_ROSTER, { roomId: this.roomId });
     this.router.navigate(['/rooms']);
   }
 }

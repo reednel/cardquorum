@@ -15,6 +15,13 @@
       "when": 1774839684766,
       "tag": "0001_steady_deathbird",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1775320708516,
+      "tag": "0002_lethal_quasimodo",
+      "breakpoints": true
     }
   ]
 }

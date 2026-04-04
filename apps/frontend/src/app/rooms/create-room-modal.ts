@@ -89,6 +89,28 @@ import { RoomService } from './room.service';
             </select>
           </div>
 
+          <div class="mb-4">
+            <label
+              for="room-member-limit"
+              class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Max Members
+              <span class="font-normal text-gray-400">(optional)</span>
+            </label>
+            <input
+              id="room-member-limit"
+              data-testid="member-limit-input"
+              formControlName="memberLimit"
+              type="number"
+              min="0"
+              placeholder="Unlimited"
+              class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm
+                     focus:border-indigo-500 focus:outline-none focus:ring-1
+                     focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800
+                     dark:text-gray-100"
+            />
+          </div>
+
           @if (form.value.visibility === 'invite-only') {
             <div class="mb-4">
               <label
@@ -202,6 +224,7 @@ export class CreateRoomModal {
   protected readonly form = this.fb.nonNullable.group({
     name: ['', Validators.required],
     visibility: ['public'],
+    memberLimit: [null as number | null],
   });
 
   constructor() {
@@ -240,12 +263,18 @@ export class CreateRoomModal {
     this.errorMessage.set(null);
     this.submitting.set(true);
 
-    const { name, visibility } = this.form.getRawValue();
+    const { name, visibility, memberLimit } = this.form.getRawValue();
     const invitedUserIds =
       visibility === 'invite-only' ? this.invitedUsers().map((u) => u.userId) : undefined;
+    const parsedLimit = memberLimit != null && memberLimit > 0 ? memberLimit : null;
 
     this.roomService
-      .createRoom({ name, visibility: visibility as RoomVisibility, invitedUserIds })
+      .createRoom({
+        name,
+        visibility: visibility as RoomVisibility,
+        invitedUserIds,
+        memberLimit: parsedLimit,
+      })
       .subscribe({
         next: (room) => {
           this.submitting.set(false);

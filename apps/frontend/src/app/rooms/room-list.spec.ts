@@ -16,6 +16,9 @@ const ROOMS: RoomResponse[] = [
     createdAt: '2026-01-01T00:00:00Z',
     updatedAt: '2026-01-01T00:00:00Z',
     onlineCount: 3,
+    memberLimit: 8,
+    rosterCount: 5,
+    isOnRoster: false,
   },
   {
     id: 2,
@@ -26,6 +29,9 @@ const ROOMS: RoomResponse[] = [
     createdAt: '2026-01-01T00:00:00Z',
     updatedAt: '2026-01-01T00:00:00Z',
     onlineCount: 0,
+    memberLimit: null,
+    rosterCount: 2,
+    isOnRoster: false,
   },
 ];
 
@@ -114,5 +120,61 @@ describe('RoomList', () => {
     fixture.detectChanges();
     expect(el.querySelector('[data-testid="error-state"]')).toBeTruthy();
     expect(el.querySelector('[data-testid="retry-btn"]')).toBeTruthy();
+  });
+
+  it('displays rosterCount / memberLimit for rooms with a limit', () => {
+    roomsSignal.set(ROOMS);
+    fixture.detectChanges();
+
+    const rows = el.querySelectorAll('[data-testid="room-row"]');
+    // Room 1 has memberLimit=8, rosterCount=5 → "5 / 8"
+    expect(rows[0].textContent).toContain('5 / 8');
+    // Room 2 has no limit → just "2"
+    expect(rows[1].textContent).toContain('2');
+    expect(rows[1].textContent).not.toContain('/');
+  });
+
+  it('disables join button when room is full and user is not on roster', () => {
+    const fullRoom: RoomResponse = {
+      ...ROOMS[0],
+      id: 3,
+      name: 'Full Room',
+      rosterCount: 8,
+      memberLimit: 8,
+      isOnRoster: false,
+    };
+    roomsSignal.set([fullRoom]);
+    fixture.detectChanges();
+
+    const joinBtn = el.querySelector('[data-testid="join-btn"]') as HTMLButtonElement;
+    expect(joinBtn.disabled).toBe(true);
+    expect(joinBtn.textContent?.trim()).toBe('Full');
+  });
+
+  it('enables join button when room is full but user is already on roster', () => {
+    const fullButOnRoster: RoomResponse = {
+      ...ROOMS[0],
+      id: 3,
+      name: 'Full Room',
+      rosterCount: 8,
+      memberLimit: 8,
+      isOnRoster: true,
+    };
+    roomsSignal.set([fullButOnRoster]);
+    fixture.detectChanges();
+
+    const joinBtn = el.querySelector('[data-testid="join-btn"]') as HTMLButtonElement;
+    expect(joinBtn.disabled).toBe(false);
+    expect(joinBtn.textContent?.trim()).toBe('Join');
+  });
+
+  it('enables join button when room is not full', () => {
+    roomsSignal.set(ROOMS);
+    fixture.detectChanges();
+
+    const rows = el.querySelectorAll('[data-testid="room-row"]');
+    const joinBtn = rows[0].querySelector('[data-testid="join-btn"]') as HTMLButtonElement;
+    expect(joinBtn.disabled).toBe(false);
+    expect(joinBtn.textContent?.trim()).toBe('Join');
   });
 });

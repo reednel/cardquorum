@@ -11,20 +11,29 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Put,
   Req,
   UseGuards,
 } from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
+import { RoomRosterRepository } from '@cardquorum/db';
 import {
   RoomBanResponse,
   RoomInviteResponse,
   RoomResponse,
   RoomVisibility,
+  RosterState,
   UserIdentity,
 } from '@cardquorum/shared';
 import { HttpAuthGuard, REQUEST_USER_KEY } from '../auth/http-auth.guard';
 import { GameService } from '../game/game.service';
-import { CreateRoomDto, RoomUserDto, UpdateRoomDto } from './room.dto';
+import {
+  CreateRoomDto,
+  RoomUserDto,
+  ToggleRotateDto,
+  UpdateRoomDto,
+  UpdateRosterDto,
+} from './room.dto';
 import { RoomService } from './room.service';
 
 @UseGuards(HttpAuthGuard)
@@ -35,6 +44,7 @@ export class RoomController {
   constructor(
     private readonly roomService: RoomService,
     private readonly gameService: GameService,
+    private readonly roomRosters: RoomRosterRepository,
   ) {}
 
   @Post()
@@ -42,7 +52,7 @@ export class RoomController {
     const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
     const visibility = dto.visibility ?? 'public';
 
-    const row = await this.roomService.create(dto.name, user.userId, visibility);
+    const row = await this.roomService.create(dto.name, user.userId, visibility, dto.memberLimit);
 
     if (dto.invitedUserIds?.length) {
       const filtered = dto.invitedUserIds.filter((id) => id !== user.userId);
@@ -58,6 +68,9 @@ export class RoomController {
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
       onlineCount: 0,
+      memberLimit: row.memberLimit ?? null,
+      rosterCount: 0,
+      isOnRoster: false,
     };
   }
 
@@ -66,16 +79,25 @@ export class RoomController {
     const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
     const rooms = await this.roomService.findAllForUser(user.userId);
 
-    return rooms.map((r) => ({
-      id: r.id,
-      name: r.name,
-      ownerId: r.ownerId,
-      ownerDisplayName: r.ownerDisplayName,
-      visibility: r.visibility as RoomVisibility,
-      createdAt: r.createdAt.toISOString(),
-      updatedAt: r.updatedAt.toISOString(),
-      onlineCount: this.roomService.getOnlineCount(r.id),
-    }));
+    const results: RoomResponse[] = [];
+    for (const r of rooms) {
+      const rosterCount = await this.roomRosters.countMembers(r.id);
+      const isOnRoster = await this.roomRosters.isMember(r.id, user.userId);
+      results.push({
+        id: r.id,
+        name: r.name,
+        ownerId: r.ownerId,
+        ownerDisplayName: r.ownerDisplayName,
+        visibility: r.visibility as RoomVisibility,
+        createdAt: r.createdAt.toISOString(),
+        updatedAt: r.updatedAt.toISOString(),
+        onlineCount: this.roomService.getOnlineCount(r.id),
+        memberLimit: r.memberLimit ?? null,
+        rosterCount,
+        isOnRoster,
+      });
+    }
+    return results;
   }
 
   @Get(':id')
@@ -90,6 +112,8 @@ export class RoomController {
     }
 
     const room = (await this.roomService.findById(id))!;
+    const rosterCount = await this.roomRosters.countMembers(room.id);
+    const isOnRoster = await this.roomRosters.isMember(room.id, user.userId);
 
     return {
       id: room.id,
@@ -100,6 +124,9 @@ export class RoomController {
       createdAt: room.createdAt.toISOString(),
       updatedAt: room.updatedAt.toISOString(),
       onlineCount: this.roomService.getOnlineCount(room.id),
+      memberLimit: room.memberLimit ?? null,
+      rosterCount,
+      isOnRoster,
     };
   }
 
@@ -128,6 +155,9 @@ export class RoomController {
       throw new NotFoundException(`Room ${id} not found`);
     }
 
+    const rosterCount = await this.roomRosters.countMembers(updated.id);
+    const isOnRoster = await this.roomRosters.isMember(updated.id, user.userId);
+
     return {
       id: updated.id,
       name: updated.name,
@@ -137,6 +167,9 @@ export class RoomController {
       createdAt: updated.createdAt.toISOString(),
       updatedAt: updated.updatedAt.toISOString(),
       onlineCount: this.roomService.getOnlineCount(updated.id),
+      memberLimit: room.memberLimit ?? null,
+      rosterCount,
+      isOnRoster,
     };
   }
 
@@ -203,6 +236,21 @@ export class RoomController {
     return { success: true };
   }
 
+  // --- Kick endpoint ---
+
+  @Post(':id/kick')
+  async kick(
+    @Req() request: FastifyRequest,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: RoomUserDto,
+  ): Promise<{ success: true }> {
+    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    await this.assertOwner(id, user.userId);
+    this.assertNotSelf(user.userId, dto.userId);
+    await this.roomService.kickUser(id, dto.userId);
+    return { success: true };
+  }
+
   // --- Ban endpoints ---
 
   @Get(':id/bans')
@@ -239,6 +287,44 @@ export class RoomController {
     this.assertNotSelf(user.userId, userId);
     await this.roomService.unbanUser(id, userId);
     return { success: true };
+  }
+
+  // --- Roster endpoints ---
+
+  @Get(':id/roster')
+  async getRoster(
+    @Req() request: FastifyRequest,
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<RosterState> {
+    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const canAccess = await this.roomService.canAccessRoom(id, user.userId);
+    if (!canAccess) {
+      throw new NotFoundException(`Room ${id} not found`);
+    }
+    return this.roomService.getRoster(id);
+  }
+
+  @Put(':id/roster')
+  async updateRoster(
+    @Req() request: FastifyRequest,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateRosterDto,
+  ): Promise<RosterState> {
+    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    await this.assertOwner(id, user.userId);
+    const gameActive = this.gameService.isGameActive(id);
+    return this.roomService.reorderRoster(id, dto.players, dto.spectators, { gameActive });
+  }
+
+  @Patch(':id/roster/rotate')
+  async toggleRotate(
+    @Req() request: FastifyRequest,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ToggleRotateDto,
+  ): Promise<RosterState> {
+    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    await this.assertOwner(id, user.userId);
+    return this.roomService.toggleRotatePlayers(id, dto.enabled);
   }
 
   // --- Helpers ---

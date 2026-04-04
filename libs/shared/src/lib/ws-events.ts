@@ -11,6 +11,9 @@ export const WS_EVENT = {
   GAME_ACTION: 'game:action',
   GAME_REJOIN: 'game:rejoin',
   GAME_CANCEL: 'game:cancel',
+  ROOM_LEAVE_ROSTER: 'room:leave-roster',
+  ROSTER_UPDATE: 'roster:update',
+  ROSTER_TOGGLE_ROTATE: 'roster:toggle-rotate',
 } as const;
 
 /**
@@ -33,4 +36,5 @@ export const WS_EMIT = {
   GAME_OVER: 'game:over',
   GAME_ERROR: 'game:error',
   GAME_CANCELLED: 'game:cancelled',
+  ROSTER_UPDATED: 'roster:updated',
 } as const;

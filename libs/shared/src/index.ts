@@ -22,6 +22,9 @@ export type {
   GameOverPayload,
   GameErrorPayload,
   GameCancelledPayload,
+  LeaveRosterPayload,
+  RosterReorderPayload,
+  RosterToggleRotatePayload,
 } from './lib/ws-types';
 export type {
   Room,
@@ -34,6 +37,12 @@ export type {
   RoomBanResponse,
   InviteUserRequest,
   BanUserRequest,
+  RosterSection,
+  RosterMember,
+  RosterState,
+  RosterUpdatePayload,
+  UpdateRosterRequest,
+  KickUserRequest,
 } from './lib/room-types';
 export type {
   AuthMethod,
