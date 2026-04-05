@@ -88,6 +88,8 @@ describe('RoomService', () => {
       mockInviteRepo as any,
       mockBanRepo as any,
       mockRosterRepo as any,
+      { findByRoomId: jest.fn().mockResolvedValue([]) } as any,
+      { findByRoomId: jest.fn().mockResolvedValue(null), upsert: jest.fn() } as any,
       connectionService,
       mockFriendService as any,
       mockBlockService as any,

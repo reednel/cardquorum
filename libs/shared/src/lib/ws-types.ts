@@ -1,3 +1,5 @@
+import type { RosterState } from './room-types';
+
 export interface UserIdentity {
   userId: number;
   username: string;
@@ -24,6 +26,7 @@ export interface SendMessagePayload {
 export interface RoomJoinedPayload {
   roomId: number;
   members: UserIdentity[];
+  roster: RosterState;
 }
 
 export interface MemberChangePayload {
@@ -97,11 +100,13 @@ export interface GameCreatedPayload {
 export interface GameStartedPayload {
   sessionId: number;
   state: unknown;
+  validActions: string[];
 }
 
 export interface GameStateUpdatePayload {
   sessionId: number;
   state: unknown;
+  validActions: string[];
 }
 
 export interface GameOverPayload {
@@ -116,4 +121,21 @@ export interface GameErrorPayload {
 
 export interface GameCancelledPayload {
   sessionId: number;
+}
+
+// --- Roster payloads ---
+
+export interface LeaveRosterPayload {
+  roomId: number;
+}
+
+export interface RosterReorderPayload {
+  roomId: number;
+  players: number[];
+  spectators: number[];
+}
+
+export interface RosterToggleRotatePayload {
+  roomId: number;
+  enabled: boolean;
 }

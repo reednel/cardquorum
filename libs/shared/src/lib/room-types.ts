@@ -82,3 +82,29 @@ export interface UpdateRosterRequest {
 export interface KickUserRequest {
   userId: number;
 }
+
+// --- Room game settings types ---
+
+/** Persisted game settings for a room. */
+export interface RoomGameSettings {
+  gameType: string | null;
+  presetName: string | null;
+  config: Record<string, unknown>;
+  autostart: boolean;
+}
+
+/** Payload for game-settings:update (client → server). */
+export interface GameSettingsUpdatePayload {
+  roomId: number;
+  settings: RoomGameSettings;
+}
+
+/** Payload for game-settings:updated (server → client). */
+export interface GameSettingsUpdatedPayload {
+  settings: RoomGameSettings;
+}
+
+/** Payload for game-settings:load response. */
+export interface GameSettingsLoadedPayload {
+  settings: RoomGameSettings | null;
+}

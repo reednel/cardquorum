@@ -1,5 +1,4 @@
 import { WebSocket } from 'ws';
-import { MessageRepository, RoomRosterRepository } from '@cardquorum/db';
 import { RosterState, UserIdentity, WS_EMIT } from '@cardquorum/shared';
 import { GameService } from '../game/game.service';
 import { WsConnectionService } from '../ws/ws-connection.service';
@@ -10,9 +9,7 @@ describe('RoomGateway', () => {
   let gateway: RoomGateway;
   let connectionService: WsConnectionService;
   let roomService: RoomService;
-  let messageRepo: jest.Mocked<Pick<MessageRepository, 'findByRoomId'>>;
   let gameService: jest.Mocked<Pick<GameService, 'isGameActive'>>;
-  let roomRosters: jest.Mocked<Pick<RoomRosterRepository, 'isMember'>>;
 
   const aliceIdentity: UserIdentity = { userId: 1, username: 'alice', displayName: 'Alice' };
   const bobIdentity: UserIdentity = { userId: 2, username: 'bob', displayName: 'Bob' };
@@ -41,6 +38,10 @@ describe('RoomGateway', () => {
       addToRoster: jest.fn().mockResolvedValue(emptyRoster),
       removeFromRoster: jest.fn().mockResolvedValue(emptyRoster),
       reorderRoster: jest.fn().mockResolvedValue(emptyRoster),
+      isMember: jest.fn().mockResolvedValue(false),
+      getMessageHistory: jest.fn().mockResolvedValue([]),
+      upsertGameSettings: jest.fn().mockResolvedValue({}),
+      loadGameSettings: jest.fn().mockResolvedValue(null),
       broadcastToRoom: jest.fn(
         (roomId: string, event: string, data: unknown, excludeConnId?: string) => {
           const room = manager.getRoom(roomId);
@@ -55,23 +56,13 @@ describe('RoomGateway', () => {
       ),
     } as any;
 
-    messageRepo = {
-      findByRoomId: jest.fn().mockResolvedValue([]),
-    };
-
     gameService = {
       isGameActive: jest.fn().mockReturnValue(false),
-    };
-
-    roomRosters = {
-      isMember: jest.fn().mockResolvedValue(false),
     };
 
     gateway = new RoomGateway(
       connectionService,
       roomService,
-      messageRepo as unknown as MessageRepository,
-      roomRosters as unknown as RoomRosterRepository,
       gameService as unknown as GameService,
     );
     gateway.onModuleInit();
@@ -85,7 +76,7 @@ describe('RoomGateway', () => {
       await gateway.handleJoinRoom(client, { roomId: 1 });
 
       expect(roomService.roomExists).toHaveBeenCalledWith(1);
-      expect(messageRepo.findByRoomId).toHaveBeenCalledWith(1);
+      expect(roomService.getMessageHistory).toHaveBeenCalledWith(1);
 
       const mockSend = client.send as jest.Mock;
       expect(mockSend).toHaveBeenCalledTimes(2);
@@ -183,7 +174,7 @@ describe('RoomGateway', () => {
     });
 
     it('should call addToRoster when user is not already on roster', async () => {
-      roomRosters.isMember.mockResolvedValue(false);
+      (roomService.isMember as jest.Mock).mockResolvedValue(false);
 
       const client = createMockClient();
       connectionService.trackClient(client, aliceIdentity);
@@ -194,7 +185,7 @@ describe('RoomGateway', () => {
     });
 
     it('should call getRoster (not addToRoster) when user is already on roster', async () => {
-      roomRosters.isMember.mockResolvedValue(true);
+      (roomService.isMember as jest.Mock).mockResolvedValue(true);
 
       const client = createMockClient();
       connectionService.trackClient(client, aliceIdentity);
@@ -206,7 +197,7 @@ describe('RoomGateway', () => {
     });
 
     it('should send error and undo WS join when room is full', async () => {
-      roomRosters.isMember.mockResolvedValue(false);
+      (roomService.isMember as jest.Mock).mockResolvedValue(false);
       (roomService.addToRoster as jest.Mock).mockRejectedValue(
         new Error('Room is full (limit: 2)'),
       );
@@ -442,6 +433,129 @@ describe('RoomGateway', () => {
       expect(messages).toHaveLength(1);
       expect(messages[0].event).toBe(WS_EMIT.ERROR);
       expect(messages[0].data.message).toContain('Only the room owner');
+    });
+  });
+
+  describe('handleGameSettingsUpdate', () => {
+    const testSettings = {
+      gameType: 'sheepshead',
+      presetName: 'classic',
+      config: { someField: 'value' },
+      autostart: false,
+    };
+
+    it('should upsert settings and broadcast to room when sender is owner', async () => {
+      const ownerClient = createMockClient();
+      const bobClient = createMockClient();
+      connectionService.trackClient(ownerClient, aliceIdentity);
+      connectionService.trackClient(bobClient, bobIdentity);
+
+      await gateway.handleJoinRoom(ownerClient, { roomId: 1 });
+      await gateway.handleJoinRoom(bobClient, { roomId: 1 });
+
+      (ownerClient.send as jest.Mock).mockClear();
+      (bobClient.send as jest.Mock).mockClear();
+
+      await gateway.handleGameSettingsUpdate(ownerClient, {
+        roomId: 1,
+        settings: testSettings,
+      });
+
+      expect(roomService.upsertGameSettings).toHaveBeenCalledWith(1, testSettings);
+
+      // Both clients should receive the broadcast
+      const ownerMessages = parseSentMessages(ownerClient);
+      const bobMessages = parseSentMessages(bobClient);
+
+      expect(ownerMessages.some((m: any) => m.event === WS_EMIT.GAME_SETTINGS_UPDATED)).toBe(true);
+      expect(bobMessages.some((m: any) => m.event === WS_EMIT.GAME_SETTINGS_UPDATED)).toBe(true);
+
+      const settingsMsg = bobMessages.find((m: any) => m.event === WS_EMIT.GAME_SETTINGS_UPDATED);
+      expect(settingsMsg.data.settings).toEqual(testSettings);
+    });
+
+    it('should reject settings update from non-owner', async () => {
+      const bobClient = createMockClient();
+      connectionService.trackClient(bobClient, bobIdentity);
+
+      await gateway.handleJoinRoom(bobClient, { roomId: 1 });
+      (bobClient.send as jest.Mock).mockClear();
+
+      await gateway.handleGameSettingsUpdate(bobClient, {
+        roomId: 1,
+        settings: testSettings,
+      });
+
+      expect(roomService.upsertGameSettings).not.toHaveBeenCalled();
+
+      const messages = parseSentMessages(bobClient);
+      expect(messages).toHaveLength(1);
+      expect(messages[0].event).toBe(WS_EMIT.GAME_ERROR);
+      expect(messages[0].data.message).toContain('Only the room owner');
+    });
+
+    it('should send error when upsert fails', async () => {
+      (roomService.upsertGameSettings as jest.Mock).mockRejectedValue(new Error('DB error'));
+
+      const ownerClient = createMockClient();
+      connectionService.trackClient(ownerClient, aliceIdentity);
+
+      await gateway.handleJoinRoom(ownerClient, { roomId: 1 });
+      (ownerClient.send as jest.Mock).mockClear();
+
+      await gateway.handleGameSettingsUpdate(ownerClient, {
+        roomId: 1,
+        settings: testSettings,
+      });
+
+      const messages = parseSentMessages(ownerClient);
+      expect(messages).toHaveLength(1);
+      expect(messages[0].event).toBe(WS_EMIT.GAME_ERROR);
+      expect(messages[0].data.message).toContain('Failed to save game settings');
+    });
+  });
+
+  describe('handleGameSettingsLoad', () => {
+    it('should return persisted settings when they exist', async () => {
+      const storedRow = {
+        id: 1,
+        roomId: 1,
+        gameType: 'sheepshead',
+        presetName: 'classic',
+        config: { someField: 'value' },
+        autostart: true,
+        updatedAt: new Date(),
+      };
+      (roomService.loadGameSettings as jest.Mock).mockResolvedValue(storedRow);
+
+      const client = createMockClient();
+      connectionService.trackClient(client, aliceIdentity);
+
+      await gateway.handleGameSettingsLoad(client, { roomId: 1 });
+
+      const messages = parseSentMessages(client);
+      expect(messages).toHaveLength(1);
+      expect(messages[0].event).toBe(WS_EMIT.GAME_SETTINGS_LOADED);
+      expect(messages[0].data.settings).toEqual({
+        gameType: 'sheepshead',
+        presetName: 'classic',
+        config: { someField: 'value' },
+        autostart: true,
+      });
+    });
+
+    it('should return null settings when none exist', async () => {
+      (roomService.loadGameSettings as jest.Mock).mockResolvedValue(null);
+
+      const client = createMockClient();
+      connectionService.trackClient(client, bobIdentity);
+
+      await gateway.handleGameSettingsLoad(client, { roomId: 999 });
+
+      const messages = parseSentMessages(client);
+      expect(messages).toHaveLength(1);
+      expect(messages[0].event).toBe(WS_EMIT.GAME_SETTINGS_LOADED);
+      expect(messages[0].data.settings).toBeNull();
     });
   });
 });

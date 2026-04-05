@@ -43,6 +43,10 @@ export type {
   RosterUpdatePayload,
   UpdateRosterRequest,
   KickUserRequest,
+  RoomGameSettings,
+  GameSettingsUpdatePayload,
+  GameSettingsUpdatedPayload,
+  GameSettingsLoadedPayload,
 } from './lib/room-types';
 export type {
   AuthMethod,

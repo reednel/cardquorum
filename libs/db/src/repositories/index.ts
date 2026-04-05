@@ -7,6 +7,7 @@ export { SessionRepository } from './session.repository';
 export { UserRepository } from './user.repository';
 export { CredentialRepository } from './credential.repository';
 export { GameSessionRepository } from './game-session.repository';
+export { RoomGameSettingsRepository } from './room-game-settings.repository';
 export { FriendshipRepository } from './friendship.repository';
 export { FriendshipRequestRepository } from './friendship-request.repository';
 export { RoomRosterRepository } from './room-roster.repository';

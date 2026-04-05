@@ -16,7 +16,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
-import { RoomRosterRepository } from '@cardquorum/db';
 import {
   RoomBanResponse,
   RoomInviteResponse,
@@ -44,7 +43,6 @@ export class RoomController {
   constructor(
     private readonly roomService: RoomService,
     private readonly gameService: GameService,
-    private readonly roomRosters: RoomRosterRepository,
   ) {}
 
   @Post()
@@ -81,8 +79,8 @@ export class RoomController {
 
     const results: RoomResponse[] = [];
     for (const r of rooms) {
-      const rosterCount = await this.roomRosters.countMembers(r.id);
-      const isOnRoster = await this.roomRosters.isMember(r.id, user.userId);
+      const rosterCount = await this.roomService.countMembers(r.id);
+      const isOnRoster = await this.roomService.isMember(r.id, user.userId);
       results.push({
         id: r.id,
         name: r.name,
@@ -112,8 +110,8 @@ export class RoomController {
     }
 
     const room = (await this.roomService.findById(id))!;
-    const rosterCount = await this.roomRosters.countMembers(room.id);
-    const isOnRoster = await this.roomRosters.isMember(room.id, user.userId);
+    const rosterCount = await this.roomService.countMembers(room.id);
+    const isOnRoster = await this.roomService.isMember(room.id, user.userId);
 
     return {
       id: room.id,
@@ -155,8 +153,8 @@ export class RoomController {
       throw new NotFoundException(`Room ${id} not found`);
     }
 
-    const rosterCount = await this.roomRosters.countMembers(updated.id);
-    const isOnRoster = await this.roomRosters.isMember(updated.id, user.userId);
+    const rosterCount = await this.roomService.countMembers(updated.id);
+    const isOnRoster = await this.roomService.isMember(updated.id, user.userId);
 
     return {
       id: updated.id,

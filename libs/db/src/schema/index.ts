@@ -4,6 +4,7 @@ export { friendshipRequests } from './friendship-requests';
 export { gameSessions } from './game-sessions';
 export { messages } from './messages';
 export { roomBans } from './room-bans';
+export { roomGameSettings } from './room-game-settings';
 export { roomInvites } from './room-invites';
 export { roomRosters } from './room-rosters';
 export { rooms } from './rooms';

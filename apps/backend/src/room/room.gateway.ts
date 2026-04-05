@@ -6,12 +6,13 @@ import {
   WebSocketGateway,
 } from '@nestjs/websockets';
 import { WebSocket } from 'ws';
-import { MessageRepository, RoomRosterRepository } from '@cardquorum/db';
 import { WS_EMIT, WS_EVENT } from '@cardquorum/shared';
 import { GameService } from '../game/game.service';
 import { WsConnectionService } from '../ws/ws-connection.service';
 import { WsValidationPipe } from '../ws/ws-validation.pipe';
 import {
+  GameSettingsLoadDto,
+  GameSettingsUpdateDto,
   JoinRoomDto,
   LeaveRoomDto,
   LeaveRosterDto,
@@ -28,8 +29,6 @@ export class RoomGateway implements OnModuleInit {
   constructor(
     private readonly connectionService: WsConnectionService,
     private readonly roomService: RoomService,
-    private readonly messages: MessageRepository,
-    private readonly roomRosters: RoomRosterRepository,
     @Inject(forwardRef(() => GameService))
     private readonly gameService: GameService,
   ) {}
@@ -66,7 +65,7 @@ export class RoomGateway implements OnModuleInit {
 
     // Check if user is already on the roster; if not, add them
     const userId = tracked.identity.userId;
-    const isOnRoster = await this.roomRosters.isMember(roomId, userId);
+    const isOnRoster = await this.roomService.isMember(roomId, userId);
     let roster;
     if (!isOnRoster) {
       try {
@@ -84,7 +83,7 @@ export class RoomGateway implements OnModuleInit {
     }
 
     const members = this.roomService.manager.getRoomMembers(roomKey);
-    const history = await this.messages.findByRoomId(roomId);
+    const history = await this.roomService.getMessageHistory(roomId);
 
     this.send(client, WS_EMIT.ROOM_JOINED, { roomId, members, roster });
     this.send(client, WS_EMIT.MESSAGE_HISTORY, { roomId, messages: history });
@@ -203,6 +202,64 @@ export class RoomGateway implements OnModuleInit {
         message: err instanceof Error ? err.message : 'Failed to toggle rotation',
       });
     }
+  }
+
+  @SubscribeMessage(WS_EVENT.GAME_SETTINGS_UPDATE)
+  async handleGameSettingsUpdate(
+    @ConnectedSocket() client: WebSocket,
+    @MessageBody() payload: GameSettingsUpdateDto,
+  ) {
+    const tracked = this.connectionService.getTracked(client);
+    if (!tracked) return;
+
+    const roomId = payload.roomId;
+    const userId = tracked.identity.userId;
+
+    // Verify the requesting user is the room owner
+    const room = await this.roomService.findById(roomId);
+    if (!room || room.ownerId !== userId) {
+      this.send(client, WS_EMIT.GAME_ERROR, {
+        message: 'Only the room owner can update game settings',
+      });
+      return;
+    }
+
+    try {
+      await this.roomService.upsertGameSettings(roomId, payload.settings);
+    } catch (err) {
+      this.logger.error(`Failed to upsert game settings for room ${roomId}: ${err}`);
+      this.send(client, WS_EMIT.GAME_ERROR, {
+        message: 'Failed to save game settings',
+      });
+      return;
+    }
+
+    // Broadcast updated settings to all room members
+    this.roomService.broadcastToRoom(String(roomId), WS_EMIT.GAME_SETTINGS_UPDATED, {
+      settings: payload.settings,
+    });
+  }
+
+  @SubscribeMessage(WS_EVENT.GAME_SETTINGS_LOAD)
+  async handleGameSettingsLoad(
+    @ConnectedSocket() client: WebSocket,
+    @MessageBody() payload: GameSettingsLoadDto,
+  ) {
+    const tracked = this.connectionService.getTracked(client);
+    if (!tracked) return;
+
+    const row = await this.roomService.loadGameSettings(payload.roomId);
+
+    const settings = row
+      ? {
+          gameType: row.gameType,
+          presetName: row.presetName,
+          config: row.config as Record<string, unknown>,
+          autostart: row.autostart,
+        }
+      : null;
+
+    this.send(client, WS_EMIT.GAME_SETTINGS_LOADED, { settings });
   }
 
   private send(client: WebSocket, event: string, data: unknown) {

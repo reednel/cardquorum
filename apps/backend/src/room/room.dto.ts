@@ -1,18 +1,23 @@
+import { Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
   IsIn,
   IsInt,
+  IsObject,
   IsOptional,
   IsString,
   MaxLength,
   Min,
   MinLength,
+  ValidateNested,
 } from 'class-validator';
 import {
+  GameSettingsUpdatePayload,
   JoinRoomPayload,
   LeaveRoomPayload,
   LeaveRosterPayload,
+  RoomGameSettings,
   RosterReorderPayload,
   RosterToggleRotatePayload,
 } from '@cardquorum/shared';
@@ -114,4 +119,38 @@ export class UpdateRosterDto {
 export class ToggleRotateDto {
   @IsBoolean()
   enabled!: boolean;
+}
+
+// --- Game Settings DTOs ---
+
+export class RoomGameSettingsDto implements RoomGameSettings {
+  @IsOptional()
+  @IsString()
+  gameType!: string | null;
+
+  @IsOptional()
+  @IsString()
+  presetName!: string | null;
+
+  @IsObject()
+  config!: Record<string, unknown>;
+
+  @IsBoolean()
+  autostart!: boolean;
+}
+
+export class GameSettingsUpdateDto implements GameSettingsUpdatePayload {
+  @IsInt()
+  @Min(1)
+  roomId!: number;
+
+  @ValidateNested()
+  @Type(() => RoomGameSettingsDto)
+  settings!: RoomGameSettingsDto;
+}
+
+export class GameSettingsLoadDto {
+  @IsInt()
+  @Min(1)
+  roomId!: number;
 }

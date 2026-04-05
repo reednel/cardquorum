@@ -1,5 +1,4 @@
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
-import { RoomRosterRepository } from '@cardquorum/db';
 import { UserIdentity } from '@cardquorum/shared';
 import { REQUEST_USER_KEY } from '../auth/http-auth.guard';
 import { GameService } from '../game/game.service';
@@ -30,10 +29,11 @@ describe('RoomController', () => {
       | 'getRoster'
       | 'reorderRoster'
       | 'toggleRotatePlayers'
+      | 'countMembers'
+      | 'isMember'
     >
   >;
   let gameService: jest.Mocked<Pick<GameService, 'forceCleanupRoom' | 'isGameActive'>>;
-  let roomRosters: jest.Mocked<Pick<RoomRosterRepository, 'countMembers' | 'isMember'>>;
 
   const alice: UserIdentity = { userId: 1, username: 'alice', displayName: 'Alice' };
   const bob: UserIdentity = { userId: 2, username: 'bob', displayName: 'Bob' };
@@ -79,6 +79,8 @@ describe('RoomController', () => {
       toggleRotatePlayers: jest
         .fn()
         .mockResolvedValue({ players: [], spectators: [], rotatePlayers: false }),
+      countMembers: jest.fn().mockResolvedValue(0),
+      isMember: jest.fn().mockResolvedValue(false),
     };
 
     gameService = {
@@ -86,15 +88,9 @@ describe('RoomController', () => {
       isGameActive: jest.fn().mockReturnValue(false),
     };
 
-    roomRosters = {
-      countMembers: jest.fn().mockResolvedValue(0),
-      isMember: jest.fn().mockResolvedValue(false),
-    };
-
     controller = new RoomController(
       roomService as unknown as RoomService,
       gameService as unknown as GameService,
-      roomRosters as unknown as RoomRosterRepository,
     );
   });
 

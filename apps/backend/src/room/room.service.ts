@@ -6,7 +6,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  MessageRepository,
   RoomBanRepository,
+  RoomGameSettingsRepository,
   RoomInviteRepository,
   RoomRepository,
   RoomRosterRepository,
@@ -34,6 +36,8 @@ export class RoomService {
     private readonly roomInvites: RoomInviteRepository,
     private readonly roomBans: RoomBanRepository,
     private readonly roomRosters: RoomRosterRepository,
+    private readonly messages: MessageRepository,
+    private readonly roomGameSettings: RoomGameSettingsRepository,
     private readonly connectionService: WsConnectionService,
     private readonly friendService: FriendService,
     private readonly blockService: BlockService,
@@ -130,6 +134,34 @@ export class RoomService {
   async roomExists(roomId: number): Promise<boolean> {
     const room = await this.rooms.findById(roomId);
     return room !== null;
+  }
+
+  async countMembers(roomId: number): Promise<number> {
+    return this.roomRosters.countMembers(roomId);
+  }
+
+  async isMember(roomId: number, userId: number): Promise<boolean> {
+    return this.roomRosters.isMember(roomId, userId);
+  }
+
+  async getMessageHistory(roomId: number) {
+    return this.messages.findByRoomId(roomId);
+  }
+
+  async upsertGameSettings(
+    roomId: number,
+    settings: {
+      gameType: string | null;
+      presetName: string | null;
+      config: Record<string, unknown>;
+      autostart: boolean;
+    },
+  ) {
+    return this.roomGameSettings.upsert(roomId, settings);
+  }
+
+  async loadGameSettings(roomId: number) {
+    return this.roomGameSettings.findByRoomId(roomId);
   }
 
   getOnlineCount(roomId: number): number {
