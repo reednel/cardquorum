@@ -139,15 +139,12 @@ const positionsContiguous = (members: RosterMember[]): boolean =>
 // ---------------------------------------------------------------------------
 
 /**
- * Property 2: New member joins as last spectator
- * Validates: Requirements 3.4, 4.3
- *
  * For any existing roster state and any user not already on the roster
  * (and below the membership limit), adding that user should place them
  * at the last position in the spectators list, leaving the players list
  * and existing spectator order unchanged.
  */
-describe('Property 2: New member joins as last spectator', () => {
+describe('New member joins as last spectator', () => {
   it('should place new member at the end of spectators, preserving players and existing spectator order', () => {
     fc.assert(
       fc.property(arbRosterAndNewMember(), ([roster, newMember]) => {
@@ -178,13 +175,10 @@ describe('Property 2: New member joins as last spectator', () => {
 });
 
 /**
- * Property 3: Disconnect does not modify roster
- * Validates: Requirements 3.6, 1.4
- *
  * For any roster state and any member on the roster, simulating a
  * WebSocket disconnect should produce an identical roster.
  */
-describe('Property 3: Disconnect does not modify roster', () => {
+describe('Disconnect does not modify roster', () => {
   it('should return an identical roster after disconnect', () => {
     fc.assert(
       fc.property(arbRosterAndMemberId({ minPlayers: 0, minSpectators: 1 }), ([roster, userId]) => {
@@ -199,14 +193,11 @@ describe('Property 3: Disconnect does not modify roster', () => {
 });
 
 /**
- * Property 5: Membership limit enforcement
- * Validates: Requirements 5.3
- *
  * For any room with a membership limit M and a roster containing exactly M
  * members, attempting to add a new member should be rejected (return null).
  * For any room with fewer than M members (or no limit), adding should succeed.
  */
-describe('Property 5: Membership limit enforcement', () => {
+describe('Membership limit enforcement', () => {
   it('should reject when roster is at capacity', () => {
     fc.assert(
       fc.property(arbRosterAndNewMember({ minPlayers: 1 }), ([roster, newMember]) => {
@@ -243,9 +234,6 @@ describe('Property 5: Membership limit enforcement', () => {
 });
 
 /**
- * Property 7: Roster removal produces valid roster
- * Validates: Requirements 6.2, 7.2, 14.3
- *
  * For any roster state and any member on the roster, removing that member
  * should produce a roster where:
  * (a) the removed member does not appear in either list,
@@ -253,7 +241,7 @@ describe('Property 5: Membership limit enforcement', () => {
  * (c) positions are contiguous starting from 0,
  * (d) the relative order of remaining members is preserved.
  */
-describe('Property 7: Roster removal produces valid roster', () => {
+describe('Roster removal produces valid roster', () => {
   it('should remove the member and maintain valid roster invariants', () => {
     fc.assert(
       fc.property(arbRosterAndMemberId({ minPlayers: 0, minSpectators: 1 }), ([roster, userId]) => {
@@ -298,14 +286,11 @@ describe('Property 7: Roster removal produces valid roster', () => {
 });
 
 /**
- * Property 9: Reorder preserves membership invariant
- * Validates: Requirements 9.4, 9.5, 9.6, 9.7
- *
  * For any roster state and any valid reorder operation, the resulting roster
  * should contain exactly the same set of user IDs as before, with no
  * duplicates and no missing members.
  */
-describe('Property 9: Reorder preserves membership invariant', () => {
+describe('Reorder preserves membership invariant', () => {
   it('should preserve the exact same set of user IDs after a valid reorder', () => {
     fc.assert(
       fc.property(
@@ -348,9 +333,6 @@ describe('Property 9: Reorder preserves membership invariant', () => {
 });
 
 /**
- * Property 12: Seat rotation correctness
- * Validates: Requirements 12.1, 12.2, 12.4
- *
  * For any roster with at least one player:
  * - If rotatePlayers enabled and spectators non-empty: first player moves to
  *   bottom of spectators, first spectator moves to bottom of players
@@ -358,7 +340,7 @@ describe('Property 9: Reorder preserves membership invariant', () => {
  *   bottom of players, spectators unchanged
  * - Total set of members is preserved
  */
-describe('Property 12: Seat rotation correctness', () => {
+describe('Seat rotation correctness', () => {
   it('should rotate correctly when rotatePlayers enabled and spectators non-empty', () => {
     fc.assert(
       fc.property(

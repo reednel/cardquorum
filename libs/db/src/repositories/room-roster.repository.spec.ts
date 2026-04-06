@@ -190,14 +190,11 @@ const arbRosterInput = (): fc.Arbitrary<{
 // ---------------------------------------------------------------------------
 
 /**
- * Property 11: Roster persistence round-trip
- * Validates: Requirements 10.1
- *
  * For any valid roster state (players list, spectators list), persisting it
  * to the database and then loading it back should produce an equivalent
  * roster state with the same members, sections, positions.
  */
-describe('Property 11: Roster persistence round-trip', () => {
+describe('Roster persistence round-trip', () => {
   it('should return the same members, sections, and positions after replaceRoster + findByRoom', async () => {
     await fc.assert(
       fc.asyncProperty(arbRosterInput(), async ({ roomId, players, spectators }) => {

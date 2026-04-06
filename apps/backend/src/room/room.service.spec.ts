@@ -541,13 +541,10 @@ describe('RoomService', () => {
   });
 
   /**
-   * Property 8: Owner cannot leave roster
    * For any room, a leave-roster request from the room owner should be rejected
    * with a forbidden error, and the roster should remain unchanged.
-   *
-   * Validates: Requirements 6.6
    */
-  describe('P8: Owner cannot leave roster', () => {
+  describe('Owner cannot leave roster', () => {
     it('should reject removeFromRoster when userId is the room owner', async () => {
       await fc.assert(
         fc.asyncProperty(fc.integer({ min: 1, max: 10000 }), async (ownerId) => {
@@ -568,13 +565,10 @@ describe('RoomService', () => {
   });
 
   /**
-   * Property 10: Roster reorder rejected during active game
    * For any room with an active game session, a roster reorder request should be
    * rejected with an error, and the roster should remain unchanged.
-   *
-   * Validates: Requirements 9.9
    */
-  describe('P10: Roster reorder rejected during active game', () => {
+  describe('Roster reorder rejected during active game', () => {
     it('should reject reorderRoster when game is active', async () => {
       await fc.assert(
         fc.asyncProperty(

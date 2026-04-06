@@ -180,6 +180,7 @@ export class GameGateway implements OnModuleInit {
       this.send(client, WS_EMIT.GAME_STATE_UPDATE, {
         sessionId: result.sessionId,
         state: result.state,
+        validActions: result.validActions,
       });
     }
   }
@@ -193,11 +194,15 @@ export class GameGateway implements OnModuleInit {
   }
 
   /** Send per-player views: each player gets their own state. */
-  private sendPlayerViews(playerViews: Array<[number, unknown]>, sessionId: number, event: string) {
-    for (const [userID, state] of playerViews) {
+  private sendPlayerViews(
+    playerViews: Array<[number, { state: unknown; validActions: string[] }]>,
+    sessionId: number,
+    event: string,
+  ) {
+    for (const [userID, { state, validActions }] of playerViews) {
       const message = JSON.stringify({
         event,
-        data: { sessionId, state },
+        data: { sessionId, state, validActions },
       });
       for (const client of this.connectionService.getClientsByUserId(userID)) {
         try {

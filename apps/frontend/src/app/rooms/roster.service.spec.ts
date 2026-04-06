@@ -43,12 +43,7 @@ const arbInvite = (userId: number): RoomInviteResponse => ({
   invitedAt: new Date().toISOString(),
 });
 
-// ---------------------------------------------------------------------------
-// Property 1: Status dot reflects online presence
-// Validates: Requirements 1.1, 1.2
-// ---------------------------------------------------------------------------
-
-describe('Property 1: Status dot reflects online presence', () => {
+describe('Status dot reflects online presence', () => {
   it('computeStatus returns "online" iff userId is in the online set, "offline" otherwise', () => {
     fc.assert(
       fc.property(
@@ -73,12 +68,7 @@ describe('Property 1: Status dot reflects online presence', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Property 4: Invited list equals invitees minus roster members
-// Validates: Requirements 4.2
-// ---------------------------------------------------------------------------
-
-describe('Property 4: Invited list equals invitees minus roster members', () => {
+describe('Invited list equals invitees minus roster members', () => {
   it('computeInvitedList returns exactly those invitees not on the roster', () => {
     fc.assert(
       fc.property(
@@ -119,12 +109,7 @@ describe('Property 4: Invited list equals invitees minus roster members', () => 
   });
 });
 
-// ---------------------------------------------------------------------------
-// Property 6: Roster count formatting
-// Validates: Requirements 5.4
-// ---------------------------------------------------------------------------
-
-describe('Property 6: Roster count formatting', () => {
+describe('Roster count formatting', () => {
   it('formatRosterCount returns "N / M" when limit is positive, "N" when null or 0', () => {
     fc.assert(
       fc.property(

@@ -3,6 +3,7 @@ import { GameSessionRepository } from '@cardquorum/db';
 import { GamePlugin } from '@cardquorum/engine';
 import { SheepsheadPlugin } from '@cardquorum/sheepshead';
 import { RoomService } from '../room/room.service';
+import { resolveCancellationStatus } from './game-status';
 
 interface ActiveGame {
   sessionId: number;
@@ -11,7 +12,6 @@ interface ActiveGame {
   config: unknown;
   state: unknown | null;
   playerIDs: number[];
-  playerCount: number;
   createdBy: number;
   status: 'waiting' | 'active';
   createdAt: number;
@@ -93,8 +93,6 @@ export class GameService implements OnModuleDestroy {
       throw err;
     }
 
-    const playerCount = (config as { playerCount: number }).playerCount;
-
     const game: ActiveGame = {
       sessionId: row.id,
       roomId,
@@ -102,7 +100,6 @@ export class GameService implements OnModuleDestroy {
       config,
       state: null,
       playerIDs: [],
-      playerCount,
       createdBy,
       status: 'waiting',
       createdAt: Date.now(),
@@ -119,7 +116,7 @@ export class GameService implements OnModuleDestroy {
   async startSession(
     sessionId: number,
     requestedBy: number,
-  ): Promise<{ playerViews: Array<[number, unknown]> }> {
+  ): Promise<{ playerViews: Array<[number, { state: unknown; validActions: string[] }]> }> {
     const game = this.activeGames.get(sessionId);
     if (!game) {
       throw new Error(`Game session ${sessionId} not found`);
@@ -136,23 +133,26 @@ export class GameService implements OnModuleDestroy {
 
     const plugin = this.plugins.get(game.gameType)!;
 
-    // Collect room members, deduplicated by userId
-    const members = this.roomService.manager.getRoomMembers(String(game.roomId));
-    const uniqueUserIDs = [...new Set(members.map((m) => m.userId))];
+    // Read players from the persisted roster
+    const roster = await this.roomService.getRoster(game.roomId);
+    const playerIDs = roster.players.map((p) => p.userId);
 
-    if (uniqueUserIDs.length !== game.playerCount) {
-      throw new Error(`Expected ${game.playerCount} players, but room has ${uniqueUserIDs.length}`);
+    const configPlayerCount = (game.config as { playerCount: number }).playerCount;
+    if (playerIDs.length !== configPlayerCount) {
+      throw new Error(
+        `Expected ${configPlayerCount} players, but Players list has ${playerIDs.length}`,
+      );
     }
 
-    game.playerIDs = uniqueUserIDs;
-    game.state = plugin.createInitialState(game.config as any, uniqueUserIDs);
+    game.playerIDs = playerIDs;
+    game.state = plugin.createInitialState(game.config as any, playerIDs);
     game.status = 'active';
 
     await this.sessionRepo.updateStatusAndTimestamp(sessionId, 'active', 'startedAt');
 
     const playerViews = this.buildPlayerViews(game, plugin);
 
-    this.logger.log(`Game session ${sessionId} started with ${uniqueUserIDs.length} players`);
+    this.logger.log(`Game session ${sessionId} started with ${playerIDs.length} players`);
 
     return { playerViews };
   }
@@ -163,7 +163,7 @@ export class GameService implements OnModuleDestroy {
     action: { type: string; payload?: unknown },
   ): Promise<{
     gameOver: boolean;
-    playerViews: Array<[number, unknown]>;
+    playerViews: Array<[number, { state: unknown; validActions: string[] }]>;
     store?: unknown;
   }> {
     const game = this.activeGames.get(sessionId);
@@ -192,10 +192,7 @@ export class GameService implements OnModuleDestroy {
 
     if (gameOver) {
       const store = plugin.buildStore(game.config as any, newState);
-
-      const playerViews = game.playerIDs.map(
-        (id) => [id, plugin.getPlayerView(game.config as any, newState, id)] as [number, unknown],
-      );
+      const playerViews = this.buildPlayerViews(game, plugin);
 
       await this.sessionRepo.updateStore(sessionId, store);
       await this.sessionRepo.updateStatusAndTimestamp(sessionId, 'finished', 'finishedAt');
@@ -204,6 +201,9 @@ export class GameService implements OnModuleDestroy {
       this.roomToSession.delete(game.roomId);
 
       this.logger.log(`Game session ${sessionId} finished`);
+
+      // Rotate seats after game-over cleanup so clients see game-over before roster change
+      await this.roomService.rotateSeat(game.roomId);
 
       return { gameOver: true, playerViews, store };
     }
@@ -217,9 +217,6 @@ export class GameService implements OnModuleDestroy {
     if (!game) {
       throw new Error(`Game session ${sessionId} not found`);
     }
-    if (game.status !== 'waiting') {
-      throw new Error(`Game session ${sessionId} is not in waiting status`);
-    }
     if (game.createdBy !== requestedBy) {
       throw new Error('Only the session creator can cancel the game');
     }
@@ -228,12 +225,13 @@ export class GameService implements OnModuleDestroy {
       throw new Error('User is no longer in the room');
     }
 
-    await this.sessionRepo.updateStatusAndTimestamp(sessionId, 'cancelled', 'finishedAt');
+    const finalStatus = resolveCancellationStatus(game.status, 'owner-cancel');
+    await this.sessionRepo.updateStatusAndTimestamp(sessionId, finalStatus, 'finishedAt');
 
     this.activeGames.delete(sessionId);
     this.roomToSession.delete(game.roomId);
 
-    this.logger.log(`Game session ${sessionId} cancelled by user ${requestedBy}`);
+    this.logger.log(`Game session ${sessionId} ${finalStatus} by user ${requestedBy}`);
 
     return { roomId: game.roomId };
   }
@@ -266,6 +264,10 @@ export class GameService implements OnModuleDestroy {
    * Force-cancel any active game session in a room (e.g. when the room is deleted).
    * Skips ownership checks. Returns the cancelled sessionId, if any.
    */
+  isGameActive(roomId: number): boolean {
+    return this.roomToSession.has(roomId);
+  }
+
   async forceCleanupRoom(roomId: number): Promise<number | null> {
     const sessionId = this.roomToSession.get(roomId);
     if (sessionId === undefined || sessionId === -1) return null;
@@ -273,7 +275,7 @@ export class GameService implements OnModuleDestroy {
     const game = this.activeGames.get(sessionId);
     if (!game) return null;
 
-    const finalStatus = game.status === 'active' ? 'abandoned' : 'cancelled';
+    const finalStatus = resolveCancellationStatus(game.status, 'room-delete');
     await this.sessionRepo.updateStatusAndTimestamp(sessionId, finalStatus, 'finishedAt');
 
     this.activeGames.delete(sessionId);
@@ -283,26 +285,32 @@ export class GameService implements OnModuleDestroy {
     return sessionId;
   }
 
-  getPlayerView(sessionId: number, userID: number): unknown | null {
+  getPlayerView(
+    sessionId: number,
+    userID: number,
+  ): { state: unknown; validActions: string[] } | null {
     const game = this.activeGames.get(sessionId);
     if (!game || game.status !== 'active') return null;
     if (!game.playerIDs.includes(userID)) return null;
 
     const plugin = this.plugins.get(game.gameType)!;
-    return plugin.getPlayerView(game.config as any, game.state as any, userID);
+    return {
+      state: plugin.getPlayerView(game.config as any, game.state as any, userID),
+      validActions: plugin.getValidActions(game.config as any, game.state as any, userID),
+    };
   }
 
   getPlayerViewByRoom(
     roomId: number,
     userID: number,
-  ): { sessionId: number; state: unknown } | null {
+  ): { sessionId: number; state: unknown; validActions: string[] } | null {
     const sessionId = this.roomToSession.get(roomId);
     if (sessionId === undefined) return null;
 
     const view = this.getPlayerView(sessionId, userID);
     if (view === null) return null;
 
-    return { sessionId, state: view };
+    return { sessionId, ...view };
   }
 
   private isUserInRoom(roomId: number, userId: number): boolean {
@@ -310,10 +318,16 @@ export class GameService implements OnModuleDestroy {
     return members.some((m) => m.userId === userId);
   }
 
-  private buildPlayerViews(game: ActiveGame, plugin: GamePlugin): Array<[number, unknown]> {
+  private buildPlayerViews(
+    game: ActiveGame,
+    plugin: GamePlugin,
+  ): Array<[number, { state: unknown; validActions: string[] }]> {
     return game.playerIDs.map((userID) => [
       userID,
-      plugin.getPlayerView(game.config as any, game.state as any, userID),
+      {
+        state: plugin.getPlayerView(game.config as any, game.state as any, userID),
+        validActions: plugin.getValidActions(game.config as any, game.state as any, userID),
+      },
     ]);
   }
 }

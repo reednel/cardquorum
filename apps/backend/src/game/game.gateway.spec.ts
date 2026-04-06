@@ -137,9 +137,9 @@ describe('GameGateway', () => {
 
       gameService.startSession.mockResolvedValue({
         playerViews: [
-          [1, { hand: ['alice-view'] }],
-          [2, { hand: ['bob-view'] }],
-          [3, { hand: ['charlie-view'] }],
+          [1, { state: { hand: ['alice-view'] }, validActions: ['deal'] }],
+          [2, { state: { hand: ['bob-view'] }, validActions: [] }],
+          [3, { state: { hand: ['charlie-view'] }, validActions: [] }],
         ],
       });
 
@@ -151,6 +151,7 @@ describe('GameGateway', () => {
 
       expect(parse(client1).event).toBe(WS_EMIT.GAME_STARTED);
       expect(parse(client1).data.state).toEqual({ hand: ['alice-view'] });
+      expect(parse(client1).data.validActions).toEqual(['deal']);
 
       expect(parse(client2).data.state).toEqual({ hand: ['bob-view'] });
       expect(parse(client3).data.state).toEqual({ hand: ['charlie-view'] });
@@ -181,8 +182,8 @@ describe('GameGateway', () => {
       gameService.applyAction.mockResolvedValue({
         gameOver: false,
         playerViews: [
-          [1, { phase: 'pick' }],
-          [2, { phase: 'pick' }],
+          [1, { state: { phase: 'pick' }, validActions: ['pick', 'pass'] }],
+          [2, { state: { phase: 'pick' }, validActions: [] }],
         ],
       });
 
@@ -206,8 +207,8 @@ describe('GameGateway', () => {
       gameService.applyAction.mockResolvedValue({
         gameOver: true,
         playerViews: [
-          [1, {}],
-          [2, {}],
+          [1, { state: {}, validActions: [] }],
+          [2, { state: {}, validActions: [] }],
         ],
         store,
       });
@@ -249,6 +250,7 @@ describe('GameGateway', () => {
       gameService.getPlayerViewByRoom.mockReturnValue({
         sessionId: 1,
         state: { phase: 'pick', hand: ['qc'] },
+        validActions: ['pick', 'pass'],
       });
 
       await gateway.handleGameRejoin(client, { roomId: 1 });

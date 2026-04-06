@@ -24,6 +24,7 @@ import { RoomChatTab } from './room-chat-tab';
 import { RoomGameTab } from './room-game-tab';
 import { RoomMembersTab } from './room-members-tab';
 import { RoomService } from './room.service';
+import { RosterService } from './roster.service';
 
 type RoomTab = 'chat' | 'members' | 'game';
 
@@ -110,6 +111,7 @@ type RoomTab = 'chat' | 'members' | 'game';
           }
           <app-room-game-tab
             [isOwner]="isOwner()"
+            [rosterPlayers]="rosterService.players()"
             [hidden]="activeTab() !== 'game'"
             class="flex min-h-0 flex-1 flex-col"
           />
@@ -122,6 +124,7 @@ type RoomTab = 'chat' | 'members' | 'game';
 export class RoomView implements OnInit, OnDestroy {
   protected readonly chatService = inject(ChatService);
   protected readonly gameService = inject(GameService);
+  protected readonly rosterService = inject(RosterService);
   private readonly roomService = inject(RoomService);
   private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);

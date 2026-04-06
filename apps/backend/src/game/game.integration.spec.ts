@@ -6,6 +6,7 @@
  */
 import { GameSessionRepository } from '@cardquorum/db';
 import { RoomManager } from '@cardquorum/engine';
+import { RosterState } from '@cardquorum/shared';
 import { RoomService } from '../room/room.service';
 import { GameService } from './game.service';
 
@@ -14,7 +15,7 @@ describe('GameService integration (full Sheepshead game)', () => {
   let mockSessionRepo: jest.Mocked<
     Pick<GameSessionRepository, 'create' | 'updateStatusAndTimestamp' | 'updateStore'>
   >;
-  let roomService: { manager: RoomManager };
+  let roomService: { manager: RoomManager; getRoster: jest.Mock; rotateSeat: jest.Mock };
 
   const userIDs = [1, 2, 3];
   const players = [
@@ -48,7 +49,25 @@ describe('GameService integration (full Sheepshead game)', () => {
     };
 
     const { RoomManager: RM } = jest.requireActual('@cardquorum/engine');
-    roomService = { manager: new RM() };
+    roomService = {
+      manager: new RM(),
+      getRoster: jest.fn().mockResolvedValue({
+        players: players.map((p, i) => ({
+          userId: p.userId,
+          username: p.username,
+          displayName: p.displayName,
+          section: 'players' as const,
+          position: i,
+        })),
+        spectators: [],
+        rotatePlayers: false,
+      } satisfies RosterState),
+      rotateSeat: jest.fn().mockResolvedValue({
+        players: [],
+        spectators: [],
+        rotatePlayers: false,
+      } satisfies RosterState),
+    };
 
     players.forEach((p, i) => {
       roomService.manager.joinRoom('1', `conn-${i + 1}`, p);
@@ -64,21 +83,28 @@ describe('GameService integration (full Sheepshead game)', () => {
     service.onModuleDestroy();
   });
 
-  function getView(playerViews: Array<[number, unknown]>, userId: number): any {
-    return playerViews.find(([id]) => id === userId)?.[1];
+  function getView(
+    playerViews: Array<[number, { state: unknown; validActions: string[] }]>,
+    userId: number,
+  ): any {
+    return playerViews.find(([id]) => id === userId)?.[1]?.state;
   }
 
   /**
    * Find the active player from the player views. All views share the same
    * activePlayer value (it's not fog-of-war'd).
    */
-  function getActivePlayer(playerViews: Array<[number, unknown]>): number {
-    const view = playerViews[0][1] as any;
+  function getActivePlayer(
+    playerViews: Array<[number, { state: unknown; validActions: string[] }]>,
+  ): number {
+    const view = playerViews[0][1].state as any;
     return view.activePlayer;
   }
 
-  function getPhase(playerViews: Array<[number, unknown]>): string {
-    return (playerViews[0][1] as any).phase;
+  function getPhase(
+    playerViews: Array<[number, { state: unknown; validActions: string[] }]>,
+  ): string {
+    return (playerViews[0][1].state as any).phase;
   }
 
   /**
@@ -87,7 +113,7 @@ describe('GameService integration (full Sheepshead game)', () => {
    */
   async function driveFullGame(sessionId: number): Promise<{
     gameOver: boolean;
-    playerViews: Array<[number, unknown]>;
+    playerViews: Array<[number, { state: unknown; validActions: string[] }]>;
     store?: unknown;
   }> {
     // Deal
@@ -163,8 +189,8 @@ describe('GameService integration (full Sheepshead game)', () => {
    */
   function getActiveFromService(sessionId: number): number {
     for (const userId of userIDs) {
-      const view = service.getPlayerView(sessionId, userId) as any;
-      if (view) return view.activePlayer;
+      const result = service.getPlayerView(sessionId, userId);
+      if (result) return (result.state as any).activePlayer;
     }
     throw new Error('No active game');
   }
@@ -219,6 +245,54 @@ describe('GameService integration (full Sheepshead game)', () => {
     mockSessionRepo.create.mockResolvedValue({ id: 2 } as any);
     const newSession = await service.createSession(1, 'sheepshead', validConfig, 1);
     expect(newSession.sessionId).toBe(2);
+  });
+
+  it('should use only roster players for game session', async () => {
+    await service.createSession(1, 'sheepshead', validConfig, 1);
+    const started = await service.startSession(1, 1);
+
+    // playerViews should contain exactly the roster's players list IDs
+    const viewUserIds = started.playerViews.map(([id]) => id);
+    expect(viewUserIds).toEqual(userIDs);
+
+    // Verify getRoster was called to source the player list
+    expect(roomService.getRoster).toHaveBeenCalledWith(1);
+  });
+
+  it('should call rotateSeat after game-over', async () => {
+    await service.createSession(1, 'sheepshead', validConfig, 1);
+    await service.startSession(1, 1);
+
+    const result = await driveFullGame(1);
+    expect(result.gameOver).toBe(true);
+
+    // rotateSeat should have been called with the room ID
+    expect(roomService.rotateSeat).toHaveBeenCalledWith(1);
+  });
+
+  it('should not call rotateSeat during non-game-over actions', async () => {
+    await service.createSession(1, 'sheepshead', validConfig, 1);
+    await service.startSession(1, 1);
+
+    // Apply a single non-finishing action (deal)
+    const active = getActiveFromService(1);
+    await service.applyAction(1, active, { type: 'deal' });
+
+    expect(roomService.rotateSeat).not.toHaveBeenCalled();
+  });
+
+  it('should call rotateSeat even when spectators list is empty', async () => {
+    // Roster already has empty spectators in the default mock setup
+    expect(roomService.getRoster).not.toHaveBeenCalled();
+
+    await service.createSession(1, 'sheepshead', validConfig, 1);
+    await service.startSession(1, 1);
+
+    const result = await driveFullGame(1);
+    expect(result.gameOver).toBe(true);
+
+    // rotateSeat is still called — it handles the empty spectators case internally
+    expect(roomService.rotateSeat).toHaveBeenCalledWith(1);
   });
 
   it('should produce correct per-player fog-of-war views throughout', async () => {

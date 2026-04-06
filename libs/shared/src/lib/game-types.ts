@@ -2,4 +2,10 @@
 export type GameType = 'sheepshead';
 
 /** Matches game_sessions.status values. */
-export type GameSessionStatus = 'waiting' | 'active' | 'finished' | 'abandoned';
+export type GameSessionStatus =
+  | 'waiting'
+  | 'active'
+  | 'finished'
+  | 'cancelled'
+  | 'aborted'
+  | 'abandoned';
