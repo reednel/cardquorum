@@ -23,10 +23,32 @@ function makeConfig(overrides: Partial<SheepsheadConfig> = {}): SheepsheadConfig
   };
 }
 
+/** Build an input-shape config for validateConfig tests. */
+function makeInputConfig(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    name: 'called-ace',
+    playerCount: 5,
+    handSize: 6,
+    blindSize: 2,
+    pickerRule: 'autonomous',
+    partnerRule: 'called-ace',
+    noPick: 'leaster',
+    cracking: false,
+    blitzing: false,
+    doubleOnTheBump: false,
+    partnerOffTheHook: false,
+    noAceFaceTrump: false,
+    multiplicityLimit: null,
+    callOwnAce: null,
+    cardsRemoved: [],
+    ...overrides,
+  };
+}
+
 describe('SheepsheadPlugin', () => {
   describe('validateConfig', () => {
     it('accepts valid config', () => {
-      expect(SheepsheadPlugin.validateConfig(makeConfig())).toBe(true);
+      expect(SheepsheadPlugin.validateConfig(makeInputConfig())).toBe(true);
     });
 
     it('accepts all valid partner rules', () => {
@@ -41,29 +63,25 @@ describe('SheepsheadPlugin', () => {
         'left-of-picker',
         null,
       ]) {
-        expect(SheepsheadPlugin.validateConfig(makeConfig({ partnerRule: rule as any }))).toBe(
-          true,
-        );
+        expect(SheepsheadPlugin.validateConfig(makeInputConfig({ partnerRule: rule }))).toBe(true);
       }
     });
 
     it('rejects invalid partner rule', () => {
       expect(
-        SheepsheadPlugin.validateConfig(makeConfig({ partnerRule: 'jack-of-diamonds' as any })),
+        SheepsheadPlugin.validateConfig(makeInputConfig({ partnerRule: 'jack-of-diamonds' })),
       ).toBe(false);
-      expect(SheepsheadPlugin.validateConfig(makeConfig({ partnerRule: 'none' as any }))).toBe(
-        false,
-      );
+      expect(SheepsheadPlugin.validateConfig(makeInputConfig({ partnerRule: 'none' }))).toBe(false);
     });
 
     it('accepts all valid picker rules', () => {
       for (const rule of ['autonomous', 'left-of-dealer', null]) {
-        expect(SheepsheadPlugin.validateConfig(makeConfig({ pickerRule: rule as any }))).toBe(true);
+        expect(SheepsheadPlugin.validateConfig(makeInputConfig({ pickerRule: rule }))).toBe(true);
       }
     });
 
     it('rejects invalid picker rule', () => {
-      expect(SheepsheadPlugin.validateConfig(makeConfig({ pickerRule: 'random' as any }))).toBe(
+      expect(SheepsheadPlugin.validateConfig(makeInputConfig({ pickerRule: 'random' }))).toBe(
         false,
       );
     });
@@ -74,12 +92,12 @@ describe('SheepsheadPlugin', () => {
     });
 
     it('rejects invalid playerCount', () => {
-      expect(SheepsheadPlugin.validateConfig(makeConfig({ playerCount: 1 as any }))).toBe(false);
-      expect(SheepsheadPlugin.validateConfig(makeConfig({ playerCount: 9 as any }))).toBe(false);
+      expect(SheepsheadPlugin.validateConfig(makeInputConfig({ playerCount: 1 }))).toBe(false);
+      expect(SheepsheadPlugin.validateConfig(makeInputConfig({ playerCount: 9 }))).toBe(false);
     });
 
     it('rejects missing boolean fields', () => {
-      const config = { ...makeConfig() } as Record<string, unknown>;
+      const config = { ...makeInputConfig() };
       delete config['cracking'];
       expect(SheepsheadPlugin.validateConfig(config)).toBe(false);
     });

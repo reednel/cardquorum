@@ -102,7 +102,7 @@ describe('deal with additional player counts', () => {
 
   it('deals correctly with cardsRemoved', () => {
     const deck = createShuffledDeck(['7c', '7s']);
-    const { hands, blind } = deal(deck, { playerCount: 4, handSize: 7, blindSize: 2 });
+    const { hands, blind } = deal(deck, { playerCount: 4 as const, handSize: 7, blindSize: 2 });
 
     expect(hands).toHaveLength(4);
     for (const hand of hands) {

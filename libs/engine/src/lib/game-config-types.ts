@@ -29,7 +29,7 @@ export interface GenericConfigPreset {
   readonly name: string;
   readonly label: string;
   readonly description: string;
-  readonly playerCount: number;
+  readonly allowedPlayerCounts: number[];
   readonly fields: Readonly<Record<string, ConfigFieldDef<unknown>>>;
 }
 

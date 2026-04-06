@@ -64,14 +64,14 @@ describe('Preset structural completeness', () => {
       name: 'minimal',
       label: 'Minimal',
       description: 'One field',
-      playerCount: 2,
+      allowedPlayerCounts: [2],
       fields: { score: { value: 0, mode: 'editable' } },
     },
     {
       name: 'mixed',
       label: 'Mixed Types',
       description: 'Various value types',
-      playerCount: 5,
+      allowedPlayerCounts: [5],
       fields: {
         flag: { value: true, mode: 'locked' },
         count: { value: 42, mode: 'editable' },
@@ -83,7 +83,7 @@ describe('Preset structural completeness', () => {
       name: 'large',
       label: 'Large',
       description: 'Many fields',
-      playerCount: 8,
+      allowedPlayerCounts: [8],
       fields: {
         a: { value: 1, mode: 'editable' },
         b: { value: false, mode: 'locked' },
@@ -105,8 +105,8 @@ describe('Preset structural completeness', () => {
       expect(p.label.length).toBeGreaterThan(0);
       expect(typeof p.description).toBe('string');
       expect(p.description.length).toBeGreaterThan(0);
-      expect(Number.isInteger(p.playerCount)).toBe(true);
-      expect(p.playerCount).toBeGreaterThan(0);
+      expect(Array.isArray(p.allowedPlayerCounts)).toBe(true);
+      expect(p.allowedPlayerCounts.length).toBeGreaterThan(0);
 
       for (const key of Object.keys(p.fields)) {
         const field = p.fields[key];

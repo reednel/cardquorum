@@ -129,7 +129,7 @@ export interface ConfigPreset {
   name: string;
   label: string;
   description: string;
-  playerCount: number;
+  allowedPlayerCounts: number[];
   fields: {
     handSize: ConfigFieldDef<number>;
     blindSize: ConfigFieldDef<number>;
@@ -242,7 +242,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
     name: 'two-handed',
     label: 'Two-Handed (2p)',
     description: 'No teams, no picking.',
-    playerCount: 2,
+    allowedPlayerCounts: [2],
     fields: {
       handSize: { value: 14, mode: 'locked' },
       blindSize: { value: 4, mode: 'locked' },
@@ -264,7 +264,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
     name: 'three-handed',
     label: 'Three-Handed (3p)',
     description: 'Picker plays alone against two opponents.',
-    playerCount: 3,
+    allowedPlayerCounts: [3],
     fields: {
       handSize: { value: 10, mode: 'locked' },
       blindSize: { value: 2, mode: 'locked' },
@@ -286,7 +286,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
     name: 'black-queens',
     label: 'Black Queens (4p)',
     description: 'Holders of the two black Queens are partners. Player with both goes alone.',
-    playerCount: 4,
+    allowedPlayerCounts: [4],
     fields: {
       handSize: { value: 8, mode: 'locked' },
       blindSize: { value: 0, mode: 'locked' },
@@ -308,7 +308,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
     label: 'Queen & 7 (4p)',
     description:
       'Queen of Clubs and 7 of Diamonds holders are partners. Player with both goes alone.',
-    playerCount: 4,
+    allowedPlayerCounts: [4],
     fields: {
       handSize: { value: 8, mode: 'locked' },
       blindSize: { value: 0, mode: 'locked' },
@@ -329,7 +329,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
     name: 'picker-alone',
     label: 'Picker Alone (4p)',
     description: 'Picker plays alone against three opponents.',
-    playerCount: 4,
+    allowedPlayerCounts: [4],
     fields: {
       handSize: { value: 7, mode: 'locked' },
       blindSize: { value: 4, mode: 'locked' },
@@ -350,7 +350,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
     name: 'called-ace',
     label: 'Called Ace (4p)',
     description: 'Black 7s removed. Picker calls a fail ace for partner.',
-    playerCount: 4,
+    allowedPlayerCounts: [4],
     fields: {
       handSize: { value: 7, mode: 'locked' },
       blindSize: { value: 2, mode: 'locked' },
@@ -372,7 +372,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
     name: 'called-ace',
     label: 'Called Ace (5p)',
     description: 'Picker calls a fail ace for partner.',
-    playerCount: 5,
+    allowedPlayerCounts: [5],
     fields: {
       handSize: { value: 6, mode: 'locked' },
       blindSize: { value: 2, mode: 'locked' },
@@ -393,7 +393,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
     name: 'jack-of-diamonds',
     label: 'Jack of Diamonds (5p)',
     description: 'Holder of the Jack of Diamonds is the partner.',
-    playerCount: 5,
+    allowedPlayerCounts: [5],
     fields: {
       handSize: { value: 6, mode: 'locked' },
       blindSize: { value: 2, mode: 'locked' },
@@ -415,7 +415,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
     label: 'Queen & Jack (5p)',
     description:
       'Black 7s removed. Queen of Spades and Jack of Clubs holders are partners. No blind.',
-    playerCount: 5,
+    allowedPlayerCounts: [5],
     fields: {
       handSize: { value: 6, mode: 'locked' },
       blindSize: { value: 0, mode: 'locked' },
@@ -436,7 +436,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
     name: 'first-trick',
     label: 'First Trick (5p)',
     description: 'Winner of the first trick is the partner.',
-    playerCount: 5,
+    allowedPlayerCounts: [5],
     fields: {
       handSize: { value: 6, mode: 'locked' },
       blindSize: { value: 2, mode: 'locked' },
@@ -457,7 +457,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
     name: 'schiller',
     label: 'Schiller (5p)',
     description: 'Player left of dealer must pick. Called ace for partner.',
-    playerCount: 5,
+    allowedPlayerCounts: [5],
     fields: {
       handSize: { value: 6, mode: 'locked' },
       blindSize: { value: 2, mode: 'locked' },
@@ -480,7 +480,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
     label: 'Jack of Clubs (6p)',
     description:
       'Partner is the Jack of Clubs. If picker has it, they can call another Jack or play alone.',
-    playerCount: 6,
+    allowedPlayerCounts: [6],
     fields: {
       handSize: { value: 5, mode: 'locked' },
       blindSize: { value: 2, mode: 'locked' },
@@ -503,7 +503,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
     label: 'Jack of Diamonds (7p)',
     description:
       'Partner is the Jack of Diamonds. If picker has it, they can call another Jack or play alone.',
-    playerCount: 7,
+    allowedPlayerCounts: [7],
     fields: {
       handSize: { value: 4, mode: 'locked' },
       blindSize: { value: 4, mode: 'locked' },
@@ -525,7 +525,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
     label: 'Partner Draft (7p)',
     description:
       'Picker draws 2 from blind. Player to their left is partner and draws the other 2.',
-    playerCount: 7,
+    allowedPlayerCounts: [7],
     fields: {
       handSize: { value: 4, mode: 'locked' },
       blindSize: { value: 4, mode: 'locked' },
@@ -547,7 +547,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
     name: 'black-queens',
     label: 'Black Queens (8p)',
     description: 'Black Queen holders are partners. Player with both goes alone. No blind.',
-    playerCount: 8,
+    allowedPlayerCounts: [8],
     fields: {
       handSize: { value: 4, mode: 'locked' },
       blindSize: { value: 0, mode: 'locked' },

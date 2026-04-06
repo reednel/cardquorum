@@ -103,7 +103,7 @@ export function makeNoPickScoreState(
 export function configFromPreset(preset: (typeof CONFIG_PRESETS)[number]): Record<string, unknown> {
   return {
     name: preset.name,
-    playerCount: preset.playerCount,
+    playerCount: preset.allowedPlayerCounts[0],
     ...Object.fromEntries(
       Object.entries(preset.fields).map(([k, f]) => [k, (f as { value: unknown }).value]),
     ),

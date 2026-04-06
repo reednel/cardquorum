@@ -47,7 +47,8 @@ describe('CONFIG_PRESETS', () => {
       const removed = preset.fields.cardsRemoved.value.length;
       const deckSize = 32 - removed;
       expect(
-        preset.playerCount * preset.fields.handSize.value + preset.fields.blindSize.value,
+        preset.allowedPlayerCounts[0] * preset.fields.handSize.value +
+          preset.fields.blindSize.value,
       ).toBe(deckSize);
     },
   );
@@ -71,7 +72,7 @@ describe('CONFIG_PRESETS', () => {
 describe('Preset-registry key alignment', () => {
   const registryKeys = new Set(Object.keys(SheepsheadConfigPlugin.fieldRegistry));
 
-  it.each(SheepsheadConfigPlugin.presets.map((p) => [p.name, p.playerCount, p] as const))(
+  it.each(SheepsheadConfigPlugin.presets.map((p) => [p.name, p.allowedPlayerCounts, p] as const))(
     'preset "%s" (%dp) fields match registry keys',
     (_name, _playerCount, preset) => {
       const presetKeys = new Set(Object.keys(preset.fields));
@@ -81,12 +82,12 @@ describe('Preset-registry key alignment', () => {
 });
 
 describe('Config schema validation round-trip', () => {
-  it.each(SheepsheadConfigPlugin.presets.map((p) => [p.name, p.playerCount, p] as const))(
+  it.each(SheepsheadConfigPlugin.presets.map((p) => [p.name, p.allowedPlayerCounts, p] as const))(
     'preset "%s" (%dp) flat config passes SheepsheadConfigSchema.safeParse()',
     (_name, _playerCount, preset) => {
       const flatConfig = {
         name: preset.name,
-        playerCount: preset.playerCount,
+        playerCount: preset.allowedPlayerCounts[0],
         ...Object.fromEntries(Object.entries(preset.fields).map(([k, f]) => [k, f.value])),
       };
 
@@ -144,7 +145,7 @@ describe('Sheepshead-specific verification', () => {
   });
 
   describe('Preset field counts', () => {
-    it.each(SheepsheadConfigPlugin.presets.map((p) => [p.name, p.playerCount, p] as const))(
+    it.each(SheepsheadConfigPlugin.presets.map((p) => [p.name, p.allowedPlayerCounts, p] as const))(
       'preset "%s" (%dp) has exactly 13 fields',
       (_name, _playerCount, preset) => {
         expect(Object.keys(preset.fields)).toHaveLength(13);
