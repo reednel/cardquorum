@@ -112,7 +112,7 @@ Game components use this same service. No separate WebSocket connection per game
 
 ## Game Config Plugin System
 
-Separate from the runtime `GamePlugin`, each game exports a `GameConfigPlugin` that tells the frontend how to render game configuration UI. This is defined in `@cardquorum/engine` alongside the runtime plugin types.
+Separate from the runtime `GamePlugin`, each game exports a `GameConfigPlugin` that tells the frontend how to render game configuration UI. This is defined in `@cardquorum/engine` alongside the runtime plugin types. For a deep dive on the config/preset data flow, see [game-config-and-presets.md](game-config-and-presets.md).
 
 ### Types (from `@cardquorum/engine`)
 
@@ -140,7 +140,7 @@ interface GenericConfigPreset {
   readonly name: string;
   readonly label: string;
   readonly description: string;
-  readonly playerCount: number;
+  readonly allowedPlayerCounts: number[];
   readonly fields: Readonly<Record<string, ConfigFieldDef<unknown>>>;
 }
 
