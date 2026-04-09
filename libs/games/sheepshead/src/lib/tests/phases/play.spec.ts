@@ -1,4 +1,4 @@
-import { handlePlayCard } from '../../phases';
+import { handlePlayCard, handleTrickAdvance } from '../../phases';
 import { SheepsheadConfig, SheepsheadState } from '../../types';
 import { card, makeConfig } from '../test-helpers';
 
@@ -316,11 +316,19 @@ describe('handlePlayCard', () => {
     s = handlePlayCard(s, { type: 'play_card', userID: 2, payload: { card: card('qc') } }, config);
     s = handlePlayCard(s, { type: 'play_card', userID: 3, payload: { card: card('as') } }, config);
 
-    // Player 2 won the last (only) trick — should get blind points too
-    expect(s.phase).toBe('score');
+    // Player 2 won the last (only) trick — pending state before advancing
+    expect(s.phase).toBe('play');
+    expect(s.scheduledEvents).toBeDefined();
+    expect(s.activePlayer).toBeNull();
+
+    // Blind points awarded in the pending state
     // Trick points: ac(11) + qc(3) + as(11) = 25, blind: 20 → total 45
     expect(s.players[1].pointsWon).toBe(25 + 20);
     expect(s.players[1].cardsWon).toHaveLength(3 + 2); // 3 trick cards + 2 blind cards
+
+    // Advancing transitions to score
+    const scored = handleTrickAdvance(s);
+    expect(scored.phase).toBe('score');
   });
 
   it('transitions to score when all cards played', () => {
@@ -399,7 +407,14 @@ describe('handlePlayCard', () => {
       config,
     );
 
-    expect(s.phase).toBe('score');
+    // Pending state — trick complete but not yet advanced
+    expect(s.phase).toBe('play');
+    expect(s.scheduledEvents).toBeDefined();
     expect(s.activePlayer).toBeNull();
+
+    // Advancing transitions to score
+    const scored = handleTrickAdvance(s);
+    expect(scored.phase).toBe('score');
+    expect(scored.activePlayer).toBeNull();
   });
 });

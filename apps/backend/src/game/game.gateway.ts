@@ -115,13 +115,11 @@ export class GameGateway implements OnModuleInit {
     const tracked = this.connectionService.getTracked(client);
     if (!tracked) return;
 
-    try {
-      const result = await this.gameService.applyAction(
-        payload.sessionId,
-        tracked.identity.userId,
-        payload.action,
-      );
-
+    const broadcastFn = (result: {
+      gameOver: boolean;
+      playerViews: Array<[number, { state: unknown; validActions: string[] }]>;
+      store?: unknown;
+    }) => {
       if (result.gameOver) {
         this.sendToPlayers(
           result.playerViews.map(([id]) => id),
@@ -131,6 +129,17 @@ export class GameGateway implements OnModuleInit {
       } else {
         this.sendPlayerViews(result.playerViews, payload.sessionId, WS_EMIT.GAME_STATE_UPDATE);
       }
+    };
+
+    try {
+      const result = await this.gameService.applyAction(
+        payload.sessionId,
+        tracked.identity.userId,
+        payload.action,
+        broadcastFn,
+      );
+
+      broadcastFn(result);
     } catch (err) {
       this.logger.warn(`game:action failed for session ${payload.sessionId}: ${err}`);
       this.send(client, WS_EMIT.GAME_ERROR, {

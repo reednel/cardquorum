@@ -497,7 +497,8 @@ export function handlePlayCard(
 }
 
 /**
- * Complete a trick: evaluate winner, update stats, check for game end.
+ * Complete a trick: evaluate winner, update stats, set scheduledEvents for trick_advance.
+ * Does NOT start a new trick or transition to score — that is handled by handleTrickAdvance.
  */
 function completeTrick(
   state: SheepsheadState,
@@ -537,42 +538,57 @@ function completeTrick(
 
   const completedTricks = tricks.map((t, i) => (i === currentTrickIdx ? completedTrick : t));
 
-  // Check if all tricks played (account for hole card: picker may have fewer cards)
+  // Leaster final trick: award blind points to winner BEFORE setting scheduledEvents
   const totalCards = players.reduce((sum, p) => sum + p.hand.length, 0);
-  if (totalCards === 0) {
-    // Leaster: last trick winner takes the blind points
-    let finalPlayers = players;
-    if (state.noPick === 'leaster' && state.blind && state.blind.length > 0) {
-      const blindPoints = sumPoints(state.blind);
-      finalPlayers = players.map((p) => {
-        if (p.userID === winnerID) {
-          return {
-            ...p,
-            pointsWon: p.pointsWon + blindPoints,
-            cardsWon: [...p.cardsWon, ...state.blind!],
-          };
-        }
-        return p;
-      });
-    }
-
-    // All tricks played — transition to score
-    return {
-      ...state,
-      players: finalPlayers,
-      tricks: completedTricks,
-      phase: 'score',
-      activePlayer: null,
-    };
+  if (totalCards === 0 && state.noPick === 'leaster' && state.blind && state.blind.length > 0) {
+    const blindPoints = sumPoints(state.blind);
+    players = players.map((p) => {
+      if (p.userID === winnerID) {
+        return {
+          ...p,
+          pointsWon: p.pointsWon + blindPoints,
+          cardsWon: [...p.cardsWon, ...state.blind!],
+        };
+      }
+      return p;
+    });
   }
 
-  // Start new trick, winner leads
+  // Return pending state — trick is complete but no advancement yet
   return {
     ...state,
     players,
-    tricks: [...completedTricks, { plays: [], winner: null }],
-    trickNumber: state.trickNumber + 1,
-    activePlayer: winnerID,
+    tricks: completedTricks,
+    activePlayer: null,
+    scheduledEvents: [{ event: { type: 'trick_advance' }, delayMs: 2000 }],
+  };
+}
+
+/**
+ * Handle trick_advance event: start a new trick or transition to score.
+ * Called after the trick-completion pause timer fires.
+ */
+export function handleTrickAdvance(state: SheepsheadState): SheepsheadState {
+  const totalCards = state.players.reduce((sum, p) => sum + p.hand.length, 0);
+  const lastTrick = state.tricks[state.tricks.length - 1];
+
+  if (totalCards > 0) {
+    // Cards remain — start a new trick
+    return {
+      ...state,
+      scheduledEvents: undefined,
+      trickNumber: state.trickNumber + 1,
+      activePlayer: lastTrick.winner,
+      tricks: [...state.tricks, { plays: [], winner: null }],
+    };
+  }
+
+  // No cards remain — transition to score phase
+  return {
+    ...state,
+    scheduledEvents: undefined,
+    phase: 'score' as const,
+    activePlayer: null,
   };
 }
 

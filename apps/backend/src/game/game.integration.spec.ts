@@ -42,6 +42,8 @@ describe('GameService integration (full Sheepshead game)', () => {
   };
 
   beforeEach(() => {
+    jest.useFakeTimers();
+
     mockSessionRepo = {
       create: jest.fn().mockResolvedValue({ id: 1 }),
       updateStatusAndTimestamp: jest.fn().mockResolvedValue({}),
@@ -81,6 +83,7 @@ describe('GameService integration (full Sheepshead game)', () => {
 
   afterEach(() => {
     service.onModuleDestroy();
+    jest.useRealTimers();
   });
 
   function getView(
@@ -108,14 +111,33 @@ describe('GameService integration (full Sheepshead game)', () => {
   }
 
   /**
+   * Helper to get fresh player views from the service after a scheduled event fires.
+   */
+  function getFreshViews(
+    sessionId: number,
+  ): Array<[number, { state: unknown; validActions: string[] }]> {
+    const views: Array<[number, { state: unknown; validActions: string[] }]> = [];
+    for (const uid of userIDs) {
+      const v = service.getPlayerView(sessionId, uid);
+      if (v) views.push([uid, v]);
+    }
+    return views;
+  }
+
+  /**
    * Drive a game from deal through to game over.
    * Always picks with the first eligible player, plays the first legal card.
+   * Handles the two-step trick completion: after the last card of a trick,
+   * activePlayer is null (pending state with scheduledEvents). We advance
+   * fake timers to fire the trick_advance event, then get fresh views.
    */
   async function driveFullGame(sessionId: number): Promise<{
     gameOver: boolean;
     playerViews: Array<[number, { state: unknown; validActions: string[] }]>;
     store?: unknown;
   }> {
+    const broadcastFn = jest.fn();
+
     // Deal
     let result = await service.applyAction(sessionId, getActiveFromService(sessionId), {
       type: 'deal',
@@ -152,16 +174,34 @@ describe('GameService integration (full Sheepshead game)', () => {
     safety = 0;
     while (phase === 'play' && safety++ < 100) {
       const active = getActivePlayer(result.playerViews);
+
+      if (active === null) {
+        // Pending state — advance timers to fire trick_advance
+        jest.advanceTimersByTime(2000);
+
+        // Get fresh views after trick_advance fired
+        const views = getFreshViews(sessionId);
+        if (views.length === 0) break; // game ended via scheduled event
+        result = { gameOver: false, playerViews: views };
+        phase = getPhase(result.playerViews);
+        continue;
+      }
+
       const view = getView(result.playerViews, active);
       const hand = view.players.find((p: any) => p.userID === active).hand;
 
       let played = false;
       for (const card of hand) {
         try {
-          result = await service.applyAction(sessionId, active, {
-            type: 'play_card',
-            payload: { card },
-          });
+          result = await service.applyAction(
+            sessionId,
+            active,
+            {
+              type: 'play_card',
+              payload: { card },
+            },
+            broadcastFn,
+          );
           played = true;
           break;
         } catch {
@@ -171,6 +211,17 @@ describe('GameService integration (full Sheepshead game)', () => {
       if (!played) throw new Error(`No legal play found for user ${active}`);
 
       phase = getPhase(result.playerViews);
+    }
+
+    // The score phase might be reached via a scheduled event (trick_advance → score).
+    // If we broke out of the loop because views were empty, check broadcastFn for game-over.
+    if (phase !== 'score') {
+      // Check if broadcastFn was called with a score phase
+      const views = getFreshViews(sessionId);
+      if (views.length > 0) {
+        result = { gameOver: false, playerViews: views };
+        phase = getPhase(result.playerViews);
+      }
     }
 
     // Score phase

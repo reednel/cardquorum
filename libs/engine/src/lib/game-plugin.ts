@@ -1,3 +1,12 @@
+export interface ScheduledEvent {
+  event: { type: string; payload?: unknown };
+  delayMs: number;
+}
+
+export type WithScheduledEvents = {
+  scheduledEvents?: ScheduledEvent[];
+};
+
 export interface GameEventBase {
   type: string;
   userID?: number;

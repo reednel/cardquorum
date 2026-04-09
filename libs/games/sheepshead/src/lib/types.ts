@@ -1,3 +1,4 @@
+import type { ScheduledEvent } from '@cardquorum/engine';
 import type { NoPick } from './config';
 
 export type { FieldMode, ConfigFieldDef, SelectFieldDef } from '@cardquorum/engine';
@@ -74,6 +75,8 @@ export interface SheepsheadState {
   noPick: NoPick | null;
   /** Hands/blinds from previous deals when doubler caused a redeal. */
   redeals: RedealRecord[] | null;
+  /** Scheduled delayed events (e.g., trick-advance pause). */
+  scheduledEvents?: ScheduledEvent[];
 }
 
 /**
@@ -160,7 +163,8 @@ export type SheepsheadEvent =
   | ReCrackEvent
   | BlitzEvent
   | PlayCardEvent
-  | GameScoredEvent;
+  | GameScoredEvent
+  | TrickAdvanceEvent;
 
 export interface DealEvent {
   type: 'deal';
@@ -217,6 +221,10 @@ export interface GameScoredEvent {
     gotSchneidered: boolean;
     gotSchwarzed: boolean;
   };
+}
+
+export interface TrickAdvanceEvent {
+  type: 'trick_advance';
 }
 
 /** String literal union of all event type names. */

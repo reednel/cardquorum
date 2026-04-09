@@ -683,6 +683,53 @@ describe('SheepsheadPlugin', () => {
     });
   });
 
+  describe('trick_advance through applyEvent', () => {
+    it('advances a pending trick-completion state to the next trick or score', () => {
+      const config = makeConfig({ partnerRule: 'jd' });
+      const userIDs: UserID[] = [1, 2, 3];
+
+      let state = SheepsheadPlugin.createInitialState(config, userIDs);
+      state = SheepsheadPlugin.applyEvent(config, state, { type: 'deal' });
+      state = SheepsheadPlugin.applyEvent(config, state, { type: 'pick', userID: 2 });
+      const toBury = state.players[1].hand.slice(0, 2);
+      state = SheepsheadPlugin.applyEvent(config, state, {
+        type: 'bury',
+        userID: 2,
+        payload: { cards: toBury },
+      });
+      expect(state.phase).toBe('play');
+
+      // Play one full trick
+      const { legalPlays } = require('../tricks');
+      for (let i = 0; i < userIDs.length; i++) {
+        const active = state.activePlayer!;
+        const cardToPlay = legalPlays(state, config, active).cards[0];
+        state = SheepsheadPlugin.applyEvent(config, state, {
+          type: 'play_card',
+          userID: active,
+          payload: { card: cardToPlay },
+        });
+      }
+
+      // After a full trick, state should be pending with scheduledEvents
+      expect(state.activePlayer).toBeNull();
+      expect(state.scheduledEvents).toEqual([{ event: { type: 'trick_advance' }, delayMs: 2000 }]);
+
+      // Apply trick_advance through the plugin's applyEvent
+      state = SheepsheadPlugin.applyEvent(config, state, { type: 'trick_advance' });
+
+      // Should have advanced: either new trick started or moved to score
+      expect(state.scheduledEvents).toBeUndefined();
+      if (state.phase === 'play') {
+        expect(state.activePlayer).not.toBeNull();
+        expect(state.trickNumber).toBe(2);
+      } else {
+        expect(state.phase).toBe('score');
+        expect(state.activePlayer).toBeNull();
+      }
+    });
+  });
+
   describe('integration: full game flow', () => {
     it('deal → pick → bury → play → score', () => {
       const config = makeConfig({ partnerRule: 'jd' });
@@ -717,7 +764,13 @@ describe('SheepsheadPlugin', () => {
       // Play all tricks
       let trickCount = 0;
       while (state.phase === 'play') {
-        const activePlayer = state.activePlayer!;
+        if (state.activePlayer === null) {
+          // Pending state — advance past the trick-completion pause
+          state = SheepsheadPlugin.applyEvent(config, state, { type: 'trick_advance' });
+          continue;
+        }
+
+        const activePlayer = state.activePlayer;
         const playerIdx = state.players.findIndex((p) => p.userID === activePlayer);
         const hand = state.players[playerIdx].hand;
         const currentTrick = state.tricks[state.tricks.length - 1];

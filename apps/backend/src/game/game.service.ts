@@ -1,9 +1,15 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { GameSessionRepository } from '@cardquorum/db';
-import { GamePlugin } from '@cardquorum/engine';
+import { GamePlugin, WithScheduledEvents } from '@cardquorum/engine';
 import { SheepsheadPlugin } from '@cardquorum/sheepshead';
 import { RoomService } from '../room/room.service';
 import { resolveCancellationStatus } from './game-status';
+
+type BroadcastFn = (result: {
+  gameOver: boolean;
+  playerViews: Array<[number, { state: unknown; validActions: string[] }]>;
+  store?: unknown;
+}) => void;
 
 interface ActiveGame {
   sessionId: number;
@@ -34,6 +40,9 @@ export class GameService implements OnModuleDestroy {
 
   /** roomId → sessionId (reverse lookup for reconnection) */
   private readonly roomToSession = new Map<number, number>();
+
+  /** sessionId → array of pending scheduled-event timer handles */
+  private readonly pendingTimers = new Map<number, ReturnType<typeof setTimeout>[]>();
 
   private sweepTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -161,11 +170,16 @@ export class GameService implements OnModuleDestroy {
     sessionId: number,
     userID: number,
     action: { type: string; payload?: unknown },
+    broadcastFn?: BroadcastFn,
   ): Promise<{
     gameOver: boolean;
     playerViews: Array<[number, { state: unknown; validActions: string[] }]>;
     store?: unknown;
   }> {
+    if (this.isActionBlocked(sessionId)) {
+      throw new Error('A transition is in progress');
+    }
+
     const game = this.activeGames.get(sessionId);
     if (!game) {
       throw new Error(`Game session ${sessionId} not found`);
@@ -187,6 +201,24 @@ export class GameService implements OnModuleDestroy {
     const event = { type: action.type, userID, payload: action.payload };
     const newState = plugin.applyEvent(game.config as any, game.state as any, event);
     game.state = newState;
+
+    // Check for scheduled events and set up timers
+    const stateWithScheduled = newState as WithScheduledEvents;
+    if (
+      broadcastFn &&
+      stateWithScheduled.scheduledEvents &&
+      stateWithScheduled.scheduledEvents.length > 0
+    ) {
+      const timers: ReturnType<typeof setTimeout>[] = [];
+      for (const scheduledEvent of stateWithScheduled.scheduledEvents) {
+        const handle = setTimeout(
+          () => this.processScheduledEvent(sessionId, scheduledEvent.event, broadcastFn),
+          scheduledEvent.delayMs,
+        );
+        timers.push(handle);
+      }
+      this.pendingTimers.set(sessionId, timers);
+    }
 
     const gameOver = plugin.isGameOver(newState);
 
@@ -228,6 +260,7 @@ export class GameService implements OnModuleDestroy {
     const finalStatus = resolveCancellationStatus(game.status, 'owner-cancel');
     await this.sessionRepo.updateStatusAndTimestamp(sessionId, finalStatus, 'finishedAt');
 
+    this.clearPendingTimers(sessionId);
     this.activeGames.delete(sessionId);
     this.roomToSession.delete(game.roomId);
 
@@ -278,6 +311,7 @@ export class GameService implements OnModuleDestroy {
     const finalStatus = resolveCancellationStatus(game.status, 'room-delete');
     await this.sessionRepo.updateStatusAndTimestamp(sessionId, finalStatus, 'finishedAt');
 
+    this.clearPendingTimers(sessionId);
     this.activeGames.delete(sessionId);
     this.roomToSession.delete(roomId);
 
@@ -350,6 +384,86 @@ export class GameService implements OnModuleDestroy {
       config: game.config,
       ...view,
     };
+  }
+
+  private processScheduledEvent(
+    sessionId: number,
+    event: { type: string; payload?: unknown },
+    broadcastFn: BroadcastFn,
+  ): void {
+    const game = this.activeGames.get(sessionId);
+    if (!game) return; // stale session — silently bail
+
+    const plugin = this.plugins.get(game.gameType)!;
+
+    const newState = plugin.applyEvent(game.config as any, game.state as any, event);
+    game.state = newState;
+
+    // Remove the fired timer from pendingTimers
+    const timers = this.pendingTimers.get(sessionId);
+    if (timers) {
+      timers.shift();
+    }
+
+    const gameOver = plugin.isGameOver(newState);
+
+    if (gameOver) {
+      const store = plugin.buildStore(game.config as any, newState);
+      const playerViews = this.buildPlayerViews(game, plugin);
+
+      this.sessionRepo
+        .updateStore(sessionId, store)
+        .then(() => this.sessionRepo.updateStatusAndTimestamp(sessionId, 'finished', 'finishedAt'));
+
+      this.activeGames.delete(sessionId);
+      this.roomToSession.delete(game.roomId);
+      this.pendingTimers.delete(sessionId);
+
+      this.logger.log(`Game session ${sessionId} finished (scheduled event)`);
+
+      this.roomService.rotateSeat(game.roomId);
+
+      broadcastFn({ gameOver: true, playerViews, store });
+      return;
+    }
+
+    const playerViews = this.buildPlayerViews(game, plugin);
+    broadcastFn({ gameOver: false, playerViews });
+
+    // Check for chained scheduledEvents
+    const stateWithScheduled = newState as WithScheduledEvents;
+    if (stateWithScheduled.scheduledEvents && stateWithScheduled.scheduledEvents.length > 0) {
+      const chainedTimers = this.pendingTimers.get(sessionId) ?? [];
+      for (const scheduledEvent of stateWithScheduled.scheduledEvents) {
+        const handle = setTimeout(
+          () => this.processScheduledEvent(sessionId, scheduledEvent.event, broadcastFn),
+          scheduledEvent.delayMs,
+        );
+        chainedTimers.push(handle);
+      }
+      this.pendingTimers.set(sessionId, chainedTimers);
+    }
+
+    // If no more pending timers, clean up the entry
+    const remaining = this.pendingTimers.get(sessionId);
+    if (remaining && remaining.length === 0) {
+      this.pendingTimers.delete(sessionId);
+    }
+  }
+
+  private clearPendingTimers(sessionId: number): void {
+    const timers = this.pendingTimers.get(sessionId);
+    if (timers) {
+      for (const handle of timers) {
+        clearTimeout(handle);
+      }
+      this.pendingTimers.delete(sessionId);
+    }
+  }
+
+  private isActionBlocked(sessionId: number): boolean {
+    const timers = this.pendingTimers.get(sessionId);
+    return timers !== undefined && timers.length > 0;
   }
 
   private isUserInRoom(roomId: number, userId: number): boolean {

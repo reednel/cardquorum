@@ -7,7 +7,12 @@ export {
   rotateSeat,
   handleDisconnect,
 } from './lib/roster-logic';
-export type { GamePlugin, GameEventBase } from './lib/game-plugin';
+export type {
+  GamePlugin,
+  GameEventBase,
+  ScheduledEvent,
+  WithScheduledEvents,
+} from './lib/game-plugin';
 export type {
   FieldMode,
   ConfigFieldDef,

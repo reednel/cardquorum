@@ -7,6 +7,7 @@ import {
   handlePick,
   handlePlayCard,
   handleScore,
+  handleTrickAdvance,
 } from './phases';
 import { legalPlays } from './tricks';
 import {
@@ -92,6 +93,11 @@ function getValidActions(
     case 'call':
       return state.activePlayer === userID ? ['call_ace'] : [];
     case 'play': {
+      // Pending state: last trick has a winner and no subsequent empty trick exists
+      if (state.tricks.length > 0 && state.tricks[state.tricks.length - 1].winner !== null) {
+        return [];
+      }
+
       if (state.activePlayer === userID) {
         actions.push('play_card');
       }
@@ -183,6 +189,8 @@ function applyEvent(
       const blitz: BlitzState = { type: event.payload.blitzType, blitzedBy: event.userID };
       return { ...state, blitz };
     }
+    case 'trick_advance':
+      return handleTrickAdvance(state);
     default:
       throw new Error(`Unknown event type: ${(event as { type: string }).type}`);
   }
@@ -230,17 +238,31 @@ function getPlayerView(
 
   // Include only the current (in-progress) trick so the client can render
   // played cards on the table. Completed tricks are hidden.
+  // During trick-completion pause (last trick has winner, no empty trick follows),
+  // include the completed trick so players can see the cards and winner.
+  const isPendingState =
+    state.phase === 'play' &&
+    state.tricks.length > 0 &&
+    state.tricks[state.tricks.length - 1].winner !== null;
+
   let tricks: TrickState[] = [];
   if (state.phase === 'play' && state.tricks.length > 0) {
-    const current = state.tricks[state.tricks.length - 1];
-    if (current && current.winner === null) {
-      tricks = [current];
+    if (isPendingState) {
+      tricks = [state.tricks[state.tricks.length - 1]];
+    } else {
+      const current = state.tricks[state.tricks.length - 1];
+      if (current && current.winner === null) {
+        tricks = [current];
+      }
     }
   }
 
   // Include legal card names so the client can dim illegal cards.
+  // During trick-completion pause, no cards are playable.
   let legalCardNames: string[] | null = null;
-  if (state.phase === 'play' && state.activePlayer === userID && state.tricks.length > 0) {
+  if (isPendingState) {
+    legalCardNames = null;
+  } else if (state.phase === 'play' && state.activePlayer === userID && state.tricks.length > 0) {
     const { cards } = legalPlays(state, config, userID);
     legalCardNames = cards.map((c) => c.name);
   }

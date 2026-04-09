@@ -436,6 +436,400 @@ describe('GameService', () => {
     });
   });
 
+  describe('action blocking during pending scheduled timers', () => {
+    async function setupActiveGame(): Promise<number> {
+      roomService.manager.joinRoom('1', 'conn-1', aliceIdentity);
+      roomService.manager.joinRoom('1', 'conn-2', bobIdentity);
+      roomService.manager.joinRoom('1', 'conn-3', charlieIdentity);
+      roomService.getRoster.mockResolvedValue(
+        buildRoster([aliceIdentity, bobIdentity, charlieIdentity]),
+      );
+
+      await service.createSession(1, 'sheepshead', validConfig, 1);
+      await service.startSession(1, 1);
+      return 1;
+    }
+
+    function getActivePlayer(
+      playerViews: Array<[number, { state: unknown; validActions: string[] }]>,
+    ): number | null {
+      return (playerViews[0][1].state as any).activePlayer;
+    }
+
+    function getPhase(
+      playerViews: Array<[number, { state: unknown; validActions: string[] }]>,
+    ): string {
+      return (playerViews[0][1].state as any).phase;
+    }
+
+    function getPlayerHand(
+      playerViews: Array<[number, { state: unknown; validActions: string[] }]>,
+      userId: number,
+    ): any[] {
+      const view = playerViews.find(([id]) => id === userId)?.[1]?.state as any;
+      return view.players.find((p: any) => p.userID === userId).hand;
+    }
+
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    /**
+     * Drive the game from deal through bury into the play phase,
+     * then play one full trick (3 cards) to trigger scheduledEvents.
+     * Returns the result of the last play_card action.
+     */
+    async function driveToCompletedTrick(sessionId: number): Promise<{
+      result: {
+        gameOver: boolean;
+        playerViews: Array<[number, { state: unknown; validActions: string[] }]>;
+      };
+      broadcastFn: jest.Mock;
+    }> {
+      const broadcastFn = jest.fn();
+
+      // Deal — with left-of-dealer, auto-picks and goes to bury
+      let result = await service.applyAction(sessionId, 1, { type: 'deal' }, broadcastFn);
+      let phase = getPhase(result.playerViews);
+
+      // Bury phase — picker buries first 2 cards from hand
+      if (phase === 'bury') {
+        const active = getActivePlayer(result.playerViews)!;
+        const hand = getPlayerHand(result.playerViews, active);
+        result = await service.applyAction(
+          sessionId,
+          active,
+          { type: 'bury', payload: { cards: hand.slice(0, validConfig.blindSize) } },
+          broadcastFn,
+        );
+        phase = getPhase(result.playerViews);
+      }
+
+      expect(phase).toBe('play');
+
+      // Play one full trick (3 cards, one per player)
+      for (let i = 0; i < 3; i++) {
+        const active = getActivePlayer(result.playerViews)!;
+        const hand = getPlayerHand(result.playerViews, active);
+
+        let played = false;
+        for (const card of hand) {
+          try {
+            result = await service.applyAction(
+              sessionId,
+              active,
+              { type: 'play_card', payload: { card } },
+              broadcastFn,
+            );
+            played = true;
+            break;
+          } catch {
+            continue;
+          }
+        }
+        if (!played) throw new Error(`No legal play found for user ${active}`);
+      }
+
+      return { result, broadcastFn };
+    }
+
+    it('should reject player actions while scheduled timers are pending', async () => {
+      const sessionId = await setupActiveGame();
+      await driveToCompletedTrick(sessionId);
+
+      // Any action should be rejected while timers are pending
+      await expect(
+        service.applyAction(sessionId, 1, { type: 'play_card', payload: { card: { name: 'ac' } } }),
+      ).rejects.toThrow('A transition is in progress');
+    });
+
+    it('should accept player actions after all scheduled timers fire', async () => {
+      const sessionId = await setupActiveGame();
+      const { broadcastFn } = await driveToCompletedTrick(sessionId);
+
+      // Timers are pending — actions blocked
+      await expect(
+        service.applyAction(sessionId, 1, { type: 'play_card', payload: { card: { name: 'ac' } } }),
+      ).rejects.toThrow('A transition is in progress');
+
+      // Advance timers to fire the trick_advance event
+      jest.advanceTimersByTime(2000);
+
+      // broadcastFn should have been called by processScheduledEvent
+      expect(broadcastFn).toHaveBeenCalled();
+
+      // Now actions should be accepted — get the current active player and play a card
+      const view = service.getPlayerView(sessionId, 1);
+      expect(view).not.toBeNull();
+
+      const activePlayer = (view!.state as any).activePlayer;
+      expect(activePlayer).not.toBeNull();
+
+      const activeView = service.getPlayerView(sessionId, activePlayer)!;
+      const hand = (activeView.state as any).players.find(
+        (p: any) => p.userID === activePlayer,
+      ).hand;
+
+      // Try playing a card — should not throw "A transition is in progress"
+      let accepted = false;
+      for (const card of hand) {
+        try {
+          await service.applyAction(
+            sessionId,
+            activePlayer,
+            { type: 'play_card', payload: { card } },
+            broadcastFn,
+          );
+          accepted = true;
+          break;
+        } catch (e: any) {
+          // "A transition is in progress" means timers are still pending — that's a failure
+          if (e.message === 'A transition is in progress') {
+            throw e;
+          }
+          // Other errors (illegal play) are fine — try next card
+          continue;
+        }
+      }
+      expect(accepted).toBe(true);
+    });
+  });
+
+  describe('timer cleanup on session end', () => {
+    async function setupActiveGame(): Promise<number> {
+      roomService.manager.joinRoom('1', 'conn-1', aliceIdentity);
+      roomService.manager.joinRoom('1', 'conn-2', bobIdentity);
+      roomService.manager.joinRoom('1', 'conn-3', charlieIdentity);
+      roomService.getRoster.mockResolvedValue(
+        buildRoster([aliceIdentity, bobIdentity, charlieIdentity]),
+      );
+
+      await service.createSession(1, 'sheepshead', validConfig, 1);
+      await service.startSession(1, 1);
+      return 1;
+    }
+
+    function getActivePlayer(
+      playerViews: Array<[number, { state: unknown; validActions: string[] }]>,
+    ): number | null {
+      return (playerViews[0][1].state as any).activePlayer;
+    }
+
+    function getPhase(
+      playerViews: Array<[number, { state: unknown; validActions: string[] }]>,
+    ): string {
+      return (playerViews[0][1].state as any).phase;
+    }
+
+    function getPlayerHand(
+      playerViews: Array<[number, { state: unknown; validActions: string[] }]>,
+      userId: number,
+    ): any[] {
+      const view = playerViews.find(([id]) => id === userId)?.[1]?.state as any;
+      return view.players.find((p: any) => p.userID === userId).hand;
+    }
+
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    async function driveToCompletedTrick(sessionId: number): Promise<{
+      result: {
+        gameOver: boolean;
+        playerViews: Array<[number, { state: unknown; validActions: string[] }]>;
+      };
+      broadcastFn: jest.Mock;
+    }> {
+      const broadcastFn = jest.fn();
+
+      let result = await service.applyAction(sessionId, 1, { type: 'deal' }, broadcastFn);
+      let phase = getPhase(result.playerViews);
+
+      if (phase === 'bury') {
+        const active = getActivePlayer(result.playerViews)!;
+        const hand = getPlayerHand(result.playerViews, active);
+        result = await service.applyAction(
+          sessionId,
+          active,
+          { type: 'bury', payload: { cards: hand.slice(0, validConfig.blindSize) } },
+          broadcastFn,
+        );
+        phase = getPhase(result.playerViews);
+      }
+
+      expect(phase).toBe('play');
+
+      for (let i = 0; i < 3; i++) {
+        const active = getActivePlayer(result.playerViews)!;
+        const hand = getPlayerHand(result.playerViews, active);
+
+        let played = false;
+        for (const card of hand) {
+          try {
+            result = await service.applyAction(
+              sessionId,
+              active,
+              { type: 'play_card', payload: { card } },
+              broadcastFn,
+            );
+            played = true;
+            break;
+          } catch {
+            continue;
+          }
+        }
+        if (!played) throw new Error(`No legal play found for user ${active}`);
+      }
+
+      return { result, broadcastFn };
+    }
+
+    it('should clear pending timers when cancelling a session', async () => {
+      const sessionId = await setupActiveGame();
+      await driveToCompletedTrick(sessionId);
+
+      // Timers are pending — actions are blocked
+      await expect(
+        service.applyAction(sessionId, 1, { type: 'play_card', payload: { card: { name: 'ac' } } }),
+      ).rejects.toThrow('A transition is in progress');
+
+      // Cancel the session
+      await service.cancelSession(sessionId, 1);
+
+      // Advance timers — the scheduled event should NOT fire (no broadcast, no error)
+      const broadcastSpy = jest.fn();
+      jest.advanceTimersByTime(5000);
+
+      // Session is gone — getPlayerView returns null
+      expect(service.getPlayerView(sessionId, 1)).toBeNull();
+      expect(broadcastSpy).not.toHaveBeenCalled();
+    });
+
+    it('should clear pending timers when force-cleaning a room', async () => {
+      const sessionId = await setupActiveGame();
+      await driveToCompletedTrick(sessionId);
+
+      // Timers are pending
+      await expect(
+        service.applyAction(sessionId, 1, { type: 'play_card', payload: { card: { name: 'ac' } } }),
+      ).rejects.toThrow('A transition is in progress');
+
+      // Force-cleanup the room
+      const cleaned = await service.forceCleanupRoom(1);
+      expect(cleaned).toBe(sessionId);
+
+      // Advance timers — the scheduled event should NOT fire
+      jest.advanceTimersByTime(5000);
+
+      // Session is gone
+      expect(service.getPlayerView(sessionId, 1)).toBeNull();
+    });
+
+    it('should clear timer references when game ends via scheduled event', async () => {
+      const sessionId = await setupActiveGame();
+      const broadcastFn = jest.fn();
+
+      let result = await service.applyAction(sessionId, 1, { type: 'deal' }, broadcastFn);
+      let phase = getPhase(result.playerViews);
+
+      if (phase === 'bury') {
+        const active = getActivePlayer(result.playerViews)!;
+        const hand = getPlayerHand(result.playerViews, active);
+        result = await service.applyAction(
+          sessionId,
+          active,
+          { type: 'bury', payload: { cards: hand.slice(0, validConfig.blindSize) } },
+          broadcastFn,
+        );
+        phase = getPhase(result.playerViews);
+      }
+
+      expect(phase).toBe('play');
+
+      // Play all tricks until score phase, advancing timers between tricks
+      let gameOver = false;
+      const totalCards = validConfig.handSize * validConfig.playerCount;
+      for (let cardCount = 0; cardCount < totalCards && !gameOver; ) {
+        const active = getActivePlayer(result.playerViews);
+        if (active === null) {
+          // In pending state — advance timers to fire trick_advance
+          jest.advanceTimersByTime(2000);
+
+          // Check if game ended via broadcast
+          const lastCall = broadcastFn.mock.calls[broadcastFn.mock.calls.length - 1];
+          if (lastCall && lastCall[0].gameOver) {
+            gameOver = true;
+            break;
+          }
+
+          // Get fresh view after trick_advance
+          const views: Array<[number, { state: unknown; validActions: string[] }]> = [];
+          for (const uid of [1, 2, 3]) {
+            const v = service.getPlayerView(sessionId, uid);
+            if (v) views.push([uid, v]);
+          }
+          if (views.length === 0) {
+            gameOver = true;
+            break;
+          }
+          result = { gameOver: false, playerViews: views };
+          continue;
+        }
+
+        const hand = getPlayerHand(result.playerViews, active);
+        let played = false;
+        for (const card of hand) {
+          try {
+            result = await service.applyAction(
+              sessionId,
+              active,
+              { type: 'play_card', payload: { card } },
+              broadcastFn,
+            );
+            played = true;
+            cardCount++;
+            if (result.gameOver) {
+              gameOver = true;
+            }
+            break;
+          } catch {
+            continue;
+          }
+        }
+        if (!played) throw new Error(`No legal play found for user ${active}`);
+      }
+
+      // If not game over yet, advance timers for the final trick_advance → score
+      if (!gameOver) {
+        jest.advanceTimersByTime(2000);
+      }
+
+      // After all tricks and timers, the game should be in score phase
+      // Actions should NOT be blocked (no pending timers remain)
+      const view = service.getPlayerView(sessionId, 1);
+      if (view) {
+        // Game is in score phase — actions are unblocked, no pending timers
+        expect((view.state as any).phase).toBe('score');
+        expect(view.validActions).toContain('game_scored');
+
+        // Verify we can apply game_scored — proves no timers are blocking
+        result = await service.applyAction(sessionId, 1, { type: 'game_scored' }, broadcastFn);
+        expect(result.gameOver).toBe(true);
+      }
+
+      // Session should now be cleaned up
+      expect(service.getPlayerView(sessionId, 1)).toBeNull();
+    });
+  });
+
   describe('Game session uses exactly the players list', () => {
     // Generator for a unique identity with a given userId
     const identityArb = (userId: number) =>

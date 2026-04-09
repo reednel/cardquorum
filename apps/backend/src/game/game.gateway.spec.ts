@@ -226,6 +226,122 @@ describe('GameGateway', () => {
       }
     });
 
+    it('should pass a broadcast callback as the 4th argument to applyAction', async () => {
+      const client1 = createMockClient();
+      connectionService.trackClient(client1, aliceIdentity);
+
+      gameService.applyAction.mockResolvedValue({
+        gameOver: false,
+        playerViews: [[1, { state: { phase: 'play' }, validActions: ['play_card'] }]],
+      });
+
+      await gateway.handleGameAction(client1, {
+        sessionId: 1,
+        action: { type: 'play_card' },
+      });
+
+      expect(gameService.applyAction).toHaveBeenCalledWith(
+        1,
+        aliceIdentity.userId,
+        { type: 'play_card' },
+        expect.any(Function),
+      );
+    });
+
+    it('should broadcast state updates when the broadcast callback is invoked for a scheduled event', async () => {
+      const client1 = createMockClient();
+      const client2 = createMockClient();
+      connectionService.trackClient(client1, aliceIdentity);
+      connectionService.trackClient(client2, bobIdentity);
+
+      let capturedBroadcastFn: (result: any) => void;
+      gameService.applyAction.mockImplementation(async (_sid, _uid, _action, broadcastFn) => {
+        capturedBroadcastFn = broadcastFn;
+        return {
+          gameOver: false,
+          playerViews: [
+            [1, { state: { phase: 'play', trick: 1 }, validActions: [] }],
+            [2, { state: { phase: 'play', trick: 1 }, validActions: [] }],
+          ],
+        };
+      });
+
+      await gateway.handleGameAction(client1, {
+        sessionId: 5,
+        action: { type: 'play_card' },
+      });
+
+      // Clear the initial broadcast from the action result
+      (client1.send as jest.Mock).mockClear();
+      (client2.send as jest.Mock).mockClear();
+
+      // Simulate a scheduled event firing via the captured callback
+      capturedBroadcastFn!({
+        gameOver: false,
+        playerViews: [
+          [1, { state: { phase: 'play', trick: 2 }, validActions: ['play_card'] }],
+          [2, { state: { phase: 'play', trick: 2 }, validActions: [] }],
+        ],
+      });
+
+      const parse = (c: WebSocket) => JSON.parse((c.send as jest.Mock).mock.calls[0][0]);
+      expect(parse(client1).event).toBe(WS_EMIT.GAME_STATE_UPDATE);
+      expect(parse(client1).data.sessionId).toBe(5);
+      expect(parse(client1).data.state).toEqual({ phase: 'play', trick: 2 });
+
+      expect(parse(client2).event).toBe(WS_EMIT.GAME_STATE_UPDATE);
+      expect(parse(client2).data.state).toEqual({ phase: 'play', trick: 2 });
+    });
+
+    it('should broadcast game-over when the broadcast callback is invoked with gameOver true', async () => {
+      const client1 = createMockClient();
+      const client2 = createMockClient();
+      connectionService.trackClient(client1, aliceIdentity);
+      connectionService.trackClient(client2, bobIdentity);
+
+      let capturedBroadcastFn: (result: any) => void;
+      gameService.applyAction.mockImplementation(async (_sid, _uid, _action, broadcastFn) => {
+        capturedBroadcastFn = broadcastFn;
+        return {
+          gameOver: false,
+          playerViews: [
+            [1, { state: { phase: 'play' }, validActions: [] }],
+            [2, { state: { phase: 'play' }, validActions: [] }],
+          ],
+        };
+      });
+
+      await gateway.handleGameAction(client1, {
+        sessionId: 7,
+        action: { type: 'play_card' },
+      });
+
+      (client1.send as jest.Mock).mockClear();
+      (client2.send as jest.Mock).mockClear();
+
+      const store = {
+        players: [
+          { userID: 1, score: 10 },
+          { userID: 2, score: -10 },
+        ],
+      };
+      capturedBroadcastFn!({
+        gameOver: true,
+        playerViews: [
+          [1, { state: {}, validActions: [] }],
+          [2, { state: {}, validActions: [] }],
+        ],
+        store,
+      });
+
+      for (const client of [client1, client2]) {
+        const parsed = JSON.parse((client.send as jest.Mock).mock.calls[0][0]);
+        expect(parsed.event).toBe(WS_EMIT.GAME_OVER);
+        expect(parsed.data.sessionId).toBe(7);
+        expect(parsed.data.store).toEqual(store);
+      }
+    });
+
     it('should send game:error if applyAction throws', async () => {
       const client = createMockClient();
       connectionService.trackClient(client, aliceIdentity);
