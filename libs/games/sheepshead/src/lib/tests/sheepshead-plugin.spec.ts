@@ -594,7 +594,7 @@ describe('SheepsheadPlugin', () => {
   });
 
   describe('getPlayerView tricks/hole', () => {
-    it('hides tricks and hole card from view', () => {
+    it('exposes current trick but hides hole card from view', () => {
       const config = makeConfig();
       const state = SheepsheadPlugin.createInitialState(config, [1, 2, 3]);
       const inPlay: SheepsheadState = {
@@ -610,8 +610,35 @@ describe('SheepsheadPlugin', () => {
       };
 
       const view = SheepsheadPlugin.getPlayerView(config, inPlay, 1);
-      expect(view.tricks).toEqual([]);
+      // Current (in-progress) trick is visible so cards can render on the table
+      expect(view.tricks).toEqual([{ plays: [{ player: 1, card: DECK[0] }], winner: null }]);
       expect(view.hole).toBeNull();
+    });
+
+    it('hides completed tricks from view', () => {
+      const config = makeConfig();
+      const state = SheepsheadPlugin.createInitialState(config, [1, 2, 3]);
+      const inPlay: SheepsheadState = {
+        ...state,
+        phase: 'play',
+        tricks: [
+          {
+            plays: [
+              { player: 1, card: DECK[0] },
+              { player: 2, card: DECK[1] },
+            ],
+            winner: 1,
+          },
+          {
+            plays: [{ player: 1, card: DECK[2] }],
+            winner: null,
+          },
+        ],
+      };
+
+      const view = SheepsheadPlugin.getPlayerView(config, inPlay, 1);
+      // Only the current in-progress trick is visible
+      expect(view.tricks).toEqual([{ plays: [{ player: 1, card: DECK[2] }], winner: null }]);
     });
 
     it('hides other players roles', () => {

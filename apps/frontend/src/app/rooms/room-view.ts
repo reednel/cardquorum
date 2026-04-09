@@ -181,10 +181,12 @@ export class RoomView implements OnInit, OnDestroy {
       });
 
     this.chatService.joinRoom(this.roomId);
+    this.gameService.rejoinGame(this.roomId);
   }
 
   ngOnDestroy(): void {
     this.chatService.leaveRoom();
+    this.gameService.leaveRoom();
   }
 
   protected onTabClick(tab: RoomTab): void {

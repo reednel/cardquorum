@@ -174,10 +174,22 @@ export class GameGateway implements OnModuleInit {
     const tracked = this.connectionService.getTracked(client);
     if (!tracked) return;
 
-    const result = this.gameService.getPlayerViewByRoom(payload.roomId, tracked.identity.userId);
+    const result = this.gameService.getSessionInfoByRoom(payload.roomId, tracked.identity.userId);
 
-    if (result) {
-      this.send(client, WS_EMIT.GAME_STATE_UPDATE, {
+    if (!result) {
+      // No in-memory game for this room — tell the client to clear stale state
+      this.send(client, WS_EMIT.GAME_CANCELLED, { sessionId: 0 });
+      return;
+    }
+
+    if (result.status === 'waiting') {
+      this.send(client, WS_EMIT.GAME_CREATED, {
+        sessionId: result.sessionId,
+        gameType: result.gameType,
+        config: result.config,
+      });
+    } else {
+      this.send(client, WS_EMIT.GAME_STARTED, {
         sessionId: result.sessionId,
         state: result.state,
         validActions: result.validActions,

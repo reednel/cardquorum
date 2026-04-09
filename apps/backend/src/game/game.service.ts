@@ -313,6 +313,45 @@ export class GameService implements OnModuleDestroy {
     return { sessionId, ...view };
   }
 
+  /** Return session info for rejoin, covering both waiting and active games. */
+  getSessionInfoByRoom(
+    roomId: number,
+    userID: number,
+  ): {
+    sessionId: number;
+    status: 'waiting' | 'active';
+    gameType: string;
+    config: unknown;
+    state?: unknown;
+    validActions?: string[];
+  } | null {
+    const sessionId = this.roomToSession.get(roomId);
+    if (sessionId === undefined) return null;
+
+    const game = this.activeGames.get(sessionId);
+    if (!game) return null;
+
+    if (game.status === 'waiting') {
+      return {
+        sessionId,
+        status: 'waiting',
+        gameType: game.gameType,
+        config: game.config,
+      };
+    }
+
+    const view = this.getPlayerView(sessionId, userID);
+    if (!view) return null;
+
+    return {
+      sessionId,
+      status: 'active',
+      gameType: game.gameType,
+      config: game.config,
+      ...view,
+    };
+  }
+
   private isUserInRoom(roomId: number, userId: number): boolean {
     const members = this.roomService.manager.getRoomMembers(String(roomId));
     return members.some((m) => m.userId === userId);

@@ -5,6 +5,7 @@
 1. The login page should redirect to the home page when a user already has an authenticated session.
 2. Rooms page owner should display displayName ?? username.
 3. Revisit the behavior around persisting room roster changes, might be needlessly inefficient.
+4. Require that game creator is the room owner in game.gateway.ts.
 
 ## Features
 

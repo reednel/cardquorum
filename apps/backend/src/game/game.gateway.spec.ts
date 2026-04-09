@@ -45,6 +45,7 @@ describe('GameGateway', () => {
       cancelSession: jest.fn(),
       cleanupDisconnectedCreator: jest.fn(),
       getPlayerViewByRoom: jest.fn(),
+      getSessionInfoByRoom: jest.fn(),
     } as any;
 
     gateway = new GameGateway(
@@ -243,12 +244,15 @@ describe('GameGateway', () => {
   });
 
   describe('handleGameRejoin', () => {
-    it('should send current player view if active game exists for room', async () => {
+    it('should send game:started if active game exists for room', async () => {
       const client = createMockClient();
       connectionService.trackClient(client, aliceIdentity);
 
-      gameService.getPlayerViewByRoom.mockReturnValue({
+      gameService.getSessionInfoByRoom.mockReturnValue({
         sessionId: 1,
+        status: 'active',
+        gameType: 'sheepshead',
+        config: {},
         state: { phase: 'pick', hand: ['qc'] },
         validActions: ['pick', 'pass'],
       });
@@ -256,20 +260,41 @@ describe('GameGateway', () => {
       await gateway.handleGameRejoin(client, { roomId: 1 });
 
       const parsed = JSON.parse((client.send as jest.Mock).mock.calls[0][0]);
-      expect(parsed.event).toBe(WS_EMIT.GAME_STATE_UPDATE);
+      expect(parsed.event).toBe(WS_EMIT.GAME_STARTED);
       expect(parsed.data.sessionId).toBe(1);
       expect(parsed.data.state.phase).toBe('pick');
     });
 
-    it('should send nothing if no active game for room', async () => {
+    it('should send game:created if waiting game exists for room', async () => {
       const client = createMockClient();
       connectionService.trackClient(client, aliceIdentity);
 
-      gameService.getPlayerViewByRoom.mockReturnValue(null);
+      gameService.getSessionInfoByRoom.mockReturnValue({
+        sessionId: 1,
+        status: 'waiting',
+        gameType: 'sheepshead',
+        config: { playerCount: 3 },
+      });
 
       await gateway.handleGameRejoin(client, { roomId: 1 });
 
-      expect(client.send).not.toHaveBeenCalled();
+      const parsed = JSON.parse((client.send as jest.Mock).mock.calls[0][0]);
+      expect(parsed.event).toBe(WS_EMIT.GAME_CREATED);
+      expect(parsed.data.sessionId).toBe(1);
+      expect(parsed.data.gameType).toBe('sheepshead');
+    });
+
+    it('should send game:cancelled with sentinel sessionId when no game for room', async () => {
+      const client = createMockClient();
+      connectionService.trackClient(client, aliceIdentity);
+
+      gameService.getSessionInfoByRoom.mockReturnValue(null);
+
+      await gateway.handleGameRejoin(client, { roomId: 1 });
+
+      const parsed = JSON.parse((client.send as jest.Mock).mock.calls[0][0]);
+      expect(parsed.event).toBe(WS_EMIT.GAME_CANCELLED);
+      expect(parsed.data.sessionId).toBe(0);
     });
   });
 

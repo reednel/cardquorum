@@ -8,6 +8,7 @@ import {
   handlePlayCard,
   handleScore,
 } from './phases';
+import { legalPlays } from './tricks';
 import {
   BlitzState,
   SheepsheadConfig,
@@ -226,9 +227,33 @@ function getPlayerView(
   }
   const buried = state.buried ? [] : null;
   const hole = null;
-  const tricks: TrickState[] = [];
 
-  return { ...state, players, blind, buried, hole, tricks };
+  // Include only the current (in-progress) trick so the client can render
+  // played cards on the table. Completed tricks are hidden.
+  let tricks: TrickState[] = [];
+  if (state.phase === 'play' && state.tricks.length > 0) {
+    const current = state.tricks[state.tricks.length - 1];
+    if (current && current.winner === null) {
+      tricks = [current];
+    }
+  }
+
+  // Include legal card names so the client can dim illegal cards.
+  let legalCardNames: string[] | null = null;
+  if (state.phase === 'play' && state.activePlayer === userID && state.tricks.length > 0) {
+    const { cards } = legalPlays(state, config, userID);
+    legalCardNames = cards.map((c) => c.name);
+  }
+
+  return {
+    ...state,
+    players,
+    blind,
+    buried,
+    hole,
+    tricks,
+    legalCardNames,
+  } as Partial<SheepsheadState> & { legalCardNames: string[] | null };
 }
 
 function isGameOver(state: SheepsheadState): boolean {
