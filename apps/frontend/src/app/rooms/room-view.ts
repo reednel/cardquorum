@@ -119,7 +119,7 @@ type RoomTab = 'chat' | 'members' | 'game';
       </aside>
     </div>
   `,
-  host: { class: 'block h-full' },
+  host: { class: 'block h-full overflow-hidden' },
 })
 export class RoomView implements OnInit, OnDestroy {
   protected readonly chatService = inject(ChatService);

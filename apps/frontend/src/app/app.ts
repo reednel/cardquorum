@@ -7,5 +7,6 @@ import { RouterModule } from '@angular/router';
   selector: 'app-root',
   templateUrl: './app.html',
   styleUrl: './app.css',
+  host: { class: 'block h-full' },
 })
 export class App {}

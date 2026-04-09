@@ -56,11 +56,11 @@ import { UserDropdown } from './user-dropdown';
       </div>
     </header>
 
-    <main class="min-h-0 flex-1 bg-gray-50 dark:bg-gray-950">
+    <main class="min-h-0 flex-1 overflow-auto bg-gray-50 dark:bg-gray-950">
       <router-outlet />
     </main>
   `,
-  host: { class: 'flex min-h-screen flex-col' },
+  host: { class: 'flex h-full flex-col' },
 })
 export class AppShell implements OnInit {
   protected readonly theme = inject(ThemeService);

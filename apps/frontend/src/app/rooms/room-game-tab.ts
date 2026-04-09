@@ -68,62 +68,12 @@ export function buildFieldEntries(
   selector: 'app-room-game-tab',
   imports: [FormsModule],
   template: `
-    <div id="game-panel" role="tabpanel" aria-label="Game" class="flex-1 overflow-y-auto p-4">
-      <!-- Start / Abort buttons -->
-      @if (isOwner()) {
-        @if (gameService.sessionId()) {
-          <button
-            data-testid="abort-game-btn"
-            (click)="onAbort()"
-            class="mb-4 w-full rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white
-                   transition-colors hover:bg-red-700 focus:outline-none focus:ring-2
-                   focus:ring-red-500 focus:ring-offset-2
-                   dark:bg-red-700 dark:hover:bg-red-800"
-          >
-            Abort Game
-          </button>
-        } @else {
-          <button
-            data-testid="start-game-btn"
-            [disabled]="!canStart()"
-            (click)="onStart()"
-            class="mb-4 w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white
-                   transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2
-                   focus:ring-indigo-500 focus:ring-offset-2
-                   disabled:cursor-not-allowed disabled:opacity-60
-                   dark:bg-indigo-700 dark:hover:bg-indigo-800"
-          >
-            Start Game
-          </button>
-          @if (validationErrors().length > 0) {
-            <ul class="mb-4 list-none space-y-1">
-              @for (msg of validationErrors(); track msg) {
-                <li data-testid="validation-message" class="text-xs text-red-600 dark:text-red-400">
-                  {{ msg }}
-                </li>
-              }
-            </ul>
-          }
-        }
-      }
-
-      <!-- Autostart checkbox -->
-      <label
-        data-testid="autostart-checkbox"
-        class="mb-4 flex items-center justify-between text-sm text-gray-700 dark:text-gray-300"
-      >
-        <span>Autostart Next Game</span>
-        <input
-          type="checkbox"
-          [ngModel]="autostart()"
-          (ngModelChange)="onAutostartChange($event)"
-          [disabled]="!isOwner()"
-          class="h-4 w-4 rounded border-gray-300 text-indigo-600
-                 focus:ring-indigo-500 disabled:opacity-60
-                 dark:border-gray-600"
-        />
-      </label>
-
+    <div
+      id="game-panel"
+      role="tabpanel"
+      aria-label="Game"
+      class="flex flex-1 flex-col overflow-y-auto p-4"
+    >
       <!-- Game type -->
       <label
         for="game-type"
@@ -323,6 +273,67 @@ export function buildFieldEntries(
           }
         </div>
       }
+
+      <!-- Bottom actions -->
+      <div class="mt-auto pt-4">
+        <!-- Autostart checkbox -->
+        <label
+          data-testid="autostart-checkbox"
+          class="mb-3 flex items-center justify-between text-sm text-gray-700 dark:text-gray-300"
+        >
+          <span>Autostart Next Game</span>
+          <input
+            type="checkbox"
+            [ngModel]="autostart()"
+            (ngModelChange)="onAutostartChange($event)"
+            [disabled]="!isOwner()"
+            class="h-4 w-4 rounded border-gray-300 text-indigo-600
+                   focus:ring-indigo-500 disabled:opacity-60
+                   dark:border-gray-600"
+          />
+        </label>
+
+        <!-- Start / Abort buttons -->
+        @if (isOwner()) {
+          @if (gameService.sessionId()) {
+            <button
+              data-testid="abort-game-btn"
+              (click)="onAbort()"
+              class="w-full rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white
+                     transition-colors hover:bg-red-700 focus:outline-none focus:ring-2
+                     focus:ring-red-500 focus:ring-offset-2
+                     dark:bg-red-700 dark:hover:bg-red-800"
+            >
+              Abort Game
+            </button>
+          } @else {
+            @if (validationErrors().length > 0) {
+              <ul class="mb-3 list-none space-y-1">
+                @for (msg of validationErrors(); track msg) {
+                  <li
+                    data-testid="validation-message"
+                    class="text-xs text-red-600 dark:text-red-400"
+                  >
+                    {{ msg }}
+                  </li>
+                }
+              </ul>
+            }
+            <button
+              data-testid="start-game-btn"
+              [disabled]="!canStart()"
+              (click)="onStart()"
+              class="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white
+                     transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2
+                     focus:ring-indigo-500 focus:ring-offset-2
+                     disabled:cursor-not-allowed disabled:opacity-60
+                     dark:bg-indigo-700 dark:hover:bg-indigo-800"
+            >
+              Start Game
+            </button>
+          }
+        }
+      </div>
     </div>
   `,
 })

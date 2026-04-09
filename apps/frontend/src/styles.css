@@ -2,3 +2,8 @@
 @import 'tailwindcss';
 
 @variant dark (&:where(.dark, .dark *));
+
+html,
+body {
+  height: 100%;
+}
