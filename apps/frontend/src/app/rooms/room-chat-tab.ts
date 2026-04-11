@@ -12,7 +12,7 @@ import { ChatService } from '../chat/chat.service';
       <app-chat-message-list [messages]="chatService.messages()" class="flex-1 overflow-y-auto" />
       <form
         (ngSubmit)="send()"
-        class="flex shrink-0 gap-2 border-t border-gray-200 p-3 dark:border-gray-700"
+        class="flex shrink-0 gap-2 border-t border-border p-3 dark:border-border-dark"
       >
         <label class="sr-only" for="message-input">Message</label>
         <input
@@ -22,18 +22,18 @@ import { ChatService } from '../chat/chat.service';
           name="message"
           autocomplete="off"
           placeholder="Type a message..."
-          class="flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm
-                 focus:border-transparent focus:outline-none focus:ring-2
-                 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800
+          class="flex-1 rounded-default border border-border-input bg-bg px-3 py-2 text-sm
+                 focus:border-transparent focus:outline-none focus:ring-ring-width
+                 focus:ring-primary-light dark:border-border-input-dark dark:bg-surface-dark
                  dark:text-white"
         />
         <button
           type="submit"
           [disabled]="!messageText()"
-          class="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white
-                 transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed
-                 disabled:bg-gray-400 disabled:text-gray-200 focus:outline-none
-                 focus:ring-2 focus:ring-indigo-500"
+          class="rounded-default bg-primary px-3 py-2 text-sm font-semibold text-white
+                 transition-colors hover:bg-primary-hover disabled:cursor-not-allowed
+                 disabled:bg-disabled disabled:text-disabled-text focus:outline-none
+                 focus:ring-ring-width focus:ring-primary-light"
         >
           Send
         </button>

@@ -6,8 +6,8 @@ import type { StatusInfo } from '@cardquorum/shared';
   selector: 'app-game-status-bar',
   template: `
     <div
-      class="flex items-center justify-center gap-4 border-b border-gray-200 bg-gray-50 px-4 py-1.5
-             text-xs text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
+      class="flex items-center justify-center gap-4 border-b border-border bg-surface px-4 py-1.5
+             text-xs text-text-secondary dark:border-border-dark dark:bg-surface-dark dark:text-text-secondary-dark"
     >
       <span class="font-medium">{{ status().phaseLabel }}</span>
       @if (status().trickNumber > 0) {

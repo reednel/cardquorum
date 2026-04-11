@@ -9,7 +9,7 @@ import { CardImage } from './card-image';
     <div
       [class]="
         'flex flex-col items-center gap-1 ' +
-        (isActive() ? 'ring-2 ring-indigo-400 rounded-lg p-1' : 'p-1')
+        (isActive() ? 'ring-2 ring-primary-light rounded-lg p-1' : 'p-1')
       "
     >
       <!-- Card backs fan -->
@@ -23,7 +23,7 @@ import { CardImage } from './card-image';
       <div class="flex items-center gap-1">
         @if (isDealer()) {
           <span
-            class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-amber-500
+            class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-accent-dealer
                    text-[10px] font-bold text-white"
             title="Dealer"
             aria-label="Dealer"
@@ -32,7 +32,7 @@ import { CardImage } from './card-image';
           </span>
         }
         <span
-          class="max-w-[80px] truncate text-xs font-medium text-gray-700 dark:text-gray-300"
+          class="max-w-[80px] truncate text-xs font-medium text-text-body dark:text-text-body-dark"
           [title]="displayName()"
         >
           {{ displayName() }}

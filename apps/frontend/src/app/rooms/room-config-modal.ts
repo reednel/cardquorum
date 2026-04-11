@@ -24,7 +24,7 @@ import { RoomService } from './room.service';
     <dialog
       #dialog
       aria-labelledby="config-room-title"
-      class="m-auto w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-gray-900
+      class="m-auto w-full max-w-md rounded-lg bg-bg p-6 shadow-xl dark:bg-bg-dark
              [&::backdrop]:bg-black/50"
       (cancel)="onCancel($event)"
       (click)="onBackdropClick($event)"
@@ -32,7 +32,7 @@ import { RoomService } from './room.service';
       <div>
         <h2
           id="config-room-title"
-          class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100"
+          class="mb-4 text-lg font-semibold text-text-heading dark:text-text-heading-dark"
         >
           Room Settings
         </h2>
@@ -41,8 +41,8 @@ import { RoomService } from './room.service';
           <div
             id="config-room-error"
             data-testid="error-message"
-            class="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700
-                   dark:bg-red-900/30 dark:text-red-400"
+            class="mb-4 rounded-default bg-danger-surface p-3 text-sm text-danger
+                   dark:bg-danger-surface-dark dark:text-danger-light"
             role="alert"
           >
             {{ errorMessage() }}
@@ -53,7 +53,7 @@ import { RoomService } from './room.service';
           <div class="mb-4">
             <label
               for="config-room-name"
-              class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+              class="mb-1 block text-sm font-medium text-text-body dark:text-text-body-dark"
             >
               Room Name
             </label>
@@ -63,17 +63,17 @@ import { RoomService } from './room.service';
               type="text"
               required
               [attr.aria-describedby]="errorMessage() ? 'config-room-error' : null"
-              class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm
-                     focus:border-indigo-500 focus:outline-none focus:ring-1
-                     focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800
-                     dark:text-gray-100"
+              class="w-full rounded-default border border-border-input px-3 py-2 text-sm
+                     focus:border-primary-light focus:outline-none focus:ring-ring-width-sm
+                     focus:ring-primary-light dark:border-border-input-dark dark:bg-surface-dark
+                     dark:text-text-heading-dark"
             />
           </div>
 
           <div class="flex items-center justify-between">
             <div>
               @if (confirmDelete()) {
-                <span class="mr-2 text-sm text-red-600 dark:text-red-400">
+                <span class="mr-2 text-sm text-danger dark:text-danger-light">
                   Are you sure? This cannot be undone.
                 </span>
                 <button
@@ -81,17 +81,17 @@ import { RoomService } from './room.service';
                   data-testid="confirm-delete-room-btn"
                   (click)="onConfirmDelete()"
                   [disabled]="submitting()"
-                  class="mr-1 rounded-md bg-red-600 px-3 py-1 text-xs font-medium text-white
-                         hover:bg-red-700 disabled:bg-gray-400 disabled:text-gray-200
-                         focus:outline-none focus:ring-2 focus:ring-red-500"
+                  class="mr-1 rounded-default bg-danger px-3 py-1 text-xs font-medium text-white
+                         hover:bg-danger-hover disabled:bg-disabled disabled:text-disabled-text
+                         focus:outline-none focus:ring-ring-width focus:ring-danger-ring"
                 >
                   Confirm
                 </button>
                 <button
                   type="button"
                   (click)="confirmDelete.set(false)"
-                  class="rounded-md px-3 py-1 text-xs text-gray-600 hover:bg-gray-100
-                         dark:text-gray-400 dark:hover:bg-gray-800"
+                  class="rounded-default px-3 py-1 text-xs text-text-secondary hover:bg-surface-raised
+                         dark:text-text-secondary-dark dark:hover:bg-surface-dark"
                 >
                   Cancel
                 </button>
@@ -100,8 +100,8 @@ import { RoomService } from './room.service';
                   type="button"
                   data-testid="delete-room-btn"
                   (click)="confirmDelete.set(true)"
-                  class="rounded-md px-3 py-1 text-sm text-red-600 hover:bg-red-50
-                         dark:text-red-400 dark:hover:bg-red-900/20"
+                  class="rounded-default px-3 py-1 text-sm text-danger hover:bg-danger-surface
+                         dark:text-danger-light dark:hover:bg-danger-surface-dark"
                 >
                   Delete Room
                 </button>
@@ -112,17 +112,17 @@ import { RoomService } from './room.service';
               <button
                 type="button"
                 (click)="close()"
-                class="rounded-md px-4 py-2 text-sm text-gray-700 hover:bg-gray-100
-                       dark:text-gray-300 dark:hover:bg-gray-800"
+                class="rounded-default px-4 py-2 text-sm text-text-body hover:bg-surface-raised
+                       dark:text-text-body-dark dark:hover:bg-surface-dark"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 [disabled]="form.invalid || form.pristine || submitting()"
-                class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white
-                       hover:bg-indigo-700 disabled:bg-gray-400 disabled:text-gray-200
-                       focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                class="rounded-default bg-primary px-4 py-2 text-sm font-semibold text-white
+                       hover:bg-primary-hover disabled:bg-disabled disabled:text-disabled-text
+                       focus:outline-none focus:ring-ring-width focus:ring-primary-light"
               >
                 {{ submitting() ? 'Saving...' : 'Save' }}
               </button>

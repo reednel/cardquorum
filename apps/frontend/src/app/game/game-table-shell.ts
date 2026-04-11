@@ -12,7 +12,7 @@ import { PlayerSeat } from './player-seat';
       <app-game-status-bar [status]="statusInfo()" />
 
       <!-- Table surface -->
-      <div class="relative flex-1 overflow-hidden bg-green-900">
+      <div class="relative flex-1 overflow-hidden bg-game-felt">
         <!-- Opponent seats around the arc -->
         @for (seat of seatsWithPosition(); track seat.userID) {
           <app-player-seat
@@ -38,8 +38,8 @@ import { PlayerSeat } from './player-seat';
       <!-- Local player hand -->
       <div
         [class]="
-          'border-t border-gray-200 bg-gray-100 px-4 py-3 dark:border-gray-700 dark:bg-gray-800 ' +
-          (isMyTurn() ? 'ring-2 ring-inset ring-indigo-400' : '')
+          'border-t border-border bg-surface-raised px-4 py-3 dark:border-border-dark dark:bg-surface-dark ' +
+          (isMyTurn() ? 'ring-2 ring-inset ring-primary-light' : '')
         "
       >
         <ng-content select="[hand]" />

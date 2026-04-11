@@ -13,11 +13,11 @@ import { CardImage } from './card-image';
           [disabled]="!isLegal(card)"
           [class]="
             'relative transition-transform duration-100 focus:outline-none focus:ring-2 ' +
-            'focus:ring-indigo-400 rounded-lg ' +
+            'focus:ring-primary-light rounded-lg ' +
             (isLegal(card)
               ? 'cursor-pointer hover:-translate-y-2'
               : 'opacity-40 cursor-not-allowed') +
-            (selectedCard() === card ? ' -translate-y-3 ring-2 ring-indigo-500' : '')
+            (selectedCard() === card ? ' -translate-y-3 ring-2 ring-primary-light' : '')
           "
           [attr.aria-label]="cardAlt(card)"
           (click)="onCardClick(card)"

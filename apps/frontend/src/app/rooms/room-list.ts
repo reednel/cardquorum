@@ -13,26 +13,28 @@ import { RoomService } from './room.service';
   template: `
     <div class="mx-auto max-w-4xl px-4 py-8">
       <div class="mb-6 flex items-center justify-between">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Rooms</h1>
+        <h1 class="text-2xl font-bold text-text-heading dark:text-text-heading-dark">Rooms</h1>
         <button
           data-testid="create-room-btn"
           (click)="showCreate.set(true)"
-          class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white
-                 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          class="rounded-default bg-primary px-4 py-2 text-sm font-semibold text-white
+                 hover:bg-primary-hover focus:outline-none focus:ring-ring-width focus:ring-primary-light"
         >
           Create Room
         </button>
       </div>
 
       @if (roomService.loading()) {
-        <p class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">Loading rooms...</p>
+        <p class="py-8 text-center text-sm text-text-secondary dark:text-text-secondary-dark">
+          Loading rooms...
+        </p>
       } @else if (roomService.error()) {
         <div data-testid="error-state" class="py-8 text-center">
-          <p class="text-sm text-red-600 dark:text-red-400">{{ roomService.error() }}</p>
+          <p class="text-sm text-danger dark:text-danger-light">{{ roomService.error() }}</p>
           <button
             data-testid="retry-btn"
             (click)="roomService.loadRooms()"
-            class="mt-2 text-sm text-indigo-600 hover:underline dark:text-indigo-400"
+            class="mt-2 text-sm text-primary hover:underline dark:text-primary-light-text"
           >
             Try again
           </button>
@@ -40,7 +42,7 @@ import { RoomService } from './room.service';
       } @else if (roomService.rooms().length === 0) {
         <p
           data-testid="empty-rooms"
-          class="py-8 text-center text-sm text-gray-500 dark:text-gray-400"
+          class="py-8 text-center text-sm text-text-secondary dark:text-text-secondary-dark"
         >
           No rooms yet. Create one to get started.
         </p>
@@ -48,7 +50,7 @@ import { RoomService } from './room.service';
         <table class="w-full text-left text-sm">
           <thead>
             <tr
-              class="border-b border-gray-200 text-gray-500 dark:border-gray-700 dark:text-gray-400"
+              class="border-b border-border text-text-secondary dark:border-border-dark dark:text-text-secondary-dark"
             >
               <th scope="col" class="pb-2 font-medium">Name</th>
               <th scope="col" class="pb-2 font-medium">Owner</th>
@@ -59,10 +61,14 @@ import { RoomService } from './room.service';
           </thead>
           <tbody>
             @for (room of roomService.rooms(); track room.id) {
-              <tr data-testid="room-row" class="border-b border-gray-100 dark:border-gray-800">
-                <td class="py-3 font-medium text-gray-900 dark:text-gray-100">{{ room.name }}</td>
-                <td class="py-3 text-gray-600 dark:text-gray-400">{{ room.ownerDisplayName }}</td>
-                <td class="py-3 text-center text-gray-600 dark:text-gray-400">
+              <tr data-testid="room-row" class="border-b border-border dark:border-border-dark">
+                <td class="py-3 font-medium text-text-heading dark:text-text-heading-dark">
+                  {{ room.name }}
+                </td>
+                <td class="py-3 text-text-secondary dark:text-text-secondary-dark">
+                  {{ room.ownerDisplayName }}
+                </td>
+                <td class="py-3 text-center text-text-secondary dark:text-text-secondary-dark">
                   {{ formatMemberCount(room) }}
                 </td>
                 <td class="py-3">
@@ -79,8 +85,8 @@ import { RoomService } from './room.service';
                       <button
                         data-testid="config-btn"
                         (click)="configRoom.set(room)"
-                        class="rounded-md p-1.5 text-gray-500 hover:bg-gray-100
-                               dark:text-gray-400 dark:hover:bg-gray-800"
+                        class="rounded-default p-1.5 text-text-secondary hover:bg-surface-raised
+                               dark:text-text-secondary-dark dark:hover:bg-surface-dark"
                         aria-label="Configure room"
                       >
                         <svg
@@ -103,10 +109,10 @@ import { RoomService } from './room.service';
                       (click)="joinRoom(room.id)"
                       [disabled]="isRoomFull(room)"
                       [class]="
-                        'rounded-md px-3 py-1 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 ' +
+                        'rounded-default px-3 py-1 text-xs font-medium focus:outline-none focus:ring-ring-width focus:ring-primary-light ' +
                         (isRoomFull(room)
-                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
-                          : 'bg-indigo-600 text-white hover:bg-indigo-700')
+                          ? 'bg-disabled text-disabled-text cursor-not-allowed dark:bg-surface-raised-dark dark:text-text-secondary'
+                          : 'bg-primary text-white hover:bg-primary-hover')
                       "
                     >
                       {{ isRoomFull(room) ? 'Full' : 'Join' }}
@@ -165,11 +171,11 @@ export class RoomList implements OnInit {
   protected visibilityClass(visibility: string): string {
     switch (visibility) {
       case 'public':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+        return 'bg-vis-public text-vis-public-text dark:bg-vis-public-dark dark:text-vis-public-text-dark';
       case 'friends-only':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+        return 'bg-vis-friends text-vis-friends-text dark:bg-vis-friends-dark dark:text-vis-friends-text-dark';
       case 'invite-only':
-        return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400';
+        return 'bg-vis-invite text-vis-invite-text dark:bg-vis-invite-dark dark:text-vis-invite-text-dark';
       default:
         return '';
     }

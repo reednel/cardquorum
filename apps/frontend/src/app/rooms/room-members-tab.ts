@@ -43,7 +43,7 @@ import {
     <div id="members-panel" role="tabpanel" aria-label="Members" class="flex-1 overflow-y-auto p-4">
       <!-- Roster count -->
       <p
-        class="mb-3 text-sm font-medium text-gray-600 dark:text-gray-300"
+        class="mb-3 text-sm font-medium text-text-body dark:text-text-body-dark"
         data-testid="roster-count"
       >
         Members: {{ rosterCount() }}
@@ -52,14 +52,14 @@ import {
       <!-- Rotate Players toggle (owner only) -->
       @if (isOwner()) {
         <label
-          class="mb-3 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300"
+          class="mb-3 flex items-center gap-2 text-sm text-text-body dark:text-text-body-dark"
           data-testid="rotate-toggle"
         >
           <input
             type="checkbox"
             [checked]="rosterService.rotatePlayers()"
             (change)="onToggleRotate($event)"
-            class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            class="h-4 w-4 rounded border-border-input text-primary focus:ring-primary-light"
           />
           Rotate Players
         </label>
@@ -67,7 +67,7 @@ import {
 
       <!-- Players section -->
       <h3
-        class="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400"
+        class="mb-2 text-sm font-semibold uppercase tracking-wide text-text-secondary dark:text-text-secondary-dark"
         data-testid="players-section"
       >
         Players ({{ rosterService.players().length }})
@@ -86,7 +86,7 @@ import {
           <li
             cdkDrag
             [cdkDragData]="member"
-            class="flex items-center justify-between rounded px-1 py-0.5 text-sm text-gray-700 dark:text-gray-300"
+            class="flex items-center justify-between rounded px-1 py-0.5 text-sm text-text-body dark:text-text-body-dark"
           >
             <span class="flex items-center gap-2">
               <span
@@ -109,7 +109,7 @@ import {
 
       <!-- Spectators section -->
       <h3
-        class="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400"
+        class="mb-2 text-sm font-semibold uppercase tracking-wide text-text-secondary dark:text-text-secondary-dark"
         data-testid="spectators-section"
       >
         Spectators ({{ rosterService.spectators().length }})
@@ -128,7 +128,7 @@ import {
           <li
             cdkDrag
             [cdkDragData]="member"
-            class="flex items-center justify-between rounded px-1 py-0.5 text-sm text-gray-700 dark:text-gray-300"
+            class="flex items-center justify-between rounded px-1 py-0.5 text-sm text-text-body dark:text-text-body-dark"
           >
             <span class="flex items-center gap-2">
               <span
@@ -152,17 +152,19 @@ import {
       <!-- Invited section (invite-only rooms only) -->
       @if (room().visibility === 'invite-only' && invitedList().length > 0) {
         <h3
-          class="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400"
+          class="mb-2 text-sm font-semibold uppercase tracking-wide text-text-secondary dark:text-text-secondary-dark"
           data-testid="invited-section"
         >
           Invited ({{ invitedList().length }})
         </h3>
         <ul class="mb-4 flex flex-col gap-1">
           @for (inv of invitedList(); track inv.userId) {
-            <li class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+            <li
+              class="flex items-center justify-between text-sm text-text-secondary dark:text-text-secondary-dark"
+            >
               <span class="flex items-center gap-2">
                 <span
-                  class="inline-block h-2 w-2 shrink-0 rounded-full bg-gray-300 dark:bg-gray-600"
+                  class="inline-block h-2 w-2 shrink-0 rounded-full bg-border-input dark:bg-border-input-dark"
                   title="Not in room"
                   aria-label="Not in room"
                   role="img"
@@ -183,7 +185,7 @@ import {
         <div class="mb-4">
           <label
             for="invite-member-search"
-            class="mb-1 block text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400"
+            class="mb-1 block text-sm font-semibold uppercase tracking-wide text-text-secondary dark:text-text-secondary-dark"
           >
             Invite User
           </label>
@@ -192,16 +194,16 @@ import {
             type="text"
             autocomplete="off"
             placeholder="Search by username..."
-            class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm
-                   focus:border-indigo-500 focus:outline-none focus:ring-1
-                   focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800
-                   dark:text-gray-100"
+            class="w-full rounded-default border border-border-input px-3 py-2 text-sm
+                   focus:border-primary-light focus:outline-none focus:ring-ring-width-sm
+                   focus:ring-primary-light dark:border-border-input-dark dark:bg-surface-dark
+                   dark:text-text-heading-dark"
             (input)="onInviteSearch($event)"
           />
           @if (inviteSearchResults().length > 0) {
             <ul
-              class="mt-1 max-h-32 overflow-y-auto rounded-md border border-gray-200
-                     bg-white dark:border-gray-700 dark:bg-gray-800"
+              class="mt-1 max-h-32 overflow-y-auto rounded-default border border-border
+                     bg-bg dark:border-border-dark dark:bg-surface-dark"
               role="listbox"
               aria-label="User search results"
             >
@@ -211,14 +213,14 @@ import {
                     type="button"
                     role="option"
                     [attr.aria-selected]="false"
-                    class="w-full px-3 py-1.5 text-left text-sm text-gray-700
-                           hover:bg-gray-100 dark:text-gray-300
-                           dark:hover:bg-gray-700"
+                    class="w-full px-3 py-1.5 text-left text-sm text-text-body
+                           hover:bg-surface-raised dark:text-text-body-dark
+                           dark:hover:bg-surface-raised-dark"
                     (click)="onInviteFromSearch(user)"
                   >
                     {{ user.displayName ?? user.username }}
                     @if (user.displayName) {
-                      <span class="text-gray-400">({{ user.username }})</span>
+                      <span class="text-text-secondary">({{ user.username }})</span>
                     }
                   </button>
                 </li>
@@ -231,19 +233,21 @@ import {
       <!-- Banned section — owner only -->
       @if (isOwner() && bans().length > 0) {
         <h3
-          class="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400"
+          class="mb-2 text-sm font-semibold uppercase tracking-wide text-text-secondary dark:text-text-secondary-dark"
           data-testid="banned-section"
         >
           Banned ({{ bans().length }})
         </h3>
         <ul class="flex flex-col gap-1">
           @for (ban of bans(); track ban.userId) {
-            <li class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+            <li
+              class="flex items-center justify-between text-sm text-text-secondary dark:text-text-secondary-dark"
+            >
               <span>{{ ban.displayName ?? ban.username }}</span>
               <button
                 (click)="onUnban(ban.userId)"
-                class="rounded px-1.5 py-0.5 text-xs text-green-600 hover:bg-green-50
-                       dark:text-green-400 dark:hover:bg-green-900/20"
+                class="rounded px-1.5 py-0.5 text-xs text-success hover:bg-success-surface
+                       dark:text-success-light dark:hover:bg-success-surface-dark"
               >
                 Unban
               </button>
@@ -303,7 +307,7 @@ export class RoomMembersTab {
 
   protected statusDotClass(userId: number): string {
     const status = computeStatus(userId, this.onlineUserIds());
-    return status === 'online' ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600';
+    return status === 'online' ? 'bg-success' : 'bg-border-input dark:bg-border-input-dark';
   }
 
   protected statusTooltip(userId: number): string {

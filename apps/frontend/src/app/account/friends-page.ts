@@ -22,40 +22,46 @@ import { FriendService } from './friend.service';
         type="text"
         placeholder="Search by username..."
         (input)="onSearchInput($any($event.target).value)"
-        class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900
-                 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+        class="w-full rounded-default border border-border-input px-3 py-2 text-sm text-text-heading
+                 dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
         aria-label="Search users by username"
       />
 
       @if (friendService.searchResults().length > 0) {
         <ul
-          class="mt-2 divide-y divide-gray-100 rounded-md border border-gray-200
-                     dark:divide-gray-700 dark:border-gray-700"
+          class="mt-2 divide-y divide-border rounded-default border border-border
+                     dark:divide-border-dark dark:border-border-dark"
         >
           @for (user of friendService.searchResults(); track user.userId) {
             <li class="flex items-center justify-between px-4 py-3">
               <div>
-                <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                <span class="text-sm font-medium text-text-heading dark:text-text-heading-dark">
                   {{ user.displayName }}
                 </span>
-                <span class="ml-2 text-sm text-gray-500 dark:text-gray-400">
+                <span class="ml-2 text-sm text-text-secondary dark:text-text-secondary-dark">
                   {{ user.username }}
                 </span>
               </div>
               @if (isFriend(user.userId)) {
-                <span class="text-xs text-gray-500 dark:text-gray-400">Friends</span>
+                <span class="text-xs text-text-secondary dark:text-text-secondary-dark"
+                  >Friends</span
+                >
               } @else if (hasPendingRequest(user.userId)) {
-                <span class="text-xs text-gray-500 dark:text-gray-400">Request Sent</span>
+                <span class="text-xs text-text-secondary dark:text-text-secondary-dark"
+                  >Request Sent</span
+                >
               } @else if (hasIncomingRequest(user.userId)) {
-                <span class="text-xs text-gray-500 dark:text-gray-400">Pending</span>
+                <span class="text-xs text-text-secondary dark:text-text-secondary-dark"
+                  >Pending</span
+                >
               } @else {
                 <div class="flex gap-2">
                   <button
                     [attr.data-testid]="'add-friend-btn-' + user.userId"
                     (click)="addFriend(user.userId)"
                     [disabled]="actionInFlight()"
-                    class="rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white
-                             hover:bg-indigo-700 disabled:opacity-50"
+                    class="rounded-default bg-primary px-3 py-1 text-xs font-medium text-white
+                             hover:bg-primary-hover disabled:opacity-disabled"
                   >
                     Add Friend
                   </button>
@@ -63,9 +69,9 @@ import { FriendService } from './friend.service';
                     [attr.data-testid]="'block-search-btn-' + user.userId"
                     (click)="blockUser(user.userId)"
                     [disabled]="actionInFlight()"
-                    class="rounded-md px-3 py-1 text-xs font-medium text-gray-600
-                             hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800
-                             disabled:opacity-50"
+                    class="rounded-default px-3 py-1 text-xs font-medium text-text-secondary
+                             hover:bg-surface-raised dark:text-text-secondary-dark dark:hover:bg-surface-dark
+                             disabled:opacity-disabled"
                   >
                     Block
                   </button>
@@ -77,7 +83,7 @@ import { FriendService } from './friend.service';
       }
 
       @if (searchError()) {
-        <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ searchError() }}</p>
+        <p class="mt-2 text-sm text-danger dark:text-danger-light">{{ searchError() }}</p>
       }
     </section>
 
@@ -85,26 +91,29 @@ import { FriendService } from './friend.service';
     <section class="mb-8">
       <h2
         data-testid="incoming-heading"
-        class="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100"
+        class="mb-3 text-lg font-semibold text-text-heading dark:text-text-heading-dark"
       >
         Incoming Requests ({{ friendService.incomingRequests().length }})
       </h2>
       @if (friendService.incomingRequests().length === 0) {
-        <p data-testid="empty-incoming" class="text-sm text-gray-500 dark:text-gray-400">
+        <p
+          data-testid="empty-incoming"
+          class="text-sm text-text-secondary dark:text-text-secondary-dark"
+        >
           No incoming requests
         </p>
       } @else {
         <ul
-          class="divide-y divide-gray-100 rounded-md border border-gray-200
-                     dark:divide-gray-700 dark:border-gray-700"
+          class="divide-y divide-border rounded-default border border-border
+                     dark:divide-border-dark dark:border-border-dark"
         >
           @for (req of friendService.incomingRequests(); track req.requestId) {
             <li class="flex items-center justify-between px-4 py-3">
               <div>
-                <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                <span class="text-sm font-medium text-text-heading dark:text-text-heading-dark">
                   {{ req.user.displayName }}
                 </span>
-                <span class="ml-2 text-sm text-gray-500 dark:text-gray-400">
+                <span class="ml-2 text-sm text-text-secondary dark:text-text-secondary-dark">
                   {{ req.user.username }}
                 </span>
               </div>
@@ -113,8 +122,8 @@ import { FriendService } from './friend.service';
                   [attr.data-testid]="'accept-btn-' + req.requestId"
                   (click)="accept(req.requestId)"
                   [disabled]="actionInFlight()"
-                  class="rounded-md bg-green-600 px-3 py-1 text-xs font-medium text-white
-                           hover:bg-green-700 disabled:opacity-50"
+                  class="rounded-default bg-success px-3 py-1 text-xs font-medium text-white
+                           hover:bg-success-hover disabled:opacity-disabled"
                 >
                   Accept
                 </button>
@@ -122,9 +131,9 @@ import { FriendService } from './friend.service';
                   [attr.data-testid]="'deny-btn-' + req.requestId"
                   (click)="deny(req.requestId)"
                   [disabled]="actionInFlight()"
-                  class="rounded-md px-3 py-1 text-xs font-medium text-gray-600
-                           hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800
-                           disabled:opacity-50"
+                  class="rounded-default px-3 py-1 text-xs font-medium text-text-secondary
+                           hover:bg-surface-raised dark:text-text-secondary-dark dark:hover:bg-surface-dark
+                           disabled:opacity-disabled"
                 >
                   Deny
                 </button>
@@ -139,26 +148,29 @@ import { FriendService } from './friend.service';
     <section class="mb-8">
       <h2
         data-testid="outgoing-heading"
-        class="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100"
+        class="mb-3 text-lg font-semibold text-text-heading dark:text-text-heading-dark"
       >
         Outgoing Requests ({{ friendService.outgoingRequests().length }})
       </h2>
       @if (friendService.outgoingRequests().length === 0) {
-        <p data-testid="empty-outgoing" class="text-sm text-gray-500 dark:text-gray-400">
+        <p
+          data-testid="empty-outgoing"
+          class="text-sm text-text-secondary dark:text-text-secondary-dark"
+        >
           No outgoing requests
         </p>
       } @else {
         <ul
-          class="divide-y divide-gray-100 rounded-md border border-gray-200
-                     dark:divide-gray-700 dark:border-gray-700"
+          class="divide-y divide-border rounded-default border border-border
+                     dark:divide-border-dark dark:border-border-dark"
         >
           @for (req of friendService.outgoingRequests(); track req.requestId) {
             <li class="flex items-center justify-between px-4 py-3">
               <div>
-                <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                <span class="text-sm font-medium text-text-heading dark:text-text-heading-dark">
                   {{ req.user.displayName }}
                 </span>
-                <span class="ml-2 text-sm text-gray-500 dark:text-gray-400">
+                <span class="ml-2 text-sm text-text-secondary dark:text-text-secondary-dark">
                   {{ req.user.username }}
                 </span>
               </div>
@@ -166,9 +178,9 @@ import { FriendService } from './friend.service';
                 [attr.data-testid]="'cancel-btn-' + req.requestId"
                 (click)="cancel(req.requestId)"
                 [disabled]="actionInFlight()"
-                class="rounded-md px-3 py-1 text-xs font-medium text-gray-600
-                         hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800
-                         disabled:opacity-50"
+                class="rounded-default px-3 py-1 text-xs font-medium text-text-secondary
+                         hover:bg-surface-raised dark:text-text-secondary-dark dark:hover:bg-surface-dark
+                         disabled:opacity-disabled"
               >
                 Cancel
               </button>
@@ -182,26 +194,29 @@ import { FriendService } from './friend.service';
     <section>
       <h2
         data-testid="friends-heading"
-        class="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100"
+        class="mb-3 text-lg font-semibold text-text-heading dark:text-text-heading-dark"
       >
         Friends ({{ friendService.friends().length }})
       </h2>
       @if (friendService.friends().length === 0) {
-        <p data-testid="empty-friends" class="text-sm text-gray-500 dark:text-gray-400">
+        <p
+          data-testid="empty-friends"
+          class="text-sm text-text-secondary dark:text-text-secondary-dark"
+        >
           No friends yet
         </p>
       } @else {
         <ul
-          class="divide-y divide-gray-100 rounded-md border border-gray-200
-                     dark:divide-gray-700 dark:border-gray-700"
+          class="divide-y divide-border rounded-default border border-border
+                     dark:divide-border-dark dark:border-border-dark"
         >
           @for (friend of friendService.friends(); track friend.friendshipId) {
             <li class="flex items-center justify-between px-4 py-3">
               <div>
-                <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                <span class="text-sm font-medium text-text-heading dark:text-text-heading-dark">
                   {{ friend.user.displayName }}
                 </span>
-                <span class="ml-2 text-sm text-gray-500 dark:text-gray-400">
+                <span class="ml-2 text-sm text-text-secondary dark:text-text-secondary-dark">
                   {{ friend.user.username }}
                 </span>
               </div>
@@ -210,8 +225,8 @@ import { FriendService } from './friend.service';
                   [attr.data-testid]="'confirm-remove-btn-' + friend.friendshipId"
                   (click)="confirmRemove(friend.friendshipId)"
                   [disabled]="actionInFlight()"
-                  class="rounded-md bg-red-600 px-3 py-1 text-xs font-medium text-white
-                           hover:bg-red-700 disabled:opacity-50"
+                  class="rounded-default bg-danger px-3 py-1 text-xs font-medium text-white
+                           hover:bg-danger-hover disabled:opacity-disabled"
                 >
                   Confirm?
                 </button>
@@ -220,8 +235,8 @@ import { FriendService } from './friend.service';
                   <button
                     [attr.data-testid]="'remove-btn-' + friend.friendshipId"
                     (click)="startRemove(friend.friendshipId)"
-                    class="rounded-md px-3 py-1 text-xs font-medium text-gray-600
-                             hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                    class="rounded-default px-3 py-1 text-xs font-medium text-text-secondary
+                             hover:bg-surface-raised dark:text-text-secondary-dark dark:hover:bg-surface-dark"
                   >
                     Remove
                   </button>
@@ -229,9 +244,9 @@ import { FriendService } from './friend.service';
                     [attr.data-testid]="'block-friend-btn-' + friend.user.userId"
                     (click)="blockUser(friend.user.userId)"
                     [disabled]="actionInFlight()"
-                    class="rounded-md px-3 py-1 text-xs font-medium text-gray-600
-                             hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800
-                             disabled:opacity-50"
+                    class="rounded-default px-3 py-1 text-xs font-medium text-text-secondary
+                             hover:bg-surface-raised dark:text-text-secondary-dark dark:hover:bg-surface-dark
+                             disabled:opacity-disabled"
                   >
                     Block
                   </button>
@@ -249,8 +264,8 @@ import { FriendService } from './friend.service';
         <button
           data-testid="toggle-blocked"
           (click)="blockListExpanded.set(!blockListExpanded())"
-          class="mb-3 flex items-center gap-1 text-lg font-semibold text-gray-900
-                   dark:text-gray-100"
+          class="mb-3 flex items-center gap-1 text-lg font-semibold text-text-heading
+                   dark:text-text-heading-dark"
           [attr.aria-expanded]="blockListExpanded()"
         >
           <span class="text-sm">{{ blockListExpanded() ? '▼' : '▶' }}</span>
@@ -258,16 +273,16 @@ import { FriendService } from './friend.service';
         </button>
         @if (blockListExpanded()) {
           <ul
-            class="divide-y divide-gray-100 rounded-md border border-gray-200
-                       dark:divide-gray-700 dark:border-gray-700"
+            class="divide-y divide-border rounded-default border border-border
+                       dark:divide-border-dark dark:border-border-dark"
           >
             @for (blocked of blockService.blockedUsers(); track blocked.userId) {
               <li class="flex items-center justify-between px-4 py-3">
                 <div>
-                  <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  <span class="text-sm font-medium text-text-heading dark:text-text-heading-dark">
                     {{ blocked.displayName }}
                   </span>
-                  <span class="ml-2 text-sm text-gray-500 dark:text-gray-400">
+                  <span class="ml-2 text-sm text-text-secondary dark:text-text-secondary-dark">
                     {{ blocked.username }}
                   </span>
                 </div>
@@ -276,8 +291,8 @@ import { FriendService } from './friend.service';
                     [attr.data-testid]="'confirm-unblock-btn-' + blocked.userId"
                     (click)="confirmUnblock(blocked.userId)"
                     [disabled]="actionInFlight()"
-                    class="rounded-md bg-red-600 px-3 py-1 text-xs font-medium text-white
-                             hover:bg-red-700 disabled:opacity-50"
+                    class="rounded-default bg-danger px-3 py-1 text-xs font-medium text-white
+                             hover:bg-danger-hover disabled:opacity-disabled"
                   >
                     Confirm?
                   </button>
@@ -285,8 +300,8 @@ import { FriendService } from './friend.service';
                   <button
                     [attr.data-testid]="'unblock-btn-' + blocked.userId"
                     (click)="startUnblock(blocked.userId)"
-                    class="rounded-md px-3 py-1 text-xs font-medium text-gray-600
-                             hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                    class="rounded-default px-3 py-1 text-xs font-medium text-text-secondary
+                             hover:bg-surface-raised dark:text-text-secondary-dark dark:hover:bg-surface-dark"
                   >
                     Unblock
                   </button>

@@ -9,7 +9,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
       role="dialog"
       [attr.aria-label]="label()"
     >
-      <div class="rounded-xl bg-white p-6 shadow-xl dark:bg-gray-800">
+      <div class="rounded-xl bg-bg p-6 shadow-xl dark:bg-surface-dark">
         <ng-content />
       </div>
     </div>

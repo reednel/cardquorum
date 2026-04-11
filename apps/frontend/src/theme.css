@@ -1,0 +1,123 @@
+/* ============================================================
+ * CardQuorum Theme — Centralized Design Tokens
+ * ============================================================
+ * This file defines all semantic design tokens for the app.
+ * Change values here to re-theme the entire application.
+ *
+ * Sections:
+ *   1. Color Tokens (Primary, Neutral, Danger, Success, Accent, Visibility)
+ *   2. Border Radius Tokens
+ *   3. Focus Ring Tokens
+ *   4. Opacity Tokens
+ *   5. Future Tokens (spacing, shadows — placeholder)
+ *
+ * Adding a new token category:
+ *   1. Add a new section below with CSS custom properties
+ *   2. Register them inside the @theme block
+ *   3. Use the generated utility classes in component templates
+ * ============================================================ */
+
+@theme {
+  /* ----------------------------------------------------------
+   * 1. COLOR TOKENS
+   * ---------------------------------------------------------- */
+
+  /* --- Primary Palette --- */
+  --color-primary: #4f46e5; /* buttons, links, active tabs */
+  --color-primary-hover: #4338ca;
+  --color-primary-light: #6366f1; /* dark-mode buttons, focus rings */
+  --color-primary-light-text: #818cf8; /* dark-mode links / text */
+  --color-primary-surface: #e0e7ff; /* chip / tag bg */
+  --color-primary-surface-dark: #6366f11a; /* dark chip bg */
+  --color-primary-on-surface: #3730a3; /* chip text */
+  --color-primary-on-surface-dark: #a5b4fc; /* dark chip text */
+
+  /* --- Neutral Palette --- */
+  --color-bg: #eeeeee; /* page / card backgrounds */
+  --color-bg-dark: #222222; /* dark page bg */
+  --color-surface: #f5f5f5; /* panels, sidebars */
+  --color-surface-dark: #262626; /* dark panels */
+  --color-surface-raised: #e5e5e5; /* hover states, subtle fills */
+  --color-surface-raised-dark: #404040; /* dark hover states */
+  --color-border: #e5e5e5; /* default borders, dividers */
+  --color-border-dark: #404040; /* dark borders */
+  --color-border-input: #d4d4d4; /* input borders, disabled bg */
+  --color-border-input-dark: #525252; /* dark input borders */
+  --color-text-heading: #171717; /* headings */
+  --color-text-heading-dark: #f5f5f5; /* dark headings */
+  --color-text-body: #404040; /* body text */
+  --color-text-body-dark: #d4d4d4; /* dark body text */
+  --color-text-secondary: #737373; /* secondary / muted text */
+  --color-text-secondary-dark: #a3a3a3; /* dark secondary text */
+  --color-disabled: #a3a3a3; /* disabled button bg */
+  --color-disabled-text: #737373; /* disabled button text */
+
+  /* --- Danger Palette --- */
+  --color-danger: #dc2626; /* destructive buttons, error text */
+  --color-danger-hover: #b91c1c; /* hover, dark-mode base, intense actions */
+  --color-danger-dark-hover: #991b1b; /* dark-mode hover, intense hover */
+  --color-danger-light: #f87171; /* dark-mode error text */
+  --color-danger-ring: #ef4444; /* focus ring, selection ring */
+  --color-danger-surface: #fef2f2; /* error bg, ghost-button hover */
+  --color-danger-surface-dark: #7f1d1d1a; /* dark error bg */
+  --color-danger-border: #fca5a5; /* danger outline border */
+
+  /* --- Success Palette --- */
+  --color-success: #16a34a;
+  --color-success-hover: #15803d;
+  --color-success-light: #4ade80; /* dark-mode success text */
+  --color-success-surface: #f0fdf4; /* ghost-button hover */
+  --color-success-surface-dark: #16a34a1a; /* dark ghost hover */
+
+  /* --- Accent Palette --- */
+  --color-accent-blitz: #9333ea; /* blitz button bg */
+  --color-accent-blitz-hover: #7e22ce;
+  --color-accent-blitz-ring: #a855f7;
+  --color-accent-dealer: #f59e0b; /* dealer chip */
+  --color-game-felt: #14532d; /* card table surface */
+
+  /* --- Visibility Tag Palette --- */
+  --color-vis-public: #dcfce7;
+  --color-vis-public-text: #166534;
+  --color-vis-public-dark: #16a34a1a;
+  --color-vis-public-text-dark: #4ade80;
+  --color-vis-friends: #dbeafe;
+  --color-vis-friends-text: #1e40af;
+  --color-vis-friends-dark: #3b82f61a;
+  --color-vis-friends-text-dark: #60a5fa;
+  --color-vis-invite: #fef3c7;
+  --color-vis-invite-text: #92400e;
+  --color-vis-invite-dark: #f59e0b1a;
+  --color-vis-invite-text-dark: #fbbf24;
+
+  /* ----------------------------------------------------------
+   * 2. BORDER RADIUS TOKENS
+   * ---------------------------------------------------------- */
+  --radius-default: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-full: 9999px;
+
+  /* ----------------------------------------------------------
+   * 3. FOCUS RING TOKENS
+   * ---------------------------------------------------------- */
+  --ring-width: 2px;
+  --ring-width-sm: 1px;
+  --ring-offset: 2px;
+
+  /* ----------------------------------------------------------
+   * 4. OPACITY TOKENS
+   * ---------------------------------------------------------- */
+  --opacity-disabled: 60%;
+
+  /* ----------------------------------------------------------
+   * 5. FUTURE TOKENS (placeholder)
+   * ----------------------------------------------------------
+   * To add spacing tokens:
+   *   --spacing-page: 2rem;
+   *   --spacing-card: 1.5rem;
+   *
+   * To add shadow tokens:
+   *   --shadow-card: 0 1px 3px rgba(0,0,0,0.1);
+   *   --shadow-modal: 0 10px 25px rgba(0,0,0,0.15);
+   * ---------------------------------------------------------- */
+}

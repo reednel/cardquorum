@@ -11,16 +11,18 @@ import { AuthService } from './auth.service';
   imports: [ReactiveFormsModule],
   selector: 'app-register',
   template: `
-    <div class="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-950">
-      <div class="w-full max-w-sm rounded-lg bg-white p-8 shadow dark:bg-gray-900">
-        <h1 class="mb-6 text-center text-2xl font-semibold text-gray-900 dark:text-gray-100">
+    <div class="flex min-h-screen items-center justify-center bg-surface px-4 dark:bg-bg-dark">
+      <div class="w-full max-w-sm rounded-lg bg-bg p-8 shadow dark:bg-bg-dark">
+        <h1
+          class="mb-6 text-center text-2xl font-semibold text-text-heading dark:text-text-heading-dark"
+        >
           Choose a Username
         </h1>
 
         @if (errorMessage()) {
           <div
             id="register-error"
-            class="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-400"
+            class="mb-4 rounded-default bg-danger-surface p-3 text-sm text-danger dark:bg-danger-surface-dark dark:text-danger-light"
             role="alert"
           >
             {{ errorMessage() }}
@@ -31,7 +33,7 @@ import { AuthService } from './auth.service';
           <div class="mb-4">
             <label
               for="username"
-              class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+              class="mb-1 block text-sm font-medium text-text-body dark:text-text-body-dark"
             >
               Username
             </label>
@@ -42,9 +44,9 @@ import { AuthService } from './auth.service';
               autocomplete="username"
               required
               [attr.aria-describedby]="errorMessage() ? 'register-error' : null"
-              class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+              class="w-full rounded-default border border-border-input px-3 py-2 text-sm focus:border-primary-light focus:outline-none focus:ring-ring-width-sm focus:ring-primary-light dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
             />
-            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            <p class="mt-1 text-xs text-text-secondary dark:text-text-secondary-dark">
               {{ USERNAME_MIN }}–{{ USERNAME_MAX }} characters, letters/numbers/underscores
             </p>
           </div>
@@ -52,7 +54,7 @@ import { AuthService } from './auth.service';
           <button
             type="submit"
             [disabled]="form.invalid || submitting()"
-            class="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:bg-gray-400 disabled:text-gray-200"
+            class="w-full rounded-default bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover disabled:bg-disabled disabled:text-disabled-text"
           >
             {{ submitting() ? 'Registering...' : 'Continue' }}
           </button>

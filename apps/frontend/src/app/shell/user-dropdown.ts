@@ -18,8 +18,8 @@ import { AuthService } from '../auth/auth.service';
       <button
         data-testid="user-menu-trigger"
         (click)="toggleMenu()"
-        class="rounded-md px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100
-               dark:text-gray-300 dark:hover:bg-gray-800"
+        class="rounded-default px-3 py-1.5 text-sm text-text-body hover:bg-surface-raised
+               dark:text-text-body-dark dark:hover:bg-surface-dark"
         [attr.aria-expanded]="showMenu()"
         aria-haspopup="true"
       >
@@ -30,15 +30,15 @@ import { AuthService } from '../auth/auth.service';
         <div
           data-testid="user-menu"
           role="menu"
-          class="absolute right-0 z-10 mt-1 w-40 rounded-md border border-gray-200 bg-white
-                 py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+          class="absolute right-0 z-10 mt-1 w-40 rounded-default border border-border bg-bg
+                 py-1 shadow-lg dark:border-border-dark dark:bg-surface-dark"
         >
           <button
             data-testid="menu-account"
             role="menuitem"
             (click)="goToAccount()"
-            class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100
-                   dark:text-gray-300 dark:hover:bg-gray-800"
+            class="w-full px-4 py-2 text-left text-sm text-text-body hover:bg-surface-raised
+                   dark:text-text-body-dark dark:hover:bg-surface-dark"
           >
             Account
           </button>
@@ -46,8 +46,8 @@ import { AuthService } from '../auth/auth.service';
             data-testid="menu-logout"
             role="menuitem"
             (click)="doLogout()"
-            class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100
-                   dark:text-gray-300 dark:hover:bg-gray-800"
+            class="w-full px-4 py-2 text-left text-sm text-text-body hover:bg-surface-raised
+                   dark:text-text-body-dark dark:hover:bg-surface-dark"
           >
             Log out
           </button>

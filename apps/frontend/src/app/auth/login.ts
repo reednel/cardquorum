@@ -10,16 +10,18 @@ import { AuthService } from './auth.service';
   imports: [ReactiveFormsModule, RouterLink],
   selector: 'app-login',
   template: `
-    <div class="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-950">
-      <div class="w-full max-w-sm rounded-lg bg-white p-8 shadow dark:bg-gray-900">
-        <h1 class="mb-6 text-center text-2xl font-semibold text-gray-900 dark:text-gray-100">
+    <div class="flex min-h-screen items-center justify-center bg-surface px-4 dark:bg-bg-dark">
+      <div class="w-full max-w-sm rounded-lg bg-bg p-8 shadow dark:bg-bg-dark">
+        <h1
+          class="mb-6 text-center text-2xl font-semibold text-text-heading dark:text-text-heading-dark"
+        >
           Log in
         </h1>
 
         @if (errorMessage()) {
           <div
             id="login-error"
-            class="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-400"
+            class="mb-4 rounded-default bg-danger-surface p-3 text-sm text-danger dark:bg-danger-surface-dark dark:text-danger-light"
             role="alert"
           >
             {{ errorMessage() }}
@@ -30,7 +32,7 @@ import { AuthService } from './auth.service';
           <div class="mb-4">
             <label
               for="username"
-              class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+              class="mb-1 block text-sm font-medium text-text-body dark:text-text-body-dark"
             >
               Username
             </label>
@@ -41,14 +43,14 @@ import { AuthService } from './auth.service';
               autocomplete="username"
               required
               [attr.aria-describedby]="errorMessage() ? 'login-error' : null"
-              class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+              class="w-full rounded-default border border-border-input px-3 py-2 text-sm focus:border-primary-light focus:outline-none focus:ring-ring-width-sm focus:ring-primary-light dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
             />
           </div>
 
           <div class="mb-6">
             <label
               for="password"
-              class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+              class="mb-1 block text-sm font-medium text-text-body dark:text-text-body-dark"
             >
               Password
             </label>
@@ -58,14 +60,14 @@ import { AuthService } from './auth.service';
               type="password"
               autocomplete="current-password"
               required
-              class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+              class="w-full rounded-default border border-border-input px-3 py-2 text-sm focus:border-primary-light focus:outline-none focus:ring-ring-width-sm focus:ring-primary-light dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
             />
           </div>
 
           <button
             type="submit"
             [disabled]="form.invalid || submitting()"
-            class="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:bg-gray-400 disabled:text-gray-200"
+            class="w-full rounded-default bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover disabled:bg-disabled disabled:text-disabled-text"
           >
             {{ submitting() ? 'Logging in...' : 'Log in' }}
           </button>
@@ -73,23 +75,26 @@ import { AuthService } from './auth.service';
 
         @if (showOidc()) {
           <div class="my-4 flex items-center gap-2">
-            <div class="h-px flex-1 bg-gray-300 dark:bg-gray-700"></div>
-            <span class="text-xs text-gray-500 dark:text-gray-400">or</span>
-            <div class="h-px flex-1 bg-gray-300 dark:bg-gray-700"></div>
+            <div class="h-px flex-1 bg-border-input dark:bg-border-dark"></div>
+            <span class="text-xs text-text-secondary dark:text-text-secondary-dark">or</span>
+            <div class="h-px flex-1 bg-border-input dark:bg-border-dark"></div>
           </div>
 
           <a
             href="/api/auth/oidc/login"
             data-testid="sso-button"
-            class="block w-full rounded-md border border-gray-300 px-4 py-2 text-center text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+            class="block w-full rounded-default border border-border-input px-4 py-2 text-center text-sm font-medium text-text-body hover:bg-surface dark:border-border-input-dark dark:text-text-body-dark dark:hover:bg-surface-dark"
           >
             Sign in with SSO
           </a>
         }
 
-        <p class="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
+        <p class="mt-4 text-center text-sm text-text-secondary dark:text-text-secondary-dark">
           Don't have an account?
-          <a routerLink="/register" class="text-indigo-600 hover:underline dark:text-indigo-400">
+          <a
+            routerLink="/register"
+            class="text-primary hover:underline dark:text-primary-light-text"
+          >
             Register
           </a>
         </p>

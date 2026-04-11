@@ -6,18 +6,18 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
   template: `
     @if (canDeal()) {
       <div class="flex flex-col items-center gap-4">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Ready to deal?</h3>
+        <h3 class="text-lg font-semibold text-text-heading dark:text-white">Ready to deal?</h3>
         <button
           data-testid="deal-btn"
           (click)="action.emit({ type: 'deal' })"
-          class="rounded-lg bg-indigo-600 px-6 py-2 text-sm font-medium text-white
-                 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          class="rounded-lg bg-primary px-6 py-2 text-sm font-medium text-white
+                 hover:bg-primary-hover focus:outline-none focus:ring-ring-width focus:ring-primary-light"
         >
           Deal
         </button>
       </div>
     } @else {
-      <p class="text-sm text-gray-500 dark:text-gray-400">Waiting for dealer...</p>
+      <p class="text-sm text-text-secondary dark:text-text-secondary-dark">Waiting for dealer...</p>
     }
   `,
 })

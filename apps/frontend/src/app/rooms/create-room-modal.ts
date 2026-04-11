@@ -22,7 +22,7 @@ import { RoomService } from './room.service';
     <dialog
       #dialog
       aria-labelledby="create-room-title"
-      class="m-auto w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-gray-900
+      class="m-auto w-full max-w-md rounded-lg bg-bg p-6 shadow-xl dark:bg-bg-dark
              [&::backdrop]:bg-black/50"
       (cancel)="onCancel($event)"
       (click)="onBackdropClick($event)"
@@ -30,7 +30,7 @@ import { RoomService } from './room.service';
       <div>
         <h2
           id="create-room-title"
-          class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100"
+          class="mb-4 text-lg font-semibold text-text-heading dark:text-text-heading-dark"
         >
           Create Room
         </h2>
@@ -39,8 +39,8 @@ import { RoomService } from './room.service';
           <div
             id="create-room-error"
             data-testid="error-message"
-            class="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700
-                   dark:bg-red-900/30 dark:text-red-400"
+            class="mb-4 rounded-default bg-danger-surface p-3 text-sm text-danger
+                   dark:bg-danger-surface-dark dark:text-danger-light"
             role="alert"
           >
             {{ errorMessage() }}
@@ -51,7 +51,7 @@ import { RoomService } from './room.service';
           <div class="mb-4">
             <label
               for="room-name"
-              class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+              class="mb-1 block text-sm font-medium text-text-body dark:text-text-body-dark"
             >
               Room Name
             </label>
@@ -61,27 +61,27 @@ import { RoomService } from './room.service';
               type="text"
               required
               [attr.aria-describedby]="errorMessage() ? 'create-room-error' : null"
-              class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm
-                     focus:border-indigo-500 focus:outline-none focus:ring-1
-                     focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800
-                     dark:text-gray-100"
+              class="w-full rounded-default border border-border-input px-3 py-2 text-sm
+                     focus:border-primary-light focus:outline-none focus:ring-ring-width-sm
+                     focus:ring-primary-light dark:border-border-input-dark dark:bg-surface-dark
+                     dark:text-text-heading-dark"
             />
           </div>
 
           <div class="mb-4">
             <label
               for="room-visibility"
-              class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+              class="mb-1 block text-sm font-medium text-text-body dark:text-text-body-dark"
             >
               Visibility
             </label>
             <select
               id="room-visibility"
               formControlName="visibility"
-              class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm
-                     focus:border-indigo-500 focus:outline-none focus:ring-1
-                     focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800
-                     dark:text-gray-100"
+              class="w-full rounded-default border border-border-input px-3 py-2 text-sm
+                     focus:border-primary-light focus:outline-none focus:ring-ring-width-sm
+                     focus:ring-primary-light dark:border-border-input-dark dark:bg-surface-dark
+                     dark:text-text-heading-dark"
             >
               <option value="public">Public</option>
               <option value="friends-only">Friends Only</option>
@@ -92,10 +92,10 @@ import { RoomService } from './room.service';
           <div class="mb-4">
             <label
               for="room-member-limit"
-              class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+              class="mb-1 block text-sm font-medium text-text-body dark:text-text-body-dark"
             >
               Max Members
-              <span class="font-normal text-gray-400">(optional)</span>
+              <span class="font-normal text-text-secondary">(optional)</span>
             </label>
             <input
               id="room-member-limit"
@@ -104,10 +104,10 @@ import { RoomService } from './room.service';
               type="number"
               min="0"
               placeholder="Unlimited"
-              class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm
-                     focus:border-indigo-500 focus:outline-none focus:ring-1
-                     focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800
-                     dark:text-gray-100"
+              class="w-full rounded-default border border-border-input px-3 py-2 text-sm
+                     focus:border-primary-light focus:outline-none focus:ring-ring-width-sm
+                     focus:ring-primary-light dark:border-border-input-dark dark:bg-surface-dark
+                     dark:text-text-heading-dark"
             />
           </div>
 
@@ -115,7 +115,7 @@ import { RoomService } from './room.service';
             <div class="mb-4">
               <label
                 for="invite-search"
-                class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                class="mb-1 block text-sm font-medium text-text-body dark:text-text-body-dark"
               >
                 Invite Users
               </label>
@@ -124,17 +124,17 @@ import { RoomService } from './room.service';
                 type="text"
                 autocomplete="off"
                 placeholder="Search by username..."
-                class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm
-                       focus:border-indigo-500 focus:outline-none focus:ring-1
-                       focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800
-                       dark:text-gray-100"
+                class="w-full rounded-default border border-border-input px-3 py-2 text-sm
+                       focus:border-primary-light focus:outline-none focus:ring-ring-width-sm
+                       focus:ring-primary-light dark:border-border-input-dark dark:bg-surface-dark
+                       dark:text-text-heading-dark"
                 (input)="onSearchInput($event)"
               />
 
               @if (searchResults().length > 0) {
                 <ul
-                  class="mt-1 max-h-32 overflow-y-auto rounded-md border border-gray-200
-                         bg-white dark:border-gray-700 dark:bg-gray-800"
+                  class="mt-1 max-h-32 overflow-y-auto rounded-default border border-border
+                         bg-bg dark:border-border-dark dark:bg-surface-dark"
                   role="listbox"
                   aria-label="Search results"
                 >
@@ -144,13 +144,13 @@ import { RoomService } from './room.service';
                         type="button"
                         role="option"
                         [attr.aria-selected]="false"
-                        class="w-full px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-100
-                               dark:text-gray-300 dark:hover:bg-gray-700"
+                        class="w-full px-3 py-1.5 text-left text-sm text-text-body hover:bg-surface-raised
+                               dark:text-text-body-dark dark:hover:bg-surface-raised-dark"
                         (click)="addInvitee(user)"
                       >
                         {{ user.displayName ?? user.username }}
                         @if (user.displayName) {
-                          <span class="text-gray-400">({{ user.username }})</span>
+                          <span class="text-text-secondary">({{ user.username }})</span>
                         }
                       </button>
                     </li>
@@ -162,15 +162,15 @@ import { RoomService } from './room.service';
                 <div class="mt-2 flex flex-wrap gap-1">
                   @for (user of invitedUsers(); track user.userId) {
                     <span
-                      class="inline-flex items-center gap-1 rounded-full bg-indigo-100 px-2 py-0.5
-                             text-xs font-medium text-indigo-800 dark:bg-indigo-900/30
-                             dark:text-indigo-400"
+                      class="inline-flex items-center gap-1 rounded-full bg-primary-surface px-2 py-0.5
+                             text-xs font-medium text-primary-on-surface dark:bg-primary-surface-dark
+                             dark:text-primary-on-surface-dark"
                     >
                       {{ user.displayName ?? user.username }}
                       <button
                         type="button"
                         (click)="removeInvitee(user.userId)"
-                        class="ml-0.5 hover:text-indigo-600 dark:hover:text-indigo-200"
+                        class="ml-0.5 hover:text-primary dark:hover:text-primary-light-text"
                         [attr.aria-label]="'Remove ' + (user.displayName ?? user.username)"
                       >
                         ×
@@ -187,17 +187,17 @@ import { RoomService } from './room.service';
               type="button"
               data-testid="cancel-btn"
               (click)="close()"
-              class="rounded-md px-4 py-2 text-sm text-gray-700 hover:bg-gray-100
-                     dark:text-gray-300 dark:hover:bg-gray-800"
+              class="rounded-default px-4 py-2 text-sm text-text-body hover:bg-surface-raised
+                     dark:text-text-body-dark dark:hover:bg-surface-dark"
             >
               Cancel
             </button>
             <button
               type="submit"
               [disabled]="form.invalid || submitting()"
-              class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white
-                     hover:bg-indigo-700 disabled:bg-gray-400 disabled:text-gray-200
-                     focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              class="rounded-default bg-primary px-4 py-2 text-sm font-semibold text-white
+                     hover:bg-primary-hover disabled:bg-disabled disabled:text-disabled-text
+                     focus:outline-none focus:ring-ring-width focus:ring-primary-light"
             >
               {{ submitting() ? 'Creating...' : 'Create' }}
             </button>

@@ -33,7 +33,7 @@ type RoomTab = 'chat' | 'members' | 'game';
   selector: 'app-room-view',
   imports: [TitleCasePipe, RoomChatTab, RoomMembersTab, RoomGameTab, GameTable],
   template: `
-    <div class="flex h-full bg-white text-gray-900 dark:bg-gray-900 dark:text-white">
+    <div class="flex h-full bg-bg text-text-heading dark:bg-bg-dark dark:text-white">
       <!-- Game area -->
       <main class="flex-1">
         @if (gameService.state()) {
@@ -43,16 +43,16 @@ type RoomTab = 'chat' | 'members' | 'game';
 
       <!-- Right panel -->
       <aside
-        class="flex w-80 shrink-0 flex-col border-l border-gray-200 bg-gray-50
-               dark:border-gray-700 dark:bg-gray-800"
+        class="flex w-80 shrink-0 flex-col border-l border-border bg-surface
+               dark:border-border-dark dark:bg-surface-dark"
       >
         <!-- Room header -->
         <div
-          class="flex items-center justify-between border-b border-gray-200 px-4 py-3
-                 dark:border-gray-700"
+          class="flex items-center justify-between border-b border-border px-4 py-3
+                 dark:border-border-dark"
         >
           <p
-            class="truncate text-sm font-semibold text-gray-900 dark:text-white"
+            class="truncate text-sm font-semibold text-text-heading dark:text-white"
             [title]="roomName()"
           >
             {{ roomName() }}
@@ -61,10 +61,10 @@ type RoomTab = 'chat' | 'members' | 'game';
             <button
               data-testid="leave-btn"
               (click)="leave()"
-              class="shrink-0 rounded-md px-2 py-1 text-xs text-gray-500 transition-colors
-                     hover:bg-gray-200 hover:text-gray-700 focus:outline-none focus:ring-2
-                     focus:ring-indigo-500 dark:text-gray-400 dark:hover:bg-gray-700
-                     dark:hover:text-gray-200"
+              class="shrink-0 rounded-default px-2 py-1 text-xs text-text-secondary transition-colors
+                     hover:bg-surface-raised hover:text-text-body focus:outline-none focus:ring-ring-width
+                     focus:ring-primary-light dark:text-text-secondary-dark dark:hover:bg-surface-raised-dark
+                     dark:hover:text-text-heading-dark"
             >
               Leave
             </button>
@@ -73,7 +73,7 @@ type RoomTab = 'chat' | 'members' | 'game';
 
         <!-- Tabs -->
         <nav
-          class="flex border-b border-gray-200 dark:border-gray-700"
+          class="flex border-b border-border dark:border-border-dark"
           role="tablist"
           aria-label="Room panels"
         >
@@ -84,10 +84,10 @@ type RoomTab = 'chat' | 'members' | 'game';
               [attr.aria-controls]="tab + '-panel'"
               [class]="
                 'flex-1 px-3 py-2 text-sm font-medium transition-colors focus:outline-none ' +
-                'focus:ring-2 focus:ring-inset focus:ring-indigo-500 ' +
+                'focus:ring-ring-width focus:ring-inset focus:ring-primary-light ' +
                 (activeTab() === tab
-                  ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400'
-                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200')
+                  ? 'border-b-2 border-primary-light text-primary dark:text-primary-light-text'
+                  : 'text-text-secondary hover:text-text-body dark:text-text-secondary-dark dark:hover:text-text-heading-dark')
               "
               (click)="onTabClick(tab)"
             >

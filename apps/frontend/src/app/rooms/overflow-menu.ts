@@ -27,8 +27,8 @@ export interface OverflowAction {
         aria-haspopup="true"
         [attr.aria-expanded]="open()"
         (click)="toggle($event)"
-        class="rounded px-1.5 py-0.5 text-sm text-gray-500 hover:bg-gray-100
-               dark:text-gray-400 dark:hover:bg-gray-700"
+        class="rounded px-1.5 py-0.5 text-sm text-text-secondary hover:bg-surface-raised
+               dark:text-text-secondary-dark dark:hover:bg-surface-raised-dark"
       >
         …
       </button>
@@ -36,9 +36,9 @@ export interface OverflowAction {
         <ul
           role="menu"
           data-testid="overflow-menu"
-          class="absolute right-0 z-10 mt-1 min-w-[100px] rounded-md border
-                 border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700
-                 dark:bg-gray-800"
+          class="absolute right-0 z-10 mt-1 min-w-[100px] rounded-default border
+                 border-border bg-bg py-1 shadow-lg dark:border-border-dark
+                 dark:bg-surface-dark"
         >
           @for (action of actions(); track action.label) {
             <li role="none">
@@ -48,9 +48,9 @@ export interface OverflowAction {
                 (click)="onAction(action)"
                 (keydown.enter)="onAction(action)"
                 (keydown.space)="onAction(action); $event.preventDefault()"
-                class="w-full px-3 py-1.5 text-left text-sm text-gray-700
-                       hover:bg-gray-100 dark:text-gray-300
-                       dark:hover:bg-gray-700"
+                class="w-full px-3 py-1.5 text-left text-sm text-text-body
+                       hover:bg-surface-raised dark:text-text-body-dark
+                       dark:hover:bg-surface-raised-dark"
               >
                 {{ action.label }}
               </button>

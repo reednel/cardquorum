@@ -24,11 +24,18 @@ import { UserService } from './user.service';
   selector: 'app-account-page',
   template: `
     @if (!userService.profile()) {
-      <p data-testid="loading-state" class="text-sm text-gray-500 dark:text-gray-400">Loading...</p>
+      <p
+        data-testid="loading-state"
+        class="text-sm text-text-secondary dark:text-text-secondary-dark"
+      >
+        Loading...
+      </p>
     } @else {
       <dl class="space-y-4">
         <div>
-          <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Username</dt>
+          <dt class="text-sm font-medium text-text-secondary dark:text-text-secondary-dark">
+            Username
+          </dt>
           <dd class="mt-1">
             @if (usernameEditing()) {
               <div class="flex items-center gap-2">
@@ -38,41 +45,41 @@ import { UserService } from './user.service';
                   [value]="usernameEditValue()"
                   (input)="usernameEditValue.set($any($event.target).value)"
                   [attr.maxlength]="USERNAME_MAX"
-                  class="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-900
-                           dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                  class="rounded-default border border-border-input px-3 py-1.5 text-sm text-text-heading
+                           dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
                   aria-label="Username"
                 />
                 <button
                   data-testid="save-username-btn"
                   (click)="saveUsername()"
                   [disabled]="usernameSaving()"
-                  class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white
-                           hover:bg-indigo-700 disabled:opacity-50"
+                  class="rounded-default bg-primary px-3 py-1.5 text-sm font-medium text-white
+                           hover:bg-primary-hover disabled:opacity-disabled"
                 >
                   Save
                 </button>
                 <button
                   data-testid="cancel-edit-btn"
                   (click)="cancelUsernameEdit()"
-                  class="rounded-md px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100
-                           dark:text-gray-400 dark:hover:bg-gray-800"
+                  class="rounded-default px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-raised
+                           dark:text-text-secondary-dark dark:hover:bg-surface-dark"
                 >
                   Cancel
                 </button>
               </div>
               @if (usernameErrorMessage()) {
-                <p class="mt-1 text-sm text-red-600 dark:text-red-400">
+                <p class="mt-1 text-sm text-danger dark:text-danger-light">
                   {{ usernameErrorMessage() }}
                 </p>
               }
             } @else {
-              <span class="text-gray-900 dark:text-gray-100">
+              <span class="text-text-heading dark:text-text-heading-dark">
                 {{ userService.profile()!.username }}
               </span>
               <button
                 data-testid="edit-username-btn"
                 (click)="startUsernameEdit()"
-                class="ml-2 text-sm text-indigo-600 hover:underline dark:text-indigo-400"
+                class="ml-2 text-sm text-primary hover:underline dark:text-primary-light-text"
               >
                 Edit
               </button>
@@ -81,7 +88,9 @@ import { UserService } from './user.service';
         </div>
 
         <div>
-          <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Display Name</dt>
+          <dt class="text-sm font-medium text-text-secondary dark:text-text-secondary-dark">
+            Display Name
+          </dt>
           <dd class="mt-1">
             @if (displayNameEditing()) {
               <div class="flex items-center gap-2">
@@ -91,35 +100,35 @@ import { UserService } from './user.service';
                   [value]="displayNameEditValue()"
                   (input)="displayNameEditValue.set($any($event.target).value)"
                   [attr.maxlength]="DISPLAY_NAME_MAX"
-                  class="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-900
-                           dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                  class="rounded-default border border-border-input px-3 py-1.5 text-sm text-text-heading
+                           dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
                   aria-label="Display name"
                 />
                 <button
                   data-testid="save-display-name-btn"
                   (click)="saveDisplayName()"
                   [disabled]="displayNameSaving()"
-                  class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white
-                           hover:bg-indigo-700 disabled:opacity-50"
+                  class="rounded-default bg-primary px-3 py-1.5 text-sm font-medium text-white
+                           hover:bg-primary-hover disabled:opacity-disabled"
                 >
                   Save
                 </button>
                 <button
                   data-testid="cancel-edit-btn"
                   (click)="cancelDisplayNameEdit()"
-                  class="rounded-md px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100
-                           dark:text-gray-400 dark:hover:bg-gray-800"
+                  class="rounded-default px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-raised
+                           dark:text-text-secondary-dark dark:hover:bg-surface-dark"
                 >
                   Cancel
                 </button>
               </div>
               @if (displayNameErrorMessage()) {
-                <p class="mt-1 text-sm text-red-600 dark:text-red-400">
+                <p class="mt-1 text-sm text-danger dark:text-danger-light">
                   {{ displayNameErrorMessage() }}
                 </p>
               }
             } @else {
-              <span class="text-gray-900 dark:text-gray-100">
+              <span class="text-text-heading dark:text-text-heading-dark">
                 @if (userService.profile()!.displayName) {
                   {{ userService.profile()!.displayName }}
                 } @else {
@@ -129,7 +138,7 @@ import { UserService } from './user.service';
               <button
                 data-testid="edit-display-name-btn"
                 (click)="startDisplayNameEdit()"
-                class="ml-2 text-sm text-indigo-600 hover:underline dark:text-indigo-400"
+                class="ml-2 text-sm text-primary hover:underline dark:text-primary-light-text"
               >
                 Edit
               </button>
@@ -138,36 +147,46 @@ import { UserService } from './user.service';
         </div>
 
         <div>
-          <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Member Since</dt>
-          <dd class="mt-1 text-gray-900 dark:text-gray-100">
+          <dt class="text-sm font-medium text-text-secondary dark:text-text-secondary-dark">
+            Member Since
+          </dt>
+          <dd class="mt-1 text-text-heading dark:text-text-heading-dark">
             {{ formatDate(userService.profile()!.createdAt) }}
           </dd>
         </div>
       </dl>
 
       <div
-        class="mt-8 border-t border-gray-200 pt-8 dark:border-gray-700"
+        class="mt-8 border-t border-border pt-8 dark:border-border-dark"
         data-testid="linked-accounts"
       >
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Credentials</h2>
+        <h2 class="text-lg font-semibold text-text-heading dark:text-text-heading-dark">
+          Credentials
+        </h2>
 
         @if (successMessage()) {
-          <p class="mt-2 text-sm text-green-600 dark:text-green-400">{{ successMessage() }}</p>
+          <p class="mt-2 text-sm text-success dark:text-success-light">
+            {{ successMessage() }}
+          </p>
         }
         @if (credentialError()) {
-          <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ credentialError() }}</p>
+          <p class="mt-2 text-sm text-danger dark:text-danger-light">
+            {{ credentialError() }}
+          </p>
         }
 
         <div class="mt-4 space-y-4">
           <!-- Password credential -->
           @if (hasBasic()) {
             <div
-              class="flex items-center justify-between rounded-md border border-gray-200
-                        px-4 py-3 dark:border-gray-700"
+              class="flex items-center justify-between rounded-default border border-border
+                        px-4 py-3 dark:border-border-dark"
             >
               <div>
-                <span class="font-medium text-gray-900 dark:text-gray-100">Password</span>
-                <span class="ml-2 text-sm text-green-600 dark:text-green-400">Linked</span>
+                <span class="font-medium text-text-heading dark:text-text-heading-dark"
+                  >Password</span
+                >
+                <span class="ml-2 text-sm text-success dark:text-success-light">Linked</span>
               </div>
               @if (canRemoveBasic()) {
                 @if (confirmingUnlinkBasic()) {
@@ -178,23 +197,23 @@ import { UserService } from './user.service';
                       [value]="unlinkPassword()"
                       (input)="unlinkPassword.set($any($event.target).value)"
                       placeholder="Enter password"
-                      class="rounded-md border border-gray-300 px-2 py-1 text-sm
-                             dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                      class="rounded-default border border-border-input px-2 py-1 text-sm
+                             dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
                       aria-label="Password to confirm removal"
                     />
                     <button
                       data-testid="confirm-unlink-basic-btn"
                       (click)="confirmUnlinkBasic()"
                       [disabled]="unlinkingBasic()"
-                      class="rounded-md bg-red-600 px-3 py-1 text-sm font-medium text-white
-                             hover:bg-red-700 disabled:opacity-50"
+                      class="rounded-default bg-danger px-3 py-1 text-sm font-medium text-white
+                             hover:bg-danger-hover disabled:opacity-disabled"
                     >
                       Remove
                     </button>
                     <button
                       data-testid="cancel-unlink-basic-btn"
                       (click)="cancelUnlinkBasic()"
-                      class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400"
+                      class="text-sm text-text-secondary hover:text-text-body dark:text-text-secondary-dark"
                     >
                       Cancel
                     </button>
@@ -203,7 +222,7 @@ import { UserService } from './user.service';
                   <button
                     data-testid="unlink-basic-btn"
                     (click)="startUnlinkBasic()"
-                    class="text-sm text-red-600 hover:underline dark:text-red-400"
+                    class="text-sm text-danger hover:underline dark:text-danger-light"
                   >
                     Remove
                   </button>
@@ -211,11 +230,15 @@ import { UserService } from './user.service';
               }
             </div>
             @if (unlinkBasicError()) {
-              <p class="text-sm text-red-600 dark:text-red-400">{{ unlinkBasicError() }}</p>
+              <p class="text-sm text-danger dark:text-danger-light">
+                {{ unlinkBasicError() }}
+              </p>
             }
             @if (changingPassword()) {
-              <div class="rounded-md border border-gray-200 px-4 py-3 dark:border-gray-700">
-                <span class="font-medium text-gray-900 dark:text-gray-100">Change Password</span>
+              <div class="rounded-default border border-border px-4 py-3 dark:border-border-dark">
+                <span class="font-medium text-text-heading dark:text-text-heading-dark"
+                  >Change Password</span
+                >
                 <div class="mt-2 space-y-2">
                   <input
                     data-testid="change-pw-current"
@@ -224,8 +247,8 @@ import { UserService } from './user.service';
                     (input)="changeCurrentPassword.set($any($event.target).value)"
                     placeholder="Current password"
                     autocomplete="current-password"
-                    class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm
-                             dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                    class="block w-full rounded-default border border-border-input px-3 py-2 text-sm
+                             dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
                     aria-label="Current password"
                   />
                   <input
@@ -235,8 +258,8 @@ import { UserService } from './user.service';
                     (input)="changeNewPassword.set($any($event.target).value)"
                     placeholder="New password ({{ PASSWORD_MIN }}–{{ PASSWORD_MAX }} characters)"
                     autocomplete="new-password"
-                    class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm
-                             dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                    class="block w-full rounded-default border border-border-input px-3 py-2 text-sm
+                             dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
                     aria-label="New password"
                   />
                   <input
@@ -246,8 +269,8 @@ import { UserService } from './user.service';
                     (input)="changeConfirmPassword.set($any($event.target).value)"
                     placeholder="Confirm new password"
                     autocomplete="new-password"
-                    class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm
-                             dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                    class="block w-full rounded-default border border-border-input px-3 py-2 text-sm
+                             dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
                     aria-label="Confirm new password"
                   />
                   <div class="flex gap-2">
@@ -255,23 +278,23 @@ import { UserService } from './user.service';
                       data-testid="change-pw-submit"
                       (click)="submitChangePassword()"
                       [disabled]="changingPasswordSubmitting()"
-                      class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white
-                               hover:bg-indigo-700 disabled:opacity-50"
+                      class="rounded-default bg-primary px-4 py-2 text-sm font-medium text-white
+                               hover:bg-primary-hover disabled:opacity-disabled"
                     >
                       Update Password
                     </button>
                     <button
                       data-testid="change-pw-cancel"
                       (click)="cancelChangePassword()"
-                      class="rounded-md px-4 py-2 text-sm text-gray-600 hover:bg-gray-100
-                               dark:text-gray-400 dark:hover:bg-gray-800"
+                      class="rounded-default px-4 py-2 text-sm text-text-secondary hover:bg-surface-raised
+                               dark:text-text-secondary-dark dark:hover:bg-surface-dark"
                     >
                       Cancel
                     </button>
                   </div>
                 </div>
                 @if (changePasswordError()) {
-                  <p class="mt-1 text-sm text-red-600 dark:text-red-400">
+                  <p class="mt-1 text-sm text-danger dark:text-danger-light">
                     {{ changePasswordError() }}
                   </p>
                 }
@@ -280,7 +303,7 @@ import { UserService } from './user.service';
               <button
                 data-testid="change-pw-btn"
                 (click)="startChangePassword()"
-                class="text-sm text-indigo-600 hover:underline dark:text-indigo-400"
+                class="text-sm text-primary hover:underline dark:text-primary-light-text"
               >
                 Change Password
               </button>
@@ -288,21 +311,25 @@ import { UserService } from './user.service';
           }
 
           @if (canAddBasic()) {
-            <div class="rounded-md border border-gray-200 px-4 py-3 dark:border-gray-700">
+            <div class="rounded-default border border-border px-4 py-3 dark:border-border-dark">
               @if (!linkingBasicExpanded()) {
                 <div class="flex items-center justify-between">
-                  <span class="font-medium text-gray-900 dark:text-gray-100">Password</span>
+                  <span class="font-medium text-text-heading dark:text-text-heading-dark"
+                    >Password</span
+                  >
                   <button
                     data-testid="link-basic-expand-btn"
                     (click)="linkingBasicExpanded.set(true)"
-                    class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white
-                             hover:bg-indigo-700"
+                    class="rounded-default bg-primary px-3 py-1.5 text-sm font-medium text-white
+                             hover:bg-primary-hover"
                   >
                     Link
                   </button>
                 </div>
               } @else {
-                <span class="font-medium text-gray-900 dark:text-gray-100">Set Password</span>
+                <span class="font-medium text-text-heading dark:text-text-heading-dark"
+                  >Set Password</span
+                >
                 <div class="mt-2 space-y-2">
                   <input
                     data-testid="link-basic-password"
@@ -310,8 +337,8 @@ import { UserService } from './user.service';
                     [value]="linkPassword()"
                     (input)="linkPassword.set($any($event.target).value)"
                     placeholder="Password ({{ PASSWORD_MIN }}–{{ PASSWORD_MAX }} characters)"
-                    class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm
-                             dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                    class="block w-full rounded-default border border-border-input px-3 py-2 text-sm
+                             dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
                     aria-label="New password"
                   />
                   <input
@@ -320,8 +347,8 @@ import { UserService } from './user.service';
                     [value]="linkPasswordConfirm()"
                     (input)="linkPasswordConfirm.set($any($event.target).value)"
                     placeholder="Confirm password"
-                    class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm
-                             dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                    class="block w-full rounded-default border border-border-input px-3 py-2 text-sm
+                             dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
                     aria-label="Confirm new password"
                   />
                   <div class="flex gap-2">
@@ -329,23 +356,23 @@ import { UserService } from './user.service';
                       data-testid="link-basic-btn"
                       (click)="linkBasic()"
                       [disabled]="linkingBasic()"
-                      class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white
-                               hover:bg-indigo-700 disabled:opacity-50"
+                      class="rounded-default bg-primary px-4 py-2 text-sm font-medium text-white
+                               hover:bg-primary-hover disabled:opacity-disabled"
                     >
                       Set Password
                     </button>
                     <button
                       data-testid="cancel-link-basic-btn"
                       (click)="cancelLinkBasic()"
-                      class="rounded-md px-4 py-2 text-sm text-gray-600 hover:bg-gray-100
-                               dark:text-gray-400 dark:hover:bg-gray-800"
+                      class="rounded-default px-4 py-2 text-sm text-text-secondary hover:bg-surface-raised
+                               dark:text-text-secondary-dark dark:hover:bg-surface-dark"
                     >
                       Cancel
                     </button>
                   </div>
                 </div>
                 @if (linkBasicError()) {
-                  <p class="mt-1 text-sm text-red-600 dark:text-red-400">
+                  <p class="mt-1 text-sm text-danger dark:text-danger-light">
                     {{ linkBasicError() }}
                   </p>
                 }
@@ -356,23 +383,23 @@ import { UserService } from './user.service';
           <!-- OIDC credential -->
           @if (strategies().includes('oidc')) {
             <div
-              class="flex items-center justify-between rounded-md border border-gray-200
-                          px-4 py-3 dark:border-gray-700"
+              class="flex items-center justify-between rounded-default border border-border
+                          px-4 py-3 dark:border-border-dark"
             >
               <div>
-                <span class="font-medium text-gray-900 dark:text-gray-100"
+                <span class="font-medium text-text-heading dark:text-text-heading-dark"
                   >Single Sign-On (OIDC)</span
                 >
                 @if (hasOidc()) {
-                  <span class="ml-2 text-sm text-green-600 dark:text-green-400">Linked</span>
+                  <span class="ml-2 text-sm text-success dark:text-success-light">Linked</span>
                 }
               </div>
               @if (canAddOidc()) {
                 <button
                   data-testid="link-oidc-btn"
                   (click)="linkOidc()"
-                  class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white
-                           hover:bg-indigo-700"
+                  class="rounded-default bg-primary px-3 py-1.5 text-sm font-medium text-white
+                           hover:bg-primary-hover"
                 >
                   Link
                 </button>
@@ -381,7 +408,7 @@ import { UserService } from './user.service';
                 <button
                   data-testid="unlink-oidc-btn"
                   (click)="unlinkOidc()"
-                  class="text-sm text-red-600 hover:underline dark:text-red-400"
+                  class="text-sm text-danger hover:underline dark:text-danger-light"
                 >
                   Remove
                 </button>
@@ -391,9 +418,9 @@ import { UserService } from './user.service';
         </div>
       </div>
 
-      <div class="mt-12 border-t border-gray-200 pt-8 dark:border-gray-700">
-        <h2 class="text-lg font-semibold text-red-600 dark:text-red-400">Delete Account</h2>
-        <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+      <div class="mt-12 border-t border-border pt-8 dark:border-border-dark">
+        <h2 class="text-lg font-semibold text-danger dark:text-danger-light">Delete Account</h2>
+        <p class="mt-2 text-sm text-text-secondary dark:text-text-secondary-dark">
           This will permanently delete your rooms, messages, and friends list. Your game history
           will be preserved anonymously.
         </p>
@@ -401,33 +428,33 @@ import { UserService } from './user.service';
         @if (confirmingDelete()) {
           <div class="mt-4 space-y-3">
             @if (hasBasicCredential()) {
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label class="block text-sm font-medium text-text-body dark:text-text-body-dark">
                 Enter your password to confirm
                 <input
                   data-testid="delete-password-input"
                   type="password"
                   [value]="deletePassword()"
                   (input)="deletePassword.set($any($event.target).value)"
-                  class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm
-                           text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                  class="mt-1 block w-full rounded-default border border-border-input px-3 py-2 text-sm
+                           text-text-heading dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
                   aria-label="Password confirmation for account deletion"
                 />
               </label>
             } @else {
-              <p class="text-sm text-gray-600 dark:text-gray-400">
+              <p class="text-sm text-text-secondary dark:text-text-secondary-dark">
                 This action cannot be undone. Are you sure?
               </p>
             }
             @if (deleteError()) {
-              <p class="text-sm text-red-600 dark:text-red-400">{{ deleteError() }}</p>
+              <p class="text-sm text-danger dark:text-danger-light">{{ deleteError() }}</p>
             }
             <div class="flex gap-3">
               <button
                 data-testid="confirm-delete-btn"
                 (click)="confirmDelete()"
                 [disabled]="deleting()"
-                class="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white
-                         hover:bg-red-700 disabled:opacity-50"
+                class="rounded-default bg-danger px-4 py-2 text-sm font-medium text-white
+                         hover:bg-danger-hover disabled:opacity-disabled"
               >
                 @if (hasBasicCredential()) {
                   Permanently Delete
@@ -438,8 +465,8 @@ import { UserService } from './user.service';
               <button
                 data-testid="cancel-delete-btn"
                 (click)="cancelDelete()"
-                class="rounded-md px-4 py-2 text-sm text-gray-600 hover:bg-gray-100
-                         dark:text-gray-400 dark:hover:bg-gray-800"
+                class="rounded-default px-4 py-2 text-sm text-text-secondary hover:bg-surface-raised
+                         dark:text-text-secondary-dark dark:hover:bg-surface-dark"
               >
                 Cancel
               </button>
@@ -449,9 +476,9 @@ import { UserService } from './user.service';
           <button
             data-testid="delete-account-btn"
             (click)="startDelete()"
-            class="mt-4 rounded-md border border-red-300 px-4 py-2 text-sm font-medium
-                     text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400
-                     dark:hover:bg-red-950"
+            class="mt-4 rounded-default border border-danger-border px-4 py-2 text-sm font-medium
+                     text-danger hover:bg-danger-surface dark:border-danger-hover dark:text-danger-light
+                     dark:hover:bg-danger-surface-dark"
           >
             Delete Account
           </button>

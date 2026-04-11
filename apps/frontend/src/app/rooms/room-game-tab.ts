@@ -77,8 +77,8 @@ export function buildFieldEntries(
       <!-- Game type -->
       <label
         for="game-type"
-        class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500
-               dark:text-gray-200"
+        class="mb-1 block text-xs font-semibold uppercase tracking-wide text-text-secondary
+               dark:text-text-heading-dark"
       >
         Game
       </label>
@@ -87,10 +87,10 @@ export function buildFieldEntries(
         [ngModel]="selectedGame()"
         (ngModelChange)="onGameChange($event)"
         [disabled]="!isOwner() || formLocked()"
-        class="mb-4 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm
-               focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500
-               disabled:cursor-not-allowed disabled:opacity-60
-               dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+        class="mb-4 w-full rounded-default border border-border-input bg-bg px-3 py-2 text-sm
+               focus:border-primary-light focus:outline-none focus:ring-ring-width-sm focus:ring-primary-light
+               disabled:cursor-not-allowed disabled:opacity-disabled
+               dark:border-border-input-dark dark:bg-surface-dark dark:text-white"
       >
         <option value="">— Select a game —</option>
         @for (entry of gameEntries; track entry.key) {
@@ -102,8 +102,8 @@ export function buildFieldEntries(
       @if (selectedGame()) {
         <label
           for="preset"
-          class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500
-                 dark:text-gray-400"
+          class="mb-1 block text-xs font-semibold uppercase tracking-wide text-text-secondary
+                 dark:text-text-secondary-dark"
         >
           Variant
         </label>
@@ -112,10 +112,10 @@ export function buildFieldEntries(
           [ngModel]="selectedPresetIndex()"
           (ngModelChange)="onPresetChange($event)"
           [disabled]="!isOwner() || formLocked()"
-          class="mb-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm
-                 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500
-                 disabled:cursor-not-allowed disabled:opacity-60
-                 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+          class="mb-1 w-full rounded-default border border-border-input bg-bg px-3 py-2 text-sm
+                 focus:border-primary-light focus:outline-none focus:ring-ring-width-sm focus:ring-primary-light
+                 disabled:cursor-not-allowed disabled:opacity-disabled
+                 dark:border-border-input-dark dark:bg-surface-dark dark:text-white"
         >
           <option [value]="-1">— Select a variant —</option>
           @for (preset of presets(); track $index) {
@@ -123,29 +123,34 @@ export function buildFieldEntries(
           }
         </select>
         @if (activePreset(); as preset) {
-          <p class="mb-3 text-xs text-gray-500 dark:text-gray-400">{{ preset.description }}</p>
+          <p class="mb-3 text-xs text-text-secondary dark:text-text-secondary-dark">
+            {{ preset.description }}
+          </p>
         }
       }
 
       <!-- Locked fields (read-only context) -->
       @if (lockedFields().length > 0) {
         <div
-          class="mb-4 rounded-md border border-gray-200 bg-gray-50 p-3
-                    dark:border-gray-700 dark:bg-gray-800/50"
+          class="mb-4 rounded-default border border-border bg-surface p-3
+                    dark:border-border-dark dark:bg-surface-dark/50"
         >
           <h4
-            class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500
-                     dark:text-gray-400"
+            class="mb-2 text-xs font-semibold uppercase tracking-wide text-text-secondary
+                     dark:text-text-secondary-dark"
           >
             Fixed Rules
           </h4>
           <dl class="flex flex-col gap-1">
             @for (entry of lockedFields(); track entry.key) {
               <div class="flex items-center justify-between text-sm">
-                <dt class="text-gray-600 dark:text-gray-400" [title]="entry.description">
+                <dt
+                  class="text-text-body dark:text-text-secondary-dark"
+                  [title]="entry.description"
+                >
                   {{ entry.displayName }}
                 </dt>
-                <dd class="font-medium text-gray-800 dark:text-gray-200">
+                <dd class="font-medium text-text-heading dark:text-text-heading-dark">
                   {{ displayValue(configValues()[entry.key]) }}
                 </dd>
               </div>
@@ -157,8 +162,8 @@ export function buildFieldEntries(
       <!-- Editable config fields -->
       @if (editableFields().length > 0) {
         <h4
-          class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500
-                   dark:text-gray-400"
+          class="mb-2 text-xs font-semibold uppercase tracking-wide text-text-secondary
+                   dark:text-text-secondary-dark"
         >
           House Rules
         </h4>
@@ -167,7 +172,7 @@ export function buildFieldEntries(
             @switch (field.renderType) {
               @case ('boolean') {
                 <label
-                  class="flex items-center justify-between text-sm text-gray-700 dark:text-gray-300"
+                  class="flex items-center justify-between text-sm text-text-body dark:text-text-body-dark"
                 >
                   <span [title]="field.description">{{ field.displayName }}</span>
                   <input
@@ -175,9 +180,9 @@ export function buildFieldEntries(
                     [ngModel]="configValues()[field.key]"
                     (ngModelChange)="onFieldChange(field.key, $event)"
                     [disabled]="!isOwner() || formLocked()"
-                    class="h-4 w-4 rounded border-gray-300 text-indigo-600
-                           focus:ring-indigo-500 disabled:opacity-60
-                           dark:border-gray-600"
+                    class="h-4 w-4 rounded border-border-input text-primary
+                           focus:ring-primary-light disabled:opacity-disabled
+                           dark:border-border-input-dark"
                   />
                 </label>
               }
@@ -186,7 +191,7 @@ export function buildFieldEntries(
                   <label
                     [attr.for]="'field-' + field.key"
                     [title]="field.description"
-                    class="mb-1 block text-sm text-gray-700 dark:text-gray-300"
+                    class="mb-1 block text-sm text-text-body dark:text-text-body-dark"
                   >
                     {{ field.displayName }}
                   </label>
@@ -195,10 +200,10 @@ export function buildFieldEntries(
                     [ngModel]="configValues()[field.key]"
                     (ngModelChange)="onFieldChange(field.key, coerce($event))"
                     [disabled]="!isOwner() || formLocked()"
-                    class="w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm
-                           focus:border-indigo-500 focus:outline-none focus:ring-1
-                           focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-60
-                           dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                    class="w-full rounded-default border border-border-input bg-bg px-3 py-1.5 text-sm
+                           focus:border-primary-light focus:outline-none focus:ring-ring-width-sm
+                           focus:ring-primary-light disabled:cursor-not-allowed disabled:opacity-disabled
+                           dark:border-border-input-dark dark:bg-surface-dark dark:text-white"
                   >
                     @for (opt of field.options; track opt) {
                       <option [ngValue]="opt">{{ displayValue(opt) }}</option>
@@ -211,7 +216,7 @@ export function buildFieldEntries(
                   <label
                     [attr.for]="'field-' + field.key"
                     [title]="field.description"
-                    class="mb-1 block text-sm text-gray-700 dark:text-gray-300"
+                    class="mb-1 block text-sm text-text-body dark:text-text-body-dark"
                   >
                     {{ field.displayName }}
                   </label>
@@ -221,10 +226,10 @@ export function buildFieldEntries(
                     [ngModel]="configValues()[field.key]"
                     (ngModelChange)="onFieldChange(field.key, $event)"
                     [disabled]="!isOwner() || formLocked()"
-                    class="w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm
-                           focus:border-indigo-500 focus:outline-none focus:ring-1
-                           focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-60
-                           dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                    class="w-full rounded-default border border-border-input bg-bg px-3 py-1.5 text-sm
+                           focus:border-primary-light focus:outline-none focus:ring-ring-width-sm
+                           focus:ring-primary-light disabled:cursor-not-allowed disabled:opacity-disabled
+                           dark:border-border-input-dark dark:bg-surface-dark dark:text-white"
                   />
                 </div>
               }
@@ -233,7 +238,7 @@ export function buildFieldEntries(
                   <label
                     [attr.for]="'field-' + field.key"
                     [title]="field.description"
-                    class="mb-1 block text-sm text-gray-700 dark:text-gray-300"
+                    class="mb-1 block text-sm text-text-body dark:text-text-body-dark"
                   >
                     {{ field.displayName }}
                   </label>
@@ -247,22 +252,22 @@ export function buildFieldEntries(
                       (ngModelChange)="onFieldChange(field.key, $event)"
                       [disabled]="!isOwner() || formLocked() || configValues()[field.key] === null"
                       placeholder="∞"
-                      class="w-20 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm
-                             focus:border-indigo-500 focus:outline-none focus:ring-1
-                             focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-60
-                             dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                      class="w-20 rounded-default border border-border-input bg-bg px-3 py-1.5 text-sm
+                             focus:border-primary-light focus:outline-none focus:ring-ring-width-sm
+                             focus:ring-primary-light disabled:cursor-not-allowed disabled:opacity-disabled
+                             dark:border-border-input-dark dark:bg-surface-dark dark:text-white"
                     />
                     <label
-                      class="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400"
+                      class="flex items-center gap-1.5 text-sm text-text-body dark:text-text-secondary-dark"
                     >
                       <input
                         type="checkbox"
                         [ngModel]="configValues()[field.key] === null"
                         (ngModelChange)="onFieldChange(field.key, $event ? null : 1)"
                         [disabled]="!isOwner() || formLocked()"
-                        class="h-4 w-4 rounded border-gray-300 text-indigo-600
-                               focus:ring-indigo-500 disabled:opacity-60
-                               dark:border-gray-600"
+                        class="h-4 w-4 rounded border-border-input text-primary
+                               focus:ring-primary-light disabled:opacity-disabled
+                               dark:border-border-input-dark"
                       />
                       No Limit
                     </label>
@@ -279,7 +284,7 @@ export function buildFieldEntries(
         <!-- Autostart checkbox -->
         <label
           data-testid="autostart-checkbox"
-          class="mb-3 flex items-center justify-between text-sm text-gray-700 dark:text-gray-300"
+          class="mb-3 flex items-center justify-between text-sm text-text-body dark:text-text-body-dark"
         >
           <span>Autostart Next Game</span>
           <input
@@ -287,9 +292,9 @@ export function buildFieldEntries(
             [ngModel]="autostart()"
             (ngModelChange)="onAutostartChange($event)"
             [disabled]="!isOwner()"
-            class="h-4 w-4 rounded border-gray-300 text-indigo-600
-                   focus:ring-indigo-500 disabled:opacity-60
-                   dark:border-gray-600"
+            class="h-4 w-4 rounded border-border-input text-primary
+                   focus:ring-primary-light disabled:opacity-disabled
+                   dark:border-border-input-dark"
           />
         </label>
 
@@ -299,10 +304,10 @@ export function buildFieldEntries(
             <button
               data-testid="abort-game-btn"
               (click)="onAbort()"
-              class="w-full rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white
-                     transition-colors hover:bg-red-700 focus:outline-none focus:ring-2
-                     focus:ring-red-500 focus:ring-offset-2
-                     dark:bg-red-700 dark:hover:bg-red-800"
+              class="w-full rounded-default bg-danger px-4 py-2 text-sm font-medium text-white
+                     transition-colors hover:bg-danger-hover focus:outline-none focus:ring-ring-width
+                     focus:ring-danger-ring focus:ring-offset-ring-offset
+                     dark:bg-danger-dark dark:hover:bg-danger-dark-hover"
             >
               Abort Game
             </button>
@@ -312,7 +317,7 @@ export function buildFieldEntries(
                 @for (msg of validationErrors(); track msg) {
                   <li
                     data-testid="validation-message"
-                    class="text-xs text-red-600 dark:text-red-400"
+                    class="text-xs text-danger dark:text-danger-light"
                   >
                     {{ msg }}
                   </li>
@@ -323,11 +328,11 @@ export function buildFieldEntries(
               data-testid="start-game-btn"
               [disabled]="!canStart()"
               (click)="onStart()"
-              class="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white
-                     transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2
-                     focus:ring-indigo-500 focus:ring-offset-2
-                     disabled:cursor-not-allowed disabled:opacity-60
-                     dark:bg-indigo-700 dark:hover:bg-indigo-800"
+              class="w-full rounded-default bg-primary px-4 py-2 text-sm font-medium text-white
+                     transition-colors hover:bg-primary-hover focus:outline-none focus:ring-ring-width
+                     focus:ring-primary-light focus:ring-offset-ring-offset
+                     disabled:cursor-not-allowed disabled:opacity-disabled
+                     dark:bg-primary-light dark:hover:bg-primary-light-hover"
             >
               Start Game
             </button>

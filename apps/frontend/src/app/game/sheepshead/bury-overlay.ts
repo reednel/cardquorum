@@ -8,7 +8,7 @@ import { CardImage } from '../card-image';
   template: `
     @if (canAct()) {
       <div class="flex flex-col items-center gap-4">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+        <h3 class="text-lg font-semibold text-text-heading dark:text-white">
           Bury {{ buryCount() }} card{{ buryCount() > 1 ? 's' : '' }}
         </h3>
         <div class="flex flex-wrap justify-center gap-2">
@@ -16,8 +16,10 @@ import { CardImage } from '../card-image';
             <button
               type="button"
               [class]="
-                'rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-indigo-400 ' +
-                (isSelected(card) ? 'ring-2 ring-red-500 -translate-y-2' : 'hover:-translate-y-1')
+                'rounded-lg transition-all focus:outline-none focus:ring-ring-width focus:ring-primary-light ' +
+                (isSelected(card)
+                  ? 'ring-2 ring-danger-ring -translate-y-2'
+                  : 'hover:-translate-y-1')
               "
               (click)="toggleCard(card)"
               [attr.aria-pressed]="isSelected(card)"
@@ -30,15 +32,15 @@ import { CardImage } from '../card-image';
         <button
           [disabled]="selected().length !== buryCount()"
           (click)="confirm()"
-          class="rounded-lg bg-indigo-600 px-6 py-2 text-sm font-medium text-white
-                 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500
+          class="rounded-lg bg-primary px-6 py-2 text-sm font-medium text-white
+                 hover:bg-primary-hover focus:outline-none focus:ring-ring-width focus:ring-primary-light
                  disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Confirm Bury ({{ selected().length }}/{{ buryCount() }})
         </button>
       </div>
     } @else {
-      <p class="text-sm text-gray-500 dark:text-gray-400">Waiting for bury...</p>
+      <p class="text-sm text-text-secondary dark:text-text-secondary-dark">Waiting for bury...</p>
     }
   `,
 })

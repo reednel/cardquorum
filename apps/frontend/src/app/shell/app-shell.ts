@@ -10,11 +10,11 @@ import { UserDropdown } from './user-dropdown';
   selector: 'app-shell',
   template: `
     <header
-      class="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-3 dark:border-gray-700 dark:bg-gray-900"
+      class="flex items-center justify-between border-b border-border bg-bg px-6 py-3 dark:border-border-dark dark:bg-bg-dark"
     >
       <a
         routerLink="/rooms"
-        class="text-lg font-semibold text-gray-900 hover:text-indigo-600 dark:text-gray-100 dark:hover:text-indigo-400"
+        class="text-lg font-semibold text-text-heading hover:text-primary dark:text-text-heading-dark dark:hover:text-primary-light-text"
       >
         CardQuorum
       </a>
@@ -22,7 +22,7 @@ import { UserDropdown } from './user-dropdown';
       <div class="flex items-center gap-4">
         <button
           (click)="theme.toggle()"
-          class="rounded-md p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+          class="rounded-default p-2 text-text-secondary hover:bg-surface-raised dark:text-text-body-dark dark:hover:bg-surface-dark"
           [attr.aria-label]="theme.darkMode() ? 'Switch to light mode' : 'Switch to dark mode'"
         >
           @if (theme.darkMode()) {
@@ -56,7 +56,7 @@ import { UserDropdown } from './user-dropdown';
       </div>
     </header>
 
-    <main class="min-h-0 flex-1 overflow-auto bg-gray-50 dark:bg-gray-950">
+    <main class="min-h-0 flex-1 overflow-auto bg-bg dark:bg-bg-dark">
       <router-outlet />
     </main>
   `,
