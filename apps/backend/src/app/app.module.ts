@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 import * as Joi from 'joi';
 import { LoggerModule } from 'nestjs-pino';
 import { AuthModule } from '../auth/auth.module';
@@ -15,6 +15,7 @@ import { UserModule } from '../user/user.module';
 import { WsModule } from '../ws/ws.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { ConditionalThrottlerGuard } from './conditional-throttler.guard';
 
 @Module({
   imports: [
@@ -91,6 +92,6 @@ import { AppService } from './app.service';
     GameModule,
   ],
   controllers: [AppController],
-  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
+  providers: [AppService, { provide: APP_GUARD, useClass: ConditionalThrottlerGuard }],
 })
 export class AppModule {}

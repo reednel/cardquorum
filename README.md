@@ -22,6 +22,8 @@ cp .env.template .env                   # then fill in values
 pnpm serve    # Starts frontend on :4200, backend on :3000/api
 pnpm format   # Runs prettier formatter agaist the project
 pnpm validate # Tests, lints, and builds the project
+pnpm e2e      # Runs E2E tests (Chromium only)
+pnpm e2e:all  # Runs E2E tests across Chromium, Firefox, and WebKit
 ```
 
 ### More Commands
@@ -35,6 +37,22 @@ pnpm nx run-many -t lint
 pnpm nx lint <project>    # lint a single project
 pnpm prettier --check .   # check formatting
 pnpm prettier --write .   # fix formatting
+```
+
+### E2E Tests
+
+E2E tests use [Playwright](https://playwright.dev/) and run against a live frontend + backend with a dedicated test database (`cardquorum_test`). The test database is created and migrated automatically on first run.
+
+Prerequisites:
+
+- Docker Postgres running (`docker compose -f compose.dev.yml up -d`)
+- `.env` configured with a valid `DATABASE_URL`
+- Playwright browsers installed (`pnpm exec playwright install`)
+- Dev server stopped — E2E starts its own server on `:4200` with a test database
+
+```sh
+pnpm e2e              # Chromium only — fast feedback loop
+pnpm e2e:all          # All browsers (Chromium, Firefox, WebKit)
 ```
 
 ### Scaffolding a New Game Plugin
