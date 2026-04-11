@@ -1,10 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { CardImage } from './card-image';
+import { CardRenderer } from './card-renderer';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-player-seat',
-  imports: [CardImage],
+  imports: [CardRenderer],
   template: `
     <div
       [class]="
@@ -15,7 +15,7 @@ import { CardImage } from './card-image';
       <!-- Card backs fan -->
       <div class="flex -space-x-4">
         @for (i of cardBackIndices(); track i) {
-          <app-card-image [cardName]="null" alt="Card back" [width]="40" [height]="56" />
+          <app-card-renderer [cardName]="null" alt="Card back" [width]="40" [height]="56" />
         }
       </div>
 

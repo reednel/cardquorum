@@ -79,4 +79,24 @@
 
   /* --- Opacity --- */
   --opacity-disabled: 60%;
+
+  /* --- Card Color Tokens --- */
+  --color-card-bg: #ffffff;
+  --color-card-border: #000000;
+  --color-card-suit-black: #000000;
+  --color-card-suit-red: #d40000;
+  --color-card-face-accent: #131f67;
+  --color-card-face-secondary: #e2cf00;
+  --color-card-back-pattern: #131f67;
+}
+
+/* classed separately for injection into SVG */
+.dark {
+  --color-card-bg: #1e1e1e;
+  --color-card-border: #404040;
+  --color-card-suit-black: #a5b4fc;
+  --color-card-suit-red: #f38ba8;
+  --color-card-face-accent: #6366f1;
+  --color-card-face-secondary: #ffd582;
+  --color-card-back-pattern: #6366f1;
 }

@@ -1,10 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
-import { CardImage } from './card-image';
+import { CardRenderer } from './card-renderer';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-player-hand',
-  imports: [CardImage],
+  imports: [CardRenderer],
   template: `
     <div class="flex justify-center -space-x-3">
       @for (card of cards(); track card) {
@@ -22,7 +22,7 @@ import { CardImage } from './card-image';
           (click)="onCardClick(card)"
           (dblclick)="onCardDoubleClick(card)"
         >
-          <app-card-image [cardName]="card" [alt]="cardAlt(card)" [width]="72" [height]="100" />
+          <app-card-renderer [cardName]="card" [alt]="cardAlt(card)" [width]="72" [height]="100" />
         </button>
       }
     </div>

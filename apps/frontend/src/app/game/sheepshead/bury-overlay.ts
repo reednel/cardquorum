@@ -1,10 +1,10 @@
 import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
-import { CardImage } from '../card-image';
+import { CardRenderer } from '../card-renderer';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-bury-overlay',
-  imports: [CardImage],
+  imports: [CardRenderer],
   template: `
     @if (canAct()) {
       <div class="flex flex-col items-center gap-4">
@@ -25,7 +25,7 @@ import { CardImage } from '../card-image';
               [attr.aria-pressed]="isSelected(card)"
               [attr.aria-label]="'Select ' + card + ' to bury'"
             >
-              <app-card-image [cardName]="card" [width]="60" [height]="84" />
+              <app-card-renderer [cardName]="card" [width]="60" [height]="84" />
             </button>
           }
         </div>

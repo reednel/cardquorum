@@ -21,15 +21,10 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   webServer: {
-    command: 'pnpm exec nx run frontend:serve',
+    command: `DATABASE_URL=${testDatabaseUrl} AUTH_STRATEGIES=basic NODE_ENV=test pnpm exec nx run frontend:serve`,
     url: 'http://localhost:4200',
     reuseExistingServer: true,
     cwd: workspaceRoot,
-    env: {
-      DATABASE_URL: testDatabaseUrl,
-      AUTH_STRATEGIES: 'basic',
-      NODE_ENV: 'test',
-    },
   },
   projects: [
     {

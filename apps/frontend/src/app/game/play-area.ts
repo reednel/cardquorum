@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import type { TrickPlayView } from '@cardquorum/shared';
-import { CardImage } from './card-image';
+import { CardRenderer } from './card-renderer';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-play-area',
-  imports: [CardImage],
+  imports: [CardRenderer],
   template: `
     @if (plays(); as trickPlays) {
       <div class="relative h-40 w-56">
@@ -14,7 +14,7 @@ import { CardImage } from './card-image';
             class="absolute left-1/2 top-1/2 transition-all duration-300"
             [style.transform]="playTransform($index, trickPlays.length)"
           >
-            <app-card-image [cardName]="play.cardName" [width]="60" [height]="84" />
+            <app-card-renderer [cardName]="play.cardName" [width]="60" [height]="84" />
           </div>
         }
       </div>
