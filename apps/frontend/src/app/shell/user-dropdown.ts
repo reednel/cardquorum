@@ -22,6 +22,7 @@ import { AuthService } from '../auth/auth.service';
                dark:text-text-body-dark dark:hover:bg-surface-dark"
         [attr.aria-expanded]="showMenu()"
         aria-haspopup="true"
+        aria-label="User menu"
       >
         {{ auth.user()?.displayName ?? auth.user()?.username }}
       </button>

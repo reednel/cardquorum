@@ -23,8 +23,7 @@ import { ChatService } from '../chat/chat.service';
           autocomplete="off"
           placeholder="Type a message..."
           class="flex-1 rounded-default border border-border-input bg-bg px-3 py-2 text-sm
-                 focus:border-transparent focus:outline-none focus:ring-ring-width
-                 focus:ring-primary-light dark:border-border-input-dark dark:bg-surface-dark
+                 dark:border-border-input-dark dark:bg-surface-dark
                  dark:text-white"
         />
         <button
@@ -32,8 +31,7 @@ import { ChatService } from '../chat/chat.service';
           [disabled]="!messageText()"
           class="rounded-default bg-primary px-3 py-2 text-sm font-semibold text-white
                  transition-colors hover:bg-primary-hover disabled:cursor-not-allowed
-                 disabled:bg-disabled disabled:text-disabled-text focus:outline-none
-                 focus:ring-ring-width focus:ring-primary-light"
+                 disabled:bg-disabled disabled:text-disabled-text"
         >
           Send
         </button>

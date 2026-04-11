@@ -88,7 +88,6 @@ export function buildFieldEntries(
         (ngModelChange)="onGameChange($event)"
         [disabled]="!isOwner() || formLocked()"
         class="mb-4 w-full rounded-default border border-border-input bg-bg px-3 py-2 text-sm
-               focus:border-primary-light focus:outline-none focus:ring-ring-width-sm focus:ring-primary-light
                disabled:cursor-not-allowed disabled:opacity-disabled
                dark:border-border-input-dark dark:bg-surface-dark dark:text-white"
       >
@@ -113,7 +112,6 @@ export function buildFieldEntries(
           (ngModelChange)="onPresetChange($event)"
           [disabled]="!isOwner() || formLocked()"
           class="mb-1 w-full rounded-default border border-border-input bg-bg px-3 py-2 text-sm
-                 focus:border-primary-light focus:outline-none focus:ring-ring-width-sm focus:ring-primary-light
                  disabled:cursor-not-allowed disabled:opacity-disabled
                  dark:border-border-input-dark dark:bg-surface-dark dark:text-white"
         >
@@ -181,7 +179,7 @@ export function buildFieldEntries(
                     (ngModelChange)="onFieldChange(field.key, $event)"
                     [disabled]="!isOwner() || formLocked()"
                     class="h-4 w-4 rounded border-border-input text-primary
-                           focus:ring-primary-light disabled:opacity-disabled
+                           disabled:opacity-disabled
                            dark:border-border-input-dark"
                   />
                 </label>
@@ -201,8 +199,7 @@ export function buildFieldEntries(
                     (ngModelChange)="onFieldChange(field.key, coerce($event))"
                     [disabled]="!isOwner() || formLocked()"
                     class="w-full rounded-default border border-border-input bg-bg px-3 py-1.5 text-sm
-                           focus:border-primary-light focus:outline-none focus:ring-ring-width-sm
-                           focus:ring-primary-light disabled:cursor-not-allowed disabled:opacity-disabled
+                           disabled:cursor-not-allowed disabled:opacity-disabled
                            dark:border-border-input-dark dark:bg-surface-dark dark:text-white"
                   >
                     @for (opt of field.options; track opt) {
@@ -227,8 +224,7 @@ export function buildFieldEntries(
                     (ngModelChange)="onFieldChange(field.key, $event)"
                     [disabled]="!isOwner() || formLocked()"
                     class="w-full rounded-default border border-border-input bg-bg px-3 py-1.5 text-sm
-                           focus:border-primary-light focus:outline-none focus:ring-ring-width-sm
-                           focus:ring-primary-light disabled:cursor-not-allowed disabled:opacity-disabled
+                           disabled:cursor-not-allowed disabled:opacity-disabled
                            dark:border-border-input-dark dark:bg-surface-dark dark:text-white"
                   />
                 </div>
@@ -253,8 +249,7 @@ export function buildFieldEntries(
                       [disabled]="!isOwner() || formLocked() || configValues()[field.key] === null"
                       placeholder="∞"
                       class="w-20 rounded-default border border-border-input bg-bg px-3 py-1.5 text-sm
-                             focus:border-primary-light focus:outline-none focus:ring-ring-width-sm
-                             focus:ring-primary-light disabled:cursor-not-allowed disabled:opacity-disabled
+                             disabled:cursor-not-allowed disabled:opacity-disabled
                              dark:border-border-input-dark dark:bg-surface-dark dark:text-white"
                     />
                     <label
@@ -266,7 +261,7 @@ export function buildFieldEntries(
                         (ngModelChange)="onFieldChange(field.key, $event ? null : 1)"
                         [disabled]="!isOwner() || formLocked()"
                         class="h-4 w-4 rounded border-border-input text-primary
-                               focus:ring-primary-light disabled:opacity-disabled
+                               disabled:opacity-disabled
                                dark:border-border-input-dark"
                       />
                       No Limit
@@ -293,7 +288,7 @@ export function buildFieldEntries(
             (ngModelChange)="onAutostartChange($event)"
             [disabled]="!isOwner()"
             class="h-4 w-4 rounded border-border-input text-primary
-                   focus:ring-primary-light disabled:opacity-disabled
+                   disabled:opacity-disabled
                    dark:border-border-input-dark"
           />
         </label>
@@ -305,8 +300,7 @@ export function buildFieldEntries(
               data-testid="abort-game-btn"
               (click)="onAbort()"
               class="w-full rounded-default bg-danger px-4 py-2 text-sm font-medium text-white
-                     transition-colors hover:bg-danger-hover focus:outline-none focus:ring-ring-width
-                     focus:ring-danger-ring focus:ring-offset-ring-offset
+                     transition-colors hover:bg-danger-hover
                      dark:bg-danger-dark dark:hover:bg-danger-dark-hover"
             >
               Abort Game
@@ -329,8 +323,7 @@ export function buildFieldEntries(
               [disabled]="!canStart()"
               (click)="onStart()"
               class="w-full rounded-default bg-primary px-4 py-2 text-sm font-medium text-white
-                     transition-colors hover:bg-primary-hover focus:outline-none focus:ring-ring-width
-                     focus:ring-primary-light focus:ring-offset-ring-offset
+                     transition-colors hover:bg-primary-hover
                      disabled:cursor-not-allowed disabled:opacity-disabled
                      dark:bg-primary-light dark:hover:bg-primary-light-hover"
             >

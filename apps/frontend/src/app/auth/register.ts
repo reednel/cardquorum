@@ -44,7 +44,7 @@ import { AuthService } from './auth.service';
               autocomplete="username"
               required
               [attr.aria-describedby]="errorMessage() ? 'register-error' : null"
-              class="w-full rounded-default border border-border-input px-3 py-2 text-sm focus:border-primary-light focus:outline-none focus:ring-ring-width-sm focus:ring-primary-light dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
+              class="w-full rounded-default border border-border-input px-3 py-2 text-sm dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
             />
             <p class="mt-1 text-xs text-text-secondary dark:text-text-secondary-dark">
               {{ USERNAME_MIN }}–{{ USERNAME_MAX }} characters, letters/numbers/underscores
@@ -64,7 +64,7 @@ import { AuthService } from './auth.service';
               type="password"
               autocomplete="new-password"
               required
-              class="w-full rounded-default border border-border-input px-3 py-2 text-sm focus:border-primary-light focus:outline-none focus:ring-ring-width-sm focus:ring-primary-light dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
+              class="w-full rounded-default border border-border-input px-3 py-2 text-sm dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
             />
             <p class="mt-1 text-xs text-text-secondary dark:text-text-secondary-dark">
               {{ PASSWORD_MIN }}–{{ PASSWORD_MAX }} characters
@@ -84,7 +84,7 @@ import { AuthService } from './auth.service';
               type="password"
               autocomplete="new-password"
               required
-              class="w-full rounded-default border border-border-input px-3 py-2 text-sm focus:border-primary-light focus:outline-none focus:ring-ring-width-sm focus:ring-primary-light dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
+              class="w-full rounded-default border border-border-input px-3 py-2 text-sm dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
             />
             @if (passwordMismatch()) {
               <p class="mt-1 text-xs text-danger dark:text-danger-light">Passwords do not match</p>
@@ -102,7 +102,7 @@ import { AuthService } from './auth.service';
 
         <p class="mt-4 text-center text-sm text-text-secondary dark:text-text-secondary-dark">
           Already have an account?
-          <a routerLink="/login" class="text-primary hover:underline dark:text-primary-light-text">
+          <a routerLink="/login" class="text-primary underline dark:text-primary-light-text">
             Log in
           </a>
         </p>

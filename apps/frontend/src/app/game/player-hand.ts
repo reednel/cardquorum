@@ -12,8 +12,7 @@ import { CardImage } from './card-image';
           type="button"
           [disabled]="!isLegal(card)"
           [class]="
-            'relative transition-transform duration-100 focus:outline-none focus:ring-2 ' +
-            'focus:ring-primary-light rounded-lg ' +
+            'relative transition-transform duration-100 rounded-lg ' +
             (isLegal(card)
               ? 'cursor-pointer hover:-translate-y-2'
               : 'opacity-40 cursor-not-allowed') +

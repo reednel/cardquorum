@@ -62,8 +62,8 @@ type RoomTab = 'chat' | 'members' | 'game';
               data-testid="leave-btn"
               (click)="leave()"
               class="shrink-0 rounded-default px-2 py-1 text-xs text-text-secondary transition-colors
-                     hover:bg-surface-raised hover:text-text-body focus:outline-none focus:ring-ring-width
-                     focus:ring-primary-light dark:text-text-secondary-dark dark:hover:bg-surface-raised-dark
+                     hover:bg-surface-raised hover:text-text-body
+                     dark:text-text-secondary-dark dark:hover:bg-surface-raised-dark
                      dark:hover:text-text-heading-dark"
             >
               Leave
@@ -83,8 +83,7 @@ type RoomTab = 'chat' | 'members' | 'game';
               [attr.aria-selected]="activeTab() === tab"
               [attr.aria-controls]="tab + '-panel'"
               [class]="
-                'flex-1 px-3 py-2 text-sm font-medium transition-colors focus:outline-none ' +
-                'focus:ring-ring-width focus:ring-inset focus:ring-primary-light ' +
+                'flex-1 px-3 py-2 text-sm font-medium transition-colors ' +
                 (activeTab() === tab
                   ? 'border-b-2 border-primary-light text-primary dark:text-primary-light-text'
                   : 'text-text-secondary hover:text-text-body dark:text-text-secondary-dark dark:hover:text-text-heading-dark')

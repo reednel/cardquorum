@@ -1,27 +1,9 @@
-/* ============================================================
+/*
  * CardQuorum Theme — Centralized Design Tokens
- * ============================================================
- * This file defines all semantic design tokens for the app.
  * Change values here to re-theme the entire application.
- *
- * Sections:
- *   1. Color Tokens (Primary, Neutral, Danger, Success, Accent, Visibility)
- *   2. Border Radius Tokens
- *   3. Focus Ring Tokens
- *   4. Opacity Tokens
- *   5. Future Tokens (spacing, shadows — placeholder)
- *
- * Adding a new token category:
- *   1. Add a new section below with CSS custom properties
- *   2. Register them inside the @theme block
- *   3. Use the generated utility classes in component templates
- * ============================================================ */
+ */
 
 @theme {
-  /* ----------------------------------------------------------
-   * 1. COLOR TOKENS
-   * ---------------------------------------------------------- */
-
   /* --- Primary Palette --- */
   --color-primary: #4f46e5; /* buttons, links, active tabs */
   --color-primary-hover: #4338ca;
@@ -90,34 +72,11 @@
   --color-vis-invite-dark: #f59e0b1a;
   --color-vis-invite-text-dark: #fbbf24;
 
-  /* ----------------------------------------------------------
-   * 2. BORDER RADIUS TOKENS
-   * ---------------------------------------------------------- */
+  /* --- Border Radius --- */
   --radius-default: 0.375rem;
   --radius-lg: 0.5rem;
   --radius-full: 9999px;
 
-  /* ----------------------------------------------------------
-   * 3. FOCUS RING TOKENS
-   * ---------------------------------------------------------- */
-  --ring-width: 2px;
-  --ring-width-sm: 1px;
-  --ring-offset: 2px;
-
-  /* ----------------------------------------------------------
-   * 4. OPACITY TOKENS
-   * ---------------------------------------------------------- */
+  /* --- Opacity --- */
   --opacity-disabled: 60%;
-
-  /* ----------------------------------------------------------
-   * 5. FUTURE TOKENS (placeholder)
-   * ----------------------------------------------------------
-   * To add spacing tokens:
-   *   --spacing-page: 2rem;
-   *   --spacing-card: 1.5rem;
-   *
-   * To add shadow tokens:
-   *   --shadow-card: 0 1px 3px rgba(0,0,0,0.1);
-   *   --shadow-modal: 0 10px 25px rgba(0,0,0,0.15);
-   * ---------------------------------------------------------- */
 }

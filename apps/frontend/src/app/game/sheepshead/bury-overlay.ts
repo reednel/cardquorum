@@ -16,7 +16,7 @@ import { CardImage } from '../card-image';
             <button
               type="button"
               [class]="
-                'rounded-lg transition-all focus:outline-none focus:ring-ring-width focus:ring-primary-light ' +
+                'rounded-lg transition-all ' +
                 (isSelected(card)
                   ? 'ring-2 ring-danger-ring -translate-y-2'
                   : 'hover:-translate-y-1')
@@ -33,7 +33,7 @@ import { CardImage } from '../card-image';
           [disabled]="selected().length !== buryCount()"
           (click)="confirm()"
           class="rounded-lg bg-primary px-6 py-2 text-sm font-medium text-white
-                 hover:bg-primary-hover focus:outline-none focus:ring-ring-width focus:ring-primary-light
+                 hover:bg-primary-hover
                  disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Confirm Bury ({{ selected().length }}/{{ buryCount() }})

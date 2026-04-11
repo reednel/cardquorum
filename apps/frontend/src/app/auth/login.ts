@@ -43,7 +43,7 @@ import { AuthService } from './auth.service';
               autocomplete="username"
               required
               [attr.aria-describedby]="errorMessage() ? 'login-error' : null"
-              class="w-full rounded-default border border-border-input px-3 py-2 text-sm focus:border-primary-light focus:outline-none focus:ring-ring-width-sm focus:ring-primary-light dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
+              class="w-full rounded-default border border-border-input px-3 py-2 text-sm dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
             />
           </div>
 
@@ -60,7 +60,7 @@ import { AuthService } from './auth.service';
               type="password"
               autocomplete="current-password"
               required
-              class="w-full rounded-default border border-border-input px-3 py-2 text-sm focus:border-primary-light focus:outline-none focus:ring-ring-width-sm focus:ring-primary-light dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
+              class="w-full rounded-default border border-border-input px-3 py-2 text-sm dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
             />
           </div>
 
@@ -91,10 +91,7 @@ import { AuthService } from './auth.service';
 
         <p class="mt-4 text-center text-sm text-text-secondary dark:text-text-secondary-dark">
           Don't have an account?
-          <a
-            routerLink="/register"
-            class="text-primary hover:underline dark:text-primary-light-text"
-          >
+          <a routerLink="/register" class="text-primary underline dark:text-primary-light-text">
             Register
           </a>
         </p>

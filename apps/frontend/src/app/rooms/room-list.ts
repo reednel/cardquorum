@@ -18,7 +18,7 @@ import { RoomService } from './room.service';
           data-testid="create-room-btn"
           (click)="showCreate.set(true)"
           class="rounded-default bg-primary px-4 py-2 text-sm font-semibold text-white
-                 hover:bg-primary-hover focus:outline-none focus:ring-ring-width focus:ring-primary-light"
+                 hover:bg-primary-hover"
         >
           Create Room
         </button>
@@ -109,7 +109,7 @@ import { RoomService } from './room.service';
                       (click)="joinRoom(room.id)"
                       [disabled]="isRoomFull(room)"
                       [class]="
-                        'rounded-default px-3 py-1 text-xs font-medium focus:outline-none focus:ring-ring-width focus:ring-primary-light ' +
+                        'rounded-default px-3 py-1 text-xs font-medium ' +
                         (isRoomFull(room)
                           ? 'bg-disabled text-disabled-text cursor-not-allowed dark:bg-surface-raised-dark dark:text-text-secondary'
                           : 'bg-primary text-white hover:bg-primary-hover')

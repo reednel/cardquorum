@@ -62,8 +62,7 @@ import { RoomService } from './room.service';
               required
               [attr.aria-describedby]="errorMessage() ? 'create-room-error' : null"
               class="w-full rounded-default border border-border-input px-3 py-2 text-sm
-                     focus:border-primary-light focus:outline-none focus:ring-ring-width-sm
-                     focus:ring-primary-light dark:border-border-input-dark dark:bg-surface-dark
+                     dark:border-border-input-dark dark:bg-surface-dark
                      dark:text-text-heading-dark"
             />
           </div>
@@ -79,8 +78,7 @@ import { RoomService } from './room.service';
               id="room-visibility"
               formControlName="visibility"
               class="w-full rounded-default border border-border-input px-3 py-2 text-sm
-                     focus:border-primary-light focus:outline-none focus:ring-ring-width-sm
-                     focus:ring-primary-light dark:border-border-input-dark dark:bg-surface-dark
+                     dark:border-border-input-dark dark:bg-surface-dark
                      dark:text-text-heading-dark"
             >
               <option value="public">Public</option>
@@ -105,8 +103,7 @@ import { RoomService } from './room.service';
               min="0"
               placeholder="Unlimited"
               class="w-full rounded-default border border-border-input px-3 py-2 text-sm
-                     focus:border-primary-light focus:outline-none focus:ring-ring-width-sm
-                     focus:ring-primary-light dark:border-border-input-dark dark:bg-surface-dark
+                     dark:border-border-input-dark dark:bg-surface-dark
                      dark:text-text-heading-dark"
             />
           </div>
@@ -125,8 +122,7 @@ import { RoomService } from './room.service';
                 autocomplete="off"
                 placeholder="Search by username..."
                 class="w-full rounded-default border border-border-input px-3 py-2 text-sm
-                       focus:border-primary-light focus:outline-none focus:ring-ring-width-sm
-                       focus:ring-primary-light dark:border-border-input-dark dark:bg-surface-dark
+                       dark:border-border-input-dark dark:bg-surface-dark
                        dark:text-text-heading-dark"
                 (input)="onSearchInput($event)"
               />
@@ -196,8 +192,7 @@ import { RoomService } from './room.service';
               type="submit"
               [disabled]="form.invalid || submitting()"
               class="rounded-default bg-primary px-4 py-2 text-sm font-semibold text-white
-                     hover:bg-primary-hover disabled:bg-disabled disabled:text-disabled-text
-                     focus:outline-none focus:ring-ring-width focus:ring-primary-light"
+                     hover:bg-primary-hover disabled:bg-disabled disabled:text-disabled-text"
             >
               {{ submitting() ? 'Creating...' : 'Create' }}
             </button>

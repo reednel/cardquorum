@@ -11,7 +11,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
           data-testid="deal-btn"
           (click)="action.emit({ type: 'deal' })"
           class="rounded-lg bg-primary px-6 py-2 text-sm font-medium text-white
-                 hover:bg-primary-hover focus:outline-none focus:ring-ring-width focus:ring-primary-light"
+                 hover:bg-primary-hover"
         >
           Deal
         </button>

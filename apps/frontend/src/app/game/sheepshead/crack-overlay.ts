@@ -11,7 +11,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
           <button
             (click)="action.emit({ type: 'crack' })"
             class="rounded-lg bg-danger px-5 py-2 text-sm font-medium text-white
-                   hover:bg-danger-hover focus:outline-none focus:ring-ring-width focus:ring-danger-ring"
+                   hover:bg-danger-hover"
           >
             Crack
           </button>
@@ -20,7 +20,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
           <button
             (click)="action.emit({ type: 're_crack' })"
             class="rounded-lg bg-danger-hover px-5 py-2 text-sm font-medium text-white
-                   hover:bg-danger-dark-hover focus:outline-none focus:ring-ring-width focus:ring-danger-ring"
+                   hover:bg-danger-dark-hover"
           >
             Re-crack
           </button>
@@ -29,7 +29,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
           <button
             (click)="action.emit({ type: 'blitz', payload: { blitzType: 'black-blitz' } })"
             class="rounded-lg bg-accent-blitz px-5 py-2 text-sm font-medium text-white
-                   hover:bg-accent-blitz-hover focus:outline-none focus:ring-ring-width focus:ring-accent-blitz-ring"
+                   hover:bg-accent-blitz-hover"
           >
             Blitz
           </button>
@@ -37,7 +37,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
         <button
           (click)="dismiss.emit()"
           class="rounded-lg bg-surface-raised px-5 py-2 text-sm font-medium text-text-body
-                 hover:bg-border-input focus:outline-none focus:ring-ring-width focus:ring-text-secondary-dark
+                 hover:bg-border-input
                  dark:bg-border-input-dark dark:text-text-heading-dark dark:hover:bg-surface-raised-dark"
         >
           Dismiss

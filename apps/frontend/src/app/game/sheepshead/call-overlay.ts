@@ -22,8 +22,8 @@ const CALL_OPTIONS: { value: string; label: string }[] = [
             <button
               (click)="action.emit({ type: 'call_ace', payload: { card: opt.value } })"
               class="rounded-lg border border-border-input bg-bg px-4 py-2 text-sm font-medium
-                     text-text-body hover:bg-surface-raised focus:outline-none focus:ring-ring-width
-                     focus:ring-primary-light dark:border-border-input-dark dark:bg-surface-raised-dark
+                     text-text-body hover:bg-surface-raised
+                     dark:border-border-input-dark dark:bg-surface-raised-dark
                      dark:text-text-heading-dark dark:hover:bg-surface-raised-dark"
             >
               {{ opt.label }}

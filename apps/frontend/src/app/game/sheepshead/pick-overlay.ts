@@ -12,7 +12,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
             <button
               (click)="action.emit({ type: 'pick' })"
               class="rounded-lg bg-primary px-6 py-2 text-sm font-medium text-white
-                     hover:bg-primary-hover focus:outline-none focus:ring-ring-width focus:ring-primary-light"
+                     hover:bg-primary-hover"
             >
               Pick
             </button>
@@ -21,7 +21,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
             <button
               (click)="action.emit({ type: 'pass' })"
               class="rounded-lg bg-surface-raised px-6 py-2 text-sm font-medium text-text-body
-                     hover:bg-border-input focus:outline-none focus:ring-ring-width focus:ring-text-secondary-dark
+                     hover:bg-border-input
                      dark:bg-border-input-dark dark:text-text-heading-dark dark:hover:bg-surface-raised-dark"
             >
               Pass

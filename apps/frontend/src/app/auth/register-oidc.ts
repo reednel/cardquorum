@@ -44,7 +44,7 @@ import { AuthService } from './auth.service';
               autocomplete="username"
               required
               [attr.aria-describedby]="errorMessage() ? 'register-error' : null"
-              class="w-full rounded-default border border-border-input px-3 py-2 text-sm focus:border-primary-light focus:outline-none focus:ring-ring-width-sm focus:ring-primary-light dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
+              class="w-full rounded-default border border-border-input px-3 py-2 text-sm dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
             />
             <p class="mt-1 text-xs text-text-secondary dark:text-text-secondary-dark">
               {{ USERNAME_MIN }}–{{ USERNAME_MAX }} characters, letters/numbers/underscores
