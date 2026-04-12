@@ -36,6 +36,7 @@ describe('RoomController', () => {
       | 'findDiscoverablePrivate'
       | 'findDiscoverablePublic'
       | 'searchDiscoverable'
+      | 'removeFromRoster'
     >
   >;
   let gameService: jest.Mocked<Pick<GameService, 'forceCleanupRoom' | 'isGameActive'>>;
@@ -97,6 +98,9 @@ describe('RoomController', () => {
         .fn()
         .mockResolvedValue({ data: [], total: 0, page: 1, pageSize: 20 }),
       searchDiscoverable: jest.fn().mockResolvedValue([]),
+      removeFromRoster: jest
+        .fn()
+        .mockResolvedValue({ players: [], spectators: [], rotatePlayers: false }),
     };
 
     gameService = {
@@ -641,6 +645,31 @@ describe('RoomController', () => {
       roomService.canAccessRoom.mockResolvedValue(false);
 
       await expect(controller.getRoster(makeRequest(bob), 1)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('leaveRoom', () => {
+    it('should remove the requesting user from the roster', async () => {
+      const result = await controller.leaveRoom(makeRequest(bob), 1);
+
+      expect(roomService.removeFromRoster).toHaveBeenCalledWith(1, bob.userId);
+      expect(result).toEqual({ success: true });
+    });
+
+    it('should propagate ForbiddenException when owner tries to leave', async () => {
+      roomService.removeFromRoster.mockRejectedValue(
+        new ForbiddenException('Room owner cannot leave the room'),
+      );
+
+      await expect(controller.leaveRoom(makeRequest(alice), 1)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should propagate NotFoundException when room does not exist', async () => {
+      roomService.removeFromRoster.mockRejectedValue(new NotFoundException('Room not found'));
+
+      await expect(controller.leaveRoom(makeRequest(alice), 999)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

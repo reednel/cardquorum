@@ -18,7 +18,9 @@ A user can be on the roster but not connected (gray status dot), or connected bu
 ┌─────────────────────────────────────────────────────────┐
 │                       Frontend                          │
 │                                                         │
-│  RoomList ──► RoomView ──┬── RoomMembersTab             │
+│  MembershipsPage / DiscoverPage                        │
+│       │                                                 │
+│       └──► RoomView ──┬── RoomMembersTab                │
 │                          │     ├── RosterService        │
 │                          │     ├── ChatService          │
 │                          │     ├── OverflowMenu         │
@@ -289,9 +291,9 @@ Events that trigger a roster broadcast:
 
 ## Frontend Components
 
-### RoomList
+### MembershipsPage / DiscoverPage
 
-Displays all accessible rooms in a table. The Members column shows `rosterCount / memberLimit` for capped rooms. The Join button is disabled with "Full" text when the room is at capacity and the current user is not on the roster.
+The Memberships page displays rooms the user belongs to in a table. The Discover page displays rooms the user can join. Both use the shared `RoomTableComponent`. The Members column shows `rosterCount / memberLimit` for capped rooms. The Join button is disabled with "Full" text when the room is at capacity and the current user is not on the roster.
 
 ### RoomMembersTab
 

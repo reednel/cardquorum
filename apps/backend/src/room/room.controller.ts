@@ -379,6 +379,16 @@ export class RoomController {
     return this.roomService.getRoster(id);
   }
 
+  @Delete(':id/roster')
+  async leaveRoom(
+    @Req() request: FastifyRequest,
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<{ success: true }> {
+    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    await this.roomService.removeFromRoster(id, user.userId);
+    return { success: true };
+  }
+
   @Put(':id/roster')
   async updateRoster(
     @Req() request: FastifyRequest,

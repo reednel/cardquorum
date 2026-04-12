@@ -91,11 +91,23 @@ apps/frontend/src/app/
 │   ├── chat.service.ts        # Chat state management (signals)
 │   ├── room.service.ts        # Room REST API wrapper (signals)
 │   └── theme.service.ts       # Light/dark theme toggle (persisted to localStorage)
-├── rooms/
-│   ├── room-list.ts           # Room browser table with create/config modal integration
-│   ├── room-view.ts           # In-room view (sidebar + chat + member list)
+├── room-listings/
+│   ├── memberships-page.ts    # Memberships page — rooms the user belongs to
+│   ├── discover-page.ts       # Discover page — find and join new rooms
+│   ├── room-table.ts          # Shared room table component
+│   ├── details-popover.ts     # Hover popover for room details
+│   ├── pagination.ts          # Pagination controls for public rooms
+│   ├── room-listings.service.ts # HTTP service for memberships/discover endpoints
 │   ├── create-room-modal.ts   # Modal form for creating rooms
 │   └── room-config-modal.ts   # Modal for editing/deleting owned rooms
+├── room/
+│   ├── room-view.ts           # In-room view (sidebar + chat + member list)
+│   ├── room-chat-tab.ts       # Chat tab inside room view
+│   ├── room-members-tab.ts    # Members tab inside room view
+│   ├── room-game-tab.ts       # Game tab inside room view
+│   ├── room.service.ts        # Room REST API wrapper (signals)
+│   ├── roster.service.ts      # Roster state management (signals)
+│   └── overflow-menu.ts       # Overflow menu for member actions
 └── chat/
     ├── chat-message-list.ts   # Presentational message list (role="log")
     └── chat-member-list.ts    # Presentational member list
@@ -105,10 +117,12 @@ All components use `ChangeDetectionStrategy.OnPush` and are standalone (Angular 
 
 ### Route Structure
 
-| Path             | Component  | Auth required | Description                     |
-| ---------------- | ---------- | ------------- | ------------------------------- |
-| `/login`         | `Login`    | No            | Login form                      |
-| `/register`      | `Register` | No            | Registration form               |
-| `/`              | `AppShell` | Yes           | Redirects to `/rooms`           |
-| `/rooms`         | `RoomList` | Yes           | Room browser with create button |
-| `/rooms/:roomId` | `RoomView` | Yes           | In-room chat + member sidebar   |
+| Path             | Component         | Auth required | Description                   |
+| ---------------- | ----------------- | ------------- | ----------------------------- |
+| `/login`         | `Login`           | No            | Login form                    |
+| `/register`      | `Register`        | No            | Registration form             |
+| `/`              | `AppShell`        | Yes           | Redirects to `/memberships`   |
+| `/memberships`   | `MembershipsPage` | Yes           | Rooms the user belongs to     |
+| `/discover`      | `DiscoverPage`    | Yes           | Find and join new rooms       |
+| `/rooms`         | —                 | Yes           | Redirects to `/memberships`   |
+| `/rooms/:roomId` | `RoomView`        | Yes           | In-room chat + member sidebar |
