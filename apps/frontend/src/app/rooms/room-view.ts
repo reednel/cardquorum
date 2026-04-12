@@ -41,84 +41,143 @@ type RoomTab = 'chat' | 'members' | 'game';
         }
       </main>
 
-      <!-- Right panel -->
-      <aside
-        class="flex w-80 shrink-0 flex-col border-l border-border bg-surface
-               dark:border-border-dark dark:bg-surface-dark"
-      >
-        <!-- Room header -->
-        <div
-          class="flex items-center justify-between border-b border-border px-4 py-3
-                 dark:border-border-dark"
+      <!-- Expand button (visible when panel is collapsed) -->
+      @if (!panelOpen()) {
+        <button
+          data-testid="expand-panel-btn"
+          (click)="panelOpen.set(true)"
+          aria-label="Open side panel"
+          class="absolute right-0 top-1/2 z-10 -translate-y-1/2 rounded-l-md border border-r-0
+                 border-border bg-surface px-1 py-3 text-text-secondary shadow-md
+                 transition-colors hover:bg-surface-raised hover:text-text-body
+                 dark:border-border-dark dark:bg-surface-dark
+                 dark:text-text-secondary-dark dark:hover:bg-surface-raised-dark
+                 dark:hover:text-text-heading-dark"
         >
-          <p
-            class="truncate text-sm font-semibold text-text-heading dark:text-white"
-            [title]="roomName()"
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            aria-hidden="true"
           >
-            {{ roomName() }}
-          </p>
-          @if (!isOwner()) {
-            <button
-              data-testid="leave-btn"
-              (click)="leave()"
-              class="shrink-0 rounded-default px-2 py-1 text-xs text-text-secondary transition-colors
-                     hover:bg-surface-raised hover:text-text-body
-                     dark:text-text-secondary-dark dark:hover:bg-surface-raised-dark
-                     dark:hover:text-text-heading-dark"
-            >
-              Leave
-            </button>
-          }
-        </div>
+            <path
+              fill-rule="evenodd"
+              d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+              clip-rule="evenodd"
+            />
+          </svg>
+        </button>
+      }
 
-        <!-- Tabs -->
-        <nav
-          class="flex border-b border-border dark:border-border-dark"
-          role="tablist"
-          aria-label="Room panels"
+      <!-- Right panel -->
+      @if (panelOpen()) {
+        <aside
+          class="flex w-80 shrink-0 flex-col border-l border-border bg-surface
+                 dark:border-border-dark dark:bg-surface-dark"
         >
-          @for (tab of tabs; track tab) {
-            <button
-              role="tab"
-              [attr.aria-selected]="activeTab() === tab"
-              [attr.aria-controls]="tab + '-panel'"
-              [class]="
-                'flex-1 px-3 py-2 text-sm font-medium transition-colors ' +
-                (activeTab() === tab
-                  ? 'border-b-2 border-primary-light text-primary dark:text-primary-light-text'
-                  : 'text-text-secondary hover:text-text-body dark:text-text-secondary-dark dark:hover:text-text-heading-dark')
-              "
-              (click)="onTabClick(tab)"
-            >
-              {{ tab | titlecase }}
-            </button>
-          }
-        </nav>
+          <!-- Room header -->
+          <div
+            class="flex items-center justify-between border-b border-border px-4 py-3
+                   dark:border-border-dark"
+          >
+            <div class="flex min-w-0 items-center gap-1">
+              <button
+                data-testid="collapse-panel-btn"
+                (click)="panelOpen.set(false)"
+                aria-label="Collapse side panel"
+                class="shrink-0 rounded-default p-1 text-text-secondary transition-colors
+                       hover:bg-surface-raised hover:text-text-body
+                       dark:text-text-secondary-dark dark:hover:bg-surface-raised-dark
+                       dark:hover:text-text-heading-dark"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-4 w-4"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+              </button>
+              <p
+                class="truncate text-sm font-semibold text-text-heading dark:text-white"
+                [title]="roomName()"
+              >
+                {{ roomName() }}
+              </p>
+            </div>
+            @if (!isOwner()) {
+              <button
+                data-testid="leave-btn"
+                (click)="leave()"
+                class="shrink-0 rounded-default px-2 py-1 text-xs text-text-secondary transition-colors
+                       hover:bg-surface-raised hover:text-text-body
+                       dark:text-text-secondary-dark dark:hover:bg-surface-raised-dark
+                       dark:hover:text-text-heading-dark"
+              >
+                Leave
+              </button>
+            }
+          </div>
 
-        <!-- Tab panels -->
-        <div class="flex min-h-0 flex-1 flex-col">
-          <app-room-chat-tab
-            [class.hidden]="activeTab() !== 'chat'"
-            class="flex min-h-0 flex-1 flex-col"
-          />
-          @if (room(); as r) {
-            <app-room-members-tab
-              [room]="r"
-              [hidden]="activeTab() !== 'members'"
+          <!-- Tabs -->
+          <nav
+            class="flex border-b border-border dark:border-border-dark"
+            role="tablist"
+            aria-label="Room panels"
+          >
+            @for (tab of tabs; track tab) {
+              <button
+                role="tab"
+                [attr.aria-selected]="activeTab() === tab"
+                [attr.aria-controls]="tab + '-panel'"
+                [class]="
+                  'flex-1 px-3 py-2 text-sm font-medium transition-colors ' +
+                  (activeTab() === tab
+                    ? 'border-b-2 border-primary-light text-primary dark:text-primary-light-text'
+                    : 'text-text-secondary hover:text-text-body dark:text-text-secondary-dark dark:hover:text-text-heading-dark')
+                "
+                (click)="onTabClick(tab)"
+              >
+                {{ tab | titlecase }}
+              </button>
+            }
+          </nav>
+
+          <!-- Tab panels -->
+          <div class="flex min-h-0 flex-1 flex-col">
+            <app-room-chat-tab
+              [class.hidden]="activeTab() !== 'chat'"
               class="flex min-h-0 flex-1 flex-col"
             />
-          }
-          <app-room-game-tab
-            [isOwner]="isOwner()"
-            [rosterPlayers]="rosterService.players()"
-            [hidden]="activeTab() !== 'game'"
-            class="flex min-h-0 flex-1 flex-col"
-          />
-        </div>
-      </aside>
+            @if (room(); as r) {
+              <app-room-members-tab
+                [room]="r"
+                [hidden]="activeTab() !== 'members'"
+                class="flex min-h-0 flex-1 flex-col"
+              />
+            }
+            <app-room-game-tab
+              [isOwner]="isOwner()"
+              [rosterPlayers]="rosterService.players()"
+              [hidden]="activeTab() !== 'game'"
+              class="flex min-h-0 flex-1 flex-col"
+            />
+          </div>
+        </aside>
+      }
     </div>
   `,
-  host: { class: 'block h-full overflow-hidden' },
+  host: {
+    class: 'relative block overflow-hidden',
+    style: 'height: calc(100% + 3rem)',
+  },
 })
 export class RoomView implements OnInit, OnDestroy {
   protected readonly chatService = inject(ChatService);
@@ -137,6 +196,7 @@ export class RoomView implements OnInit, OnDestroy {
   protected readonly myUserID = computed(() => this.auth.user()?.userId ?? 0);
   protected readonly tabs: RoomTab[] = ['chat', 'members', 'game'];
   protected readonly activeTab = signal<RoomTab>('chat');
+  protected readonly panelOpen = signal(true);
   protected readonly roomName = signal('');
   protected readonly room = signal<RoomResponse | null>(null);
   protected readonly isOwner = signal(false);
