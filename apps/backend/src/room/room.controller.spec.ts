@@ -420,6 +420,7 @@ describe('RoomController', () => {
           displayName: 'Alice',
           section: 'players' as const,
           position: 0,
+          assignedHue: null,
         },
       ],
       spectators: [
@@ -429,6 +430,7 @@ describe('RoomController', () => {
           displayName: 'Bob',
           section: 'spectators' as const,
           position: 0,
+          assignedHue: null,
         },
       ],
       rotatePlayers: false,
@@ -461,6 +463,7 @@ describe('RoomController', () => {
           displayName: 'Bob',
           section: 'players' as const,
           position: 0,
+          assignedHue: null,
         },
       ],
       spectators: [
@@ -470,6 +473,7 @@ describe('RoomController', () => {
           displayName: 'Alice',
           section: 'spectators' as const,
           position: 0,
+          assignedHue: null,
         },
       ],
       rotatePlayers: false,

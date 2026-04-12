@@ -60,6 +60,7 @@ describe('GameService integration (full Sheepshead game)', () => {
           displayName: p.displayName,
           section: 'players' as const,
           position: i,
+          assignedHue: null as number | null,
         })),
         spectators: [],
         rotatePlayers: false,

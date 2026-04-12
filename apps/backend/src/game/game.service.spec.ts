@@ -46,6 +46,7 @@ describe('GameService', () => {
         displayName: p.displayName,
         section: 'players' as const,
         position: i,
+        assignedHue: null as number | null,
       })),
       spectators: spectators.map((s, i) => ({
         userId: s.userId,
@@ -53,6 +54,7 @@ describe('GameService', () => {
         displayName: s.displayName,
         section: 'spectators' as const,
         position: i,
+        assignedHue: null as number | null,
       })),
       rotatePlayers: false,
     };
@@ -206,6 +208,93 @@ describe('GameService', () => {
       await expect(service.startSession(1, 1)).rejects.toThrow(
         'Expected 3 players, but Players list has 4',
       );
+    });
+
+    it('should return colorMap built from roster assigned hues', async () => {
+      roomService.manager.joinRoom('1', 'conn-1', aliceIdentity);
+      roomService.manager.joinRoom('1', 'conn-2', bobIdentity);
+      roomService.manager.joinRoom('1', 'conn-3', charlieIdentity);
+
+      const rosterWithHues: RosterState = {
+        players: [
+          {
+            userId: 1,
+            username: 'alice',
+            displayName: 'Alice',
+            section: 'players' as const,
+            position: 0,
+            assignedHue: 40,
+          },
+          {
+            userId: 2,
+            username: 'bob',
+            displayName: 'Bob',
+            section: 'players' as const,
+            position: 1,
+            assignedHue: 160,
+          },
+          {
+            userId: 3,
+            username: 'charlie',
+            displayName: 'Charlie',
+            section: 'players' as const,
+            position: 2,
+            assignedHue: 280,
+          },
+        ],
+        spectators: [],
+        rotatePlayers: false,
+      };
+      roomService.getRoster.mockResolvedValue(rosterWithHues);
+
+      await service.createSession(1, 'sheepshead', validConfig, 1);
+      const result = await service.startSession(1, 1);
+
+      expect(result.colorMap).toEqual({ 1: 40, 2: 160, 3: 280 });
+    });
+
+    it('should omit players with null assignedHue from colorMap', async () => {
+      roomService.manager.joinRoom('1', 'conn-1', aliceIdentity);
+      roomService.manager.joinRoom('1', 'conn-2', bobIdentity);
+      roomService.manager.joinRoom('1', 'conn-3', charlieIdentity);
+
+      const rosterWithPartialHues: RosterState = {
+        players: [
+          {
+            userId: 1,
+            username: 'alice',
+            displayName: 'Alice',
+            section: 'players' as const,
+            position: 0,
+            assignedHue: 100,
+          },
+          {
+            userId: 2,
+            username: 'bob',
+            displayName: 'Bob',
+            section: 'players' as const,
+            position: 1,
+            assignedHue: null,
+          },
+          {
+            userId: 3,
+            username: 'charlie',
+            displayName: 'Charlie',
+            section: 'players' as const,
+            position: 2,
+            assignedHue: 220,
+          },
+        ],
+        spectators: [],
+        rotatePlayers: false,
+      };
+      roomService.getRoster.mockResolvedValue(rosterWithPartialHues);
+
+      await service.createSession(1, 'sheepshead', validConfig, 1);
+      const result = await service.startSession(1, 1);
+
+      expect(result.colorMap).toEqual({ 1: 100, 3: 220 });
+      expect(result.colorMap).not.toHaveProperty('2');
     });
 
     it('should use only roster players, not spectators', async () => {

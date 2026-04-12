@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   OnInit,
   signal,
@@ -10,7 +11,9 @@ import { ActivatedRoute } from '@angular/router';
 import { finalize } from 'rxjs';
 import {
   DISPLAY_NAME_MAX,
+  hueToHsl,
   isValidUsername,
+  PALETTE_HUES,
   PASSWORD_MAX,
   PASSWORD_MIN,
   USERNAME_MAX,
@@ -155,6 +158,67 @@ import { UserService } from './user.service';
           </dd>
         </div>
       </dl>
+
+      <div class="mt-8 border-t border-border pt-8 dark:border-border-dark">
+        <h2 class="text-lg font-semibold text-text-heading dark:text-text-heading-dark">
+          Color Preference
+        </h2>
+        <p class="mt-1 text-sm text-text-secondary dark:text-text-secondary-dark">
+          Choose a color that will represent you in games.
+        </p>
+        <div class="mt-4 flex flex-wrap gap-2" role="radiogroup" aria-label="Color preference">
+          @for (hue of paletteHues; track hue) {
+            <button
+              type="button"
+              [attr.data-testid]="'color-swatch-' + hue"
+              [style.background-color]="hueToHsl(hue, currentTheme())"
+              [class]="
+                'h-8 w-8 rounded-full border-2 focus:outline-none focus:ring-2 focus:ring-primary ' +
+                (colorSelection() === hue
+                  ? 'border-text-heading dark:border-text-heading-dark ring-2 ring-primary'
+                  : 'border-transparent')
+              "
+              [attr.aria-label]="'Select hue ' + hue"
+              [attr.aria-checked]="colorSelection() === hue"
+              role="radio"
+              (click)="colorSelection.set(hue)"
+            ></button>
+          }
+        </div>
+        <div class="mt-4 flex items-center gap-2">
+          <button
+            data-testid="save-color-btn"
+            (click)="saveColorPreference()"
+            [disabled]="colorSaving() || colorSelection() === null"
+            class="rounded-default bg-primary px-3 py-1.5 text-sm font-medium text-white
+                     hover:bg-primary-hover disabled:opacity-disabled"
+          >
+            Save
+          </button>
+          <button
+            data-testid="clear-color-btn"
+            (click)="clearColorPreference()"
+            [disabled]="colorSaving()"
+            class="rounded-default px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-raised
+                     dark:text-text-secondary-dark dark:hover:bg-surface-dark"
+          >
+            Clear
+          </button>
+        </div>
+        @if (colorMessage()) {
+          <p
+            data-testid="color-feedback"
+            class="mt-2 text-sm"
+            [class]="
+              colorMessageIsError()
+                ? 'text-danger dark:text-danger-light'
+                : 'text-success dark:text-success-light'
+            "
+          >
+            {{ colorMessage() }}
+          </p>
+        }
+      </div>
 
       <div
         class="mt-8 border-t border-border pt-8 dark:border-border-dark"
@@ -497,6 +561,30 @@ export class AccountPage implements OnInit {
   protected readonly DISPLAY_NAME_MAX = DISPLAY_NAME_MAX;
   protected readonly PASSWORD_MIN = PASSWORD_MIN;
   protected readonly PASSWORD_MAX = PASSWORD_MAX;
+
+  protected readonly paletteHues = PALETTE_HUES;
+  protected readonly hueToHsl = hueToHsl;
+
+  protected readonly currentTheme = computed(() => {
+    return document.documentElement.classList.contains('dark')
+      ? ('dark' as const)
+      : ('light' as const);
+  });
+
+  protected readonly colorSelection = signal<number | null>(null);
+  protected readonly colorSaving = signal(false);
+  protected readonly colorMessage = signal<string | null>(null);
+  protected readonly colorMessageIsError = signal(false);
+
+  private readonly colorInitialized = signal(false);
+
+  private readonly colorInitEffect = effect(() => {
+    const profile = this.userService.profile();
+    if (profile && !this.colorInitialized()) {
+      this.colorSelection.set(profile.colorPreference);
+      this.colorInitialized.set(true);
+    }
+  });
 
   protected readonly hasBasicCredential = computed(() => this.auth.credentials().includes('basic'));
 
@@ -865,6 +953,48 @@ export class AccountPage implements OnInit {
     this.successMessage.set(null);
     this.credentialError.set(null);
     window.location.href = '/api/auth/oidc/login?action=unlink';
+  }
+
+  protected saveColorPreference(): void {
+    const hue = this.colorSelection();
+    if (hue === null) return;
+
+    this.colorSaving.set(true);
+    this.colorMessage.set(null);
+
+    this.userService
+      .updateColorPreference(hue)
+      .pipe(finalize(() => this.colorSaving.set(false)))
+      .subscribe({
+        next: () => {
+          this.colorMessage.set('Color preference saved');
+          this.colorMessageIsError.set(false);
+        },
+        error: () => {
+          this.colorMessage.set('Failed to save color preference');
+          this.colorMessageIsError.set(true);
+        },
+      });
+  }
+
+  protected clearColorPreference(): void {
+    this.colorSaving.set(true);
+    this.colorMessage.set(null);
+
+    this.userService
+      .clearColorPreference()
+      .pipe(finalize(() => this.colorSaving.set(false)))
+      .subscribe({
+        next: () => {
+          this.colorSelection.set(null);
+          this.colorMessage.set('Color preference cleared');
+          this.colorMessageIsError.set(false);
+        },
+        error: () => {
+          this.colorMessage.set('Failed to clear color preference');
+          this.colorMessageIsError.set(true);
+        },
+      });
   }
 
   protected formatDate(iso: string): string {

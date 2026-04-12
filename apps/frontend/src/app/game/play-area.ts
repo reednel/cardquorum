@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import type { TrickPlayView } from '@cardquorum/shared';
+import type { ColorAssignmentMap, TrickPlayView } from '@cardquorum/shared';
 import { CardRenderer } from './card-renderer';
 
 @Component({
@@ -13,6 +13,7 @@ import { CardRenderer } from './card-renderer';
           <div
             class="absolute left-1/2 top-1/2 transition-all duration-300"
             [style.transform]="playTransform($index, trickPlays.length)"
+            [style.box-shadow]="cardHaloStyle(play.userID)"
           >
             <app-card-renderer [cardName]="play.cardName" [width]="60" [height]="84" />
           </div>
@@ -24,6 +25,8 @@ import { CardRenderer } from './card-renderer';
 export class PlayArea {
   /** Current trick plays from the plugin. */
   readonly plays = input<TrickPlayView[] | null>(null);
+  /** Color assignment map from the game session. */
+  readonly colorMap = input<ColorAssignmentMap | undefined>(undefined);
 
   /**
    * Offset each played card slightly from center based on play order.
@@ -35,5 +38,14 @@ export class PlayArea {
     const x = Math.cos(angle) * radius - 30; // offset for card width
     const y = Math.sin(angle) * radius - 42; // offset for card height
     return `translate(${x}px, ${y}px)`;
+  }
+
+  /** Return a box-shadow CSS value for the player's hue, or empty string if unavailable. */
+  protected cardHaloStyle(userID: number): string {
+    const map = this.colorMap();
+    if (!map || map[userID] === undefined) return '';
+    const hue = map[userID];
+    const lightness = document.documentElement.classList.contains('dark') ? 33 : 66;
+    return `0 0 0 2px hsl(${hue}, 75%, ${lightness}%)`;
   }
 }

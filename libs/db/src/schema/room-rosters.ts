@@ -3,6 +3,7 @@ import {
   integer,
   pgTable,
   serial,
+  smallint,
   timestamp,
   uniqueIndex,
   varchar,
@@ -23,6 +24,7 @@ export const roomRosters = pgTable(
     section: varchar('section', { length: 20 }).notNull().default('spectators'),
     position: integer('position').notNull().default(0),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    assignedHue: smallint('assigned_hue'),
   },
   (table) => [
     uniqueIndex('room_rosters_pair_unique').on(table.roomId, table.userId),

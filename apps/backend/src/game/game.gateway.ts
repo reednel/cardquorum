@@ -6,7 +6,7 @@ import {
   WebSocketGateway,
 } from '@nestjs/websockets';
 import { WebSocket } from 'ws';
-import { WS_EMIT, WS_EVENT } from '@cardquorum/shared';
+import { ColorAssignmentMap, WS_EMIT, WS_EVENT } from '@cardquorum/shared';
 import { RoomService } from '../room/room.service';
 import { WsConnectionService } from '../ws/ws-connection.service';
 import { WsValidationPipe } from '../ws/ws-validation.pipe';
@@ -97,7 +97,12 @@ export class GameGateway implements OnModuleInit {
         tracked.identity.userId,
       );
 
-      this.sendPlayerViews(result.playerViews, payload.sessionId, WS_EMIT.GAME_STARTED);
+      this.sendPlayerViews(
+        result.playerViews,
+        payload.sessionId,
+        WS_EMIT.GAME_STARTED,
+        result.colorMap,
+      );
     } catch (err) {
       this.logger.warn(`game:start failed for session ${payload.sessionId}: ${err}`);
       this.send(client, WS_EMIT.GAME_ERROR, {
@@ -183,7 +188,10 @@ export class GameGateway implements OnModuleInit {
     const tracked = this.connectionService.getTracked(client);
     if (!tracked) return;
 
-    const result = this.gameService.getSessionInfoByRoom(payload.roomId, tracked.identity.userId);
+    const result = await this.gameService.getSessionInfoByRoom(
+      payload.roomId,
+      tracked.identity.userId,
+    );
 
     if (!result) {
       // No in-memory game for this room — tell the client to clear stale state
@@ -202,6 +210,7 @@ export class GameGateway implements OnModuleInit {
         sessionId: result.sessionId,
         state: result.state,
         validActions: result.validActions,
+        colorMap: result.colorMap,
       });
     }
   }
@@ -219,12 +228,14 @@ export class GameGateway implements OnModuleInit {
     playerViews: Array<[number, { state: unknown; validActions: string[] }]>,
     sessionId: number,
     event: string,
+    colorMap?: ColorAssignmentMap,
   ) {
     for (const [userID, { state, validActions }] of playerViews) {
-      const message = JSON.stringify({
-        event,
-        data: { sessionId, state, validActions },
-      });
+      const data: Record<string, unknown> = { sessionId, state, validActions };
+      if (colorMap) {
+        data.colorMap = colorMap;
+      }
+      const message = JSON.stringify({ event, data });
       for (const client of this.connectionService.getClientsByUserId(userID)) {
         try {
           client.ws.send(message);

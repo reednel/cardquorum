@@ -12,6 +12,7 @@ import {
   RoomInviteRepository,
   RoomRepository,
   RoomRosterRepository,
+  UserRepository,
 } from '@cardquorum/db';
 import { RoomManager, rotateSeat as rosterRotateSeat } from '@cardquorum/engine';
 import {
@@ -23,8 +24,14 @@ import {
   WS_EMIT,
 } from '@cardquorum/shared';
 import { BlockService } from '../block/block.service';
+import { ColorAssignmentService } from '../color/color-assignment.service';
 import { FriendService } from '../friend/friend.service';
 import { WsConnectionService } from '../ws/ws-connection.service';
+
+/** Hard cap: maximum number of players allowed in a single room. */
+const MAX_PLAYERS = 16;
+/** Hard cap: maximum total members (players + spectators) allowed in a single room. */
+const MAX_ROOM_MEMBERS = 128;
 
 @Injectable()
 export class RoomService {
@@ -41,6 +48,8 @@ export class RoomService {
     private readonly connectionService: WsConnectionService,
     private readonly friendService: FriendService,
     private readonly blockService: BlockService,
+    private readonly colorAssignment: ColorAssignmentService,
+    private readonly userRepo: UserRepository,
   ) {}
 
   async findById(roomId: number) {
@@ -296,6 +305,9 @@ export class RoomService {
     }
 
     const currentCount = await this.roomRosters.countMembers(roomId);
+    if (currentCount >= MAX_ROOM_MEMBERS) {
+      throw new ConflictException('Room is full');
+    }
     if (room.memberLimit != null && room.memberLimit > 0 && currentCount >= room.memberLimit) {
       throw new ConflictException(`Room is full (limit: ${room.memberLimit})`);
     }
@@ -344,6 +356,10 @@ export class RoomService {
       throw new ConflictException('Cannot reorder roster while a game is active');
     }
 
+    if (players.length > MAX_PLAYERS) {
+      throw new ConflictException('Room has reached maximum player count');
+    }
+
     // Validate all members present
     const currentMembers = await this.roomRosters.findByRoom(roomId);
     const currentIds = new Set(currentMembers.map((m) => m.userId));
@@ -358,7 +374,40 @@ export class RoomService {
       throw new ConflictException('Roster update must contain all current members');
     }
 
+    // Save existing assigned hues before replaceRoster wipes them
+    const existingHueMap = new Map<number, number | null>();
+    for (const member of currentMembers) {
+      existingHueMap.set(member.userId, member.assignedHue);
+    }
+
     await this.roomRosters.replaceRoster(roomId, players, spectators);
+
+    // Restore existing assigned hues that were wiped by replaceRoster
+    for (const [userId, hue] of existingHueMap) {
+      if (hue !== null) {
+        await this.roomRosters.setAssignedHue(roomId, userId, hue);
+      }
+    }
+
+    // Assign hues to any players that don't have one yet
+    for (const userId of players) {
+      const existingHue = existingHueMap.get(userId) ?? null;
+
+      // Skip if the player already has an assigned hue
+      if (existingHue !== null) {
+        continue;
+      }
+
+      // Player has no assigned hue — assign one
+      const preferredHue = await this.userRepo.getColorPreference(userId);
+      const allHues = await this.roomRosters.getAssignedHues(roomId);
+      const occupiedHues = allHues
+        .filter((h) => h.assignedHue !== null && h.userId !== userId)
+        .map((h) => h.assignedHue as number);
+
+      const assignedHue = this.colorAssignment.assignHue(preferredHue, occupiedHues);
+      await this.roomRosters.setAssignedHue(roomId, userId, assignedHue);
+    }
 
     const roster = await this.getRoster(roomId);
     this.broadcastToRoom(String(roomId), WS_EMIT.ROSTER_UPDATED, { roomId, roster });

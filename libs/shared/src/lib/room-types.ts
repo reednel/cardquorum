@@ -61,6 +61,7 @@ export interface RosterMember {
   displayName: string | null;
   section: RosterSection;
   position: number;
+  assignedHue: number | null;
 }
 
 export interface RosterState {

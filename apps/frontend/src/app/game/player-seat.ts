@@ -34,6 +34,7 @@ import { CardRenderer } from './card-renderer';
         <span
           class="max-w-[80px] truncate text-xs font-medium text-text-body dark:text-text-body-dark"
           [title]="displayName()"
+          [style.border-bottom]="seatBorderStyle()"
         >
           {{ displayName() }}
         </span>
@@ -47,9 +48,18 @@ export class PlayerSeat {
   readonly handSize = input(0);
   readonly isDealer = input(false);
   readonly isActive = input(false);
+  readonly hue = input<number | null>(null);
 
   protected readonly cardBackIndices = computed(() => {
     const count = Math.min(this.handSize(), 8);
     return Array.from({ length: count }, (_, i) => i);
+  });
+
+  /** CSS border-bottom for the seat color indicator, or empty string when no hue. */
+  protected readonly seatBorderStyle = computed(() => {
+    const h = this.hue();
+    if (h === null) return '';
+    const lightness = document.documentElement.classList.contains('dark') ? 33 : 66;
+    return `2px solid hsl(${h}, 75%, ${lightness}%)`;
   });
 }

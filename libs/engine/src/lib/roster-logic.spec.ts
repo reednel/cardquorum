@@ -72,6 +72,7 @@ const arbRosterState = (
                 displayName: playerNames[i].displayName,
                 section: 'players' as const,
                 position: i,
+                assignedHue: null,
               }));
               const spectators: RosterMember[] = spectatorIds.map((id, i) => ({
                 userId: id,
@@ -79,6 +80,7 @@ const arbRosterState = (
                 displayName: spectatorNames[i].displayName,
                 section: 'spectators' as const,
                 position: i,
+                assignedHue: null,
               }));
               return { players, spectators, rotatePlayers } as RosterState;
             });
@@ -106,6 +108,7 @@ const arbRosterAndNewMember = (
       }),
       section: fc.constant('spectators' as const),
       position: fc.constant(0),
+      assignedHue: fc.constant(null as number | null),
     });
     return newMemberArb.map((m) => [roster, m] as [RosterState, RosterMember]);
   });

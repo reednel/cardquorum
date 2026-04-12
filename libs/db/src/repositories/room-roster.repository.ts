@@ -10,6 +10,7 @@ export interface RosterMember {
   displayName: string | null;
   section: RosterSection;
   position: number;
+  assignedHue: number | null;
 }
 
 export class RoomRosterRepository {
@@ -23,6 +24,7 @@ export class RoomRosterRepository {
         displayName: users.displayName,
         section: roomRosters.section,
         position: roomRosters.position,
+        assignedHue: roomRosters.assignedHue,
       })
       .from(roomRosters)
       .innerJoin(users, eq(roomRosters.userId, users.id))
@@ -104,5 +106,26 @@ export class RoomRosterRepository {
 
   async setRotatePlayers(roomId: number, enabled: boolean): Promise<void> {
     await this.db.update(rooms).set({ rotatePlayers: enabled }).where(eq(rooms.id, roomId));
+  }
+
+  async getAssignedHues(
+    roomId: number,
+  ): Promise<Array<{ userId: number; assignedHue: number | null }>> {
+    const rows = await this.db
+      .select({
+        userId: roomRosters.userId,
+        assignedHue: roomRosters.assignedHue,
+      })
+      .from(roomRosters)
+      .where(eq(roomRosters.roomId, roomId));
+
+    return rows;
+  }
+
+  async setAssignedHue(roomId: number, userId: number, hue: number): Promise<void> {
+    await this.db
+      .update(roomRosters)
+      .set({ assignedHue: hue })
+      .where(and(eq(roomRosters.roomId, roomId), eq(roomRosters.userId, userId)));
   }
 }

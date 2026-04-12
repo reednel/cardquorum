@@ -61,6 +61,24 @@ export class UserRepository {
       .limit(limit);
   }
 
+  async updateColorPreference(id: number, hue: number | null) {
+    const [row] = await this.db
+      .update(users)
+      .set({ preferredHue: hue, updatedAt: sql`now()` })
+      .where(eq(users.id, id))
+      .returning();
+    return row ?? null;
+  }
+
+  async getColorPreference(id: number): Promise<number | null> {
+    const rows = await this.db
+      .select({ preferredHue: users.preferredHue })
+      .from(users)
+      .where(eq(users.id, id))
+      .limit(1);
+    return rows[0]?.preferredHue ?? null;
+  }
+
   /**
    * Soft-deletes a user in a single transaction: deletes messages (except in
    * owned rooms), deletes owned rooms, deletes credentials, then anonymizes

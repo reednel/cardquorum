@@ -44,10 +44,11 @@ import { SheepsheadTablePlugin } from './sheepshead/sheepshead-table-plugin';
         [validActions]="gameService.validActions()"
         [myUserID]="myUserID()"
         [members]="members()"
+        [colorMap]="gameService.colorMap()"
       >
         <!-- Play area -->
         <div playArea>
-          <app-play-area [plays]="currentTrick()" />
+          <app-play-area [plays]="currentTrick()" [colorMap]="gameService.colorMap()" />
         </div>
 
         <!-- Player hand -->

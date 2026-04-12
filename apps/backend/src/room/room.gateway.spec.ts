@@ -156,7 +156,14 @@ describe('RoomGateway', () => {
       const rosterWithBob: RosterState = {
         players: [],
         spectators: [
-          { userId: 2, username: 'bob', displayName: 'Bob', section: 'spectators', position: 0 },
+          {
+            userId: 2,
+            username: 'bob',
+            displayName: 'Bob',
+            section: 'spectators',
+            position: 0,
+            assignedHue: null,
+          },
         ],
         rotatePlayers: false,
       };
@@ -364,10 +371,24 @@ describe('RoomGateway', () => {
     it('should broadcast ROSTER_UPDATED to all clients via reorderRoster', async () => {
       const reorderedRoster: RosterState = {
         players: [
-          { userId: 1, username: 'alice', displayName: 'Alice', section: 'players', position: 0 },
+          {
+            userId: 1,
+            username: 'alice',
+            displayName: 'Alice',
+            section: 'players',
+            position: 0,
+            assignedHue: null,
+          },
         ],
         spectators: [
-          { userId: 2, username: 'bob', displayName: 'Bob', section: 'spectators', position: 0 },
+          {
+            userId: 2,
+            username: 'bob',
+            displayName: 'Bob',
+            section: 'spectators',
+            position: 0,
+            assignedHue: null,
+          },
         ],
         rotatePlayers: false,
       };

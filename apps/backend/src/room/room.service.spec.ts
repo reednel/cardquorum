@@ -39,7 +39,11 @@ describe('RoomService', () => {
     replaceRoster: jest.Mock;
     countMembers: jest.Mock;
     isMember: jest.Mock;
+    getAssignedHues: jest.Mock;
+    setAssignedHue: jest.Mock;
   };
+  let mockColorAssignment: { assignHue: jest.Mock };
+  let mockUserRepo: { getColorPreference: jest.Mock };
 
   const alice: UserIdentity = { userId: 1, username: 'alice', displayName: 'Alice' };
   const bob: UserIdentity = { userId: 2, username: 'bob', displayName: 'Bob' };
@@ -81,7 +85,12 @@ describe('RoomService', () => {
       replaceRoster: jest.fn(),
       countMembers: jest.fn().mockResolvedValue(0),
       isMember: jest.fn().mockResolvedValue(false),
+      getAssignedHues: jest.fn().mockResolvedValue([]),
+      setAssignedHue: jest.fn(),
     };
+
+    mockColorAssignment = { assignHue: jest.fn().mockReturnValue(0) };
+    mockUserRepo = { getColorPreference: jest.fn().mockResolvedValue(null) };
 
     service = new RoomService(
       mockRepo as any,
@@ -93,6 +102,8 @@ describe('RoomService', () => {
       connectionService,
       mockFriendService as any,
       mockBlockService as any,
+      mockColorAssignment as any,
+      mockUserRepo as any,
     );
 
     mockBlockService.getBlockedIds.mockResolvedValue([]);
@@ -585,6 +596,58 @@ describe('RoomService', () => {
         ),
         { numRuns: 100 },
       );
+    });
+  });
+
+  describe('reorderRoster - color assignment', () => {
+    const roomId = 1;
+
+    const makeMember = (
+      userId: number,
+      section: 'players' | 'spectators',
+      assignedHue: number | null,
+    ) => ({
+      userId,
+      username: `user${userId}`,
+      displayName: `User ${userId}`,
+      section,
+      position: 0,
+      assignedHue,
+    });
+
+    beforeEach(() => {
+      // getRoster calls rooms.findById after reorder
+      mockRepo.findById.mockResolvedValue({ id: roomId, rotatePlayers: false });
+    });
+
+    it('should assign a hue when a spectator is first promoted to player', async () => {
+      const spectator = makeMember(1, 'spectators', null);
+      mockRosterRepo.findByRoom.mockResolvedValue([spectator]);
+      mockColorAssignment.assignHue.mockReturnValue(42);
+      mockRosterRepo.getAssignedHues.mockResolvedValue([{ userId: 1, assignedHue: null }]);
+
+      await service.reorderRoster(roomId, [1], []);
+
+      expect(mockColorAssignment.assignHue).toHaveBeenCalled();
+      expect(mockRosterRepo.setAssignedHue).toHaveBeenCalledWith(roomId, 1, 42);
+    });
+
+    it('should retain existing hue without recomputation when re-promoting a spectator', async () => {
+      const spectatorWithHue = makeMember(1, 'spectators', 120);
+      mockRosterRepo.findByRoom.mockResolvedValue([spectatorWithHue]);
+
+      await service.reorderRoster(roomId, [1], []);
+
+      expect(mockColorAssignment.assignHue).not.toHaveBeenCalled();
+    });
+
+    it('should keep existing hue when an active player is reordered', async () => {
+      const existingPlayer = makeMember(1, 'players', 60);
+      mockRosterRepo.findByRoom.mockResolvedValue([existingPlayer]);
+
+      await service.reorderRoster(roomId, [1], []);
+
+      expect(mockColorAssignment.assignHue).not.toHaveBeenCalled();
     });
   });
 });

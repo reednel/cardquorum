@@ -87,3 +87,12 @@ export {
   PASSWORD_MAX,
   isValidUsername,
 } from './lib/validation';
+
+export { PALETTE_HUES } from './lib/color-types';
+export type { ColorAssignmentMap } from './lib/color-types';
+export {
+  circularHueDistance,
+  minimumDistanceThreshold,
+  isValidPaletteHue,
+  hueToHsl,
+} from './lib/color-utils';

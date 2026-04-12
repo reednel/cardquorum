@@ -1,5 +1,6 @@
 import { inject, Injectable, signal } from '@angular/core';
 import type {
+  ColorAssignmentMap,
   GameCancelledPayload,
   GameCreatedPayload,
   GameErrorPayload,
@@ -28,6 +29,8 @@ export class GameService {
   private readonly _store = signal<unknown>(null);
   /** Error message from the server. */
   private readonly _error = signal<string | null>(null);
+  /** Color assignment map from the server. */
+  private readonly _colorMap = signal<ColorAssignmentMap | undefined>(undefined);
   /** Room ID for reconnect-based rejoin. */
   private _activeRoomId: number | null = null;
 
@@ -38,6 +41,7 @@ export class GameService {
   readonly validActions = this._validActions.asReadonly();
   readonly store = this._store.asReadonly();
   readonly error = this._error.asReadonly();
+  readonly colorMap = this._colorMap.asReadonly();
 
   constructor() {
     this.ws.on<GameCreatedPayload>(WS_EMIT.GAME_CREATED, (data) => {
@@ -54,6 +58,7 @@ export class GameService {
       this._sessionId.set(data.sessionId);
       this._state.set(data.state);
       this._validActions.set(data.validActions);
+      this._colorMap.set(data.colorMap);
       this._store.set(null);
     });
 
@@ -130,6 +135,7 @@ export class GameService {
     this._validActions.set([]);
     this._store.set(null);
     this._error.set(null);
+    this._colorMap.set(undefined);
     // Don't clear _activeRoomId — it's needed for future reconnects
     // while the user is still in the room
   }

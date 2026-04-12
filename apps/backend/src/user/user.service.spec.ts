@@ -1,4 +1,9 @@
-import { ForbiddenException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { UserService } from './user.service';
 
@@ -10,6 +15,7 @@ describe('UserService', () => {
     findById: jest.Mock;
     updateUsername: jest.Mock;
     updateDisplayName: jest.Mock;
+    updateColorPreference: jest.Mock;
     searchByUsername: jest.Mock;
     softDelete: jest.Mock;
   };
@@ -24,6 +30,7 @@ describe('UserService', () => {
     email: 'alice@example.com',
     createdAt: now,
     updatedAt: now,
+    preferredHue: null as number | null,
   };
 
   beforeEach(() => {
@@ -31,6 +38,7 @@ describe('UserService', () => {
       findById: jest.fn(),
       updateUsername: jest.fn(),
       updateDisplayName: jest.fn(),
+      updateColorPreference: jest.fn(),
       searchByUsername: jest.fn(),
       softDelete: jest.fn().mockResolvedValue(undefined),
     };
@@ -52,6 +60,7 @@ describe('UserService', () => {
         displayName: 'Alice',
         email: 'alice@example.com',
         createdAt: now.toISOString(),
+        colorPreference: null,
       });
     });
 
@@ -209,6 +218,44 @@ describe('UserService', () => {
       const freshDate = new Date(Date.now() - 1 * 60 * 1000);
       await service.deleteAccount(1, 'oidc', freshDate);
       expect(mockCredentialRepo.findCredentialByUserId).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('updateColorPreference', () => {
+    it('should accept a valid palette hue and return profile with colorPreference', async () => {
+      const updated = { ...user, preferredHue: 60 };
+      mockUserRepo.updateColorPreference.mockResolvedValue(updated);
+
+      const result = await service.updateColorPreference(1, 60);
+
+      expect(result.colorPreference).toBe(60);
+      expect(mockUserRepo.updateColorPreference).toHaveBeenCalledWith(1, 60);
+    });
+
+    it('should reject a non-palette hue with BadRequestException', async () => {
+      await expect(service.updateColorPreference(1, 15)).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('clearColorPreference', () => {
+    it('should clear the preference and return profile with null colorPreference', async () => {
+      const updated = { ...user, preferredHue: null };
+      mockUserRepo.updateColorPreference.mockResolvedValue(updated);
+
+      const result = await service.clearColorPreference(1);
+
+      expect(result.colorPreference).toBeNull();
+      expect(mockUserRepo.updateColorPreference).toHaveBeenCalledWith(1, null);
+    });
+  });
+
+  describe('getProfile with color preference', () => {
+    it('should return colorPreference from the user preferredHue field', async () => {
+      mockUserRepo.findById.mockResolvedValue({ ...user, preferredHue: 200 });
+
+      const result = await service.getProfile(1);
+
+      expect(result?.colorPreference).toBe(200);
     });
   });
 });

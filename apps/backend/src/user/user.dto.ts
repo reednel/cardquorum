@@ -1,4 +1,14 @@
-import { IsOptional, IsString, Matches, MaxLength, MinLength, ValidateIf } from 'class-validator';
+import {
+  IsInt,
+  IsOptional,
+  IsString,
+  Matches,
+  Max,
+  MaxLength,
+  Min,
+  MinLength,
+  ValidateIf,
+} from 'class-validator';
 import {
   DeleteAccountRequest,
   DISPLAY_NAME_MAX,
@@ -37,4 +47,11 @@ export class DeleteAccountDto implements DeleteAccountRequest {
   @IsString()
   @IsOptional()
   password?: string;
+}
+
+export class UpdateColorPreferenceDto {
+  @IsInt()
+  @Min(0)
+  @Max(340)
+  hue!: number;
 }

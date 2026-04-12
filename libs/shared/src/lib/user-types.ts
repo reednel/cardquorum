@@ -4,6 +4,7 @@ export interface UserProfile {
   displayName: string | null;
   email: string | null;
   createdAt: string;
+  colorPreference: number | null;
 }
 
 export interface UserSearchResult {

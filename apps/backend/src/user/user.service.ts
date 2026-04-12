@@ -9,6 +9,7 @@ import * as bcrypt from 'bcryptjs';
 import { CredentialRepository, RoomRepository, UserRepository } from '@cardquorum/db';
 import {
   DISPLAY_NAME_MAX,
+  isValidPaletteHue,
   isValidUsername,
   UserProfile,
   UserSearchResult,
@@ -32,6 +33,7 @@ export class UserService {
       displayName: user.displayName,
       email: user.email,
       createdAt: user.createdAt.toISOString(),
+      colorPreference: user.preferredHue ?? null,
     };
   }
 
@@ -54,6 +56,7 @@ export class UserService {
       displayName: updated.displayName,
       email: updated.email,
       createdAt: updated.createdAt.toISOString(),
+      colorPreference: updated.preferredHue ?? null,
     };
   }
 
@@ -82,6 +85,43 @@ export class UserService {
       displayName: updated.displayName,
       email: updated.email,
       createdAt: updated.createdAt.toISOString(),
+      colorPreference: updated.preferredHue ?? null,
+    };
+  }
+
+  async updateColorPreference(userId: number, hue: number): Promise<UserProfile> {
+    if (!isValidPaletteHue(hue)) {
+      throw new BadRequestException('Color must be from the palette');
+    }
+
+    const updated = await this.users.updateColorPreference(userId, hue);
+    if (!updated) {
+      throw new NotFoundException('User not found');
+    }
+
+    return {
+      userId: updated.id,
+      username: updated.username,
+      displayName: updated.displayName,
+      email: updated.email,
+      createdAt: updated.createdAt.toISOString(),
+      colorPreference: updated.preferredHue ?? null,
+    };
+  }
+
+  async clearColorPreference(userId: number): Promise<UserProfile> {
+    const updated = await this.users.updateColorPreference(userId, null);
+    if (!updated) {
+      throw new NotFoundException('User not found');
+    }
+
+    return {
+      userId: updated.id,
+      username: updated.username,
+      displayName: updated.displayName,
+      email: updated.email,
+      createdAt: updated.createdAt.toISOString(),
+      colorPreference: updated.preferredHue ?? null,
     };
   }
 

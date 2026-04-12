@@ -142,6 +142,7 @@ describe('GameGateway', () => {
           [2, { state: { hand: ['bob-view'] }, validActions: [] }],
           [3, { state: { hand: ['charlie-view'] }, validActions: [] }],
         ],
+        colorMap: { 1: 0, 2: 120, 3: 240 },
       });
 
       await gateway.handleGameStart(client1, { sessionId: 1 });
@@ -154,8 +155,13 @@ describe('GameGateway', () => {
       expect(parse(client1).data.state).toEqual({ hand: ['alice-view'] });
       expect(parse(client1).data.validActions).toEqual(['deal']);
 
+      expect(parse(client1).data.colorMap).toEqual({ 1: 0, 2: 120, 3: 240 });
+
       expect(parse(client2).data.state).toEqual({ hand: ['bob-view'] });
+      expect(parse(client2).data.colorMap).toEqual({ 1: 0, 2: 120, 3: 240 });
+
       expect(parse(client3).data.state).toEqual({ hand: ['charlie-view'] });
+      expect(parse(client3).data.colorMap).toEqual({ 1: 0, 2: 120, 3: 240 });
     });
 
     it('should send game:error if startSession throws', async () => {
@@ -364,13 +370,14 @@ describe('GameGateway', () => {
       const client = createMockClient();
       connectionService.trackClient(client, aliceIdentity);
 
-      gameService.getSessionInfoByRoom.mockReturnValue({
+      gameService.getSessionInfoByRoom.mockResolvedValue({
         sessionId: 1,
         status: 'active',
         gameType: 'sheepshead',
         config: {},
         state: { phase: 'pick', hand: ['qc'] },
         validActions: ['pick', 'pass'],
+        colorMap: { 1: 120 },
       });
 
       await gateway.handleGameRejoin(client, { roomId: 1 });
@@ -379,13 +386,14 @@ describe('GameGateway', () => {
       expect(parsed.event).toBe(WS_EMIT.GAME_STARTED);
       expect(parsed.data.sessionId).toBe(1);
       expect(parsed.data.state.phase).toBe('pick');
+      expect(parsed.data.colorMap).toEqual({ 1: 120 });
     });
 
     it('should send game:created if waiting game exists for room', async () => {
       const client = createMockClient();
       connectionService.trackClient(client, aliceIdentity);
 
-      gameService.getSessionInfoByRoom.mockReturnValue({
+      gameService.getSessionInfoByRoom.mockResolvedValue({
         sessionId: 1,
         status: 'waiting',
         gameType: 'sheepshead',
@@ -404,7 +412,7 @@ describe('GameGateway', () => {
       const client = createMockClient();
       connectionService.trackClient(client, aliceIdentity);
 
-      gameService.getSessionInfoByRoom.mockReturnValue(null);
+      gameService.getSessionInfoByRoom.mockResolvedValue(null);
 
       await gateway.handleGameRejoin(client, { roomId: 1 });
 

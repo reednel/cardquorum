@@ -22,6 +22,7 @@ import { WsConnectionService } from '../ws/ws-connection.service';
 import {
   DeleteAccountDto,
   SearchUsersDto,
+  UpdateColorPreferenceDto,
   UpdateDisplayNameDto,
   UpdateUsernameDto,
 } from './user.dto';
@@ -65,6 +66,21 @@ export class UserController {
   ): Promise<UserProfile> {
     const user = (request as any)[REQUEST_USER_KEY] as SessionIdentity;
     return this.userService.updateDisplayName(user.userId, dto.displayName);
+  }
+
+  @Patch('me/color-preference')
+  async updateColorPreference(
+    @Req() request: FastifyRequest,
+    @Body() dto: UpdateColorPreferenceDto,
+  ): Promise<UserProfile> {
+    const user = (request as any)[REQUEST_USER_KEY] as SessionIdentity;
+    return this.userService.updateColorPreference(user.userId, dto.hue);
+  }
+
+  @Delete('me/color-preference')
+  async clearColorPreference(@Req() request: FastifyRequest): Promise<UserProfile> {
+    const user = (request as any)[REQUEST_USER_KEY] as SessionIdentity;
+    return this.userService.clearColorPreference(user.userId);
   }
 
   @Get('search')

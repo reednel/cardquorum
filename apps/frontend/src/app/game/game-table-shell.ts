@@ -1,5 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import type { GameTablePlugin, SeatInfo, StatusInfo, UserIdentity } from '@cardquorum/shared';
+import type {
+  ColorAssignmentMap,
+  GameTablePlugin,
+  SeatInfo,
+  StatusInfo,
+  UserIdentity,
+} from '@cardquorum/shared';
 import { GameStatusBar } from './game-status-bar';
 import { PlayerSeat } from './player-seat';
 
@@ -20,6 +26,7 @@ import { PlayerSeat } from './player-seat';
             [handSize]="seat.handSize"
             [isDealer]="seat.isDealer"
             [isActive]="seat.isActive"
+            [hue]="colorMap()?.[seat.userID] ?? null"
             [style.left.%]="seat.x"
             [style.top.%]="seat.y"
             class="-translate-x-1/2 -translate-y-1/2"
@@ -54,6 +61,7 @@ export class GameTableShell {
   readonly validActions = input.required<string[]>();
   readonly myUserID = input.required<number>();
   readonly members = input.required<UserIdentity[]>();
+  readonly colorMap = input<ColorAssignmentMap | undefined>(undefined);
 
   protected readonly seats = computed<SeatInfo[]>(() =>
     this.plugin().getPlayerSeats(this.state(), this.myUserID()),

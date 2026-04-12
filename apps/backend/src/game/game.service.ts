@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { GameSessionRepository } from '@cardquorum/db';
 import { GamePlugin, WithScheduledEvents } from '@cardquorum/engine';
+import { ColorAssignmentMap } from '@cardquorum/shared';
 import { SheepsheadPlugin } from '@cardquorum/sheepshead';
 import { RoomService } from '../room/room.service';
 import { resolveCancellationStatus } from './game-status';
@@ -125,7 +126,10 @@ export class GameService implements OnModuleDestroy {
   async startSession(
     sessionId: number,
     requestedBy: number,
-  ): Promise<{ playerViews: Array<[number, { state: unknown; validActions: string[] }]> }> {
+  ): Promise<{
+    playerViews: Array<[number, { state: unknown; validActions: string[] }]>;
+    colorMap: ColorAssignmentMap;
+  }> {
     const game = this.activeGames.get(sessionId);
     if (!game) {
       throw new Error(`Game session ${sessionId} not found`);
@@ -161,9 +165,17 @@ export class GameService implements OnModuleDestroy {
 
     const playerViews = this.buildPlayerViews(game, plugin);
 
+    // Build color assignment map from roster assigned hues
+    const colorMap: ColorAssignmentMap = {};
+    for (const player of roster.players) {
+      if (player.assignedHue !== null) {
+        colorMap[player.userId] = player.assignedHue;
+      }
+    }
+
     this.logger.log(`Game session ${sessionId} started with ${playerIDs.length} players`);
 
-    return { playerViews };
+    return { playerViews, colorMap };
   }
 
   async applyAction(
@@ -348,17 +360,18 @@ export class GameService implements OnModuleDestroy {
   }
 
   /** Return session info for rejoin, covering both waiting and active games. */
-  getSessionInfoByRoom(
+  async getSessionInfoByRoom(
     roomId: number,
     userID: number,
-  ): {
+  ): Promise<{
     sessionId: number;
     status: 'waiting' | 'active';
     gameType: string;
     config: unknown;
     state?: unknown;
     validActions?: string[];
-  } | null {
+    colorMap?: ColorAssignmentMap;
+  } | null> {
     const sessionId = this.roomToSession.get(roomId);
     if (sessionId === undefined) return null;
 
@@ -377,11 +390,21 @@ export class GameService implements OnModuleDestroy {
     const view = this.getPlayerView(sessionId, userID);
     if (!view) return null;
 
+    // Build color assignment map from roster assigned hues
+    const roster = await this.roomService.getRoster(roomId);
+    const colorMap: ColorAssignmentMap = {};
+    for (const player of roster.players) {
+      if (player.assignedHue !== null) {
+        colorMap[player.userId] = player.assignedHue;
+      }
+    }
+
     return {
       sessionId,
       status: 'active',
       gameType: game.gameType,
       config: game.config,
+      colorMap,
       ...view,
     };
   }

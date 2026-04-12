@@ -29,6 +29,13 @@
       "when": 1775343759170,
       "tag": "0003_sour_freak",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1776011205132,
+      "tag": "0004_first_bruce_banner",
+      "breakpoints": true
     }
   ]
 }

@@ -1,3 +1,4 @@
+import type { ColorAssignmentMap } from './color-types';
 import type { RosterState } from './room-types';
 
 export interface UserIdentity {
@@ -101,6 +102,7 @@ export interface GameStartedPayload {
   sessionId: number;
   state: unknown;
   validActions: string[];
+  colorMap?: ColorAssignmentMap;
 }
 
 export interface GameStateUpdatePayload {

@@ -1,7 +1,8 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
-import { UserProfile } from '@cardquorum/shared';
+import { of } from 'rxjs';
+import { PALETTE_HUES, UserProfile } from '@cardquorum/shared';
 import { AuthService } from '../auth/auth.service';
 import { AccountPage } from './account-page';
 import { UserService } from './user.service';
@@ -12,6 +13,7 @@ const PROFILE: UserProfile = {
   displayName: 'Alice',
   email: 'alice@example.com',
   createdAt: '2026-01-15T10:30:00Z',
+  colorPreference: null,
 };
 
 describe('AccountPage', () => {
@@ -24,6 +26,8 @@ describe('AccountPage', () => {
     loadProfile: jest.fn(),
     updateUsername: jest.fn(),
     updateDisplayName: jest.fn(),
+    updateColorPreference: jest.fn(),
+    clearColorPreference: jest.fn(),
     deleteAccount: jest.fn(),
   };
 
@@ -44,6 +48,8 @@ describe('AccountPage', () => {
     mockUserService.loadProfile.mockClear();
     mockUserService.updateUsername.mockClear();
     mockUserService.updateDisplayName.mockClear();
+    mockUserService.updateColorPreference.mockClear();
+    mockUserService.clearColorPreference.mockClear();
     mockAuthService.loadCredentials.mockClear();
     mockAuthService.linkBasicCredential.mockClear();
     mockAuthService.unlinkBasicCredential.mockClear();
@@ -264,6 +270,52 @@ describe('AccountPage', () => {
 
     it('calls loadCredentials on init', () => {
       expect(mockAuthService.loadCredentials).toHaveBeenCalled();
+    });
+  });
+
+  describe('color preference picker', () => {
+    beforeEach(() => {
+      profileSignal.set(PROFILE);
+      fixture.detectChanges();
+    });
+
+    it('renders a swatch button for each palette hue', () => {
+      const swatches = PALETTE_HUES.map((hue) =>
+        el.querySelector(`[data-testid="color-swatch-${hue}"]`),
+      );
+      expect(swatches.every((s) => s !== null)).toBe(true);
+      expect(swatches).toHaveLength(18);
+    });
+
+    it('highlights the selected swatch when clicked', () => {
+      const swatch = el.querySelector('[data-testid="color-swatch-60"]') as HTMLButtonElement;
+      swatch.click();
+      fixture.detectChanges();
+
+      expect(swatch.getAttribute('aria-checked')).toBe('true');
+    });
+
+    it('calls updateColorPreference when save is clicked', () => {
+      const updatedProfile = { ...PROFILE, colorPreference: 60 };
+      mockUserService.updateColorPreference.mockReturnValue(of(updatedProfile));
+
+      (el.querySelector('[data-testid="color-swatch-60"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      (el.querySelector('[data-testid="save-color-btn"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      expect(mockUserService.updateColorPreference).toHaveBeenCalledWith(60);
+    });
+
+    it('calls clearColorPreference when clear is clicked', () => {
+      const clearedProfile = { ...PROFILE, colorPreference: null };
+      mockUserService.clearColorPreference.mockReturnValue(of(clearedProfile));
+
+      (el.querySelector('[data-testid="clear-color-btn"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      expect(mockUserService.clearColorPreference).toHaveBeenCalled();
     });
   });
 });

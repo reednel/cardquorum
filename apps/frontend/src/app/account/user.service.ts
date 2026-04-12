@@ -43,6 +43,18 @@ export class UserService {
     );
   }
 
+  updateColorPreference(hue: number): Observable<UserProfile> {
+    return this.http
+      .patch<UserProfile>('/api/users/me/color-preference', { hue })
+      .pipe(tap((updated) => this._profile.set(updated)));
+  }
+
+  clearColorPreference(): Observable<UserProfile> {
+    return this.http
+      .delete<UserProfile>('/api/users/me/color-preference')
+      .pipe(tap((updated) => this._profile.set(updated)));
+  }
+
   deleteAccount(password?: string): Observable<void> {
     const body: DeleteAccountRequest = { password };
     return this.http
