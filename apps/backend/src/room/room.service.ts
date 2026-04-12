@@ -1,6 +1,8 @@
 import {
   ConflictException,
   ForbiddenException,
+  forwardRef,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
@@ -16,8 +18,10 @@ import {
 } from '@cardquorum/db';
 import { RoomManager, rotateSeat as rosterRotateSeat } from '@cardquorum/engine';
 import {
+  PaginatedResponse,
   RoomBanResponse,
   RoomInviteResponse,
+  RoomResponse,
   RoomVisibility,
   RosterMember,
   RosterState,
@@ -26,6 +30,7 @@ import {
 import { BlockService } from '../block/block.service';
 import { ColorAssignmentService } from '../color/color-assignment.service';
 import { FriendService } from '../friend/friend.service';
+import { GameService } from '../game/game.service';
 import { WsConnectionService } from '../ws/ws-connection.service';
 
 /** Hard cap: maximum number of players allowed in a single room. */
@@ -50,6 +55,8 @@ export class RoomService {
     private readonly blockService: BlockService,
     private readonly colorAssignment: ColorAssignmentService,
     private readonly userRepo: UserRepository,
+    @Inject(forwardRef(() => GameService))
+    private readonly gameService: GameService,
   ) {}
 
   async findById(roomId: number) {
@@ -108,13 +115,17 @@ export class RoomService {
     ownerId: number,
     visibility: RoomVisibility = 'public',
     memberLimit?: number | null,
+    description?: string | null,
   ) {
-    const room = await this.rooms.create(name, ownerId, visibility, memberLimit);
+    const room = await this.rooms.create(name, ownerId, visibility, memberLimit, description);
     this.logger.log(`Room ${room.id} "${name}" created by user ${ownerId}`);
     return room;
   }
 
-  async update(roomId: number, fields: { name?: string; visibility?: string }) {
+  async update(
+    roomId: number,
+    fields: { name?: string; visibility?: string; description?: string | null },
+  ) {
     const updated = await this.rooms.update(roomId, fields);
     if (updated) {
       this.logger.log(`Room ${roomId} updated: ${JSON.stringify(fields)}`);
@@ -177,6 +188,127 @@ export class RoomService {
     const members = this.manager.getRoomMembers(String(roomId));
     const uniqueUserIds = new Set(members.map((m) => m.userId));
     return uniqueUserIds.size;
+  }
+
+  async updateLastVisitedAt(roomId: number, userId: number): Promise<void> {
+    await this.roomRosters.updateLastVisitedAt(roomId, userId);
+  }
+
+  async findMemberships(userId: number): Promise<RoomResponse[]> {
+    const rooms = await this.rooms.findMemberships(userId);
+    return Promise.all(rooms.map((r) => this.buildRoomResponse(r, userId)));
+  }
+
+  async findDiscoverablePrivate(userId: number): Promise<RoomResponse[]> {
+    const [friendIds, invitedRoomIds, bannedRoomIds, blockedIds, rosteredRoomIds] =
+      await Promise.all([
+        this.friendService.findFriendIds(userId),
+        this.roomInvites.findInvitedRoomIds(userId),
+        this.roomBans.findBannedRoomIds(userId),
+        this.blockService.getBlockedIds(userId),
+        this.roomRosters.findRosteredRoomIds(userId),
+      ]);
+
+    const rooms = await this.rooms.findDiscoverablePrivate(
+      userId,
+      friendIds,
+      invitedRoomIds,
+      bannedRoomIds,
+      blockedIds,
+      rosteredRoomIds,
+    );
+
+    return Promise.all(rooms.map((r) => this.buildRoomResponse(r, userId)));
+  }
+
+  async findDiscoverablePublic(
+    userId: number,
+    page: number,
+    pageSize: number,
+  ): Promise<PaginatedResponse<RoomResponse>> {
+    const [bannedRoomIds, blockedIds, rosteredRoomIds] = await Promise.all([
+      this.roomBans.findBannedRoomIds(userId),
+      this.blockService.getBlockedIds(userId),
+      this.roomRosters.findRosteredRoomIds(userId),
+    ]);
+
+    const offset = (page - 1) * pageSize;
+    const result = await this.rooms.findDiscoverablePublic(
+      userId,
+      bannedRoomIds,
+      blockedIds,
+      rosteredRoomIds,
+      offset,
+      pageSize,
+    );
+
+    const data = await Promise.all(result.rooms.map((r) => this.buildRoomResponse(r, userId)));
+
+    return { data, total: result.total, page, pageSize };
+  }
+
+  async searchDiscoverable(userId: number, query: string): Promise<RoomResponse[]> {
+    const [friendIds, invitedRoomIds, bannedRoomIds, blockedIds, rosteredRoomIds] =
+      await Promise.all([
+        this.friendService.findFriendIds(userId),
+        this.roomInvites.findInvitedRoomIds(userId),
+        this.roomBans.findBannedRoomIds(userId),
+        this.blockService.getBlockedIds(userId),
+        this.roomRosters.findRosteredRoomIds(userId),
+      ]);
+
+    const rooms = await this.rooms.searchDiscoverable(
+      userId,
+      query,
+      friendIds,
+      invitedRoomIds,
+      bannedRoomIds,
+      blockedIds,
+      rosteredRoomIds,
+    );
+
+    return Promise.all(rooms.map((r) => this.buildRoomResponse(r, userId)));
+  }
+
+  private async buildRoomResponse(
+    room: {
+      id: number;
+      name: string;
+      description: string | null;
+      ownerId: number;
+      ownerDisplayName: string | null;
+      ownerUsername: string;
+      visibility: string;
+      memberLimit: number | null;
+      createdAt: Date;
+      updatedAt: Date;
+    },
+    userId: number,
+  ): Promise<RoomResponse> {
+    const [gameSettings, rosterCount, isOnRoster] = await Promise.all([
+      this.roomGameSettings.findByRoomId(room.id),
+      this.roomRosters.countMembers(room.id),
+      this.roomRosters.isMember(room.id, userId),
+    ]);
+
+    return {
+      id: room.id,
+      name: room.name,
+      description: room.description,
+      ownerId: room.ownerId,
+      ownerDisplayName: room.ownerDisplayName ?? '',
+      ownerUsername: room.ownerUsername,
+      visibility: room.visibility as RoomVisibility,
+      createdAt: room.createdAt.toISOString(),
+      updatedAt: room.updatedAt.toISOString(),
+      onlineCount: this.getOnlineCount(room.id),
+      memberLimit: room.memberLimit ?? null,
+      rosterCount,
+      isOnRoster,
+      gameType: gameSettings?.gameType ?? null,
+      presetName: gameSettings?.presetName ?? null,
+      gameInProgress: this.gameService.isGameActive(room.id),
+    };
   }
 
   broadcastToRoom(roomId: string, event: string, data: unknown, excludeConnId?: string): void {

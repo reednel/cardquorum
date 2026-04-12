@@ -12,11 +12,13 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
 import {
+  PaginatedResponse,
   RoomBanResponse,
   RoomInviteResponse,
   RoomResponse,
@@ -50,7 +52,13 @@ export class RoomController {
     const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
     const visibility = dto.visibility ?? 'public';
 
-    const row = await this.roomService.create(dto.name, user.userId, visibility, dto.memberLimit);
+    const row = await this.roomService.create(
+      dto.name,
+      user.userId,
+      visibility,
+      dto.memberLimit,
+      dto.description,
+    );
 
     if (dto.invitedUserIds?.length) {
       const filtered = dto.invitedUserIds.filter((id) => id !== user.userId);
@@ -60,8 +68,10 @@ export class RoomController {
     return {
       id: row.id,
       name: row.name,
+      description: row.description ?? null,
       ownerId: user.userId,
       ownerDisplayName: user.displayName,
+      ownerUsername: user.username,
       visibility: row.visibility as RoomVisibility,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
@@ -69,8 +79,50 @@ export class RoomController {
       memberLimit: row.memberLimit ?? null,
       rosterCount: 0,
       isOnRoster: false,
+      gameType: null,
+      presetName: null,
+      gameInProgress: false,
     };
   }
+
+  // --- Memberships & Discover endpoints (before :id routes) ---
+
+  @Get('memberships')
+  async memberships(@Req() request: FastifyRequest): Promise<RoomResponse[]> {
+    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    return this.roomService.findMemberships(user.userId);
+  }
+
+  @Get('discover')
+  async discover(
+    @Req() request: FastifyRequest,
+    @Query('filter') filter?: string,
+    @Query('search') search?: string,
+    @Query('page') pageStr?: string,
+    @Query('pageSize') pageSizeStr?: string,
+  ): Promise<RoomResponse[] | PaginatedResponse<RoomResponse>> {
+    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+
+    if (search) {
+      return this.roomService.searchDiscoverable(user.userId, search);
+    }
+
+    if (filter === 'private') {
+      return this.roomService.findDiscoverablePrivate(user.userId);
+    }
+
+    if (filter === 'public') {
+      const page = Math.max(1, parseInt(pageStr ?? '1', 10) || 1);
+      const pageSize = Math.max(1, Math.min(100, parseInt(pageSizeStr ?? '20', 10) || 20));
+      return this.roomService.findDiscoverablePublic(user.userId, page, pageSize);
+    }
+
+    throw new BadRequestException(
+      'Invalid filter. Use "private", "public", or provide a "search" query.',
+    );
+  }
+
+  // --- List & FindOne ---
 
   @Get()
   async list(@Req() request: FastifyRequest): Promise<RoomResponse[]> {
@@ -79,13 +131,18 @@ export class RoomController {
 
     const results: RoomResponse[] = [];
     for (const r of rooms) {
-      const rosterCount = await this.roomService.countMembers(r.id);
-      const isOnRoster = await this.roomService.isMember(r.id, user.userId);
+      const [rosterCount, isOnRoster, gameSettings] = await Promise.all([
+        this.roomService.countMembers(r.id),
+        this.roomService.isMember(r.id, user.userId),
+        this.roomService.loadGameSettings(r.id),
+      ]);
       results.push({
         id: r.id,
         name: r.name,
+        description: r.description ?? null,
         ownerId: r.ownerId,
         ownerDisplayName: r.ownerDisplayName,
+        ownerUsername: r.ownerUsername,
         visibility: r.visibility as RoomVisibility,
         createdAt: r.createdAt.toISOString(),
         updatedAt: r.updatedAt.toISOString(),
@@ -93,6 +150,9 @@ export class RoomController {
         memberLimit: r.memberLimit ?? null,
         rosterCount,
         isOnRoster,
+        gameType: gameSettings?.gameType ?? null,
+        presetName: gameSettings?.presetName ?? null,
+        gameInProgress: this.gameService.isGameActive(r.id),
       });
     }
     return results;
@@ -110,14 +170,19 @@ export class RoomController {
     }
 
     const room = (await this.roomService.findById(id))!;
-    const rosterCount = await this.roomService.countMembers(room.id);
-    const isOnRoster = await this.roomService.isMember(room.id, user.userId);
+    const [rosterCount, isOnRoster, gameSettings] = await Promise.all([
+      this.roomService.countMembers(room.id),
+      this.roomService.isMember(room.id, user.userId),
+      this.roomService.loadGameSettings(room.id),
+    ]);
 
     return {
       id: room.id,
       name: room.name,
+      description: room.description ?? null,
       ownerId: room.ownerId,
       ownerDisplayName: room.ownerDisplayName,
+      ownerUsername: room.ownerUsername,
       visibility: room.visibility as RoomVisibility,
       createdAt: room.createdAt.toISOString(),
       updatedAt: room.updatedAt.toISOString(),
@@ -125,6 +190,9 @@ export class RoomController {
       memberLimit: room.memberLimit ?? null,
       rosterCount,
       isOnRoster,
+      gameType: gameSettings?.gameType ?? null,
+      presetName: gameSettings?.presetName ?? null,
+      gameInProgress: this.gameService.isGameActive(room.id),
     };
   }
 
@@ -144,23 +212,29 @@ export class RoomController {
       throw new ForbiddenException('Only the room owner can update this room');
     }
 
-    const fields: { name?: string; visibility?: string } = {};
+    const fields: { name?: string; visibility?: string; description?: string | null } = {};
     if (dto.name !== undefined) fields.name = dto.name;
     if (dto.visibility !== undefined) fields.visibility = dto.visibility;
+    if (dto.description !== undefined) fields.description = dto.description;
 
     const updated = await this.roomService.update(id, fields);
     if (!updated) {
       throw new NotFoundException(`Room ${id} not found`);
     }
 
-    const rosterCount = await this.roomService.countMembers(updated.id);
-    const isOnRoster = await this.roomService.isMember(updated.id, user.userId);
+    const [rosterCount, isOnRoster, gameSettings] = await Promise.all([
+      this.roomService.countMembers(updated.id),
+      this.roomService.isMember(updated.id, user.userId),
+      this.roomService.loadGameSettings(updated.id),
+    ]);
 
     return {
       id: updated.id,
       name: updated.name,
+      description: updated.description ?? null,
       ownerId: room.ownerId,
       ownerDisplayName: room.ownerDisplayName,
+      ownerUsername: room.ownerUsername,
       visibility: updated.visibility as RoomVisibility,
       createdAt: updated.createdAt.toISOString(),
       updatedAt: updated.updatedAt.toISOString(),
@@ -168,6 +242,9 @@ export class RoomController {
       memberLimit: room.memberLimit ?? null,
       rosterCount,
       isOnRoster,
+      gameType: gameSettings?.gameType ?? null,
+      presetName: gameSettings?.presetName ?? null,
+      gameInProgress: this.gameService.isGameActive(updated.id),
     };
   }
 

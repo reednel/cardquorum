@@ -42,6 +42,11 @@ export class CreateRoomDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(256)
+  description?: string;
+
+  @IsOptional()
+  @IsString()
   @IsIn(['public', 'friends-only', 'invite-only'])
   visibility?: 'public' | 'friends-only' | 'invite-only';
 
@@ -62,6 +67,11 @@ export class UpdateRoomDto {
   @MinLength(1)
   @MaxLength(255)
   name?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(256)
+  description?: string;
 
   @IsOptional()
   @IsString()

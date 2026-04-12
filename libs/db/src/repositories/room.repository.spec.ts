@@ -13,6 +13,8 @@ function createMockDb() {
     update: jest.fn().mockReturnThis(),
     set: jest.fn().mockReturnThis(),
     delete: jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
+    offset: jest.fn().mockReturnThis(),
   } as any;
 }
 
@@ -24,8 +26,10 @@ describe('RoomRepository', () => {
   const room = {
     id: 1,
     name: 'Room 1',
+    description: null,
     ownerId: 10,
     ownerDisplayName: 'Alice',
+    ownerUsername: 'alice',
     visibility: 'public',
     createdAt: now,
     updatedAt: now,
@@ -109,6 +113,24 @@ describe('RoomRepository', () => {
 
       expect(result).toBe(created);
     });
+
+    it('should pass description when provided', async () => {
+      const created = {
+        id: 1,
+        name: 'Described',
+        description: 'A cool room',
+        ownerId: 10,
+        visibility: 'public',
+        createdAt: now,
+        updatedAt: now,
+      };
+      db.returning.mockResolvedValue([created]);
+
+      const result = await repo.create('Described', 10, 'public', null, 'A cool room');
+
+      expect(result).toBe(created);
+      expect(db.insert).toHaveBeenCalled();
+    });
   });
 
   describe('update', () => {
@@ -129,6 +151,16 @@ describe('RoomRepository', () => {
       const result = await repo.update(999, { name: 'Nope' });
 
       expect(result).toBeNull();
+    });
+
+    it('should accept description in fields', async () => {
+      const updated = { ...room, description: 'New desc' };
+      db.returning.mockResolvedValue([updated]);
+
+      const result = await repo.update(1, { description: 'New desc' });
+
+      expect(result).toBe(updated);
+      expect(db.set).toHaveBeenCalled();
     });
   });
 
@@ -179,6 +211,96 @@ describe('RoomRepository', () => {
 
       expect(db.delete).toHaveBeenCalled();
       expect(result).toEqual([{ id: 10 }, { id: 20 }]);
+    });
+  });
+
+  describe('findMemberships', () => {
+    it('should return rooms the user is rostered into', async () => {
+      db.orderBy.mockResolvedValue([room]);
+
+      const result = await repo.findMemberships(10);
+
+      expect(result).toEqual([room]);
+      expect(db.select).toHaveBeenCalled();
+      expect(db.from).toHaveBeenCalled();
+      expect(db.innerJoin).toHaveBeenCalled();
+      expect(db.orderBy).toHaveBeenCalled();
+    });
+
+    it('should return empty array when user has no memberships', async () => {
+      db.orderBy.mockResolvedValue([]);
+
+      const result = await repo.findMemberships(999);
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('findDiscoverablePublic', () => {
+    it('should return public rooms and total count', async () => {
+      // The method uses Promise.all with two queries
+      // We need to mock the chain for both the count query and the data query
+      const mockCountChain = {
+        select: jest.fn().mockReturnThis(),
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockResolvedValue([{ count: 5 }]),
+      };
+      const mockDataChain = {
+        select: jest.fn().mockReturnThis(),
+        from: jest.fn().mockReturnThis(),
+        innerJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        offset: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue([room]),
+      };
+
+      let callCount = 0;
+      db.select.mockImplementation(() => {
+        callCount++;
+        return callCount === 1 ? mockCountChain : mockDataChain;
+      });
+
+      const result = await repo.findDiscoverablePublic(99, [], [], [], 0, 20);
+
+      expect(result.total).toBe(5);
+      expect(result.rooms).toEqual([room]);
+    });
+  });
+
+  describe('findDiscoverablePrivate', () => {
+    it('should return empty array when no friends and no invites', async () => {
+      const result = await repo.findDiscoverablePrivate(10, [], [], [], [], []);
+
+      expect(result).toEqual([]);
+    });
+
+    it('should query for friends-only rooms when friendIds provided', async () => {
+      db.orderBy.mockResolvedValue([room]);
+
+      const result = await repo.findDiscoverablePrivate(10, [20, 30], [], [], [], []);
+
+      expect(result).toEqual([room]);
+      expect(db.select).toHaveBeenCalled();
+    });
+  });
+
+  describe('searchDiscoverable', () => {
+    it('should search rooms by name with ILIKE', async () => {
+      db.orderBy.mockResolvedValue([room]);
+
+      const result = await repo.searchDiscoverable(10, 'Room', [], [], [], [], []);
+
+      expect(result).toEqual([room]);
+      expect(db.select).toHaveBeenCalled();
+    });
+
+    it('should return empty when no matches', async () => {
+      db.orderBy.mockResolvedValue([]);
+
+      const result = await repo.searchDiscoverable(10, 'nonexistent', [], [], [], [], []);
+
+      expect(result).toEqual([]);
     });
   });
 });

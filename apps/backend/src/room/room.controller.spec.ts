@@ -31,6 +31,11 @@ describe('RoomController', () => {
       | 'toggleRotatePlayers'
       | 'countMembers'
       | 'isMember'
+      | 'loadGameSettings'
+      | 'findMemberships'
+      | 'findDiscoverablePrivate'
+      | 'findDiscoverablePublic'
+      | 'searchDiscoverable'
     >
   >;
   let gameService: jest.Mocked<Pick<GameService, 'forceCleanupRoom' | 'isGameActive'>>;
@@ -45,14 +50,18 @@ describe('RoomController', () => {
   const dbRoom = {
     id: 1,
     name: 'Test Room',
+    description: null as string | null,
     ownerId: 1,
     ownerDisplayName: 'Alice',
+    ownerUsername: 'alice',
     visibility: 'public',
     memberLimit: null as number | null,
     rotatePlayers: false,
     createdAt: now,
     updatedAt: now,
   };
+
+  const nullGameSettings = null;
 
   beforeEach(() => {
     roomService = {
@@ -81,6 +90,13 @@ describe('RoomController', () => {
         .mockResolvedValue({ players: [], spectators: [], rotatePlayers: false }),
       countMembers: jest.fn().mockResolvedValue(0),
       isMember: jest.fn().mockResolvedValue(false),
+      loadGameSettings: jest.fn().mockResolvedValue(nullGameSettings),
+      findMemberships: jest.fn().mockResolvedValue([]),
+      findDiscoverablePrivate: jest.fn().mockResolvedValue([]),
+      findDiscoverablePublic: jest
+        .fn()
+        .mockResolvedValue({ data: [], total: 0, page: 1, pageSize: 20 }),
+      searchDiscoverable: jest.fn().mockResolvedValue([]),
     };
 
     gameService = {
@@ -95,20 +111,31 @@ describe('RoomController', () => {
   });
 
   describe('create', () => {
-    it('should create a room and return response', async () => {
+    it('should create a room and return enriched response', async () => {
       roomService.create.mockResolvedValue(dbRoom);
 
       const result = await controller.create(makeRequest(alice), {
         name: 'Test Room',
       });
 
-      expect(roomService.create).toHaveBeenCalledWith('Test Room', 1, 'public', undefined);
+      expect(roomService.create).toHaveBeenCalledWith(
+        'Test Room',
+        1,
+        'public',
+        undefined,
+        undefined,
+      );
       expect(result.id).toBe(1);
       expect(result.name).toBe('Test Room');
       expect(result.ownerId).toBe(1);
       expect(result.ownerDisplayName).toBe('Alice');
+      expect(result.ownerUsername).toBe('alice');
       expect(result.visibility).toBe('public');
       expect(result.onlineCount).toBe(0);
+      expect(result.description).toBeNull();
+      expect(result.gameType).toBeNull();
+      expect(result.presetName).toBeNull();
+      expect(result.gameInProgress).toBe(false);
     });
 
     it('should pass visibility when provided', async () => {
@@ -119,20 +146,56 @@ describe('RoomController', () => {
         visibility: 'invite-only',
       });
 
-      expect(roomService.create).toHaveBeenCalledWith('Private Room', 1, 'invite-only', undefined);
+      expect(roomService.create).toHaveBeenCalledWith(
+        'Private Room',
+        1,
+        'invite-only',
+        undefined,
+        undefined,
+      );
+    });
+
+    it('should pass description to the service', async () => {
+      roomService.create.mockResolvedValue({ ...dbRoom, description: 'My room desc' });
+
+      const result = await controller.create(makeRequest(alice), {
+        name: 'Test Room',
+        description: 'My room desc',
+      });
+
+      expect(roomService.create).toHaveBeenCalledWith(
+        'Test Room',
+        1,
+        'public',
+        undefined,
+        'My room desc',
+      );
+      expect(result.description).toBe('My room desc');
     });
   });
 
   describe('list', () => {
-    it('should return rooms for the user with online counts', async () => {
+    it('should return rooms with enriched fields', async () => {
       roomService.findAllForUser.mockResolvedValue([dbRoom]);
       roomService.getOnlineCount.mockReturnValue(3);
+      roomService.loadGameSettings.mockResolvedValue({
+        gameType: 'sheepshead',
+        presetName: '3-hand',
+        config: {},
+        autostart: false,
+      } as any);
+      gameService.isGameActive.mockReturnValue(true);
 
       const result = await controller.list(makeRequest(alice));
 
       expect(roomService.findAllForUser).toHaveBeenCalledWith(alice.userId);
       expect(result).toHaveLength(1);
       expect(result[0].onlineCount).toBe(3);
+      expect(result[0].description).toBeNull();
+      expect(result[0].ownerUsername).toBe('alice');
+      expect(result[0].gameType).toBe('sheepshead');
+      expect(result[0].presetName).toBe('3-hand');
+      expect(result[0].gameInProgress).toBe(true);
     });
 
     it('should return empty array when no rooms exist', async () => {
@@ -144,13 +207,25 @@ describe('RoomController', () => {
   });
 
   describe('findOne', () => {
-    it('should return a room by id', async () => {
+    it('should return an enriched room by id', async () => {
       roomService.canAccessRoom.mockResolvedValue(true);
       roomService.findById.mockResolvedValue(dbRoom);
+      roomService.loadGameSettings.mockResolvedValue({
+        gameType: 'sheepshead',
+        presetName: null,
+        config: {},
+        autostart: false,
+      } as any);
+      gameService.isGameActive.mockReturnValue(false);
 
       const result = await controller.findOne(makeRequest(alice), 1);
       expect(result.id).toBe(1);
       expect(result.name).toBe('Test Room');
+      expect(result.description).toBeNull();
+      expect(result.ownerUsername).toBe('alice');
+      expect(result.gameType).toBe('sheepshead');
+      expect(result.presetName).toBeNull();
+      expect(result.gameInProgress).toBe(false);
     });
 
     it('should throw NotFoundException when user cannot access room', async () => {
@@ -171,6 +246,18 @@ describe('RoomController', () => {
       expect(result.name).toBe('New Name');
     });
 
+    it('should pass description in the update fields', async () => {
+      roomService.findById.mockResolvedValue(dbRoom);
+      roomService.update.mockResolvedValue({ ...dbRoom, description: 'Updated desc' });
+
+      const result = await controller.update(makeRequest(alice), 1, {
+        description: 'Updated desc',
+      });
+
+      expect(roomService.update).toHaveBeenCalledWith(1, { description: 'Updated desc' });
+      expect(result.description).toBe('Updated desc');
+    });
+
     it('should throw ForbiddenException when non-owner tries to update', async () => {
       roomService.findById.mockResolvedValue(dbRoom);
 
@@ -185,6 +272,109 @@ describe('RoomController', () => {
       await expect(controller.update(makeRequest(alice), 999, { name: 'Nope' })).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  describe('memberships', () => {
+    it('should return memberships for the requesting user', async () => {
+      const mockResponse = [
+        {
+          id: 1,
+          name: 'Room 1',
+          description: null,
+          ownerId: 1,
+          ownerDisplayName: 'Alice',
+          ownerUsername: 'alice',
+          visibility: 'public' as const,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+          onlineCount: 0,
+          memberLimit: null,
+          rosterCount: 2,
+          isOnRoster: true,
+          gameType: null,
+          presetName: null,
+          gameInProgress: false,
+        },
+      ];
+      roomService.findMemberships.mockResolvedValue(mockResponse);
+
+      const result = await controller.memberships(makeRequest(alice));
+
+      expect(roomService.findMemberships).toHaveBeenCalledWith(alice.userId);
+      expect(result).toEqual(mockResponse);
+    });
+  });
+
+  describe('discover', () => {
+    it('should call searchDiscoverable when search query is provided', async () => {
+      const mockResults = [
+        {
+          id: 2,
+          name: 'Fun Room',
+          description: null,
+          ownerId: 2,
+          ownerDisplayName: 'Bob',
+          ownerUsername: 'bob',
+          visibility: 'public' as const,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+          onlineCount: 0,
+          memberLimit: null,
+          rosterCount: 1,
+          isOnRoster: false,
+          gameType: null,
+          presetName: null,
+          gameInProgress: false,
+        },
+      ];
+      roomService.searchDiscoverable.mockResolvedValue(mockResults);
+
+      const result = await controller.discover(makeRequest(alice), undefined, 'Fun');
+
+      expect(roomService.searchDiscoverable).toHaveBeenCalledWith(alice.userId, 'Fun');
+      expect(result).toEqual(mockResults);
+    });
+
+    it('should call findDiscoverablePrivate when filter is private', async () => {
+      roomService.findDiscoverablePrivate.mockResolvedValue([]);
+
+      const result = await controller.discover(makeRequest(alice), 'private');
+
+      expect(roomService.findDiscoverablePrivate).toHaveBeenCalledWith(alice.userId);
+      expect(result).toEqual([]);
+    });
+
+    it('should call findDiscoverablePublic with pagination when filter is public', async () => {
+      const mockPaginated = { data: [], total: 0, page: 2, pageSize: 10 };
+      roomService.findDiscoverablePublic.mockResolvedValue(mockPaginated);
+
+      const result = await controller.discover(makeRequest(alice), 'public', undefined, '2', '10');
+
+      expect(roomService.findDiscoverablePublic).toHaveBeenCalledWith(alice.userId, 2, 10);
+      expect(result).toEqual(mockPaginated);
+    });
+
+    it('should default to page 1 and pageSize 20 when not provided', async () => {
+      const mockPaginated = { data: [], total: 0, page: 1, pageSize: 20 };
+      roomService.findDiscoverablePublic.mockResolvedValue(mockPaginated);
+
+      await controller.discover(makeRequest(alice), 'public');
+
+      expect(roomService.findDiscoverablePublic).toHaveBeenCalledWith(alice.userId, 1, 20);
+    });
+
+    it('should throw BadRequestException when no filter or search is provided', async () => {
+      await expect(controller.discover(makeRequest(alice))).rejects.toThrow(BadRequestException);
+    });
+
+    it('should prioritize search over filter', async () => {
+      roomService.searchDiscoverable.mockResolvedValue([]);
+
+      await controller.discover(makeRequest(alice), 'public', 'query');
+
+      expect(roomService.searchDiscoverable).toHaveBeenCalledWith(alice.userId, 'query');
+      expect(roomService.findDiscoverablePublic).not.toHaveBeenCalled();
     });
   });
 

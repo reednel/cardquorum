@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { GameSessionRepository } from '@cardquorum/db';
 import { GamePlugin, WithScheduledEvents } from '@cardquorum/engine';
 import { ColorAssignmentMap } from '@cardquorum/shared';
@@ -49,6 +49,7 @@ export class GameService implements OnModuleDestroy {
 
   constructor(
     private readonly sessionRepo: GameSessionRepository,
+    @Inject(forwardRef(() => RoomService))
     private readonly roomService: RoomService,
   ) {
     this.sweepTimer = setInterval(() => this.sweepAbandoned(), SWEEP_INTERVAL_MS);

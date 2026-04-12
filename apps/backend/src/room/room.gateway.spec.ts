@@ -42,6 +42,7 @@ describe('RoomGateway', () => {
       getMessageHistory: jest.fn().mockResolvedValue([]),
       upsertGameSettings: jest.fn().mockResolvedValue({}),
       loadGameSettings: jest.fn().mockResolvedValue(null),
+      updateLastVisitedAt: jest.fn().mockResolvedValue(undefined),
       broadcastToRoom: jest.fn(
         (roomId: string, event: string, data: unknown, excludeConnId?: string) => {
           const room = manager.getRoom(roomId);
@@ -201,6 +202,28 @@ describe('RoomGateway', () => {
 
       expect(roomService.addToRoster).not.toHaveBeenCalled();
       expect(roomService.getRoster).toHaveBeenCalledWith(1);
+    });
+
+    it('should update last_visited_at after joining', async () => {
+      const client = createMockClient();
+      connectionService.trackClient(client, aliceIdentity);
+
+      await gateway.handleJoinRoom(client, { roomId: 1 });
+
+      expect(roomService.updateLastVisitedAt).toHaveBeenCalledWith(1, aliceIdentity.userId);
+    });
+
+    it('should still complete join when updateLastVisitedAt fails', async () => {
+      (roomService.updateLastVisitedAt as jest.Mock).mockRejectedValue(new Error('DB error'));
+
+      const client = createMockClient();
+      connectionService.trackClient(client, aliceIdentity);
+
+      await gateway.handleJoinRoom(client, { roomId: 1 });
+
+      const messages = parseSentMessages(client);
+      const joinedMsg = messages.find((m: any) => m.event === WS_EMIT.ROOM_JOINED);
+      expect(joinedMsg).toBeDefined();
     });
 
     it('should send error and undo WS join when room is full', async () => {

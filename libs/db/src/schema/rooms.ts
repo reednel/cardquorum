@@ -4,6 +4,7 @@ import { users } from './users';
 export const rooms = pgTable('rooms', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 255 }).notNull().unique(),
+  description: varchar('description', { length: 256 }),
   ownerId: integer('owner_id')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),

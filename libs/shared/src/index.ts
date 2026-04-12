@@ -32,6 +32,7 @@ export type {
   RoomResponse,
   CreateRoomRequest,
   UpdateRoomRequest,
+  PaginatedResponse,
   RoomMemberInfo,
   RoomInviteResponse,
   RoomBanResponse,

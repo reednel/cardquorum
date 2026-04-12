@@ -44,6 +44,7 @@ describe('RoomService', () => {
   };
   let mockColorAssignment: { assignHue: jest.Mock };
   let mockUserRepo: { getColorPreference: jest.Mock };
+  let mockGameService: { isGameActive: jest.Mock };
 
   const alice: UserIdentity = { userId: 1, username: 'alice', displayName: 'Alice' };
   const bob: UserIdentity = { userId: 2, username: 'bob', displayName: 'Bob' };
@@ -91,6 +92,7 @@ describe('RoomService', () => {
 
     mockColorAssignment = { assignHue: jest.fn().mockReturnValue(0) };
     mockUserRepo = { getColorPreference: jest.fn().mockResolvedValue(null) };
+    mockGameService = { isGameActive: jest.fn().mockReturnValue(false) };
 
     service = new RoomService(
       mockRepo as any,
@@ -104,6 +106,7 @@ describe('RoomService', () => {
       mockBlockService as any,
       mockColorAssignment as any,
       mockUserRepo as any,
+      mockGameService as any,
     );
 
     mockBlockService.getBlockedIds.mockResolvedValue([]);

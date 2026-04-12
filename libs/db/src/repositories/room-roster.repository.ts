@@ -1,4 +1,4 @@
-import { and, asc, count, eq } from 'drizzle-orm';
+import { and, asc, count, eq, sql } from 'drizzle-orm';
 import { roomRosters, rooms, users } from '../schema';
 import { DbInstance } from '../types';
 
@@ -127,5 +127,20 @@ export class RoomRosterRepository {
       .update(roomRosters)
       .set({ assignedHue: hue })
       .where(and(eq(roomRosters.roomId, roomId), eq(roomRosters.userId, userId)));
+  }
+
+  async updateLastVisitedAt(roomId: number, userId: number): Promise<void> {
+    await this.db
+      .update(roomRosters)
+      .set({ lastVisitedAt: sql`now()` })
+      .where(and(eq(roomRosters.roomId, roomId), eq(roomRosters.userId, userId)));
+  }
+
+  async findRosteredRoomIds(userId: number): Promise<number[]> {
+    const rows = await this.db
+      .select({ roomId: roomRosters.roomId })
+      .from(roomRosters)
+      .where(eq(roomRosters.userId, userId));
+    return rows.map((r) => r.roomId);
   }
 }

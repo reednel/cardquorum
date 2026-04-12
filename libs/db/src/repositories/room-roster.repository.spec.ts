@@ -325,3 +325,100 @@ describe('Roster persistence round-trip', () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// Unit tests for updateLastVisitedAt and findRosteredRoomIds
+// ---------------------------------------------------------------------------
+
+describe('updateLastVisitedAt', () => {
+  it('should call update with lastVisitedAt = sql`now()` for the given room and user', async () => {
+    const setCalled = jest.fn();
+    const whereCalled = jest.fn();
+
+    const db = {
+      update: jest.fn(() => ({
+        set: jest.fn((values: any) => {
+          setCalled(values);
+          return {
+            where: jest.fn((predicate: any) => {
+              whereCalled(predicate);
+              return Promise.resolve();
+            }),
+          };
+        }),
+      })),
+    } as any;
+
+    const repo = new RoomRosterRepository(db);
+    await repo.updateLastVisitedAt(42, 7);
+
+    expect(db.update).toHaveBeenCalledTimes(1);
+    expect(setCalled).toHaveBeenCalledTimes(1);
+
+    // Verify the set payload contains a lastVisitedAt key with a SQL template
+    const setPayload = setCalled.mock.calls[0][0];
+    expect(setPayload).toHaveProperty('lastVisitedAt');
+    expect(whereCalled).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('findRosteredRoomIds', () => {
+  it('should return room IDs for the given user', async () => {
+    const fakeRows = [{ roomId: 1 }, { roomId: 5 }, { roomId: 12 }];
+
+    const db = {
+      select: jest.fn(() => ({
+        from: jest.fn(() => ({
+          where: jest.fn(() => Promise.resolve(fakeRows)),
+        })),
+      })),
+    } as any;
+
+    const repo = new RoomRosterRepository(db);
+    const result = await repo.findRosteredRoomIds(99);
+
+    expect(result).toEqual([1, 5, 12]);
+    expect(db.select).toHaveBeenCalledTimes(1);
+  });
+
+  it('should return an empty array when user has no roster entries', async () => {
+    const db = {
+      select: jest.fn(() => ({
+        from: jest.fn(() => ({
+          where: jest.fn(() => Promise.resolve([])),
+        })),
+      })),
+    } as any;
+
+    const repo = new RoomRosterRepository(db);
+    const result = await repo.findRosteredRoomIds(99);
+
+    expect(result).toEqual([]);
+  });
+
+  it('should correctly map rows to just room IDs for any number of memberships', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.uniqueArray(fc.integer({ min: 1, max: 10000 }), { minLength: 0, maxLength: 50 }),
+        async (roomIds) => {
+          const fakeRows = roomIds.map((roomId) => ({ roomId }));
+
+          const db = {
+            select: jest.fn(() => ({
+              from: jest.fn(() => ({
+                where: jest.fn(() => Promise.resolve(fakeRows)),
+              })),
+            })),
+          } as any;
+
+          const repo = new RoomRosterRepository(db);
+          const result = await repo.findRosteredRoomIds(1);
+
+          expect(result).toEqual(roomIds);
+          expect(result.length).toBe(roomIds.length);
+        },
+      ),
+      { numRuns: 100 },
+    );
+  });
+});

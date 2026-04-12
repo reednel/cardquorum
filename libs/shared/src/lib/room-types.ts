@@ -3,8 +3,10 @@ export type RoomVisibility = 'public' | 'friends-only' | 'invite-only';
 export interface Room {
   id: number;
   name: string;
+  description: string | null;
   ownerId: number;
   ownerDisplayName: string;
+  ownerUsername: string;
   visibility: RoomVisibility;
   createdAt: string;
   updatedAt: string;
@@ -15,10 +17,14 @@ export interface RoomResponse extends Room {
   memberLimit: number | null;
   rosterCount: number;
   isOnRoster: boolean;
+  gameType: string | null;
+  presetName: string | null;
+  gameInProgress: boolean;
 }
 
 export interface CreateRoomRequest {
   name: string;
+  description?: string | null;
   visibility?: RoomVisibility;
   invitedUserIds?: number[];
   memberLimit?: number | null;
@@ -26,7 +32,15 @@ export interface CreateRoomRequest {
 
 export interface UpdateRoomRequest {
   name?: string;
+  description?: string | null;
   visibility?: RoomVisibility;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 export interface RoomMemberInfo {

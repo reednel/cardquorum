@@ -82,6 +82,15 @@ export class RoomGateway implements OnModuleInit {
       roster = await this.roomService.getRoster(roomId);
     }
 
+    // Update last_visited_at for the memberships page ordering
+    try {
+      await this.roomService.updateLastVisitedAt(roomId, userId);
+    } catch (err) {
+      this.logger.warn(
+        `Failed to update last_visited_at for user ${userId} in room ${roomId}: ${err}`,
+      );
+    }
+
     const members = this.roomService.manager.getRoomMembers(roomKey);
     const history = await this.roomService.getMessageHistory(roomId);
 
