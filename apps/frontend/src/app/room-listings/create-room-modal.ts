@@ -69,6 +69,30 @@ import { RoomService } from '../room/room.service';
 
           <div class="mb-4">
             <label
+              for="room-description"
+              class="mb-1 block text-sm font-medium text-text-body dark:text-text-body-dark"
+            >
+              Description
+              <span class="font-normal text-text-secondary">(optional)</span>
+            </label>
+            <textarea
+              id="room-description"
+              data-testid="room-description"
+              formControlName="description"
+              maxlength="256"
+              rows="3"
+              placeholder="What's this room about?"
+              class="w-full rounded-default border border-border-input px-3 py-2 text-sm
+                     dark:border-border-input-dark dark:bg-surface-dark
+                     dark:text-text-heading-dark"
+            ></textarea>
+            <div data-testid="description-counter" class="mt-1 text-xs text-text-secondary">
+              {{ form.controls.description.value.length }} / 256
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label
               for="room-visibility"
               class="mb-1 block text-sm font-medium text-text-body dark:text-text-body-dark"
             >
@@ -218,6 +242,7 @@ export class CreateRoomModal {
 
   protected readonly form = this.fb.nonNullable.group({
     name: ['', Validators.required],
+    description: ['', Validators.maxLength(256)],
     visibility: ['public'],
     memberLimit: [null as number | null],
   });
@@ -258,14 +283,16 @@ export class CreateRoomModal {
     this.errorMessage.set(null);
     this.submitting.set(true);
 
-    const { name, visibility, memberLimit } = this.form.getRawValue();
+    const { name, description, visibility, memberLimit } = this.form.getRawValue();
     const invitedUserIds =
       visibility === 'invite-only' ? this.invitedUsers().map((u) => u.userId) : undefined;
     const parsedLimit = memberLimit != null && memberLimit > 0 ? memberLimit : null;
+    const parsedDescription = description?.trim() || null;
 
     this.roomService
       .createRoom({
         name,
+        description: parsedDescription,
         visibility: visibility as RoomVisibility,
         invitedUserIds,
         memberLimit: parsedLimit,

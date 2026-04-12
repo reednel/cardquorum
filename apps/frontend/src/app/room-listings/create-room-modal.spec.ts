@@ -126,6 +126,7 @@ describe('CreateRoomModal', () => {
 
     expect(mockRoomService.createRoom).toHaveBeenCalledWith({
       name: 'Private',
+      description: null,
       visibility: 'invite-only',
       invitedUserIds: [2],
       memberLimit: null,
@@ -155,6 +156,7 @@ describe('CreateRoomModal', () => {
 
     expect(mockRoomService.createRoom).toHaveBeenCalledWith({
       name: 'Limited',
+      description: null,
       visibility: 'public',
       invitedUserIds: undefined,
       memberLimit: 8,
@@ -169,9 +171,58 @@ describe('CreateRoomModal', () => {
 
     expect(mockRoomService.createRoom).toHaveBeenCalledWith({
       name: 'Unlimited',
+      description: null,
       visibility: 'public',
       invitedUserIds: undefined,
       memberLimit: null,
     });
+  });
+
+  it('renders description textarea with character counter', () => {
+    expect(el.querySelector('[data-testid="room-description"]')).toBeTruthy();
+    expect(el.querySelector('[data-testid="description-counter"]')).toBeTruthy();
+  });
+
+  it('passes description in createRoom when provided', () => {
+    mockRoomService.createRoom.mockReturnValue(of({ ...ROOM, description: 'A fun room' }));
+
+    fixture.componentRef.instance['form'].patchValue({
+      name: 'Described',
+      description: 'A fun room',
+    });
+    fixture.componentRef.instance['onSubmit']();
+
+    expect(mockRoomService.createRoom).toHaveBeenCalledWith({
+      name: 'Described',
+      description: 'A fun room',
+      visibility: 'public',
+      invitedUserIds: undefined,
+      memberLimit: null,
+    });
+  });
+
+  it('passes null description when field is empty', () => {
+    mockRoomService.createRoom.mockReturnValue(of(ROOM));
+
+    fixture.componentRef.instance['form'].patchValue({ name: 'No Desc', description: '' });
+    fixture.componentRef.instance['onSubmit']();
+
+    expect(mockRoomService.createRoom).toHaveBeenCalledWith({
+      name: 'No Desc',
+      description: null,
+      visibility: 'public',
+      invitedUserIds: undefined,
+      memberLimit: null,
+    });
+  });
+
+  it('updates character counter as description changes', () => {
+    const textarea = el.querySelector('[data-testid="room-description"]') as HTMLTextAreaElement;
+    textarea.value = 'Hello';
+    textarea.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    const counter = el.querySelector('[data-testid="description-counter"]') as HTMLElement;
+    expect(counter.textContent).toContain('5 / 256');
   });
 });

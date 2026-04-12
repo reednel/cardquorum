@@ -76,6 +76,66 @@ describe('RoomConfigModal', () => {
     expect(nameInput.value).toBe('Existing Room');
   });
 
+  it('pre-fills description from room data', () => {
+    host.room = { ...ROOM, description: 'Hello world' };
+    fixture = TestBed.createComponent(TestHost);
+    host = fixture.componentInstance;
+    host.room = { ...ROOM, description: 'Hello world' };
+    el = fixture.nativeElement;
+    fixture.detectChanges();
+
+    const textarea = el.querySelector(
+      '[data-testid="config-room-description"]',
+    ) as HTMLTextAreaElement;
+    expect(textarea.value).toBe('Hello world');
+  });
+
+  it('shows description character counter', () => {
+    const counter = el.querySelector('[data-testid="config-description-counter"]');
+    expect(counter?.textContent?.trim()).toBe('0 / 256');
+  });
+
+  it('passes description in updateRoom call', () => {
+    const updated = { ...ROOM, name: 'Existing Room', description: 'New desc' };
+    mockRoomService.updateRoom.mockReturnValue(of(updated));
+
+    const textarea = el.querySelector(
+      '[data-testid="config-room-description"]',
+    ) as HTMLTextAreaElement;
+    textarea.value = 'New desc';
+    textarea.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    const submit = el.querySelector('button[type="submit"]') as HTMLButtonElement;
+    submit.click();
+    fixture.detectChanges();
+
+    expect(mockRoomService.updateRoom).toHaveBeenCalledWith(5, {
+      name: 'Existing Room',
+      description: 'New desc',
+    });
+  });
+
+  it('sends null description when field is empty', () => {
+    const updated = { ...ROOM, description: null };
+    mockRoomService.updateRoom.mockReturnValue(of(updated));
+
+    // Make the form dirty by changing name
+    const nameInput = el.querySelector('#config-room-name') as HTMLInputElement;
+    nameInput.value = 'Changed';
+    nameInput.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    const submit = el.querySelector('button[type="submit"]') as HTMLButtonElement;
+    submit.click();
+    fixture.detectChanges();
+
+    expect(mockRoomService.updateRoom).toHaveBeenCalledWith(5, {
+      name: 'Changed',
+      description: null,
+    });
+  });
+
   it('save is disabled when form is pristine', () => {
     const btn = el.querySelector('button[type="submit"]') as HTMLButtonElement;
     expect(btn.disabled).toBe(true);

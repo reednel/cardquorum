@@ -1,23 +1,41 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
-import { RouterLink, RouterOutlet } from '@angular/router';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { WebSocketService } from '../websocket.service';
 import { ThemeService } from './theme.service';
 import { UserDropdown } from './user-dropdown';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, RouterOutlet, UserDropdown],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, UserDropdown],
   selector: 'app-shell',
   template: `
     <header
       class="flex items-center justify-between border-b border-border bg-bg px-6 py-3 dark:border-border-dark dark:bg-bg-dark"
     >
-      <a
-        routerLink="/rooms"
-        class="text-lg font-semibold text-text-heading hover:text-primary dark:text-text-heading-dark dark:hover:text-primary-light-text"
-      >
-        CardQuorum
-      </a>
+      <nav class="flex items-center gap-6" aria-label="Main navigation">
+        <a
+          routerLink="/memberships"
+          class="text-lg font-semibold text-text-heading hover:text-primary dark:text-text-heading-dark dark:hover:text-primary-light-text"
+        >
+          CardQuorum
+        </a>
+        <a
+          data-testid="nav-memberships"
+          routerLink="/memberships"
+          routerLinkActive="text-primary dark:text-primary-light-text font-semibold"
+          class="text-sm text-text-secondary hover:text-primary dark:text-text-secondary-dark dark:hover:text-primary-light-text"
+        >
+          Memberships
+        </a>
+        <a
+          data-testid="nav-discover"
+          routerLink="/discover"
+          routerLinkActive="text-primary dark:text-primary-light-text font-semibold"
+          class="text-sm text-text-secondary hover:text-primary dark:text-text-secondary-dark dark:hover:text-primary-light-text"
+        >
+          Discover
+        </a>
+      </nav>
 
       <div class="flex items-center gap-4">
         <button

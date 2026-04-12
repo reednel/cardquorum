@@ -69,6 +69,30 @@ import { RoomService } from '../room/room.service';
             />
           </div>
 
+          <div class="mb-4">
+            <label
+              for="config-room-description"
+              class="mb-1 block text-sm font-medium text-text-body dark:text-text-body-dark"
+            >
+              Description
+              <span class="font-normal text-text-secondary">(optional)</span>
+            </label>
+            <textarea
+              id="config-room-description"
+              data-testid="config-room-description"
+              formControlName="description"
+              maxlength="256"
+              rows="3"
+              placeholder="What's this room about?"
+              class="w-full rounded-default border border-border-input px-3 py-2 text-sm
+                     dark:border-border-input-dark dark:bg-surface-dark
+                     dark:text-text-heading-dark"
+            ></textarea>
+            <div data-testid="config-description-counter" class="mt-1 text-xs text-text-secondary">
+              {{ form.controls.description.value.length }} / 256
+            </div>
+          </div>
+
           <div class="flex items-center justify-between">
             <div>
               @if (confirmDelete()) {
@@ -146,6 +170,7 @@ export class RoomConfigModal implements OnInit {
 
   protected readonly form = this.fb.nonNullable.group({
     name: ['', Validators.required],
+    description: ['', Validators.maxLength(256)],
   });
 
   constructor() {
@@ -156,7 +181,7 @@ export class RoomConfigModal implements OnInit {
 
   ngOnInit(): void {
     const r = this.room();
-    this.form.patchValue({ name: r.name });
+    this.form.patchValue({ name: r.name, description: r.description ?? '' });
   }
 
   protected onSubmit(): void {
@@ -165,19 +190,22 @@ export class RoomConfigModal implements OnInit {
     this.errorMessage.set(null);
     this.submitting.set(true);
 
-    const { name } = this.form.getRawValue();
-    this.roomService.updateRoom(this.room().id, { name }).subscribe({
-      next: (room) => {
-        this.submitting.set(false);
-        this.updated.emit(room);
-      },
-      error: (err: HttpErrorResponse) => {
-        this.submitting.set(false);
-        this.errorMessage.set(
-          err.status === 409 ? 'A room with that name already exists' : 'Something went wrong',
-        );
-      },
-    });
+    const { name, description } = this.form.getRawValue();
+    const parsedDescription = description?.trim() || null;
+    this.roomService
+      .updateRoom(this.room().id, { name, description: parsedDescription })
+      .subscribe({
+        next: (room) => {
+          this.submitting.set(false);
+          this.updated.emit(room);
+        },
+        error: (err: HttpErrorResponse) => {
+          this.submitting.set(false);
+          this.errorMessage.set(
+            err.status === 409 ? 'A room with that name already exists' : 'Something went wrong',
+          );
+        },
+      });
   }
 
   protected onConfirmDelete(): void {

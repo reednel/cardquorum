@@ -23,14 +23,25 @@ export const appRoutes: Route[] = [
     canActivate: [authGuard],
     children: [
       {
-        path: 'rooms',
-        title: 'Rooms — CardQuorum',
-        loadComponent: () => import('./room-listings/room-list').then((m) => m.RoomList),
+        path: 'memberships',
+        title: 'Memberships — CardQuorum',
+        loadComponent: () =>
+          import('./room-listings/memberships-page').then((m) => m.MembershipsPage),
+      },
+      {
+        path: 'discover',
+        title: 'Discover — CardQuorum',
+        loadComponent: () => import('./room-listings/discover-page').then((m) => m.DiscoverPage),
       },
       {
         path: 'rooms/:roomId',
         title: 'Room — CardQuorum',
         loadComponent: () => import('./room/room-view').then((m) => m.RoomView),
+      },
+      {
+        path: 'rooms',
+        redirectTo: 'memberships',
+        pathMatch: 'full',
       },
       {
         path: 'account',
@@ -48,7 +59,7 @@ export const appRoutes: Route[] = [
           },
         ],
       },
-      { path: '', redirectTo: 'rooms', pathMatch: 'full' },
+      { path: '', redirectTo: 'memberships', pathMatch: 'full' },
     ],
   },
 ];
