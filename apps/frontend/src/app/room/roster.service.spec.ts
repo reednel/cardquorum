@@ -16,6 +16,7 @@ const arbRosterMember = (
   displayName: null,
   section,
   position,
+  assignedHue: null,
 });
 
 const arbRosterState = (): fc.Arbitrary<RosterState> =>

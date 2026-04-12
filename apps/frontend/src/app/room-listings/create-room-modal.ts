@@ -11,7 +11,7 @@ import {
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RoomResponse, RoomVisibility, UserSearchResult } from '@cardquorum/shared';
-import { RoomService } from './room.service';
+import { RoomService } from '../room/room.service';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,

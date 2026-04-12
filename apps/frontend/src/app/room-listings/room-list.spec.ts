@@ -3,15 +3,17 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { RoomResponse } from '@cardquorum/shared';
 import { AuthService } from '../auth/auth.service';
+import { RoomService } from '../room/room.service';
 import { RoomList } from './room-list';
-import { RoomService } from './room.service';
 
 const ROOMS: RoomResponse[] = [
   {
     id: 1,
     name: 'My Room',
+    description: null,
     ownerId: 10,
     ownerDisplayName: 'Alice',
+    ownerUsername: 'alice',
     visibility: 'public',
     createdAt: '2026-01-01T00:00:00Z',
     updatedAt: '2026-01-01T00:00:00Z',
@@ -19,12 +21,17 @@ const ROOMS: RoomResponse[] = [
     memberLimit: 8,
     rosterCount: 5,
     isOnRoster: false,
+    gameType: null,
+    presetName: null,
+    gameInProgress: false,
   },
   {
     id: 2,
     name: 'Other Room',
+    description: null,
     ownerId: 20,
     ownerDisplayName: 'Bob',
+    ownerUsername: 'bob',
     visibility: 'friends-only',
     createdAt: '2026-01-01T00:00:00Z',
     updatedAt: '2026-01-01T00:00:00Z',
@@ -32,6 +39,9 @@ const ROOMS: RoomResponse[] = [
     memberLimit: null,
     rosterCount: 2,
     isOnRoster: false,
+    gameType: null,
+    presetName: null,
+    gameInProgress: false,
   },
 ];
 

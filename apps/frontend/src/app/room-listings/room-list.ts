@@ -2,9 +2,9 @@ import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@ang
 import { Router } from '@angular/router';
 import { RoomResponse } from '@cardquorum/shared';
 import { AuthService } from '../auth/auth.service';
+import { RoomService } from '../room/room.service';
 import { CreateRoomModal } from './create-room-modal';
 import { RoomConfigModal } from './room-config-modal';
-import { RoomService } from './room.service';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -3,14 +3,16 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { RoomResponse } from '@cardquorum/shared';
+import { RoomService } from '../room/room.service';
 import { RoomConfigModal } from './room-config-modal';
-import { RoomService } from './room.service';
 
 const ROOM: RoomResponse = {
   id: 5,
   name: 'Existing Room',
+  description: null,
   ownerId: 10,
   ownerDisplayName: 'Alice',
+  ownerUsername: 'alice',
   visibility: 'public',
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
@@ -18,6 +20,9 @@ const ROOM: RoomResponse = {
   memberLimit: null,
   rosterCount: 0,
   isOnRoster: false,
+  gameType: null,
+  presetName: null,
+  gameInProgress: false,
 };
 
 @Component({

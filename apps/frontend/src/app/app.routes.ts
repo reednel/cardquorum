@@ -25,12 +25,12 @@ export const appRoutes: Route[] = [
       {
         path: 'rooms',
         title: 'Rooms — CardQuorum',
-        loadComponent: () => import('./rooms/room-list').then((m) => m.RoomList),
+        loadComponent: () => import('./room-listings/room-list').then((m) => m.RoomList),
       },
       {
         path: 'rooms/:roomId',
         title: 'Room — CardQuorum',
-        loadComponent: () => import('./rooms/room-view').then((m) => m.RoomView),
+        loadComponent: () => import('./room/room-view').then((m) => m.RoomView),
       },
       {
         path: 'account',
