@@ -54,12 +54,12 @@ export class GameGateway implements OnModuleInit {
     const tracked = this.connectionService.getTracked(client);
     if (!tracked) return;
 
-    // Verify sender is a room member
+    // Verify sender is the room owner
     const roomKey = String(payload.roomId);
-    const room = this.roomService.manager.getRoom(roomKey);
-    if (!room || !room.members.has(tracked.id)) {
+    const room = await this.roomService.findById(payload.roomId);
+    if (!room || room.ownerId !== tracked.identity.userId) {
       this.send(client, WS_EMIT.GAME_ERROR, {
-        message: 'You must be a room member to create a game',
+        message: 'Only the room owner can create a game',
       });
       return;
     }

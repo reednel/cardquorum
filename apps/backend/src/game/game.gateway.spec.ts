@@ -13,6 +13,7 @@ describe('GameGateway', () => {
   let roomService: {
     manager: RoomManager;
     broadcastToRoom: (roomId: string, event: string, data: unknown) => void;
+    findById: jest.Mock;
   };
 
   const aliceIdentity: UserIdentity = { userId: 1, username: 'alice', displayName: 'Alice' };
@@ -27,6 +28,7 @@ describe('GameGateway', () => {
     const manager = new RM();
     roomService = {
       manager,
+      findById: jest.fn().mockResolvedValue({ id: 1, ownerId: aliceIdentity.userId }),
       broadcastToRoom(roomId: string, event: string, data: unknown) {
         const room = manager.getRoom(roomId);
         if (!room) return;
@@ -93,9 +95,11 @@ describe('GameGateway', () => {
       }
     });
 
-    it('should reject if sender is not a room member', async () => {
+    it('should reject if sender is not the room owner', async () => {
       const client = createMockClient();
-      connectionService.trackClient(client, aliceIdentity);
+      connectionService.trackClient(client, bobIdentity);
+
+      roomService.findById.mockResolvedValue({ id: 1, ownerId: aliceIdentity.userId });
 
       await gateway.handleGameCreate(client, {
         roomId: 1,
@@ -105,7 +109,7 @@ describe('GameGateway', () => {
 
       const parsed = JSON.parse((client.send as jest.Mock).mock.calls[0][0]);
       expect(parsed.event).toBe(WS_EMIT.GAME_ERROR);
-      expect(parsed.data.message).toBe('You must be a room member to create a game');
+      expect(parsed.data.message).toBe('Only the room owner can create a game');
     });
 
     it('should send game:error if createSession throws', async () => {

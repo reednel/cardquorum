@@ -1,21 +1,25 @@
 import { Route } from '@angular/router';
 import { authGuard } from './auth/auth.guard';
+import { noAuthGuard } from './auth/no-auth.guard';
 
 export const appRoutes: Route[] = [
   {
     path: 'login',
     title: 'Log in — CardQuorum',
     loadComponent: () => import('./auth/login').then((m) => m.Login),
+    canActivate: [noAuthGuard],
   },
   {
     path: 'register',
     title: 'Register — CardQuorum',
     loadComponent: () => import('./auth/register').then((m) => m.Register),
+    canActivate: [noAuthGuard],
   },
   {
     path: 'register/oidc',
     title: 'Register — CardQuorum',
     loadComponent: () => import('./auth/register-oidc').then((m) => m.RegisterOidc),
+    canActivate: [noAuthGuard],
   },
   {
     path: '',
