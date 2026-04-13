@@ -2,16 +2,17 @@ import { expect, test } from '@playwright/test';
 import { authenticatedContext } from '../helpers/auth';
 
 test.describe('Room Flows', () => {
-  test('authenticated user creates a room and sees the room name in the header', async ({
+  test('authenticated user creates a room with a description and sees the room name in the header', async ({
     browser,
     request,
   }) => {
     const { context, page } = await authenticatedContext(browser, request);
     const roomName = `Room-${Date.now()}`;
+    const roomDesc = 'A test room description';
 
     try {
-      await page.goto('/rooms');
-      await page.waitForURL(/\/rooms$/);
+      await page.goto('/memberships');
+      await page.waitForURL(/\/memberships$/);
       await page.locator('[data-testid="create-room-btn"]').waitFor({ state: 'visible' });
 
       await page.locator('[data-testid="create-room-btn"]').click();
@@ -19,6 +20,9 @@ test.describe('Room Flows', () => {
       const nameInput = page.locator('#room-name');
       await nameInput.waitFor({ state: 'visible' });
       await nameInput.fill(roomName);
+
+      const descInput = page.locator('[data-testid="room-description"]');
+      await descInput.fill(roomDesc);
 
       const submitBtn = page.locator('dialog button[type="submit"]');
       await expect(submitBtn).toBeEnabled();
@@ -33,7 +37,7 @@ test.describe('Room Flows', () => {
     }
   });
 
-  test('created room appears in the room list after navigating back', async ({
+  test('created room appears in the memberships table after navigating back', async ({
     browser,
     request,
   }) => {
@@ -41,8 +45,8 @@ test.describe('Room Flows', () => {
     const roomName = `ListRoom-${Date.now()}`;
 
     try {
-      await page.goto('/rooms');
-      await page.waitForURL(/\/rooms$/);
+      await page.goto('/memberships');
+      await page.waitForURL(/\/memberships$/);
       await page.locator('[data-testid="create-room-btn"]').waitFor({ state: 'visible' });
 
       await page.locator('[data-testid="create-room-btn"]').click();
@@ -54,8 +58,8 @@ test.describe('Room Flows', () => {
       await page.locator('dialog button[type="submit"]').click();
       await page.waitForURL(/\/rooms\/\d+/);
 
-      await page.goto('/rooms');
-      await page.waitForURL(/\/rooms$/);
+      await page.goto('/memberships');
+      await page.waitForURL(/\/memberships$/);
       await page.locator('[data-testid="create-room-btn"]').waitFor({ state: 'visible' });
 
       const roomRows = page.locator('[data-testid="room-row"]');
@@ -69,8 +73,8 @@ test.describe('Room Flows', () => {
     const { context, page } = await authenticatedContext(browser, request);
 
     try {
-      await page.goto('/rooms');
-      await page.waitForURL(/\/rooms$/);
+      await page.goto('/memberships');
+      await page.waitForURL(/\/memberships$/);
       await page.locator('[data-testid="create-room-btn"]').waitFor({ state: 'visible' });
 
       await page.locator('[data-testid="create-room-btn"]').click();
@@ -86,15 +90,18 @@ test.describe('Room Flows', () => {
     }
   });
 
-  test('second user joins a public room and sees the room view', async ({ browser, request }) => {
+  test('second user joins a public room from the Discover page and sees the room view', async ({
+    browser,
+    request,
+  }) => {
     const { context: ctxA, page: pageA } = await authenticatedContext(browser, request);
     const { context: ctxB, page: pageB } = await authenticatedContext(browser, request);
 
     try {
-      // User A creates a room
+      // User A creates a room from the Memberships page
       const roomName = `JoinRoom-${Date.now()}`;
-      await pageA.goto('/rooms');
-      await pageA.waitForURL(/\/rooms$/);
+      await pageA.goto('/memberships');
+      await pageA.waitForURL(/\/memberships$/);
       await pageA.locator('[data-testid="create-room-btn"]').waitFor({ state: 'visible' });
       await pageA.locator('[data-testid="create-room-btn"]').click();
 
@@ -104,10 +111,9 @@ test.describe('Room Flows', () => {
       await pageA.locator('dialog button[type="submit"]').click();
       await pageA.waitForURL(/\/rooms\/\d+/);
 
-      // User B navigates to rooms list and joins the room
-      await pageB.goto('/rooms');
-      await pageB.waitForURL(/\/rooms$/);
-      await pageB.locator('[data-testid="create-room-btn"]').waitFor({ state: 'visible' });
+      // User B navigates to the Discover page to find and join the room
+      await pageB.goto('/discover');
+      await pageB.waitForURL(/\/discover$/);
 
       const roomRow = pageB.locator('[data-testid="room-row"]', { hasText: roomName });
       await roomRow.locator('[data-testid="join-btn"]').click();
@@ -122,15 +128,18 @@ test.describe('Room Flows', () => {
     }
   });
 
-  test('member clicks leave and is redirected to the rooms list', async ({ browser, request }) => {
+  test('member clicks leave on the Memberships page and the room is removed from the list', async ({
+    browser,
+    request,
+  }) => {
     const { context: ctxA, page: pageA } = await authenticatedContext(browser, request);
     const { context: ctxB, page: pageB } = await authenticatedContext(browser, request);
 
     try {
       // User A creates a room
       const roomName = `LeaveRoom-${Date.now()}`;
-      await pageA.goto('/rooms');
-      await pageA.waitForURL(/\/rooms$/);
+      await pageA.goto('/memberships');
+      await pageA.waitForURL(/\/memberships$/);
       await pageA.locator('[data-testid="create-room-btn"]').waitFor({ state: 'visible' });
       await pageA.locator('[data-testid="create-room-btn"]').click();
 
@@ -140,39 +149,43 @@ test.describe('Room Flows', () => {
       await pageA.locator('dialog button[type="submit"]').click();
       await pageA.waitForURL(/\/rooms\/\d+/);
 
-      // User B joins the room
-      await pageB.goto('/rooms');
-      await pageB.waitForURL(/\/rooms$/);
-      await pageB.locator('[data-testid="create-room-btn"]').waitFor({ state: 'visible' });
+      // User B joins the room via the Discover page
+      await pageB.goto('/discover');
+      await pageB.waitForURL(/\/discover$/);
 
-      const roomRow = pageB.locator('[data-testid="room-row"]', { hasText: roomName });
-      await roomRow.locator('[data-testid="join-btn"]').click();
+      const discoverRow = pageB.locator('[data-testid="room-row"]', { hasText: roomName });
+      await discoverRow.locator('[data-testid="join-btn"]').click();
       await pageB.waitForURL(/\/rooms\/\d+/);
 
-      // User B clicks Leave
-      await pageB.locator('[data-testid="leave-btn"]').click();
+      // User B navigates to the Memberships page and clicks Leave
+      await pageB.goto('/memberships');
+      await pageB.waitForURL(/\/memberships$/);
+      await pageB.locator('[data-testid="create-room-btn"]').waitFor({ state: 'visible' });
 
-      // User B should be redirected to the rooms list
-      await pageB.waitForURL(/\/rooms$/);
-      await expect(pageB.locator('[data-testid="create-room-btn"]')).toBeVisible();
+      const membershipRow = pageB.locator('[data-testid="room-row"]', { hasText: roomName });
+      await membershipRow.locator('[data-testid="leave-btn"]').click();
+
+      // The room should no longer appear in User B's memberships
+      await expect(pageB.locator('[data-testid="room-row"]', { hasText: roomName })).toBeHidden();
     } finally {
       await ctxA.close();
       await ctxB.close();
     }
   });
 
-  test('room owner changes room name via config modal and sees updated name in rooms list', async ({
+  test('room owner changes room name and description via config modal', async ({
     browser,
     request,
   }) => {
     const { context, page } = await authenticatedContext(browser, request);
     const originalName = `ConfigRoom-${Date.now()}`;
     const updatedName = `Renamed-${Date.now()}`;
+    const updatedDesc = 'Updated description text';
 
     try {
       // Create a room
-      await page.goto('/rooms');
-      await page.waitForURL(/\/rooms$/);
+      await page.goto('/memberships');
+      await page.waitForURL(/\/memberships$/);
       await page.locator('[data-testid="create-room-btn"]').waitFor({ state: 'visible' });
       await page.locator('[data-testid="create-room-btn"]').click();
 
@@ -182,9 +195,9 @@ test.describe('Room Flows', () => {
       await page.locator('dialog button[type="submit"]').click();
       await page.waitForURL(/\/rooms\/\d+/);
 
-      // Navigate back to rooms list
-      await page.goto('/rooms');
-      await page.waitForURL(/\/rooms$/);
+      // Navigate back to Memberships page
+      await page.goto('/memberships');
+      await page.waitForURL(/\/memberships$/);
       await page.locator('[data-testid="create-room-btn"]').waitFor({ state: 'visible' });
 
       // Click config button on the room row
@@ -196,12 +209,16 @@ test.describe('Room Flows', () => {
       await configNameInput.waitFor({ state: 'visible' });
       await configNameInput.fill(updatedName);
 
+      // Change the room description in the config modal
+      const configDescInput = page.locator('[data-testid="config-room-description"]');
+      await configDescInput.fill(updatedDesc);
+
       // Submit the form
       const submitBtn = page.locator('dialog button[type="submit"]');
       await expect(submitBtn).toBeEnabled();
       await submitBtn.click();
 
-      // Verify the updated name appears in the rooms list
+      // Verify the updated name appears in the memberships table
       await expect(
         page.locator('[data-testid="room-row"]', { hasText: updatedName }),
       ).toBeVisible();
@@ -210,7 +227,7 @@ test.describe('Room Flows', () => {
     }
   });
 
-  test('room owner deletes room and it is removed from the rooms list', async ({
+  test('room owner deletes room and it is removed from the memberships list', async ({
     browser,
     request,
   }) => {
@@ -219,8 +236,8 @@ test.describe('Room Flows', () => {
 
     try {
       // Create a room
-      await page.goto('/rooms');
-      await page.waitForURL(/\/rooms$/);
+      await page.goto('/memberships');
+      await page.waitForURL(/\/memberships$/);
       await page.locator('[data-testid="create-room-btn"]').waitFor({ state: 'visible' });
       await page.locator('[data-testid="create-room-btn"]').click();
 
@@ -230,9 +247,9 @@ test.describe('Room Flows', () => {
       await page.locator('dialog button[type="submit"]').click();
       await page.waitForURL(/\/rooms\/\d+/);
 
-      // Navigate back to rooms list
-      await page.goto('/rooms');
-      await page.waitForURL(/\/rooms$/);
+      // Navigate back to Memberships page
+      await page.goto('/memberships');
+      await page.waitForURL(/\/memberships$/);
       await page.locator('[data-testid="create-room-btn"]').waitFor({ state: 'visible' });
 
       // Click config button on the room row
@@ -252,7 +269,7 @@ test.describe('Room Flows', () => {
     }
   });
 
-  test('non-owner does not see the config button for rooms they do not own', async ({
+  test('non-owner does not see the config button on the Memberships page', async ({
     browser,
     request,
   }) => {
@@ -262,8 +279,8 @@ test.describe('Room Flows', () => {
     try {
       // User A creates a room
       const roomName = `OwnerOnly-${Date.now()}`;
-      await pageA.goto('/rooms');
-      await pageA.waitForURL(/\/rooms$/);
+      await pageA.goto('/memberships');
+      await pageA.waitForURL(/\/memberships$/);
       await pageA.locator('[data-testid="create-room-btn"]').waitFor({ state: 'visible' });
       await pageA.locator('[data-testid="create-room-btn"]').click();
 
@@ -273,15 +290,24 @@ test.describe('Room Flows', () => {
       await pageA.locator('dialog button[type="submit"]').click();
       await pageA.waitForURL(/\/rooms\/\d+/);
 
-      // User B navigates to rooms list
-      await pageB.goto('/rooms');
-      await pageB.waitForURL(/\/rooms$/);
+      // User B joins the room via the Discover page
+      await pageB.goto('/discover');
+      await pageB.waitForURL(/\/discover$/);
+
+      const discoverRow = pageB.locator('[data-testid="room-row"]', { hasText: roomName });
+      await discoverRow.locator('[data-testid="join-btn"]').click();
+      await pageB.waitForURL(/\/rooms\/\d+/);
+
+      // User B navigates to the Memberships page
+      await pageB.goto('/memberships');
+      await pageB.waitForURL(/\/memberships$/);
       await pageB.locator('[data-testid="create-room-btn"]').waitFor({ state: 'visible' });
 
-      // User B should see the room row but NOT the config button
+      // User B should see the room row with a Leave button, but NOT the config button
       const roomRow = pageB.locator('[data-testid="room-row"]', { hasText: roomName });
       await expect(roomRow).toBeVisible();
       await expect(roomRow.locator('[data-testid="config-btn"]')).toBeHidden();
+      await expect(roomRow.locator('[data-testid="leave-btn"]')).toBeVisible();
     } finally {
       await ctxA.close();
       await ctxB.close();
@@ -296,8 +322,8 @@ test.describe('Room Flows', () => {
     const roomName = `TabChat-${Date.now()}`;
 
     try {
-      await page.goto('/rooms');
-      await page.waitForURL(/\/rooms$/);
+      await page.goto('/memberships');
+      await page.waitForURL(/\/memberships$/);
       await page.locator('[data-testid="create-room-btn"]').waitFor({ state: 'visible' });
       await page.locator('[data-testid="create-room-btn"]').click();
 
@@ -322,8 +348,8 @@ test.describe('Room Flows', () => {
     const roomName = `TabMembers-${Date.now()}`;
 
     try {
-      await page.goto('/rooms');
-      await page.waitForURL(/\/rooms$/);
+      await page.goto('/memberships');
+      await page.waitForURL(/\/memberships$/);
       await page.locator('[data-testid="create-room-btn"]').waitFor({ state: 'visible' });
       await page.locator('[data-testid="create-room-btn"]').click();
 
@@ -349,8 +375,8 @@ test.describe('Room Flows', () => {
     const roomName = `TabGame-${Date.now()}`;
 
     try {
-      await page.goto('/rooms');
-      await page.waitForURL(/\/rooms$/);
+      await page.goto('/memberships');
+      await page.waitForURL(/\/memberships$/);
       await page.locator('[data-testid="create-room-btn"]').waitFor({ state: 'visible' });
       await page.locator('[data-testid="create-room-btn"]').click();
 
@@ -365,6 +391,114 @@ test.describe('Room Flows', () => {
       await expect(page.locator('[data-testid="start-game-btn"]')).toBeVisible();
     } finally {
       await context.close();
+    }
+  });
+
+  test('nav bar Memberships link navigates to the memberships page', async ({
+    browser,
+    request,
+  }) => {
+    const { context, page } = await authenticatedContext(browser, request);
+
+    try {
+      await page.goto('/discover');
+      await page.waitForURL(/\/discover$/);
+
+      const membershipsLink = page.locator('[data-testid="nav-memberships"]');
+      await membershipsLink.click();
+
+      await page.waitForURL(/\/memberships$/);
+      await expect(membershipsLink).toHaveClass(/font-semibold/);
+    } finally {
+      await context.close();
+    }
+  });
+
+  test('nav bar Discover link navigates to the discover page', async ({ browser, request }) => {
+    const { context, page } = await authenticatedContext(browser, request);
+
+    try {
+      await page.goto('/memberships');
+      await page.waitForURL(/\/memberships$/);
+
+      const discoverLink = page.locator('[data-testid="nav-discover"]');
+      await discoverLink.click();
+
+      await page.waitForURL(/\/discover$/);
+      await expect(discoverLink).toHaveClass(/font-semibold/);
+    } finally {
+      await context.close();
+    }
+  });
+
+  test('nav bar highlights the active link and not the inactive one', async ({
+    browser,
+    request,
+  }) => {
+    const { context, page } = await authenticatedContext(browser, request);
+
+    try {
+      await page.goto('/memberships');
+      await page.waitForURL(/\/memberships$/);
+
+      const membershipsLink = page.locator('[data-testid="nav-memberships"]');
+      const discoverLink = page.locator('[data-testid="nav-discover"]');
+
+      await expect(membershipsLink).toHaveClass(/font-semibold/);
+      await expect(discoverLink).not.toHaveClass(/font-semibold/);
+
+      await discoverLink.click();
+      await page.waitForURL(/\/discover$/);
+
+      await expect(discoverLink).toHaveClass(/font-semibold/);
+      await expect(membershipsLink).not.toHaveClass(/font-semibold/);
+    } finally {
+      await context.close();
+    }
+  });
+
+  test('full room shows a disabled Full button on the Discover page', async ({
+    browser,
+    request,
+  }) => {
+    const { context: ctxA, page: pageA } = await authenticatedContext(browser, request);
+    const { context: ctxB, page: pageB } = await authenticatedContext(browser, request);
+
+    try {
+      // User A creates a room with memberLimit=1
+      const roomName = `FullRoom-${Date.now()}`;
+      await pageA.goto('/memberships');
+      await pageA.waitForURL(/\/memberships$/);
+      await pageA.locator('[data-testid="create-room-btn"]').waitFor({ state: 'visible' });
+      await pageA.locator('[data-testid="create-room-btn"]').click();
+
+      const nameInput = pageA.locator('#room-name');
+      await nameInput.waitFor({ state: 'visible' });
+      await nameInput.fill(roomName);
+
+      const memberLimitInput = pageA.locator('[data-testid="member-limit-input"]');
+      await memberLimitInput.fill('1');
+
+      await pageA.locator('dialog button[type="submit"]').click();
+      await pageA.waitForURL(/\/rooms\/\d+/);
+
+      // User B navigates to the Discover page and finds the full room
+      await pageB.goto('/discover');
+      await pageB.waitForURL(/\/discover$/);
+
+      const roomRow = pageB.locator('[data-testid="room-row"]', { hasText: roomName });
+      await expect(roomRow).toBeVisible();
+
+      // Locate the Full button by exact role name to avoid matching the room name button
+      const fullButton = roomRow.getByRole('button', { name: 'Full', exact: true });
+      await expect(fullButton).toBeVisible();
+      await expect(fullButton).toBeDisabled();
+
+      // Ensure there is no Join button
+      await expect(roomRow.locator('[data-testid="join-btn"]')).toBeHidden();
+    } finally {
+      await ctxA.close();
+      await ctxB.close();
     }
   });
 });

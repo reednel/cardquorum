@@ -2,11 +2,11 @@ import { expect, Page, test } from '@playwright/test';
 import { authenticatedContext } from '../helpers/auth';
 
 /**
- * Navigate to /rooms and wait for the shell header to be ready.
+ * Navigate to /memberships and wait for the shell header to be ready.
  */
-async function goToRoomsAndWaitForShell(page: Page): Promise<void> {
-  await page.goto('/rooms');
-  await page.waitForURL(/\/rooms$/);
+async function goToMembershipsAndWaitForShell(page: Page): Promise<void> {
+  await page.goto('/memberships');
+  await page.waitForURL(/\/memberships$/);
   await page.locator('[data-testid="user-menu-trigger"]').waitFor({ state: 'visible' });
 }
 
@@ -18,7 +18,7 @@ test.describe('Shell Flows', () => {
     const { context, page } = await authenticatedContext(browser, request);
 
     try {
-      await goToRoomsAndWaitForShell(page);
+      await goToMembershipsAndWaitForShell(page);
 
       await page.locator('[data-testid="user-menu-trigger"]').click();
 
@@ -36,7 +36,7 @@ test.describe('Shell Flows', () => {
     const { context, page } = await authenticatedContext(browser, request);
 
     try {
-      await goToRoomsAndWaitForShell(page);
+      await goToMembershipsAndWaitForShell(page);
 
       await page.locator('[data-testid="user-menu-trigger"]').click();
       await expect(page.locator('[data-testid="user-menu"]')).toBeVisible();
@@ -53,7 +53,7 @@ test.describe('Shell Flows', () => {
     const { context, page } = await authenticatedContext(browser, request);
 
     try {
-      await goToRoomsAndWaitForShell(page);
+      await goToMembershipsAndWaitForShell(page);
 
       await page.locator('[data-testid="user-menu-trigger"]').click();
       await expect(page.locator('[data-testid="user-menu"]')).toBeVisible();
@@ -70,7 +70,7 @@ test.describe('Shell Flows', () => {
     const { context, page } = await authenticatedContext(browser, request);
 
     try {
-      await goToRoomsAndWaitForShell(page);
+      await goToMembershipsAndWaitForShell(page);
 
       await page.locator('[data-testid="user-menu-trigger"]').click();
       await expect(page.locator('[data-testid="user-menu"]')).toBeVisible();

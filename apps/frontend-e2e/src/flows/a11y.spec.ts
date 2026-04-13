@@ -19,13 +19,28 @@ test.describe('Accessibility Sweep', () => {
     expect(results.violations, formatViolations(results.violations)).toHaveLength(0);
   });
 
-  test('rooms list page passes accessibility checks', async ({ browser, request }) => {
+  test('memberships page passes accessibility checks', async ({ browser, request }) => {
     const { context, page } = await authenticatedContext(browser, request);
 
     try {
-      await page.goto('/rooms');
-      await page.waitForURL(/\/rooms$/);
-      await page.locator('[data-testid="user-menu-trigger"]').waitFor({ state: 'visible' });
+      await page.goto('/memberships');
+      await page.waitForURL(/\/memberships$/);
+      await page.locator('[data-testid="create-room-btn"]').waitFor({ state: 'visible' });
+
+      const results = await checkAccessibility(page);
+      expect(results.violations, formatViolations(results.violations)).toHaveLength(0);
+    } finally {
+      await context.close();
+    }
+  });
+
+  test('discover page passes accessibility checks', async ({ browser, request }) => {
+    const { context, page } = await authenticatedContext(browser, request);
+
+    try {
+      await page.goto('/discover');
+      await page.waitForURL(/\/discover$/);
+      await page.locator('[data-testid="search-input"]').waitFor({ state: 'visible' });
 
       const results = await checkAccessibility(page);
       expect(results.violations, formatViolations(results.violations)).toHaveLength(0);
@@ -39,8 +54,8 @@ test.describe('Accessibility Sweep', () => {
 
     try {
       // Create a room to navigate to
-      await page.goto('/rooms');
-      await page.waitForURL(/\/rooms$/);
+      await page.goto('/memberships');
+      await page.waitForURL(/\/memberships$/);
       await page.locator('[data-testid="create-room-btn"]').waitFor({ state: 'visible' });
       await page.locator('[data-testid="create-room-btn"]').click();
 
@@ -92,8 +107,8 @@ test.describe('Accessibility Sweep', () => {
     const { context, page } = await authenticatedContext(browser, request);
 
     try {
-      await page.goto('/rooms');
-      await page.waitForURL(/\/rooms$/);
+      await page.goto('/memberships');
+      await page.waitForURL(/\/memberships$/);
       await page.locator('[data-testid="create-room-btn"]').waitFor({ state: 'visible' });
 
       await page.locator('[data-testid="create-room-btn"]').click();

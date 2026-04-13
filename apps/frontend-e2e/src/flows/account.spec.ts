@@ -138,7 +138,7 @@ test.describe('Account Flows', () => {
       await page.locator('#password').fill(newPassword);
       await page.locator('button[type="submit"]').click();
 
-      await expect(page).toHaveURL(/\/rooms/, { timeout: 15000 });
+      await expect(page).toHaveURL(/\/memberships/, { timeout: 15000 });
     } finally {
       await context.close();
     }
