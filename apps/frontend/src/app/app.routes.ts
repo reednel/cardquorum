@@ -44,11 +44,11 @@ export const appRoutes: Route[] = [
         pathMatch: 'full',
       },
       {
-        path: 'account',
+        path: 'user',
         loadComponent: () => import('./account/account-shell').then((m) => m.AccountShell),
         children: [
           {
-            path: '',
+            path: 'account',
             title: 'Account — CardQuorum',
             loadComponent: () => import('./account/account-page').then((m) => m.AccountPage),
           },
@@ -57,6 +57,7 @@ export const appRoutes: Route[] = [
             title: 'Friends — CardQuorum',
             loadComponent: () => import('./account/friends-page').then((m) => m.FriendsPage),
           },
+          { path: '', redirectTo: 'account', pathMatch: 'full' },
         ],
       },
       { path: '', redirectTo: 'memberships', pathMatch: 'full' },

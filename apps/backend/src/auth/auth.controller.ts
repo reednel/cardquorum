@@ -143,18 +143,18 @@ export class AuthController {
         const session = sessionId ? await this.sessionService.validateSession(sessionId) : null;
         if (!session) {
           reply.header('Set-Cookie', buildClearOidcStateCookie(this.nodeEnv));
-          reply.status(302).redirect('/account?error=session_expired');
+          reply.status(302).redirect('/user/account?error=session_expired');
           return;
         }
 
         if (actionSuffix === 'link') {
           await this.authService.linkOidcCredential(session.userId, code);
           reply.header('Set-Cookie', buildClearOidcStateCookie(this.nodeEnv));
-          reply.status(302).redirect('/account?linked=oidc');
+          reply.status(302).redirect('/user/account?linked=oidc');
         } else {
           await this.authService.unlinkOidcCredential(session.userId, code);
           reply.header('Set-Cookie', buildClearOidcStateCookie(this.nodeEnv));
-          reply.status(302).redirect('/account?unlinked=oidc');
+          reply.status(302).redirect('/user/account?unlinked=oidc');
         }
       } else {
         // Existing login flow
@@ -162,7 +162,7 @@ export class AuthController {
 
         let redirectUrl = null;
         if (actionSuffix === 'delete-account') {
-          redirectUrl = '/account?action=delete-account';
+          redirectUrl = '/user/account?action=delete-account';
         } else if (user.username.startsWith('user_')) {
           redirectUrl = `/register/oidc`;
         } else {
@@ -180,10 +180,10 @@ export class AuthController {
 
       if (actionSuffix === 'link') {
         const errorParam = err instanceof ConflictException ? 'oidc_conflict' : 'oidc_failed';
-        reply.status(302).redirect(`/account?error=${errorParam}`);
+        reply.status(302).redirect(`/user/account?error=${errorParam}`);
       } else if (actionSuffix === 'unlink') {
         const errorParam = err instanceof ConflictException ? 'last_credential' : 'oidc_failed';
-        reply.status(302).redirect(`/account?error=${errorParam}`);
+        reply.status(302).redirect(`/user/account?error=${errorParam}`);
       } else {
         reply.status(302).redirect('/login?error=oidc_failed');
       }

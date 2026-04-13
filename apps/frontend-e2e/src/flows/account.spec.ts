@@ -10,7 +10,7 @@ test.describe('Account Flows', () => {
     const newUsername = `renamed${Date.now().toString(36)}`;
 
     try {
-      await page.goto('/account');
+      await page.goto('/user/account');
       await page.locator('[data-testid="edit-username-btn"]').waitFor({ state: 'visible' });
 
       await page.locator('[data-testid="edit-username-btn"]').click();
@@ -38,7 +38,7 @@ test.describe('Account Flows', () => {
     const { context, page, user } = await authenticatedContext(browser, request);
 
     try {
-      await page.goto('/account');
+      await page.goto('/user/account');
       await page.locator('[data-testid="edit-username-btn"]').waitFor({ state: 'visible' });
 
       await page.locator('[data-testid="edit-username-btn"]').click();
@@ -66,7 +66,7 @@ test.describe('Account Flows', () => {
     const displayName = `TestDisplay ${Date.now()}`;
 
     try {
-      await page.goto('/account');
+      await page.goto('/user/account');
       await page.locator('[data-testid="edit-display-name-btn"]').waitFor({ state: 'visible' });
 
       await page.locator('[data-testid="edit-display-name-btn"]').click();
@@ -95,7 +95,7 @@ test.describe('Account Flows', () => {
     const { context, page } = await authenticatedContext(browser, request);
 
     try {
-      await page.goto('/account');
+      await page.goto('/user/account');
       await page.locator('[data-testid="edit-display-name-btn"]').waitFor({ state: 'visible' });
 
       await expect(page.locator('[data-testid="display-name-empty"]')).toBeVisible();
@@ -112,7 +112,7 @@ test.describe('Account Flows', () => {
     const newPassword = 'NewSecurePass456!';
 
     try {
-      await page.goto('/account');
+      await page.goto('/user/account');
       await page.locator('[data-testid="change-pw-btn"]').waitFor({ state: 'visible' });
 
       // Expand the password change form
@@ -151,7 +151,7 @@ test.describe('Account Flows', () => {
     const { context, page, user } = await authenticatedContext(browser, request);
 
     try {
-      await page.goto('/account');
+      await page.goto('/user/account');
       await page.locator('[data-testid="change-pw-btn"]').waitFor({ state: 'visible' });
 
       // Expand the password change form
@@ -181,7 +181,7 @@ test.describe('Account Flows', () => {
     const { context, page, user } = await authenticatedContext(browser, request);
 
     try {
-      await page.goto('/account');
+      await page.goto('/user/account');
       await page.locator('[data-testid="delete-account-btn"]').waitFor({ state: 'visible' });
 
       // Start the deletion flow
@@ -207,7 +207,7 @@ test.describe('Account Flows', () => {
     const { context, page } = await authenticatedContext(browser, request);
 
     try {
-      await page.goto('/account');
+      await page.goto('/user/account');
       await page.locator('[data-testid="delete-account-btn"]').waitFor({ state: 'visible' });
 
       // Start the deletion flow to show the confirmation section

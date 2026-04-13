@@ -10,6 +10,7 @@ const PROFILE: UserProfile = {
   username: 'alice',
   displayName: 'Alice',
   email: 'alice@example.com',
+  colorPreference: 20,
   createdAt: '2026-01-01T00:00:00Z',
 };
 

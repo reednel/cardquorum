@@ -5,8 +5,8 @@ import { authenticatedContext, generateTestUser, registerUser } from '../helpers
  * Navigate to the friends page and wait for it to be ready.
  */
 async function goToFriendsPage(page: Page): Promise<void> {
-  await page.goto('/account/friends');
-  await page.waitForURL(/\/account\/friends/);
+  await page.goto('/user/friends');
+  await page.waitForURL(/\/user\/friends/);
   await page.locator('[data-testid="search-input"]').waitFor({ state: 'visible' });
 }
 

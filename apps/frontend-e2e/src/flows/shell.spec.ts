@@ -32,7 +32,7 @@ test.describe('Shell Flows', () => {
     }
   });
 
-  test('clicking Account menu item navigates to /account', async ({ browser, request }) => {
+  test('clicking Account menu item navigates to /user/account', async ({ browser, request }) => {
     const { context, page } = await authenticatedContext(browser, request);
 
     try {
@@ -43,7 +43,7 @@ test.describe('Shell Flows', () => {
 
       await page.locator('[data-testid="menu-account"]').click();
 
-      await expect(page).toHaveURL(/\/account$/);
+      await expect(page).toHaveURL(/\/user\/account$/);
     } finally {
       await context.close();
     }

@@ -251,7 +251,7 @@ describe('AuthController', () => {
     });
 
     describe('oidc callback with link action', () => {
-      it('should link OIDC credential and redirect to /account?linked=oidc', async () => {
+      it('should link OIDC credential and redirect to /user?linked=oidc', async () => {
         (authService['linkOidcCredential'] as jest.Mock).mockResolvedValue(undefined);
         const stateValue = 'nonce123:link';
         const request = makeRequest(stateValue);
@@ -275,10 +275,10 @@ describe('AuthController', () => {
         );
 
         expect(authService['linkOidcCredential']).toHaveBeenCalledWith(1, 'auth-code');
-        expect(reply.redirect).toHaveBeenCalledWith('/account?linked=oidc');
+        expect(reply.redirect).toHaveBeenCalledWith('/user/account?linked=oidc');
       });
 
-      it('should redirect to /account?error=oidc_conflict on link ConflictException', async () => {
+      it('should redirect to /user?error=oidc_conflict on link ConflictException', async () => {
         (authService['linkOidcCredential'] as jest.Mock).mockRejectedValue(
           new ConflictException('already linked'),
         );
@@ -302,10 +302,10 @@ describe('AuthController', () => {
           reply as any,
         );
 
-        expect(reply.redirect).toHaveBeenCalledWith('/account?error=oidc_conflict');
+        expect(reply.redirect).toHaveBeenCalledWith('/user/account?error=oidc_conflict');
       });
 
-      it('should redirect to /account?error=oidc_failed on link generic error', async () => {
+      it('should redirect to /user?error=oidc_failed on link generic error', async () => {
         (authService['linkOidcCredential'] as jest.Mock).mockRejectedValue(
           new Error('token exchange failed'),
         );
@@ -329,10 +329,10 @@ describe('AuthController', () => {
           reply as any,
         );
 
-        expect(reply.redirect).toHaveBeenCalledWith('/account?error=oidc_failed');
+        expect(reply.redirect).toHaveBeenCalledWith('/user/account?error=oidc_failed');
       });
 
-      it('should redirect to /account?error=session_expired when no valid session', async () => {
+      it('should redirect to /user?error=session_expired when no valid session', async () => {
         const stateValue = 'nonce123:link';
         const request = makeRequest(stateValue);
         const reply = makeReply();
@@ -348,12 +348,12 @@ describe('AuthController', () => {
           reply as any,
         );
 
-        expect(reply.redirect).toHaveBeenCalledWith('/account?error=session_expired');
+        expect(reply.redirect).toHaveBeenCalledWith('/user/account?error=session_expired');
       });
     });
 
     describe('oidc callback with unlink action', () => {
-      it('should unlink OIDC credential and redirect to /account?unlinked=oidc', async () => {
+      it('should unlink OIDC credential and redirect to /user?unlinked=oidc', async () => {
         (authService['unlinkOidcCredential'] as jest.Mock).mockResolvedValue(undefined);
         const stateValue = 'nonce123:unlink';
         const request = makeRequest(stateValue);
@@ -377,10 +377,10 @@ describe('AuthController', () => {
         );
 
         expect(authService['unlinkOidcCredential']).toHaveBeenCalledWith(1, 'auth-code');
-        expect(reply.redirect).toHaveBeenCalledWith('/account?unlinked=oidc');
+        expect(reply.redirect).toHaveBeenCalledWith('/user/account?unlinked=oidc');
       });
 
-      it('should redirect to /account?error=last_credential on unlink ConflictException', async () => {
+      it('should redirect to /user?error=last_credential on unlink ConflictException', async () => {
         (authService['unlinkOidcCredential'] as jest.Mock).mockRejectedValue(
           new ConflictException('last credential'),
         );
@@ -404,7 +404,7 @@ describe('AuthController', () => {
           reply as any,
         );
 
-        expect(reply.redirect).toHaveBeenCalledWith('/account?error=last_credential');
+        expect(reply.redirect).toHaveBeenCalledWith('/user/account?error=last_credential');
       });
     });
 
@@ -453,7 +453,7 @@ describe('AuthController', () => {
     });
 
     describe('oidc callback with delete-account action', () => {
-      it('should redirect to /account?action=delete-account', async () => {
+      it('should redirect to /user?action=delete-account', async () => {
         const stateValue = 'nonce123:delete-account';
         const request = makeRequest(stateValue);
         const reply = makeReply();
@@ -468,7 +468,7 @@ describe('AuthController', () => {
         );
 
         expect(authService['oidcCallback']).toHaveBeenCalledWith('auth-code');
-        expect(reply.redirect).toHaveBeenCalledWith('/account?action=delete-account');
+        expect(reply.redirect).toHaveBeenCalledWith('/user/account?action=delete-account');
       });
     });
   });

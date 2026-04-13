@@ -19,7 +19,7 @@ describe('UserDropdown', () => {
     await TestBed.configureTestingModule({
       imports: [UserDropdown],
       providers: [
-        provideRouter([{ path: 'account', component: UserDropdown }]),
+        provideRouter([{ path: 'user/account', component: UserDropdown }]),
         { provide: AuthService, useValue: mockAuthService },
       ],
     }).compileComponents();
@@ -57,7 +57,7 @@ describe('UserDropdown', () => {
     expect(el.querySelector('[data-testid="user-menu"]')).toBeFalsy();
   });
 
-  it('navigates to /account on Account click', () => {
+  it('navigates to /user on Account click', () => {
     jest.spyOn(router, 'navigate');
     const btn = el.querySelector('[data-testid="user-menu-trigger"]') as HTMLButtonElement;
     btn.click();
@@ -67,7 +67,7 @@ describe('UserDropdown', () => {
     accountLink.click();
     fixture.detectChanges();
 
-    expect(router.navigate).toHaveBeenCalledWith(['/account']);
+    expect(router.navigate).toHaveBeenCalledWith(['/user/account']);
   });
 
   it('calls logout on Logout click', () => {

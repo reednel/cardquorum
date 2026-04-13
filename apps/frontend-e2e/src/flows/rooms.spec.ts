@@ -58,12 +58,15 @@ test.describe('Room Flows', () => {
       await page.locator('dialog button[type="submit"]').click();
       await page.waitForURL(/\/rooms\/\d+/);
 
+      // Wait for the room view to fully load (WS join + roster add must complete)
+      await page.locator(`p[title="${roomName}"]`).waitFor({ state: 'visible', timeout: 10000 });
+
       await page.goto('/memberships');
       await page.waitForURL(/\/memberships$/);
       await page.locator('[data-testid="create-room-btn"]').waitFor({ state: 'visible' });
 
       const roomRows = page.locator('[data-testid="room-row"]');
-      await expect(roomRows.filter({ hasText: roomName })).toBeVisible();
+      await expect(roomRows.filter({ hasText: roomName })).toBeVisible({ timeout: 10000 });
     } finally {
       await context.close();
     }
@@ -111,6 +114,9 @@ test.describe('Room Flows', () => {
       await pageA.locator('dialog button[type="submit"]').click();
       await pageA.waitForURL(/\/rooms\/\d+/);
 
+      // Wait for User A's room view to fully load (WS join + roster add must complete)
+      await pageA.locator(`p[title="${roomName}"]`).waitFor({ state: 'visible', timeout: 10000 });
+
       // User B navigates to the Discover page to find and join the room
       await pageB.goto('/discover');
       await pageB.waitForURL(/\/discover$/);
@@ -149,6 +155,9 @@ test.describe('Room Flows', () => {
       await pageA.locator('dialog button[type="submit"]').click();
       await pageA.waitForURL(/\/rooms\/\d+/);
 
+      // Wait for User A's room view to fully load (WS join + roster add must complete)
+      await pageA.locator(`p[title="${roomName}"]`).waitFor({ state: 'visible', timeout: 10000 });
+
       // User B joins the room via the Discover page
       await pageB.goto('/discover');
       await pageB.waitForURL(/\/discover$/);
@@ -157,16 +166,22 @@ test.describe('Room Flows', () => {
       await discoverRow.locator('[data-testid="join-btn"]').click();
       await pageB.waitForURL(/\/rooms\/\d+/);
 
+      // Wait for room view to fully load (WS join + roster add must complete)
+      await pageB.locator(`p[title="${roomName}"]`).waitFor({ state: 'visible', timeout: 10000 });
+
       // User B navigates to the Memberships page and clicks Leave
       await pageB.goto('/memberships');
       await pageB.waitForURL(/\/memberships$/);
       await pageB.locator('[data-testid="create-room-btn"]').waitFor({ state: 'visible' });
 
       const membershipRow = pageB.locator('[data-testid="room-row"]', { hasText: roomName });
+      await membershipRow.waitFor({ state: 'visible', timeout: 10000 });
       await membershipRow.locator('[data-testid="leave-btn"]').click();
 
       // The room should no longer appear in User B's memberships
-      await expect(pageB.locator('[data-testid="room-row"]', { hasText: roomName })).toBeHidden();
+      await expect(pageB.locator('[data-testid="room-row"]', { hasText: roomName })).toBeHidden({
+        timeout: 10000,
+      });
     } finally {
       await ctxA.close();
       await ctxB.close();
@@ -195,6 +210,11 @@ test.describe('Room Flows', () => {
       await page.locator('dialog button[type="submit"]').click();
       await page.waitForURL(/\/rooms\/\d+/);
 
+      // Wait for room view to fully load before navigating back
+      await page
+        .locator(`p[title="${originalName}"]`)
+        .waitFor({ state: 'visible', timeout: 10000 });
+
       // Navigate back to Memberships page
       await page.goto('/memberships');
       await page.waitForURL(/\/memberships$/);
@@ -202,6 +222,7 @@ test.describe('Room Flows', () => {
 
       // Click config button on the room row
       const roomRow = page.locator('[data-testid="room-row"]', { hasText: originalName });
+      await roomRow.waitFor({ state: 'visible', timeout: 10000 });
       await roomRow.locator('[data-testid="config-btn"]').click();
 
       // Change the room name in the config modal
@@ -247,6 +268,9 @@ test.describe('Room Flows', () => {
       await page.locator('dialog button[type="submit"]').click();
       await page.waitForURL(/\/rooms\/\d+/);
 
+      // Wait for room view to fully load before navigating back
+      await page.locator(`p[title="${roomName}"]`).waitFor({ state: 'visible', timeout: 10000 });
+
       // Navigate back to Memberships page
       await page.goto('/memberships');
       await page.waitForURL(/\/memberships$/);
@@ -254,6 +278,7 @@ test.describe('Room Flows', () => {
 
       // Click config button on the room row
       const roomRow = page.locator('[data-testid="room-row"]', { hasText: roomName });
+      await roomRow.waitFor({ state: 'visible', timeout: 10000 });
       await roomRow.locator('[data-testid="config-btn"]').click();
 
       // Click delete, then confirm
@@ -290,6 +315,9 @@ test.describe('Room Flows', () => {
       await pageA.locator('dialog button[type="submit"]').click();
       await pageA.waitForURL(/\/rooms\/\d+/);
 
+      // Wait for User A's room view to fully load (WS join + roster add must complete)
+      await pageA.locator(`p[title="${roomName}"]`).waitFor({ state: 'visible', timeout: 10000 });
+
       // User B joins the room via the Discover page
       await pageB.goto('/discover');
       await pageB.waitForURL(/\/discover$/);
@@ -298,6 +326,9 @@ test.describe('Room Flows', () => {
       await discoverRow.locator('[data-testid="join-btn"]').click();
       await pageB.waitForURL(/\/rooms\/\d+/);
 
+      // Wait for room view to fully load (WS join + roster add must complete)
+      await pageB.locator(`p[title="${roomName}"]`).waitFor({ state: 'visible', timeout: 10000 });
+
       // User B navigates to the Memberships page
       await pageB.goto('/memberships');
       await pageB.waitForURL(/\/memberships$/);
@@ -305,7 +336,7 @@ test.describe('Room Flows', () => {
 
       // User B should see the room row with a Leave button, but NOT the config button
       const roomRow = pageB.locator('[data-testid="room-row"]', { hasText: roomName });
-      await expect(roomRow).toBeVisible();
+      await roomRow.waitFor({ state: 'visible', timeout: 10000 });
       await expect(roomRow.locator('[data-testid="config-btn"]')).toBeHidden();
       await expect(roomRow.locator('[data-testid="leave-btn"]')).toBeVisible();
     } finally {
@@ -333,6 +364,9 @@ test.describe('Room Flows', () => {
       await page.locator('dialog button[type="submit"]').click();
       await page.waitForURL(/\/rooms\/\d+/);
 
+      // Wait for room view to fully render
+      await page.locator(`p[title="${roomName}"]`).waitFor({ state: 'visible', timeout: 10000 });
+
       const chatTab = page.getByRole('tab', { name: 'Chat' });
       await expect(chatTab).toHaveAttribute('aria-selected', 'true');
     } finally {
@@ -358,6 +392,9 @@ test.describe('Room Flows', () => {
       await nameInput.fill(roomName);
       await page.locator('dialog button[type="submit"]').click();
       await page.waitForURL(/\/rooms\/\d+/);
+
+      // Wait for room view to fully render
+      await page.locator(`p[title="${roomName}"]`).waitFor({ state: 'visible', timeout: 10000 });
 
       await page.getByRole('tab', { name: 'Members' }).click();
 
@@ -385,6 +422,9 @@ test.describe('Room Flows', () => {
       await nameInput.fill(roomName);
       await page.locator('dialog button[type="submit"]').click();
       await page.waitForURL(/\/rooms\/\d+/);
+
+      // Wait for room view to fully render
+      await page.locator(`p[title="${roomName}"]`).waitFor({ state: 'visible', timeout: 10000 });
 
       await page.getByRole('tab', { name: 'Game' }).click();
 
@@ -482,16 +522,19 @@ test.describe('Room Flows', () => {
       await pageA.locator('dialog button[type="submit"]').click();
       await pageA.waitForURL(/\/rooms\/\d+/);
 
+      // Wait for User A's room view to fully load (WS join + roster add must complete)
+      await pageA.locator(`p[title="${roomName}"]`).waitFor({ state: 'visible', timeout: 10000 });
+
       // User B navigates to the Discover page and finds the full room
       await pageB.goto('/discover');
       await pageB.waitForURL(/\/discover$/);
 
       const roomRow = pageB.locator('[data-testid="room-row"]', { hasText: roomName });
-      await expect(roomRow).toBeVisible();
+      await expect(roomRow).toBeVisible({ timeout: 10000 });
 
       // Locate the Full button by exact role name to avoid matching the room name button
       const fullButton = roomRow.getByRole('button', { name: 'Full', exact: true });
-      await expect(fullButton).toBeVisible();
+      await expect(fullButton).toBeVisible({ timeout: 10000 });
       await expect(fullButton).toBeDisabled();
 
       // Ensure there is no Join button

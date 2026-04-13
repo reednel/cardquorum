@@ -79,7 +79,7 @@ test.describe('Accessibility Sweep', () => {
     const { context, page } = await authenticatedContext(browser, request);
 
     try {
-      await page.goto('/account');
+      await page.goto('/user/account');
       await page.locator('[data-testid="edit-username-btn"]').waitFor({ state: 'visible' });
 
       const results = await checkAccessibility(page);
@@ -93,7 +93,7 @@ test.describe('Accessibility Sweep', () => {
     const { context, page } = await authenticatedContext(browser, request);
 
     try {
-      await page.goto('/account/friends');
+      await page.goto('/user/friends');
       await page.locator('[data-testid="search-input"]').waitFor({ state: 'visible' });
 
       const results = await checkAccessibility(page);

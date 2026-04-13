@@ -7,14 +7,12 @@ import { FriendService } from './friend.service';
 const FRIEND: FriendshipResponse = {
   friendshipId: 1,
   user: { userId: 2, username: 'bob', displayName: 'Bob' },
-  status: 'accepted',
   createdAt: '2026-01-01T00:00:00Z',
 };
 
 const INCOMING: FriendshipResponse = {
   friendshipId: 3,
   user: { userId: 4, username: 'carol', displayName: 'Carol' },
-  status: 'pending',
   createdAt: '2026-01-02T00:00:00Z',
 };
 
