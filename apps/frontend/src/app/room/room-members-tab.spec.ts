@@ -4,9 +4,9 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { RoomResponse, RosterMember } from '@cardquorum/shared';
 import { AuthService } from '../auth/auth.service';
-import { ChatService } from '../chat/chat.service';
 import { GameService } from '../game/game.service';
 import { WebSocketService } from '../websocket.service';
+import { RoomContextService } from './room-context.service';
 import { RoomMembersTab } from './room-members-tab';
 import { RoomService } from './room.service';
 import { RosterService } from './roster.service';
@@ -71,7 +71,7 @@ describe('RoomMembersTab', () => {
   const membersSignal = signal<{ userId: number; username: string; displayName: string | null }[]>(
     [],
   );
-  const mockChatService = {
+  const mockRoomContext = {
     members: membersSignal,
   };
 
@@ -131,7 +131,7 @@ describe('RoomMembersTab', () => {
       imports: [RoomMembersTab],
       providers: [
         { provide: RosterService, useValue: mockRosterService },
-        { provide: ChatService, useValue: mockChatService },
+        { provide: RoomContextService, useValue: mockRoomContext },
         { provide: GameService, useValue: mockGameService },
         { provide: AuthService, useValue: mockAuthService },
         { provide: RoomService, useValue: mockRoomService },

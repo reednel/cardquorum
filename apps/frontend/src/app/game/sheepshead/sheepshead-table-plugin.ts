@@ -50,6 +50,7 @@ interface SheepsheadPlayerView {
   noPick: string | null;
   redeals: unknown[] | null;
   legalCardNames: string[] | null;
+  dealerUserID: number | null;
 }
 
 type SheepsheadAction = { type: string; payload?: unknown };
@@ -120,7 +121,7 @@ function getPlayerSeats(state: SheepsheadPlayerView, myUserID: number): SeatInfo
     .map((p) => ({
       userID: p.userID,
       handSize: p.hand.length,
-      isDealer: state.players[0]?.userID === p.userID,
+      isDealer: state.dealerUserID === p.userID,
       isActive: state.activePlayer === p.userID,
     }));
 }

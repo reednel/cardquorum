@@ -3,9 +3,9 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import * as fc from 'fast-check';
 import type { FieldRegistry, GenericConfigPreset } from '@cardquorum/engine';
-import { ChatService } from '../chat/chat.service';
 import { GameService } from '../game/game.service';
 import { WebSocketService } from '../websocket.service';
+import { RoomContextService } from './room-context.service';
 import { buildFieldEntries, RoomGameTab } from './room-game-tab';
 
 const VALID_RENDER_TYPES = ['boolean', 'select', 'number', 'nullable-number', 'hidden-array'];
@@ -177,7 +177,7 @@ describe('RoomGameTab — component rendering', () => {
     cancelGame: jest.fn(),
   };
 
-  const mockChatService = {
+  const mockRoomContext = {
     currentRoomId: currentRoomIdSignal,
   };
 
@@ -197,7 +197,7 @@ describe('RoomGameTab — component rendering', () => {
       imports: [RoomGameTab, FormsModule],
       providers: [
         { provide: GameService, useValue: mockGameService },
-        { provide: ChatService, useValue: mockChatService },
+        { provide: RoomContextService, useValue: mockRoomContext },
         { provide: WebSocketService, useValue: mockWsService },
       ],
     }).compileComponents();
@@ -252,7 +252,7 @@ describe('RoomGameTab — Start/Abort buttons', () => {
     cancelGame: jest.fn(),
   };
 
-  const mockChatService = {
+  const mockRoomContext = {
     currentRoomId: currentRoomIdSignal,
   };
 
@@ -272,7 +272,7 @@ describe('RoomGameTab — Start/Abort buttons', () => {
       imports: [RoomGameTab, FormsModule],
       providers: [
         { provide: GameService, useValue: mockGameService },
-        { provide: ChatService, useValue: mockChatService },
+        { provide: RoomContextService, useValue: mockRoomContext },
         { provide: WebSocketService, useValue: mockWsService },
       ],
     }).compileComponents();
@@ -391,7 +391,7 @@ describe('RoomGameTab — form locking during active session', () => {
     cancelGame: jest.fn(),
   };
 
-  const mockChatService = {
+  const mockRoomContext = {
     currentRoomId: currentRoomIdSignal,
   };
 
@@ -411,7 +411,7 @@ describe('RoomGameTab — form locking during active session', () => {
       imports: [RoomGameTab, FormsModule],
       providers: [
         { provide: GameService, useValue: mockGameService },
-        { provide: ChatService, useValue: mockChatService },
+        { provide: RoomContextService, useValue: mockRoomContext },
         { provide: WebSocketService, useValue: mockWsService },
       ],
     }).compileComponents();
@@ -536,7 +536,7 @@ describe('RoomGameTab — Autostart checkbox', () => {
     cancelGame: jest.fn(),
   };
 
-  const mockChatService = {
+  const mockRoomContext = {
     currentRoomId: currentRoomIdSignal,
   };
 
@@ -557,7 +557,7 @@ describe('RoomGameTab — Autostart checkbox', () => {
       imports: [RoomGameTab, FormsModule],
       providers: [
         { provide: GameService, useValue: mockGameService },
-        { provide: ChatService, useValue: mockChatService },
+        { provide: RoomContextService, useValue: mockRoomContext },
         { provide: WebSocketService, useValue: mockWsService },
       ],
     }).compileComponents();
@@ -638,7 +638,7 @@ describe('RoomGameTab — settings persistence via WebSocket', () => {
     cancelGame: jest.fn(),
   };
 
-  const mockChatService = {
+  const mockRoomContext = {
     currentRoomId: currentRoomIdSignal,
   };
 
@@ -666,7 +666,7 @@ describe('RoomGameTab — settings persistence via WebSocket', () => {
       imports: [RoomGameTab, FormsModule],
       providers: [
         { provide: GameService, useValue: mockGameService },
-        { provide: ChatService, useValue: mockChatService },
+        { provide: RoomContextService, useValue: mockRoomContext },
         { provide: WebSocketService, useValue: mockWsService },
       ],
     }).compileComponents();
@@ -849,7 +849,7 @@ describe('Game action button visibility', () => {
     cancelGame: jest.fn(),
   };
 
-  const mockChat = {
+  const mockRoomContext = {
     currentRoomId: currentRoomIdSig,
   };
 
@@ -867,7 +867,7 @@ describe('Game action button visibility', () => {
       imports: [RoomGameTab, FormsModule],
       providers: [
         { provide: GameService, useValue: mockGame },
-        { provide: ChatService, useValue: mockChat },
+        { provide: RoomContextService, useValue: mockRoomContext },
         { provide: WebSocketService, useValue: mockWs },
       ],
     }).compileComponents();

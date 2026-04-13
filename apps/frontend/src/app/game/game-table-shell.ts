@@ -63,6 +63,19 @@ export class GameTableShell {
   readonly members = input.required<UserIdentity[]>();
   readonly colorMap = input<ColorAssignmentMap | undefined>(undefined);
 
+  /**
+   * Accumulates member identities so that players who leave mid-game
+   * still have their display names resolved on the table.
+   */
+  private readonly memberCache = new Map<number, UserIdentity>();
+
+  private readonly knownMembers = computed<Map<number, UserIdentity>>(() => {
+    for (const m of this.members()) {
+      this.memberCache.set(m.userId, m);
+    }
+    return this.memberCache;
+  });
+
   protected readonly seats = computed<SeatInfo[]>(() =>
     this.plugin().getPlayerSeats(this.state(), this.myUserID()),
   );
@@ -91,7 +104,7 @@ export class GameTableShell {
   });
 
   protected userDisplayName(userID: number): string {
-    const member = this.members().find((m) => m.userId === userID);
+    const member = this.knownMembers().get(userID);
     return member?.displayName ?? member?.username ?? `Player ${userID}`;
   }
 }

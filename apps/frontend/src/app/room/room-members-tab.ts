@@ -24,9 +24,9 @@ import {
   UserSearchResult,
 } from '@cardquorum/shared';
 import { AuthService } from '../auth/auth.service';
-import { ChatService } from '../chat/chat.service';
 import { GameService } from '../game/game.service';
 import { OverflowAction, OverflowMenuComponent } from './overflow-menu';
+import { RoomContextService } from './room-context.service';
 import { RoomService } from './room.service';
 import {
   computeInvitedList,
@@ -261,7 +261,7 @@ export class RoomMembersTab {
   readonly room = input.required<RoomResponse>();
 
   protected readonly rosterService = inject(RosterService);
-  private readonly chatService = inject(ChatService);
+  private readonly roomContext = inject(RoomContextService);
   private readonly gameService = inject(GameService);
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
@@ -275,7 +275,7 @@ export class RoomMembersTab {
   protected readonly isOwner = computed(() => this.room().ownerId === this.auth.user()?.userId);
 
   protected readonly onlineUserIds = computed(
-    () => new Set(this.chatService.members().map((m) => m.userId)),
+    () => new Set(this.roomContext.members().map((m) => m.userId)),
   );
 
   protected readonly invitedList = computed(() =>
@@ -374,7 +374,7 @@ export class RoomMembersTab {
       return;
     }
     const invitedIds = new Set(this.invites().map((i) => i.userId));
-    const memberIds = new Set(this.chatService.members().map((m) => m.userId));
+    const memberIds = new Set(this.roomContext.members().map((m) => m.userId));
     this.http.get<UserSearchResult[]>('/api/users/search', { params: { q: query } }).subscribe({
       next: (results) => {
         this.inviteSearchResults.set(

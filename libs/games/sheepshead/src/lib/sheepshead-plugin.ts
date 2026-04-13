@@ -204,8 +204,16 @@ function getPlayerView(
   const thisPlayer = state.players.find((p) => p.userID === userID);
   const isPicker = thisPlayer?.role === 'picker';
 
+  // Rotate the player array so the viewing player is at index 0.
+  // This ensures every player sees opponents in a consistent clockwise order.
+  const myIdx = state.players.findIndex((p) => p.userID === userID);
+  const rotated =
+    myIdx > 0
+      ? [...state.players.slice(myIdx), ...state.players.slice(0, myIdx)]
+      : [...state.players];
+
   // Each player only sees their own hand (unless schwanzer)
-  const players = state.players.map((p) => {
+  const players = rotated.map((p) => {
     if (p.userID === userID) return p;
 
     return {
@@ -275,7 +283,8 @@ function getPlayerView(
     hole,
     tricks,
     legalCardNames,
-  } as Partial<SheepsheadState> & { legalCardNames: string[] | null };
+    dealerUserID: state.players[0]?.userID ?? null,
+  } as Partial<SheepsheadState> & { legalCardNames: string[] | null; dealerUserID: number | null };
 }
 
 function isGameOver(state: SheepsheadState): boolean {

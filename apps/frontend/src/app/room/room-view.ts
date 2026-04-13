@@ -21,6 +21,7 @@ import { GameTable } from '../game/game-table';
 import { GameService } from '../game/game.service';
 import { WebSocketService } from '../websocket.service';
 import { RoomChatTab } from './room-chat-tab';
+import { RoomContextService } from './room-context.service';
 import { RoomGameTab } from './room-game-tab';
 import { RoomMembersTab } from './room-members-tab';
 import { RoomService } from './room.service';
@@ -37,7 +38,7 @@ type RoomTab = 'chat' | 'members' | 'game';
       <!-- Game area -->
       <main class="flex-1">
         @if (gameService.state()) {
-          <app-game-table [myUserID]="myUserID()" [members]="chatService.members()" />
+          <app-game-table [myUserID]="myUserID()" [members]="roomContext.members()" />
         }
       </main>
 
@@ -181,6 +182,7 @@ type RoomTab = 'chat' | 'members' | 'game';
 })
 export class RoomView implements OnInit, OnDestroy {
   protected readonly chatService = inject(ChatService);
+  protected readonly roomContext = inject(RoomContextService);
   protected readonly gameService = inject(GameService);
   protected readonly rosterService = inject(RosterService);
   private readonly roomService = inject(RoomService);
@@ -204,13 +206,13 @@ export class RoomView implements OnInit, OnDestroy {
 
   constructor() {
     effect(() => {
-      const deletedId = this.chatService.roomDeleted();
+      const deletedId = this.roomContext.roomDeleted();
       if (deletedId !== null && deletedId === this.roomId) {
         this.router.navigate(['/rooms']);
       }
     });
     effect(() => {
-      const err = this.chatService.joinError();
+      const err = this.roomContext.joinError();
       if (err !== null) {
         this.router.navigate(['/rooms']);
       }
@@ -239,12 +241,13 @@ export class RoomView implements OnInit, OnDestroy {
         error: () => this.router.navigate(['/rooms']),
       });
 
-    this.chatService.joinRoom(this.roomId);
+    this.roomContext.joinRoom(this.roomId);
     this.gameService.rejoinGame(this.roomId);
   }
 
   ngOnDestroy(): void {
-    this.chatService.leaveRoom();
+    this.roomContext.leaveRoom();
+    this.chatService.clearMessages();
     this.gameService.leaveRoom();
   }
 

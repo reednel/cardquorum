@@ -25,11 +25,11 @@ import {
   WS_EVENT,
 } from '@cardquorum/shared';
 import { SheepsheadConfigPlugin } from '@cardquorum/sheepshead';
-import { ChatService } from '../chat/chat.service';
 import { GameRegistry } from '../game/game-registry';
 import { GameService } from '../game/game.service';
 import { WebSocketService } from '../websocket.service';
 import { validateGameForm } from './game-form-validation';
+import { RoomContextService } from './room-context.service';
 
 const GAMES: GameRegistry = {
   sheepshead: SheepsheadConfigPlugin,
@@ -340,7 +340,7 @@ export class RoomGameTab implements OnInit {
   readonly rosterPlayers = input<RosterMember[]>([]);
 
   protected readonly gameService = inject(GameService);
-  private readonly chatService = inject(ChatService);
+  private readonly roomContext = inject(RoomContextService);
   private readonly ws = inject(WebSocketService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -472,7 +472,7 @@ export class RoomGameTab implements OnInit {
   }
 
   protected onStart(): void {
-    const roomId = this.chatService.currentRoomId();
+    const roomId = this.roomContext.currentRoomId();
     const gameType = this.selectedGame();
     const config = this.configValues();
     if (roomId && gameType) {
@@ -487,7 +487,7 @@ export class RoomGameTab implements OnInit {
 
   protected onAutostartChange(value: boolean): void {
     this.autostart.set(value);
-    const roomId = this.chatService.currentRoomId();
+    const roomId = this.roomContext.currentRoomId();
     if (roomId) {
       this.ws.send(WS_EVENT.GAME_SETTINGS_UPDATE, {
         roomId,
@@ -542,7 +542,7 @@ export class RoomGameTab implements OnInit {
   /** Send current form state to the server for persistence. Skipped during WS sync. */
   private sendSettings(): void {
     if (this.syncing) return;
-    const roomId = this.chatService.currentRoomId();
+    const roomId = this.roomContext.currentRoomId();
     if (!roomId) return;
     this.ws.send(WS_EVENT.GAME_SETTINGS_UPDATE, {
       roomId,
@@ -557,7 +557,7 @@ export class RoomGameTab implements OnInit {
 
   /** Request persisted settings from the server. */
   private loadSettings(): void {
-    const roomId = this.chatService.currentRoomId();
+    const roomId = this.roomContext.currentRoomId();
     if (!roomId) return;
     this.ws.send(WS_EVENT.GAME_SETTINGS_LOAD, { roomId });
   }

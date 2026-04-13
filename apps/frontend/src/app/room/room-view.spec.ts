@@ -5,6 +5,7 @@ import { of, throwError } from 'rxjs';
 import { RoomResponse } from '@cardquorum/shared';
 import { AuthService } from '../auth/auth.service';
 import { ChatService } from '../chat/chat.service';
+import { RoomContextService } from './room-context.service';
 import { RoomView } from './room-view';
 import { RoomService } from './room.service';
 
@@ -31,14 +32,18 @@ describe('RoomView', () => {
   let fixture: ComponentFixture<RoomView>;
   let router: Router;
 
-  const mockChatService = {
-    messages: signal([]),
+  const mockRoomContext = {
     members: signal([]),
     currentRoomId: signal(null),
     roomDeleted: signal<number | null>(null),
     joinError: signal<string | null>(null),
     joinRoom: jest.fn(),
     leaveRoom: jest.fn(),
+  };
+
+  const mockChatService = {
+    messages: signal([]),
+    clearMessages: jest.fn(),
     sendMessage: jest.fn(),
   };
 
@@ -57,8 +62,8 @@ describe('RoomView', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    mockChatService.roomDeleted.set(null);
-    mockChatService.joinError.set(null);
+    mockRoomContext.roomDeleted.set(null);
+    mockRoomContext.joinError.set(null);
 
     await TestBed.configureTestingModule({
       imports: [RoomView],
@@ -68,6 +73,7 @@ describe('RoomView', () => {
           provide: ActivatedRoute,
           useValue: { snapshot: { paramMap: new Map([['roomId', '42']]) } },
         },
+        { provide: RoomContextService, useValue: mockRoomContext },
         { provide: ChatService, useValue: mockChatService },
         { provide: RoomService, useValue: mockRoomService },
         { provide: AuthService, useValue: mockAuthService },
@@ -80,7 +86,7 @@ describe('RoomView', () => {
   });
 
   it('joins room on init', () => {
-    expect(mockChatService.joinRoom).toHaveBeenCalledWith(42);
+    expect(mockRoomContext.joinRoom).toHaveBeenCalledWith(42);
   });
 
   it('fetches room details', () => {
@@ -94,7 +100,7 @@ describe('RoomView', () => {
 
   it('leaves room on destroy', () => {
     fixture.destroy();
-    expect(mockChatService.leaveRoom).toHaveBeenCalled();
+    expect(mockRoomContext.leaveRoom).toHaveBeenCalled();
   });
 
   it('loads invites and bans when members tab is activated', () => {
@@ -123,7 +129,7 @@ describe('RoomView', () => {
   it('redirects to /rooms when join error occurs (e.g. room full)', () => {
     const navigateSpy = jest.spyOn(router, 'navigate').mockResolvedValue(true);
 
-    mockChatService.joinError.set('Room is full (limit: 4)');
+    mockRoomContext.joinError.set('Room is full (limit: 4)');
     fixture.detectChanges();
 
     expect(navigateSpy).toHaveBeenCalledWith(['/rooms']);
@@ -133,14 +139,18 @@ describe('RoomView', () => {
 describe('RoomView — invalid room', () => {
   let router: Router;
 
-  const mockChatService = {
-    messages: signal([]),
+  const mockRoomContext = {
     members: signal([]),
     currentRoomId: signal(null),
     roomDeleted: signal<number | null>(null),
     joinError: signal<string | null>(null),
     joinRoom: jest.fn(),
     leaveRoom: jest.fn(),
+  };
+
+  const mockChatService = {
+    messages: signal([]),
+    clearMessages: jest.fn(),
     sendMessage: jest.fn(),
   };
 
@@ -168,6 +178,7 @@ describe('RoomView — invalid room', () => {
           provide: ActivatedRoute,
           useValue: { snapshot: { paramMap: new Map([['roomId', '999']]) } },
         },
+        { provide: RoomContextService, useValue: mockRoomContext },
         { provide: ChatService, useValue: mockChatService },
         { provide: RoomService, useValue: mockRoomService },
         { provide: AuthService, useValue: mockAuthService },

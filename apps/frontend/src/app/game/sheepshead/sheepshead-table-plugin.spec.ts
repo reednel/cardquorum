@@ -129,13 +129,14 @@ describe('SheepsheadTablePlugin', () => {
       ]);
     });
 
-    it('marks dealer correctly (players[0])', () => {
+    it('marks dealer correctly (dealerUserID)', () => {
       const state: any = {
         players: [
           { userID: 1, hand: [], role: null },
           { userID: 2, hand: [], role: null },
         ],
         activePlayer: null,
+        dealerUserID: 1,
       };
       const seats = SheepsheadTablePlugin.getPlayerSeats(state, 2);
       expect(seats[0].isDealer).toBe(true);
