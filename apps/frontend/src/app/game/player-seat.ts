@@ -1,10 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { CardRenderer } from './card-renderer';
+import { CardStack } from './card-stack';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-player-seat',
-  imports: [CardRenderer],
+  imports: [CardStack],
   template: `
     <div
       [class]="
@@ -13,11 +13,7 @@ import { CardRenderer } from './card-renderer';
       "
     >
       <!-- Card backs fan -->
-      <div class="flex -space-x-4">
-        @for (i of cardBackIndices(); track i) {
-          <app-card-renderer [cardName]="null" alt="Card back" [width]="40" [height]="56" />
-        }
-      </div>
+      <app-card-stack [cards]="cardBacks()" [spread]="0.4" [cardWidth]="40" [cardHeight]="56" />
 
       <!-- Player name + dealer chip -->
       <div class="flex items-center gap-1">
@@ -50,9 +46,9 @@ export class PlayerSeat {
   readonly isActive = input(false);
   readonly hue = input<number | null>(null);
 
-  protected readonly cardBackIndices = computed(() => {
+  protected readonly cardBacks = computed(() => {
     const count = Math.min(this.handSize(), 8);
-    return Array.from({ length: count }, (_, i) => i);
+    return Array.from({ length: count }, () => null) as (string | null)[];
   });
 
   /** CSS border-bottom for the seat color indicator, or empty string when no hue. */

@@ -14,7 +14,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
       <use [attr.href]="svgHref()" />
     </svg>
   `,
-  host: { class: 'inline-block' },
+  host: { class: 'block' },
 })
 export class CardRenderer {
   /** Card name to display (e.g., 'qc', 'ad'). Null renders the card back. */

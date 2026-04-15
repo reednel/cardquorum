@@ -8,11 +8,10 @@ import {
   signal,
 } from '@angular/core';
 import type { GameTablePlugin, UserIdentity } from '@cardquorum/shared';
+import { CardStack } from './card-stack';
 import { GameTableShell } from './game-table-shell';
 import { GameService } from './game.service';
 import { PhaseOverlay } from './phase-overlay';
-import { PlayArea } from './play-area';
-import { PlayerHand } from './player-hand';
 import { BuryOverlay } from './sheepshead/bury-overlay';
 import { CallOverlay } from './sheepshead/call-overlay';
 import { CrackOverlay } from './sheepshead/crack-overlay';
@@ -26,8 +25,7 @@ import { SheepsheadTablePlugin } from './sheepshead/sheepshead-table-plugin';
   selector: 'app-game-table',
   imports: [
     GameTableShell,
-    PlayerHand,
-    PlayArea,
+    CardStack,
     PhaseOverlay,
     DealOverlay,
     PickOverlay,
@@ -48,15 +46,29 @@ import { SheepsheadTablePlugin } from './sheepshead/sheepshead-table-plugin';
       >
         <!-- Play area -->
         <div playArea>
-          <app-play-area [plays]="currentTrick()" [colorMap]="gameService.colorMap()" />
+          <app-card-stack
+            [cards]="trickCardNames()"
+            [spread]="0.3"
+            [spreadAngle]="360"
+            [biasedPlacement]="true"
+            [cardWidth]="60"
+            [cardHeight]="84"
+            [colorMap]="gameService.colorMap() ?? null"
+            [playerIds]="trickPlayerIds()"
+          />
         </div>
 
         <!-- Player hand -->
         <div hand>
-          <app-player-hand
+          <app-card-stack
             [cards]="myHand()"
+            [spread]="0.7"
+            [spreadAngle]="15"
+            [selectable]="true"
+            [reorderable]="true"
             [legalCards]="legalCards()"
-            (cardPlayed)="onCardPlayed($event)"
+            (cardConfirmed)="onCardConfirmed($event)"
+            (cardsReordered)="onHandReordered($event)"
           />
         </div>
 
@@ -129,10 +141,21 @@ export class GameTable {
 
   protected readonly plugin: GameTablePlugin = SheepsheadTablePlugin;
   protected readonly crackDismissed = signal(false);
+  private readonly handOrder = signal<string[] | null>(null);
 
   protected readonly myHand = computed(() => {
     const state = this.gameService.state();
-    return state ? this.plugin.getMyHand(state, this.myUserID()) : [];
+    const serverHand = state ? this.plugin.getMyHand(state, this.myUserID()) : [];
+    const localOrder = this.handOrder();
+    if (!localOrder) return serverHand;
+    // Keep local order but filter to only cards still in the server hand
+    const serverSet = new Set(serverHand);
+    const ordered = localOrder.filter((c) => serverSet.has(c));
+    // Add any new cards from server that aren't in local order
+    for (const c of serverHand) {
+      if (!localOrder.includes(c)) ordered.push(c);
+    }
+    return ordered;
   });
 
   protected readonly legalCards = computed(() => {
@@ -143,6 +166,16 @@ export class GameTable {
   protected readonly currentTrick = computed(() => {
     const state = this.gameService.state();
     return state ? this.plugin.getCurrentTrick(state) : null;
+  });
+
+  protected readonly trickCardNames = computed(() => {
+    const trick = this.currentTrick();
+    return trick ? trick.map((play) => play.cardName) : [];
+  });
+
+  protected readonly trickPlayerIds = computed(() => {
+    const trick = this.currentTrick();
+    return trick ? trick.map((play) => play.userID) : [];
   });
 
   protected readonly activeOverlay = computed(() => {
@@ -173,6 +206,15 @@ export class GameTable {
     } | null;
     return state?.players ?? [];
   });
+
+  protected onHandReordered(newOrder: (string | null)[]): void {
+    console.log('[GameTable] onHandReordered', newOrder);
+    this.handOrder.set(newOrder.filter((c): c is string => c !== null));
+  }
+
+  protected onCardConfirmed(event: { cardName: string; index: number }): void {
+    this.onCardPlayed(event.cardName);
+  }
 
   protected onCardPlayed(cardName: string): void {
     const state = this.gameService.state();
