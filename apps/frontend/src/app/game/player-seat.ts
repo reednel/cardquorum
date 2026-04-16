@@ -13,7 +13,7 @@ import { CardStack } from './card-stack';
       "
     >
       <!-- Card backs fan -->
-      <app-card-stack [cards]="cardBacks()" [spread]="0.4" [cardWidth]="40" [cardHeight]="56" />
+      <app-card-stack [cards]="cardBacks()" [spread]="0.4" [cardWidth]="40" />
 
       <!-- Player name + dealer chip -->
       <div class="flex items-center gap-1">
@@ -55,7 +55,7 @@ export class PlayerSeat {
   protected readonly seatBorderStyle = computed(() => {
     const h = this.hue();
     if (h === null) return '';
-    const lightness = document.documentElement.classList.contains('dark') ? 33 : 66;
-    return `2px solid hsl(${h}, 75%, ${lightness}%)`;
+    const lightness = 'var(--card-halo-lightness)';
+    return `2px solid hsl(${h} 75% ${lightness})`;
   });
 }

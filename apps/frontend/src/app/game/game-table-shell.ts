@@ -38,18 +38,13 @@ import { PlayerSeat } from './player-seat';
           <ng-content select="[playArea]" />
         </div>
 
+        <!-- Local player hand -->
+        <div class="absolute bottom-3 left-1/2 -translate-x-1/2">
+          <ng-content select="[hand]" />
+        </div>
+
         <!-- Overlay host -->
         <ng-content select="[overlay]" />
-      </div>
-
-      <!-- Local player hand -->
-      <div
-        [class]="
-          'border-t border-border bg-surface-raised px-4 py-3 dark:border-border-dark dark:bg-surface-dark ' +
-          (isMyTurn() ? 'ring-2 ring-inset ring-primary-light' : '')
-        "
-      >
-        <ng-content select="[hand]" />
       </div>
     </div>
   `,
@@ -83,11 +78,6 @@ export class GameTableShell {
   protected readonly statusInfo = computed<StatusInfo>(() =>
     this.plugin().getStatusInfo(this.state()),
   );
-
-  protected readonly isMyTurn = computed(() => {
-    const actions = this.validActions();
-    return actions.includes('play_card');
-  });
 
   /** Compute percentage positions around an arc for each opponent seat. */
   protected readonly seatsWithPosition = computed(() => {

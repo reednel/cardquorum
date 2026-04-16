@@ -1,10 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="224.22508" height="312.80777"><symbol viewBox="0 0 224.22508 312.80777" id="icon">
-  <g transform="translate(-259.93471,-369.77721)">
+<svg xmlns="http://www.w3.org/2000/svg" width="222.23162" height="310.81431"><symbol viewBox="0 0 222.23162 310.81431" id="icon">
+  <g transform="translate(-260.93140,-370.77398)">
     <g transform="translate(-1383,92.135109)">
       <g transform="translate(-0.99656558,0)">
         <g>
           <g transform="translate(-5059.9561,3024.9515)">
-            <rect y="-2746.811" x="6704.3857" height="311.81104" width="223.22835" style="fill:var(--color-card-bg, #ffffff);fill-opacity:1;stroke:var(--color-card-border, #000000);stroke-width:0.99673343;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" rx="10.629921" ry="10.629921" />
             <g transform="matrix(0.30106207,0,0,0.30106207,5623.2929,-1949.6699)">
               <path d="m 3650.1724,-2493.7296 0,-9.3439 8.5863,0 0,-15.399 -42.9315,0 0,-10.865 46.4525,-70.0793 7.5907,0.026 0,70.0533 13.1319,0 0,10.865 -13.1319,0 -0.2526,15.399 7.1974,0 0,9.3439 z m 8.5863,-80.04 -29.4929,44.4321 29.4929,0 z" style="fill:var(--color-card-suit-black, #000000);fill-opacity:1" />
               <path style="fill:var(--color-card-suit-black, #000000);fill-opacity:1" d="m 4273.1571,-1766.0936 0,9.3439 -8.5863,0 0,15.399 42.9315,0 0,10.865 -46.4525,70.0793 -7.5907,-0.026 0,-70.0533 -13.1319,0 0,-10.865 13.1319,0 0.2526,-15.399 -7.1974,0 0,-9.3439 z m -8.5863,80.04 29.4929,-44.4321 -29.4929,0 z" />

@@ -50,23 +50,24 @@ Key methods for CardStack integration:
 
 ### Inputs
 
-| Input             | Type                             | Default | Description                                          |
-| ----------------- | -------------------------------- | ------- | ---------------------------------------------------- |
-| `cards`           | `(string \| null)[]`             | `[]`    | Card entries. String = face-up, null = face-down.    |
-| `spread`          | `number`                         | `0.5`   | 0 = fully stacked, 1 = fully spread.                 |
-| `spreadAngle`     | `number`                         | `0`     | Degrees of arc. 0 = straight line.                   |
-| `cardWidth`       | `number`                         | `72`    | Card width in pixels.                                |
-| `cardHeight`      | `number`                         | `100`   | Card height in pixels.                               |
-| `selectable`      | `boolean`                        | `false` | Whether cards respond to click/dblclick.             |
-| `maxSelections`   | `number`                         | `1`     | Max simultaneous selections.                         |
-| `legalCards`      | `string[] \| null`               | `null`  | Legal card names. Null = all interactive.            |
-| `reorderable`     | `boolean`                        | `false` | Whether cards can be reordered by dragging.          |
-| `draggable`       | `boolean`                        | `false` | Whether cards can be dragged to other stacks.        |
-| `droppable`       | `boolean`                        | `false` | Whether the stack accepts cards from other stacks.   |
-| `topOnly`         | `boolean`                        | `false` | Restrict interaction to the last card only.          |
-| `colorMap`        | `Record<number, number> \| null` | `null`  | userId → hue for colored halos.                      |
-| `playerIds`       | `number[] \| null`               | `null`  | Parallel to `cards`, maps each card to a player.     |
-| `biasedPlacement` | `boolean`                        | `false` | Deterministic random positioning (middle pile mode). |
+| Input             | Type                             | Default | Description                                                                                                                           |
+| ----------------- | -------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `cards`           | `(string \| null)[]`             | `[]`    | Card entries. String = face-up, null = face-down.                                                                                     |
+| `spread`          | `number`                         | `0.5`   | 0 = fully stacked, 1 = fully spread.                                                                                                  |
+| `spreadAngle`     | `number`                         | `0`     | Degrees of arc. 0 = straight line.                                                                                                    |
+| `cardWidth`       | `number`                         | `0`     | Card width in px. If 0, derived from `cardHeight / cardAspectRatio`. Falls back to 72 when both are 0.                                |
+| `cardHeight`      | `number`                         | `0`     | Card height in px. If 0, derived from `cardWidth * cardAspectRatio`. Falls back to `round(72 * ratio)` when both are 0.               |
+| `cardAspectRatio` | `number`                         | `7 / 5` | Height-to-width ratio (standard poker card = 3.5:2.5). Used to infer the missing dimension when only one of width/height is provided. |
+| `selectable`      | `boolean`                        | `false` | Whether cards respond to click/dblclick.                                                                                              |
+| `maxSelections`   | `number`                         | `1`     | Max simultaneous selections.                                                                                                          |
+| `legalCards`      | `string[] \| null`               | `null`  | Legal card names. Null = all interactive.                                                                                             |
+| `reorderable`     | `boolean`                        | `false` | Whether cards can be reordered by dragging.                                                                                           |
+| `draggable`       | `boolean`                        | `false` | Whether cards can be dragged to other stacks.                                                                                         |
+| `droppable`       | `boolean`                        | `false` | Whether the stack accepts cards from other stacks.                                                                                    |
+| `topOnly`         | `boolean`                        | `false` | Restrict interaction to the last card only.                                                                                           |
+| `colorMap`        | `Record<number, number> \| null` | `null`  | userId → hue for colored card borders.                                                                                                |
+| `playerIds`       | `number[] \| null`               | `null`  | Parallel to `cards`, maps each card to a player.                                                                                      |
+| `biasedPlacement` | `boolean`                        | `false` | Deterministic random positioning (middle pile mode).                                                                                  |
 
 ### Outputs
 
@@ -108,7 +109,6 @@ The three standard configurations used in the current game table:
   [spreadAngle]="360"
   [biasedPlacement]="true"
   [cardWidth]="60"
-  [cardHeight]="84"
   [colorMap]="colorMap()"
   [playerIds]="trickPlayerIds()"
 />
@@ -117,7 +117,7 @@ The three standard configurations used in the current game table:
 **Opponent card backs:**
 
 ```html
-<app-card-stack [cards]="cardBacks()" [spread]="0.4" [cardWidth]="40" [cardHeight]="56" />
+<app-card-stack [cards]="cardBacks()" [spread]="0.4" [cardWidth]="40" />
 ```
 
 ### Visual States
@@ -127,6 +127,24 @@ Cards have three visual modes depending on the stack's configuration:
 1. **Interactive + legal** — full color, `cursor: pointer`, lifts on hover, can be selected/confirmed
 2. **Interactive + illegal** — dimmed via `filter: brightness(0.6) saturate(0.3)` (no transparency, so overlapping cards don't bleed through), `cursor: grab` if reorderable
 3. **Non-interactive** — full color, `cursor: default`, no hover effect (used for center pile, opponent seats)
+
+### Card Sizing
+
+You only need to specify one of `cardWidth` or `cardHeight` — the other is derived from `cardAspectRatio` (default `7/5`, the standard poker card ratio of 2.5"×3.5"). If both are provided, they're used as-is and the aspect ratio is ignored. If neither is provided, the component falls back to 72 wide with height derived from the ratio.
+
+For games with non-standard card assets (e.g. tarot cards, tiles), set `cardAspectRatio` to match the asset's height-to-width ratio and then size with a single dimension.
+
+### Card Borders
+
+Card borders are rendered via CSS on the rotation wrapper div inside each card-item. This div also provides the card's background color (`var(--color-card-bg)`) and rounded corners. The SVG card assets contain only the artwork (pips, face art, back pattern) on a transparent background — no background rect or border.
+
+Two border modes:
+
+- **Default** — `1px solid var(--color-card-border)`. The color is defined in `theme.css` (`#d4d4d4` light, `#525252` dark). Provides visual separation when cards overlap.
+- **Selected** — `2px solid var(--color-primary-light)`. Applied when a card is in the selection set. Takes priority over the player halo.
+- **Player halo** — `2px solid hsl(hue 75% var(--card-halo-lightness))` using the player's color from `colorMap`. The thicker border replaces the default, so there's no doubling. Lightness adapts to dark mode via the `--card-halo-lightness` CSS variable (66% light, 33% dark).
+
+Border priority: selected > player halo > default. The `cardBorderValue(card, index)` method resolves this.
 
 ### Layout Engine
 
@@ -181,21 +199,39 @@ When you drag a card outside the drop list boundary and release, CDK still fires
 
 **Solution:** Check `isInsideDropList(event.dropPoint)` before processing a same-container drop. If the point is outside the container's bounding rect, treat it as a cancel.
 
-### Custom Drag Preview and `matchSize`
+### Custom Drag Preview and Grab Offset
 
-`CdkDragPreview` is a structural directive (`ng-template[cdkDragPreview]`). The `matchSize` input must be bound on the `ng-template`, not on the host element inside `*cdkDragPreview`:
+`matchSize` is a package deal: it gives correct grab-point positioning (CDK computes the pointer offset within the source element's bounding rect) AND sizes the preview to that bounding rect. Without `matchSize`, CDK forces the pickup offset to `{x: 0, y: 0}`, snapping the preview's top-left corner to the cursor. There is no CDK API to set one without the other.
 
-```html
-<!-- WRONG — matchSize is an HTML attribute on the div, not an input to CdkDragPreview -->
-<div *cdkDragPreview matchSize>...</div>
+The problem: `matchSize` uses `getBoundingClientRect()`, which returns the **axis-aligned bounding box**. For a rotated element, this is larger than the element's actual dimensions (a 72×101 card rotated 7.5° measures ~87×112). This causes visible extra space in the preview that cannot be overridden — CDK sets inline `width`/`height` on the preview's root element, which overrides Angular bindings.
 
-<!-- CORRECT — matchSize is bound to the CdkDragPreview directive -->
-<ng-template cdkDragPreview [matchSize]="true">
-  <div>...</div>
-</ng-template>
+**Solution:** Separate translate and rotate into different DOM levels. The card-item div (which CDK measures) gets only `transform: translate(...)`. A child wrapper div gets `transform: rotate(...)`. CDK now measures an unrotated element, so `matchSize` produces correct dimensions. The preview uses `matchSize` with `box-sizing: border-box` so the border is included in the matched dimensions.
+
+```text
+card-item div (cdkDrag) ← CDK measures this, translate only
+  └─ rotation wrapper   ← visual rotation, border, background
+       └─ button + card renderer
 ```
 
-Without `matchSize`, CDK sets the pickup position to `{x: 0, y: 0}`, causing the preview's top-left corner to snap to the cursor.
+### Drag Preview Styling Gotchas
+
+CDK extracts the preview template and attaches it to the document body as a popover element. This has several implications:
+
+- **Tailwind utility classes may not apply** if they depend on parent context or scoped styles. Use inline `style` attributes for critical visual properties (background-color, border, overflow) to guarantee they survive extraction.
+- **CSS custom variables** defined on `:root` or `@theme` do work in the preview since it's still in the same document. Use `var(--color-card-bg)` etc. in inline styles.
+- **`filter` for muted/unplayable state** must be on the preview div itself, not inherited from a parent — the preview has no parent styling context from the original component tree.
+- **`box-sizing: border-box`** is essential on the preview div when using `matchSize`, so the border doesn't add to the CDK-imposed dimensions.
+
+### SVG Card Assets and CSS-Owned Card Shape
+
+The card SVGs contain only artwork (pips, face art, back pattern) on a transparent background — no background rect or border. The card-item's inner wrapper div provides:
+
+- `background-color: var(--color-card-bg)` — the card's white/dark fill
+- `border` — thin default or thicker player-colored halo
+- `border-radius` — computed from card width to match the original SVG corner ratio
+- `overflow: hidden` — clips artwork to the rounded shape
+
+This single-system approach (CSS owns the shape) eliminates aliasing artifacts that occurred when both the SVG and CSS tried to draw the same rounded-rect edge.
 
 ### Connected Drop Lists and the Static Registry
 
@@ -209,7 +245,7 @@ If the drop list container has a CSS `transform: scale()`, CDK's coordinate calc
 
 ### CardRenderer Host Display
 
-`CardRenderer` uses `host: { class: 'block' }`. It was originally `inline-block`, which caused a baseline gap below the SVG — visible as extra space at the bottom of the card, making the player-color halo not wrap tightly. Changing to `block` eliminates this.
+`CardRenderer` uses `host: { class: 'block' }`. It was originally `inline-block`, which caused a baseline gap below the SVG — visible as extra space at the bottom of the card. Changing to `block` eliminates this.
 
 ## Adding a New Game's Table UI
 

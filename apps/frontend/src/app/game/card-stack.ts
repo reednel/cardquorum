@@ -43,8 +43,8 @@ import {
         data-testid="card-stack-placeholder"
         class="border-2 border-dashed border-neutral-300 dark:border-neutral-600"
         [class.droppable]="droppable()"
-        [style.width.px]="cardWidth()"
-        [style.height.px]="cardHeight()"
+        [style.width.px]="resolvedWidth()"
+        [style.height.px]="resolvedHeight()"
         role="listbox"
         aria-label="Empty card stack"
         cdkDropList
@@ -83,7 +83,7 @@ import {
           @for (card of cards(); track $index; let i = $index) {
             <div
               [attr.data-testid]="'card-item-' + i"
-              [class]="'absolute rounded-md overflow-hidden ' + cardItemClass(card)"
+              [class]="'absolute ' + cardItemClass(card)"
               role="option"
               [attr.aria-label]="card ?? 'Face-down card'"
               [attr.aria-disabled]="!isLegal(card) || undefined"
@@ -94,43 +94,53 @@ import {
               [cdkDragData]="{ cardName: card, index: i }"
               (cdkDragStarted)="onDragStarted($event, card, i)"
               (cdkDragEnded)="onDragEnded($event, card, i)"
-              [style.transform]="cardTransform(i)"
+              [style.transform]="cardTranslate(i)"
               [style.z-index]="cardPositions()[i]?.zIndex ?? i"
-              [style.box-shadow]="cardHaloStyle(i)"
             >
               <ng-template cdkDragPreview [matchSize]="true">
                 <div
-                  [style.width.px]="cardWidth()"
-                  [style.height.px]="cardHeight()"
+                  class="overflow-hidden"
+                  [style.width.px]="resolvedWidth()"
+                  [style.height.px]="resolvedHeight()"
+                  [style.border]="cardBorderValue(card, i)"
+                  [style.border-radius.px]="cardBorderRadius()"
                   [style.filter]="cardFilterStyle(card)"
+                  style="box-sizing:border-box;background-color:var(--color-card-bg)"
                 >
                   <app-card-renderer
                     [cardName]="card"
                     [alt]="card ?? 'Face-down card'"
-                    [width]="cardWidth()"
-                    [height]="cardHeight()"
+                    [width]="resolvedWidth()"
+                    [height]="resolvedHeight()"
                   />
                 </div>
               </ng-template>
-              <button
-                type="button"
-                [attr.data-testid]="'card-button-' + i"
-                [class]="cardButtonClass(card, i)"
+              <div
+                class="overflow-hidden bg-card-bg"
+                [style.transform]="cardRotation(i)"
+                [style.border]="cardBorderValue(card, i)"
+                [style.border-radius.px]="cardBorderRadius()"
                 [style.filter]="cardFilterStyle(card)"
-                [attr.aria-disabled]="!isLegal(card) || undefined"
-                [attr.aria-label]="card ?? 'Face-down card'"
-                [disabled]="isTopOnlyRestricted(i)"
-                [attr.tabindex]="cardTabindex(i)"
-                (click)="onCardClick(card, i)"
-                (dblclick)="onCardDblClick(card, i)"
               >
-                <app-card-renderer
-                  [cardName]="card"
-                  [alt]="card ?? 'Face-down card'"
-                  [width]="cardWidth()"
-                  [height]="cardHeight()"
-                />
-              </button>
+                <button
+                  type="button"
+                  [attr.data-testid]="'card-button-' + i"
+                  [class]="cardButtonClass(card, i)"
+                  [attr.aria-disabled]="!isLegal(card) || undefined"
+                  [attr.aria-label]="card ?? 'Face-down card'"
+                  [disabled]="isTopOnlyRestricted(i)"
+                  [attr.tabindex]="cardTabindex(i)"
+                  (click)="onCardClick(card, i)"
+                  (dblclick)="onCardDblClick(card, i)"
+                >
+                  <app-card-renderer
+                    [cardName]="card"
+                    [alt]="card ?? 'Face-down card'"
+                    [width]="resolvedWidth()"
+                    [height]="resolvedHeight()"
+                  />
+                </button>
+              </div>
             </div>
           }
         </div>
@@ -155,8 +165,9 @@ export class CardStack {
   readonly cards = input<CardEntry[]>([]);
   readonly spread = input(0.5);
   readonly spreadAngle = input(0);
-  readonly cardWidth = input(72);
-  readonly cardHeight = input(100);
+  readonly cardWidth = input(0);
+  readonly cardHeight = input(0);
+  readonly cardAspectRatio = input(7 / 5);
   readonly selectable = input(false);
   readonly maxSelections = input(1);
   readonly legalCards = input<string[] | null>(null);
@@ -194,6 +205,27 @@ export class CardStack {
   protected readonly effectiveMaxSelections = computed(() => {
     const ms = this.maxSelections();
     return ms <= 0 ? 1 : ms;
+  });
+
+  // ── Resolved card dimensions ──
+  /** Effective card width: uses cardWidth if set, otherwise derives from cardHeight / aspectRatio, fallback 72. */
+  protected readonly resolvedWidth = computed(() => {
+    const w = this.cardWidth();
+    const h = this.cardHeight();
+    const ratio = this.cardAspectRatio();
+    if (w > 0) return w;
+    if (h > 0 && ratio > 0) return Math.round(h / ratio);
+    return 72;
+  });
+
+  /** Effective card height: uses cardHeight if set, otherwise derives from cardWidth * aspectRatio, fallback 101. */
+  protected readonly resolvedHeight = computed(() => {
+    const w = this.cardWidth();
+    const h = this.cardHeight();
+    const ratio = this.cardAspectRatio();
+    if (h > 0) return h;
+    if (w > 0 && ratio > 0) return Math.round(w * ratio);
+    return Math.round(72 * ratio);
   });
 
   // ── Container width (read via afterRenderEffect) ──
@@ -261,8 +293,8 @@ export class CardStack {
           playerID,
           seatCount,
           playerIndex: playerIndex >= 0 ? playerIndex : 0,
-          cardWidth: this.cardWidth(),
-          cardHeight: this.cardHeight(),
+          cardWidth: this.resolvedWidth(),
+          cardHeight: this.resolvedHeight(),
         });
       });
     }
@@ -271,15 +303,15 @@ export class CardStack {
       count: cardsArr.length,
       spread: this.spread(),
       spreadAngle: this.spreadAngle(),
-      cardWidth: this.cardWidth(),
-      cardHeight: this.cardHeight(),
+      cardWidth: this.resolvedWidth(),
+      cardHeight: this.resolvedHeight(),
     });
   });
 
   // ── Natural dimensions (bounding box of all card positions + one card) ──
   protected readonly naturalWidth = computed(() => {
     const positions = this.cardPositions();
-    const w = this.cardWidth();
+    const w = this.resolvedWidth();
     if (positions.length === 0) return w;
 
     let minX = Infinity;
@@ -293,7 +325,7 @@ export class CardStack {
 
   protected readonly naturalHeight = computed(() => {
     const positions = this.cardPositions();
-    const h = this.cardHeight();
+    const h = this.resolvedHeight();
     if (positions.length === 0) return h;
 
     let minY = Infinity;
@@ -340,7 +372,7 @@ export class CardStack {
     return { x: minX, y: minY };
   });
 
-  protected cardTransform(index: number): string {
+  protected cardTranslate(index: number): string {
     const positions = this.cardPositions();
     const pos = positions[index];
     if (!pos) return '';
@@ -348,16 +380,39 @@ export class CardStack {
     const offset = this.originOffset();
     const x = pos.x - offset.x;
     const y = pos.y - offset.y;
-    const rot = pos.rotation;
-
-    if (rot === 0) {
-      return `translate(${x}px, ${y}px)`;
-    }
-    return `translate(${x}px, ${y}px) rotate(${rot}deg)`;
+    return `translate(${x}px, ${y}px)`;
   }
 
-  // ── Color halo ──
-  protected cardHaloStyle(index: number): string {
+  protected cardRotation(index: number): string {
+    const positions = this.cardPositions();
+    const pos = positions[index];
+    if (!pos || pos.rotation === 0) return '';
+    return `rotate(${pos.rotation}deg)`;
+  }
+
+  // ── Card border ──
+  /** SVG corner radius as a fraction of card width (rx 10.63 / viewBox width 222.23). */
+  private static readonly CORNER_RATIO = 10.629921 / 222.23162;
+
+  /** Border radius in px, matching the SVG's internal rounded rect corners. */
+  protected readonly cardBorderRadius = computed(() => {
+    return this.resolvedWidth() * CardStack.CORNER_RATIO;
+  });
+
+  /** Returns the CSS border shorthand: selected (primary) > player halo > default. */
+  protected cardBorderValue(card: string | null, index: number): string {
+    if (this.isSelected(card)) {
+      return '2px solid var(--color-primary-light)';
+    }
+    const halo = this.cardHaloColor(index);
+    if (halo) {
+      return `2px solid ${halo}`;
+    }
+    return '1px solid var(--color-card-border)';
+  }
+
+  /** Returns the halo HSL color string for a card, or empty string if none. */
+  private cardHaloColor(index: number): string {
     const map = this.colorMap();
     const pIds = this.playerIds();
     if (!map || !pIds) return '';
@@ -375,8 +430,7 @@ export class CardStack {
     if (map[playerID] === undefined) return '';
 
     const hue = map[playerID];
-    const lightness = document.documentElement.classList.contains('dark') ? 33 : 66;
-    return `0 0 0 2px hsl(${hue}, 75%, ${lightness}%)`;
+    return `hsl(${hue} 75% var(--card-halo-lightness))`;
   }
 
   // ── Legal / Selected helpers ──
@@ -391,7 +445,7 @@ export class CardStack {
     return this.selection().includes(card);
   }
 
-  // ── Card item class (on the card-item div — handles hover lift and selection) ──
+  // ── Card item class (on the card-item div — handles hover lift) ──
   protected cardItemClass(card: string | null): string {
     const interactive = this.selectable() || this.reorderable();
     if (!interactive) return '';
@@ -400,7 +454,7 @@ export class CardStack {
     const selected = this.isSelected(card);
 
     if (legal) {
-      const selectedClass = selected ? ' -translate-y-2 ring-2 ring-primary-light' : '';
+      const selectedClass = selected ? ' -translate-y-2' : '';
       return `transition-transform duration-100 hover:-translate-y-1${selectedClass}`;
     }
 
@@ -410,7 +464,7 @@ export class CardStack {
   // ── Card button class (on the button — handles cursor only) ──
   protected cardButtonClass(card: string | null, _index: number): string {
     const interactive = this.selectable() || this.reorderable();
-    const base = 'block rounded-lg focus:outline-none';
+    const base = 'block focus:outline-none';
 
     if (!interactive) return `${base} cursor-default`;
 
@@ -635,8 +689,8 @@ export class CardStack {
     let bestDist = Infinity;
 
     for (let i = 0; i < positions.length; i++) {
-      const cx = positions[i].x - offset.x + this.cardWidth() / 2;
-      const cy = positions[i].y - offset.y + this.cardHeight() / 2;
+      const cx = positions[i].x - offset.x + this.resolvedWidth() / 2;
+      const cy = positions[i].y - offset.y + this.resolvedHeight() / 2;
       const dist = (localX - cx) ** 2 + (localY - cy) ** 2;
       if (dist < bestDist) {
         bestDist = dist;

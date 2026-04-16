@@ -45,14 +45,11 @@ import { SheepsheadTablePlugin } from './sheepshead/sheepshead-table-plugin';
         [colorMap]="gameService.colorMap()"
       >
         <!-- Play area -->
-        <div playArea>
+        <div playArea class="flex w-64 justify-center">
           <app-card-stack
             [cards]="trickCardNames()"
-            [spread]="0.3"
-            [spreadAngle]="360"
             [biasedPlacement]="true"
-            [cardWidth]="60"
-            [cardHeight]="84"
+            [cardWidth]="100"
             [colorMap]="gameService.colorMap() ?? null"
             [playerIds]="trickPlayerIds()"
           />
@@ -62,8 +59,8 @@ import { SheepsheadTablePlugin } from './sheepshead/sheepshead-table-plugin';
         <div hand>
           <app-card-stack
             [cards]="myHand()"
-            [spread]="0.7"
-            [spreadAngle]="15"
+            [spread]="0.5"
+            [spreadAngle]="25"
             [selectable]="true"
             [reorderable]="true"
             [legalCards]="legalCards()"
@@ -208,7 +205,6 @@ export class GameTable {
   });
 
   protected onHandReordered(newOrder: (string | null)[]): void {
-    console.log('[GameTable] onHandReordered', newOrder);
     this.handOrder.set(newOrder.filter((c): c is string => c !== null));
   }
 

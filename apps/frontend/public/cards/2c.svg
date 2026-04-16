@@ -1,9 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="224.22508" height="312.80777"><symbol viewBox="0 0 224.22508 312.80777" id="icon">
-  <g transform="translate(-259.9347,-369.77721)">
+<svg xmlns="http://www.w3.org/2000/svg" width="222.23162" height="310.81431"><symbol viewBox="0 0 222.23162 310.81431" id="icon">
+  <g transform="translate(-260.93143,-370.77398)">
     <g transform="translate(-50.137832,936.46126)">
       <g transform="translate(-887.4022,-844.32615)">
         <g transform="translate(-5059.9561,3024.9515)">
-          <rect ry="10.629921" rx="10.629921" style="fill:var(--color-card-bg, #ffffff);fill-opacity:1;stroke:var(--color-card-border, #000000);stroke-width:0.99673343;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" width="223.22835" height="311.81104" x="6257.9292" y="-2746.811" />
           <g transform="matrix(0.30106207,0,0,0.30106207,5679.8602,-1949.801)" />
         </g>
       </g>

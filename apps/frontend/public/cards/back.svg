@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="223.22835" height="311.81104"><symbol viewBox="0 0 223.22835 311.81104" id="icon">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="221.22835" height="309.81104"><symbol viewBox="0 0 221.22835 309.81104" id="icon">
   <defs>
     <pattern patternTransform="matrix(0.70710678,-0.70710678,0.70710678,0.70710678,127.76526,536.84923)" id="pattern4529" xlink:href="#pattern3800" />
     <pattern patternTransform="matrix(-0.11059956,0.11059956,-0.11059956,-0.11059956,-254.02376,74.426221)" xlink:href="#pattern13024-5" />
@@ -37,9 +37,8 @@
       </g>
     </pattern>
   </defs>
-  <g transform="translate(-260.43307,-370.27557)">
+  <g transform="translate(-261.43307,-371.27557)">
     <g transform="translate(811.37551,-119.72681)">
-      <rect rx="10.629921" ry="10.629921" y="490.50238" x="-550.44244" height="310.81104" width="222.22835" style="fill:var(--color-card-bg, #ffffff);stroke:var(--color-card-border, #000000);stroke-width:1;stroke-opacity:1" />
       <rect ry="0" y="502.58582" x="-537.85431" height="286.64417" width="197.05205" style="fill:none;stroke:var(--color-card-suit-red, #d40000);stroke-width:4.95238304;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
       <rect y="506.45496" x="-533.46661" height="278.90585" width="188.27672" style="fill:url(#pattern4529);fill-opacity:1;stroke:var(--color-card-suit-red, #d40000);stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
     </g>
