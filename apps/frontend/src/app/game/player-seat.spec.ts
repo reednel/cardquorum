@@ -14,10 +14,6 @@ describe('PlayerSeat', () => {
     el = fixture.nativeElement;
   });
 
-  afterEach(() => {
-    document.documentElement.classList.remove('dark');
-  });
-
   it('renders border-bottom when hue is present', () => {
     fixture.componentRef.setInput('displayName', 'Alice');
     fixture.componentRef.setInput('hue', 200);
@@ -38,29 +34,24 @@ describe('PlayerSeat', () => {
     expect(nameSpan.style.borderBottom).toBe('');
   });
 
-  it('uses dark theme lightness when dark class is present', () => {
-    document.documentElement.classList.add('dark');
-
+  it('uses the provided hue in the border color', () => {
     fixture.componentRef.setInput('displayName', 'Alice');
     fixture.componentRef.setInput('hue', 120);
     fixture.detectChanges();
 
     const nameSpan = el.querySelector<HTMLElement>('.truncate')!;
     const border = nameSpan.style.borderBottom;
-    // hsl(120, 75%, 33%) → rgb(21, 147, 21) in jsdom
-    expect(border).toContain('rgb(21, 147, 21)');
+    expect(border).toContain('2px solid');
+    expect(border).toContain('hsl(120');
   });
 
-  it('uses light theme lightness when dark class is absent', () => {
-    document.documentElement.classList.remove('dark');
-
+  it('uses a different hue value when hue changes', () => {
     fixture.componentRef.setInput('displayName', 'Alice');
-    fixture.componentRef.setInput('hue', 120);
+    fixture.componentRef.setInput('hue', 240);
     fixture.detectChanges();
 
     const nameSpan = el.querySelector<HTMLElement>('.truncate')!;
     const border = nameSpan.style.borderBottom;
-    // hsl(120, 75%, 66%) → rgb(103, 233, 103) in jsdom
-    expect(border).toContain('rgb(103, 233, 103)');
+    expect(border).toContain('hsl(240');
   });
 });

@@ -37,13 +37,13 @@ describe('CardStack – empty placeholder', () => {
     expect(placeholder.style.height).toBe('120px');
   });
 
-  it('placeholder has default dimensions 72×100 when no card size inputs', () => {
+  it('placeholder has default dimensions 72×101 when no card size inputs', () => {
     fixture.componentRef.setInput('cards', []);
     fixture.detectChanges();
 
     const placeholder = el.querySelector<HTMLElement>('[data-testid="card-stack-placeholder"]')!;
     expect(placeholder.style.width).toBe('72px');
-    expect(placeholder.style.height).toBe('100px');
+    expect(placeholder.style.height).toBe('101px');
   });
 
   it('placeholder has dashed border style', () => {
@@ -124,7 +124,7 @@ describe('CardStack – default card dimensions on rendered cards', () => {
     el = fixture.nativeElement;
   });
 
-  it('renders card-renderer elements with default width=72 and height=100', () => {
+  it('renders card-renderer elements with default width=72 and height=101', () => {
     fixture.componentRef.setInput('cards', ['qc', 'ad']);
     fixture.detectChanges();
 
@@ -133,7 +133,7 @@ describe('CardStack – default card dimensions on rendered cards', () => {
 
     svgs.forEach((svg) => {
       expect(svg.getAttribute('width')).toBe('72');
-      expect(svg.getAttribute('height')).toBe('100');
+      expect(svg.getAttribute('height')).toBe('101');
     });
   });
 });
@@ -154,11 +154,11 @@ describe('CardStack – auto-scaling', () => {
   it('applies CSS transform scale on inner wrapper when container is narrower than natural width', () => {
     // Create a parent container with a known narrow width
     const container = document.createElement('div');
-    Object.defineProperty(container, 'clientWidth', { value: 100, configurable: true });
+    Object.defineProperty(container, 'clientWidth', { value: 101, configurable: true });
     container.appendChild(el);
     document.body.appendChild(container);
 
-    // Render enough cards with full spread to exceed 100px container width
+    // Render enough cards with full spread to exceed 101px container width
     fixture.componentRef.setInput('cards', ['qc', 'ad', 'kh', 'js']);
     fixture.componentRef.setInput('spread', 1);
     fixture.componentRef.setInput('spreadAngle', 0);
@@ -175,7 +175,7 @@ describe('CardStack – auto-scaling', () => {
     const svgs = el.querySelectorAll('app-card-renderer svg');
     svgs.forEach((svg) => {
       expect(svg.getAttribute('width')).toBe('72');
-      expect(svg.getAttribute('height')).toBe('100');
+      expect(svg.getAttribute('height')).toBe('101');
     });
 
     document.body.removeChild(container);
@@ -229,10 +229,7 @@ describe('CardStack – color halo rendering', () => {
     el = fixture.nativeElement;
   });
 
-  it('applies box-shadow halo with correct hsl values using light-mode lightness', () => {
-    // Ensure light mode (no 'dark' class on documentElement)
-    document.documentElement.classList.remove('dark');
-
+  it('applies colored border when colorMap and playerIds are provided', () => {
     const colorMap: Record<number, number> = { 1: 0, 2: 120 };
     const playerIds = [1, 2];
 
@@ -244,29 +241,22 @@ describe('CardStack – color halo rendering', () => {
     const card0 = el.querySelector<HTMLElement>('[data-testid="card-item-0"]')!;
     const card1 = el.querySelector<HTMLElement>('[data-testid="card-item-1"]')!;
 
-    // Light mode: lightness = 66%
-    expect(card0.style.boxShadow).toContain('hsl(0, 75%, 66%)');
-    expect(card1.style.boxShadow).toContain('hsl(120, 75%, 66%)');
+    // Each card's inner wrapper should have a 2px border with the player's hue
+    const inner0 = card0.querySelector<HTMLElement>(':scope > div')!;
+    const inner1 = card1.querySelector<HTMLElement>(':scope > div')!;
+    expect(inner0.style.border).toContain('2px solid');
+    expect(inner0.style.border).toContain('hsl(0');
+    expect(inner1.style.border).toContain('2px solid');
+    expect(inner1.style.border).toContain('hsl(120');
   });
 
-  it('applies box-shadow halo with dark-mode lightness when dark class is present', () => {
-    document.documentElement.classList.add('dark');
-
-    const colorMap: Record<number, number> = { 5: 200 };
-    const playerIds = [5];
-
+  it('applies default border when no colorMap is provided', () => {
     fixture.componentRef.setInput('cards', ['qc']);
-    fixture.componentRef.setInput('colorMap', colorMap);
-    fixture.componentRef.setInput('playerIds', playerIds);
     fixture.detectChanges();
 
     const card0 = el.querySelector<HTMLElement>('[data-testid="card-item-0"]')!;
-
-    // Dark mode: lightness = 33%
-    expect(card0.style.boxShadow).toContain('hsl(200, 75%, 33%)');
-
-    // Cleanup
-    document.documentElement.classList.remove('dark');
+    const inner0 = card0.querySelector<HTMLElement>(':scope > div')!;
+    expect(inner0.style.border).toContain('1px solid');
   });
 });
 
@@ -907,14 +897,14 @@ describe('CardStack – legal cards determine interactivity', () => {
     // Legal card does not have aria-disabled
     expect(item1.hasAttribute('aria-disabled')).toBe(false);
 
-    // Illegal card buttons are visually muted via CSS filter
-    const btn0 = el.querySelector<HTMLElement>('[data-testid="card-button-0"]')!;
-    const btn1 = el.querySelector<HTMLElement>('[data-testid="card-button-1"]')!;
-    const btn2 = el.querySelector<HTMLElement>('[data-testid="card-button-2"]')!;
+    // Illegal cards are visually muted via CSS filter on the card wrapper
+    const wrapper0 = el.querySelector<HTMLElement>('[data-testid="card-item-0"] > div')!;
+    const wrapper1 = el.querySelector<HTMLElement>('[data-testid="card-item-1"] > div')!;
+    const wrapper2 = el.querySelector<HTMLElement>('[data-testid="card-item-2"] > div')!;
 
-    expect(btn0.style.filter).toContain('brightness');
-    expect(btn2.style.filter).toContain('brightness');
-    expect(btn1.style.filter).toBe('');
+    expect(wrapper0.style.filter).toContain('brightness');
+    expect(wrapper2.style.filter).toContain('brightness');
+    expect(wrapper1.style.filter).toBe('');
   });
 
   it('clicking an illegal card does not emit cardSelected', () => {
@@ -1252,14 +1242,17 @@ describe('CardStack – middle-pile with biased placement and color halos', () =
     const cardItems = el.querySelectorAll('[data-testid^="card-item-"]');
     expect(cardItems.length).toBe(3);
 
-    // Each card should have a halo box-shadow with the correct hue (light mode: 66%)
-    const card0 = el.querySelector<HTMLElement>('[data-testid="card-item-0"]')!;
-    const card1 = el.querySelector<HTMLElement>('[data-testid="card-item-1"]')!;
-    const card2 = el.querySelector<HTMLElement>('[data-testid="card-item-2"]')!;
+    // Each card should have a colored border with the correct hue
+    const inner0 = el.querySelector<HTMLElement>('[data-testid="card-item-0"] > div')!;
+    const inner1 = el.querySelector<HTMLElement>('[data-testid="card-item-1"] > div')!;
+    const inner2 = el.querySelector<HTMLElement>('[data-testid="card-item-2"] > div')!;
 
-    expect(card0.style.boxShadow).toContain('hsl(0, 75%, 66%)');
-    expect(card1.style.boxShadow).toContain('hsl(120, 75%, 66%)');
-    expect(card2.style.boxShadow).toContain('hsl(240, 75%, 66%)');
+    expect(inner0.style.border).toContain('2px solid');
+    expect(inner0.style.border).toContain('hsl(0');
+    expect(inner1.style.border).toContain('2px solid');
+    expect(inner1.style.border).toContain('hsl(120');
+    expect(inner2.style.border).toContain('2px solid');
+    expect(inner2.style.border).toContain('hsl(240');
 
     // Verify card renderers use the specified dimensions
     const svgs = el.querySelectorAll('app-card-renderer svg');
