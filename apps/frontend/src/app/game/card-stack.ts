@@ -237,12 +237,25 @@ export class CardStack {
   /** Stores the card info during an active drag for cancel detection */
   private activeDrag: { cardName: string; index: number } | null = null;
 
+  /** Observes parent element resize to keep containerWidth current. */
+  private resizeObserver: ResizeObserver | null = null;
+
   constructor() {
     afterRenderEffect(() => {
       const el = this.elRef.nativeElement as HTMLElement;
       const parent = el.parentElement;
       if (parent) {
         this.containerWidth.set(parent.clientWidth);
+
+        // Observe parent resize to keep containerWidth current
+        if (!this.resizeObserver && typeof ResizeObserver !== 'undefined') {
+          this.resizeObserver = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+              this.containerWidth.set(entry.contentRect.width);
+            }
+          });
+          this.resizeObserver.observe(parent);
+        }
       }
 
       // Register/unregister drop list in the static registry
@@ -253,6 +266,7 @@ export class CardStack {
     });
 
     this.destroyRef.onDestroy(() => {
+      this.resizeObserver?.disconnect();
       const dl = this.dropListRef();
       if (dl) {
         CardStack.dropListRegistry.delete(dl);

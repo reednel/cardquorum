@@ -56,7 +56,7 @@ import { SheepsheadTablePlugin } from './sheepshead/sheepshead-table-plugin';
         </div>
 
         <!-- Player hand -->
-        <div hand>
+        <div hand class="flex w-full justify-center">
           <app-card-stack
             [cards]="myHand()"
             [spread]="0.5"

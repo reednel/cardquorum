@@ -39,7 +39,7 @@ import { PlayerSeat } from './player-seat';
         </div>
 
         <!-- Local player hand -->
-        <div class="absolute bottom-3 left-1/2 -translate-x-1/2">
+        <div class="absolute bottom-3 left-0 flex w-full justify-center">
           <ng-content select="[hand]" />
         </div>
 
