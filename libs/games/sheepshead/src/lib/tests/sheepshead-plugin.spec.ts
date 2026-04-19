@@ -138,8 +138,10 @@ describe('SheepsheadPlugin', () => {
 
       const view = SheepsheadPlugin.getPlayerView(config, dealt, 1);
       expect(view.players![0].hand).toHaveLength(10); // own hand visible
-      expect(view.players![1].hand).toHaveLength(0); // other hidden
-      expect(view.players![2].hand).toHaveLength(0); // other hidden
+      expect(view.players![1].hand).toHaveLength(10); // other hidden (nulls)
+      expect(view.players![1].hand.every((c: unknown) => c === null)).toBe(true);
+      expect(view.players![2].hand).toHaveLength(10); // other hidden (nulls)
+      expect(view.players![2].hand.every((c: unknown) => c === null)).toBe(true);
     });
 
     it('hides blind during deal/pick phases', () => {

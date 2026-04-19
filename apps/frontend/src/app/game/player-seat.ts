@@ -13,7 +13,7 @@ import { CardStack } from './card-stack';
       "
     >
       <!-- Card backs fan -->
-      <app-card-stack [cards]="cardBacks()" [spread]="0.4" [cardWidth]="40" />
+      <app-card-stack [cards]="cardBacks()" [spread]="0.25" [cardWidth]="40" [spreadAngle]="0" />
 
       <!-- Player name + dealer chip -->
       <div class="flex items-center gap-1">

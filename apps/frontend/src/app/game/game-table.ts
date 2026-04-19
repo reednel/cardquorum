@@ -61,6 +61,7 @@ import { SheepsheadTablePlugin } from './sheepshead/sheepshead-table-plugin';
             [cards]="myHand()"
             [spread]="0.5"
             [spreadAngle]="25"
+            [autoScale]="true"
             [selectable]="true"
             [reorderable]="true"
             [legalCards]="legalCards()"

@@ -370,9 +370,10 @@ describe('GameService integration (full Sheepshead game)', () => {
         expect(self.hand.length).toBe(validConfig.handSize);
       }
 
-      // Other players' hands are hidden
+      // Other players' hands are hidden (array of nulls preserving count)
       for (const other of others) {
-        expect(other.hand).toEqual([]);
+        expect(other.hand.length).toBeGreaterThan(0);
+        expect(other.hand.every((c: unknown) => c === null)).toBe(true);
         expect(other.role).toBeNull();
       }
     }

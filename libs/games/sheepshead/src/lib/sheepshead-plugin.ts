@@ -219,7 +219,7 @@ function getPlayerView(
     return {
       userID: p.userID,
       role: null,
-      hand: state.noPick === 'schwanzer' ? p.hand : [],
+      hand: state.noPick === 'schwanzer' ? p.hand : Array(p.hand.length).fill(null),
       tricksWon: 0,
       pointsWon: 0,
       cardsWon: [],

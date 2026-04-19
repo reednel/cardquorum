@@ -28,7 +28,7 @@ interface SheepsheadPlayerView {
   players: Array<{
     userID: number;
     role: string | null;
-    hand: Array<{ name: string }>;
+    hand: Array<{ name: string } | null>;
     tricksWon: number;
     pointsWon: number;
     scoreDelta: number | null;
@@ -72,7 +72,7 @@ function getLegalCards(state: SheepsheadPlayerView, validActions: string[]): str
   // Fallback: all cards in hand (shouldn't happen with current backend)
   const me = state.players.find((p) => p.userID === state.activePlayer);
   if (!me) return [];
-  return me.hand.map((c) => c.name);
+  return me.hand.filter((c) => c !== null).map((c) => c.name);
 }
 
 function getActiveOverlay(state: SheepsheadPlayerView, validActions: string[]): string | null {
@@ -93,14 +93,14 @@ function getActiveOverlay(state: SheepsheadPlayerView, validActions: string[]): 
 
 function buildPlayCardEvent(state: SheepsheadPlayerView, cardName: string): SheepsheadAction {
   for (const p of state.players) {
-    const card = p.hand.find((c) => c.name === cardName);
+    const card = p.hand.find((c) => c !== null && c.name === cardName);
     if (card) return { type: 'play_card', payload: { card } };
   }
   return { type: 'play_card', payload: { card: { name: cardName } } };
 }
 
 function buildBuryEvent(state: SheepsheadPlayerView, cardNames: string[]): SheepsheadAction {
-  const allCards = state.players.flatMap((p) => p.hand);
+  const allCards = state.players.flatMap((p) => p.hand).filter((c) => c !== null);
   const cards = cardNames.map((name) => allCards.find((c) => c.name === name) ?? { name });
   return { type: 'bury', payload: { cards } };
 }
@@ -146,7 +146,7 @@ function getStatusInfo(state: SheepsheadPlayerView): StatusInfo {
 
 function getMyHand(state: SheepsheadPlayerView, myUserID: number): string[] {
   const me = state.players.find((p) => p.userID === myUserID);
-  return me ? me.hand.map((c) => c.name) : [];
+  return me ? me.hand.filter((c) => c !== null).map((c) => c.name) : [];
 }
 
 export const SheepsheadTablePlugin: GameTablePlugin<SheepsheadPlayerView, SheepsheadAction> = {

@@ -68,6 +68,7 @@ Key methods for CardStack integration:
 | `colorMap`        | `Record<number, number> \| null` | `null`  | userId → hue for colored card borders.                                                                                                |
 | `playerIds`       | `number[] \| null`               | `null`  | Parallel to `cards`, maps each card to a player.                                                                                      |
 | `biasedPlacement` | `boolean`                        | `false` | Deterministic random positioning (middle pile mode).                                                                                  |
+| `autoScale`       | `boolean`                        | `false` | Scale down when content exceeds parent width. Only enable on stacks whose parent has a stable width (e.g. the player hand).           |
 
 ### Outputs
 

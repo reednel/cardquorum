@@ -41,7 +41,7 @@ import {
     @if (cards().length === 0) {
       <div
         data-testid="card-stack-placeholder"
-        class="border-2 border-dashed border-neutral-300 dark:border-neutral-600"
+        class="border-2 border-dashed border-neutral-300 dark:border-neutral-600 rounded-md"
         [class.droppable]="droppable()"
         [style.width.px]="resolvedWidth()"
         [style.height.px]="resolvedHeight()"
@@ -175,6 +175,7 @@ export class CardStack {
   readonly draggable = input(false);
   readonly droppable = input(false);
   readonly topOnly = input(false);
+  readonly autoScale = input(false);
   readonly colorMap = input<Record<number, number> | null>(null);
   readonly playerIds = input<number[] | null>(null);
   readonly biasedPlacement = input(false);
@@ -353,6 +354,7 @@ export class CardStack {
 
   // ── Scale factor ──
   protected readonly scaleFactor = computed(() => {
+    if (!this.autoScale()) return 1;
     const cw = this.containerWidth();
     const nw = this.naturalWidth();
     if (cw <= 0 || nw <= 0) return 1;

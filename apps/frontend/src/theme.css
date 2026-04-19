@@ -56,7 +56,8 @@
   --color-accent-blitz-hover: #7e22ce;
   --color-accent-blitz-ring: #a855f7;
   --color-accent-dealer: #f59e0b; /* dealer chip */
-  --color-game-felt: #14532d; /* card table surface */
+  --color-game-felt: #548948; /* card table surface */
+  --color-game-felt-dark: #294323; /* card table surface */
 
   /* --- Visibility Tag Palette --- */
   --color-vis-public: #dcfce7;

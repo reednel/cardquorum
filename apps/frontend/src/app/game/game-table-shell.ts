@@ -18,7 +18,7 @@ import { PlayerSeat } from './player-seat';
       <app-game-status-bar [status]="statusInfo()" />
 
       <!-- Table surface -->
-      <div class="relative flex-1 overflow-hidden bg-game-felt">
+      <div class="relative flex-1 overflow-hidden bg-game-felt dark:bg-game-felt-dark">
         <!-- Opponent seats around the arc -->
         @for (seat of seatsWithPosition(); track seat.userID) {
           <app-player-seat

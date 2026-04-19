@@ -163,6 +163,7 @@ describe('CardStack – auto-scaling', () => {
     fixture.componentRef.setInput('spread', 1);
     fixture.componentRef.setInput('spreadAngle', 0);
     fixture.componentRef.setInput('cardWidth', 72);
+    fixture.componentRef.setInput('autoScale', true);
     fixture.detectChanges();
 
     const inner = el.querySelector<HTMLElement>('[data-testid="card-stack-inner"]');
