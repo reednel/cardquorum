@@ -43,6 +43,11 @@ import { PlayerSeat } from './player-seat';
           <ng-content select="[hand]" />
         </div>
 
+        <!-- Corner actions -->
+        <div class="absolute bottom-16 right-4 z-10">
+          <ng-content select="[cornerActions]" />
+        </div>
+
         <!-- Overlay host -->
         <ng-content select="[overlay]" />
       </div>

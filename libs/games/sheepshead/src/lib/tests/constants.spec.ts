@@ -135,8 +135,8 @@ describe('Sheepshead-specific verification', () => {
       expect(SheepsheadConfigPlugin.fieldRegistry).toBe(FIELD_REGISTRY);
     });
 
-    it('has exactly 15 presets', () => {
-      expect(SheepsheadConfigPlugin.presets).toHaveLength(15);
+    it('has exactly 16 presets', () => {
+      expect(SheepsheadConfigPlugin.presets).toHaveLength(16);
     });
 
     it('has SheepsheadConfigSchema as its configSchema', () => {

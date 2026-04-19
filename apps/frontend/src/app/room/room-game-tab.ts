@@ -363,13 +363,18 @@ export class RoomGameTab implements OnInit {
       }
     });
 
-    // Autostart trigger: when game ends (store becomes non-null) and autostart is enabled
-    // and validation passes, auto-create + start a new game.
+    // Autostart trigger: when a game ends (store transitions from null to non-null)
+    // and autostart is enabled and validation passes, auto-create + start a new game.
+    // We track the previous store value to only trigger on the transition, not when
+    // autostart is toggled while an old store result is still present.
+    let prevStore: unknown = this.gameService.store();
     effect(() => {
       const store = this.gameService.store();
       const autostartEnabled = this.autostart();
       const canStart = this.canStart();
-      if (store !== null && autostartEnabled && canStart) {
+      const justEnded = prevStore === null && store !== null;
+      prevStore = store;
+      if (justEnded && autostartEnabled && canStart) {
         this.onStart();
       }
     });
@@ -471,7 +476,7 @@ export class RoomGameTab implements OnInit {
     this.sendSettings();
   }
 
-  protected onStart(): void {
+  onStart(): void {
     const roomId = this.roomContext.currentRoomId();
     const gameType = this.selectedGame();
     const config = this.configValues();

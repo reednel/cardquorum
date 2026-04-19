@@ -144,7 +144,7 @@ describe('SheepsheadPlugin', () => {
       expect(view.players![2].hand.every((c: unknown) => c === null)).toBe(true);
     });
 
-    it('hides blind during deal/pick phases', () => {
+    it('returns face-down blind placeholders during pick phase', () => {
       const config = makeConfig();
       const state = SheepsheadPlugin.createInitialState(config, [1, 2, 3]);
       const withBlind: SheepsheadState = {
@@ -154,7 +154,19 @@ describe('SheepsheadPlugin', () => {
       };
 
       const view = SheepsheadPlugin.getPlayerView(config, withBlind, 1);
-      expect(view.blind).toEqual([]);
+      // Blind has correct length but all entries are null (face-down, no card data leaked)
+      expect(view.blind).toHaveLength(2);
+      expect(view.blind!.every((c: unknown) => c === null)).toBe(true);
+    });
+
+    it('returns face-down blind placeholders during deal phase', () => {
+      const config = makeConfig();
+      const state = SheepsheadPlugin.createInitialState(config, [1, 2, 3]);
+
+      const view = SheepsheadPlugin.getPlayerView(config, state, 1);
+      // Deal phase: blind length equals config.blindSize, all null
+      expect(view.blind).toHaveLength(config.blindSize);
+      expect(view.blind!.every((c: unknown) => c === null)).toBe(true);
     });
 
     it('shows blind to picker during bury phase', () => {

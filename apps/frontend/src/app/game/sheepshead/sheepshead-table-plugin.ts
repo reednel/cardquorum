@@ -75,20 +75,27 @@ function getLegalCards(state: SheepsheadPlayerView, validActions: string[]): str
   return me.hand.filter((c) => c !== null).map((c) => c.name);
 }
 
-function getActiveOverlay(state: SheepsheadPlayerView, validActions: string[]): string | null {
+function getActiveOverlay(state: SheepsheadPlayerView, _validActions: string[]): string | null {
   if (state.phase === 'score' && state.players[0]?.scoreDelta !== null) return 'score';
-  if (state.phase === 'deal') return 'deal';
-  if (validActions.includes('pick') || validActions.includes('pass')) return 'pick';
-  if (validActions.includes('bury')) return 'bury';
-  if (validActions.includes('call_ace')) return 'call';
-  if (
-    validActions.includes('crack') ||
-    validActions.includes('re_crack') ||
-    validActions.includes('blitz')
-  ) {
-    return 'crack';
-  }
   return null;
+}
+
+function getBlindCards(state: SheepsheadPlayerView): (string | null)[] {
+  if (state.phase === 'deal') {
+    // Show a small tight stack representing the deck
+    return Array(5).fill(null);
+  }
+  if (state.phase === 'pick') {
+    return state.blind?.map(() => null) ?? [];
+  }
+  return [];
+}
+
+function getBuryCount(state: SheepsheadPlayerView, config: unknown): number {
+  const cfg = config as { blindSize?: number; name?: string } | null;
+  if (!cfg) return 2;
+  const blindSize = cfg.blindSize ?? 2;
+  return cfg.name === 'partner-draft' ? Math.floor(blindSize / 2) : blindSize;
 }
 
 function buildPlayCardEvent(state: SheepsheadPlayerView, cardName: string): SheepsheadAction {
@@ -159,4 +166,6 @@ export const SheepsheadTablePlugin: GameTablePlugin<SheepsheadPlayerView, Sheeps
   getPlayerSeats,
   getStatusInfo,
   getMyHand,
+  getBlindCards,
+  getBuryCount,
 };

@@ -896,25 +896,13 @@ describe('GameService', () => {
         if (!played) throw new Error(`No legal play found for user ${active}`);
       }
 
-      // If not game over yet, advance timers for the final trick_advance → score
+      // If not game over yet, advance timers for the final trick_advance → score → game_scored
       if (!gameOver) {
-        jest.advanceTimersByTime(2000);
+        jest.advanceTimersByTime(2000); // fires trick_advance → transitions to score
+        jest.advanceTimersByTime(1); // fires chained game_scored → computes scores → game over
       }
 
-      // After all tricks and timers, the game should be in score phase
-      // Actions should NOT be blocked (no pending timers remain)
-      const view = service.getPlayerView(sessionId, 1);
-      if (view) {
-        // Game is in score phase — actions are unblocked, no pending timers
-        expect((view.state as any).phase).toBe('score');
-        expect(view.validActions).toContain('game_scored');
-
-        // Verify we can apply game_scored — proves no timers are blocking
-        result = await service.applyAction(sessionId, 1, { type: 'game_scored' }, broadcastFn);
-        expect(result.gameOver).toBe(true);
-      }
-
-      // Session should now be cleaned up
+      // Session should now be cleaned up (game_scored auto-fires and ends the game)
       expect(service.getPlayerView(sessionId, 1)).toBeNull();
     });
   });

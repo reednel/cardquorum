@@ -220,6 +220,7 @@ export function handlePick(
             phase: 'score',
             noPick: 'schwanzer',
             activePlayer: null,
+            scheduledEvents: [{ event: { type: 'game_scored' }, delayMs: 0 }],
           },
         };
       }
@@ -583,10 +584,10 @@ export function handleTrickAdvance(state: SheepsheadState): SheepsheadState {
     };
   }
 
-  // No cards remain — transition to score phase
+  // No cards remain — transition to score phase and chain scoring
   return {
     ...state,
-    scheduledEvents: undefined,
+    scheduledEvents: [{ event: { type: 'game_scored' }, delayMs: 0 }],
     phase: 'score' as const,
     activePlayer: null,
   };

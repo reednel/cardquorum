@@ -126,6 +126,9 @@ export class GameGateway implements OnModuleInit {
       store?: unknown;
     }) => {
       if (result.gameOver) {
+        // Send final state update first so clients have scored state
+        this.sendPlayerViews(result.playerViews, payload.sessionId, WS_EMIT.GAME_STATE_UPDATE);
+        // Then send game-over with store
         this.sendToPlayers(
           result.playerViews.map(([id]) => id),
           WS_EMIT.GAME_OVER,

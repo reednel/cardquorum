@@ -40,34 +40,29 @@ describe('SheepsheadTablePlugin', () => {
   });
 
   describe('getActiveOverlay', () => {
-    it('returns deal when phase is deal', () => {
+    it('returns null for deal phase (inline interaction, no overlay)', () => {
       const state: any = { phase: 'deal', players: [{ scoreDelta: null }] };
-      expect(SheepsheadTablePlugin.getActiveOverlay(state, ['deal'])).toBe('deal');
+      expect(SheepsheadTablePlugin.getActiveOverlay(state, ['deal'])).toBeNull();
     });
 
-    it('returns deal for non-dealer waiting in deal phase', () => {
-      const state: any = { phase: 'deal', players: [{ scoreDelta: null }] };
-      expect(SheepsheadTablePlugin.getActiveOverlay(state, [])).toBe('deal');
-    });
-
-    it('returns pick when pick is a valid action', () => {
+    it('returns null for pick phase (inline interaction, no overlay)', () => {
       const state: any = { phase: 'pick', players: [{ scoreDelta: null }] };
-      expect(SheepsheadTablePlugin.getActiveOverlay(state, ['pick', 'pass'])).toBe('pick');
+      expect(SheepsheadTablePlugin.getActiveOverlay(state, ['pick', 'pass'])).toBeNull();
     });
 
-    it('returns bury when bury is a valid action', () => {
+    it('returns null for bury phase (inline interaction, no overlay)', () => {
       const state: any = { phase: 'bury', players: [{ scoreDelta: null }] };
-      expect(SheepsheadTablePlugin.getActiveOverlay(state, ['bury'])).toBe('bury');
+      expect(SheepsheadTablePlugin.getActiveOverlay(state, ['bury'])).toBeNull();
     });
 
-    it('returns call when call_ace is a valid action', () => {
+    it('returns null for call phase (inline interaction, no overlay)', () => {
       const state: any = { phase: 'call', players: [{ scoreDelta: null }] };
-      expect(SheepsheadTablePlugin.getActiveOverlay(state, ['call_ace'])).toBe('call');
+      expect(SheepsheadTablePlugin.getActiveOverlay(state, ['call_ace'])).toBeNull();
     });
 
-    it('returns crack when crack is a valid action', () => {
+    it('returns null for crack actions (corner actions, no overlay)', () => {
       const state: any = { phase: 'play', players: [{ scoreDelta: null }] };
-      expect(SheepsheadTablePlugin.getActiveOverlay(state, ['crack'])).toBe('crack');
+      expect(SheepsheadTablePlugin.getActiveOverlay(state, ['crack'])).toBeNull();
     });
 
     it('returns score when phase is score and scoreDelta is set', () => {

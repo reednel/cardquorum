@@ -333,14 +333,14 @@ describe('trick_advance with cards remaining starts a new trick', () => {
 });
 
 describe('trick_advance with no cards remaining transitions to score', () => {
-  it('sets phase to score, activePlayer to null, clears scheduledEvents', () => {
+  it('sets phase to score, activePlayer to null, chains game_scored event', () => {
     fc.assert(
       fc.property(arbCompletedTrickNoCardsRemaining(), (state) => {
         const result = handleTrickAdvance(state);
 
         expect(result.phase).toBe('score');
         expect(result.activePlayer).toBeNull();
-        expect(result.scheduledEvents).toBeUndefined();
+        expect(result.scheduledEvents).toEqual([{ event: { type: 'game_scored' }, delayMs: 0 }]);
       }),
       { numRuns: 100 },
     );

@@ -218,8 +218,8 @@ describe('GameGateway', () => {
       gameService.applyAction.mockResolvedValue({
         gameOver: true,
         playerViews: [
-          [1, { state: {}, validActions: [] }],
-          [2, { state: {}, validActions: [] }],
+          [1, { state: { phase: 'score' }, validActions: [] }],
+          [2, { state: { phase: 'score' }, validActions: [] }],
         ],
         store,
       });
@@ -230,9 +230,15 @@ describe('GameGateway', () => {
       });
 
       for (const client of [client1, client2]) {
-        const parsed = JSON.parse((client.send as jest.Mock).mock.calls[0][0]);
-        expect(parsed.event).toBe(WS_EMIT.GAME_OVER);
-        expect(parsed.data.store).toEqual(store);
+        const calls = (client.send as jest.Mock).mock.calls;
+        // First message: GAME_STATE_UPDATE with final scored state
+        const stateUpdate = JSON.parse(calls[0][0]);
+        expect(stateUpdate.event).toBe(WS_EMIT.GAME_STATE_UPDATE);
+        expect(stateUpdate.data.sessionId).toBe(1);
+        // Second message: GAME_OVER with store
+        const gameOver = JSON.parse(calls[1][0]);
+        expect(gameOver.event).toBe(WS_EMIT.GAME_OVER);
+        expect(gameOver.data.store).toEqual(store);
       }
     });
 
@@ -338,17 +344,23 @@ describe('GameGateway', () => {
       capturedBroadcastFn!({
         gameOver: true,
         playerViews: [
-          [1, { state: {}, validActions: [] }],
-          [2, { state: {}, validActions: [] }],
+          [1, { state: { phase: 'score' }, validActions: [] }],
+          [2, { state: { phase: 'score' }, validActions: [] }],
         ],
         store,
       });
 
       for (const client of [client1, client2]) {
-        const parsed = JSON.parse((client.send as jest.Mock).mock.calls[0][0]);
-        expect(parsed.event).toBe(WS_EMIT.GAME_OVER);
-        expect(parsed.data.sessionId).toBe(7);
-        expect(parsed.data.store).toEqual(store);
+        const calls = (client.send as jest.Mock).mock.calls;
+        // First message: GAME_STATE_UPDATE with final scored state
+        const stateUpdate = JSON.parse(calls[0][0]);
+        expect(stateUpdate.event).toBe(WS_EMIT.GAME_STATE_UPDATE);
+        expect(stateUpdate.data.sessionId).toBe(7);
+        // Second message: GAME_OVER with store
+        const gameOver = JSON.parse(calls[1][0]);
+        expect(gameOver.event).toBe(WS_EMIT.GAME_OVER);
+        expect(gameOver.data.sessionId).toBe(7);
+        expect(gameOver.data.store).toEqual(store);
       }
     });
 

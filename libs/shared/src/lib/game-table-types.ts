@@ -66,4 +66,10 @@ export interface GameTablePlugin<TState = unknown, TEvent = unknown> {
 
   /** Get the local player's hand as card name strings. */
   getMyHand(state: TState, myUserID: number): string[];
+
+  /** Return card entries for the blind (null = face-down). Empty array if no blind to show. */
+  getBlindCards(state: TState): (string | null)[];
+
+  /** Return the number of cards the player must bury. 0 if not applicable. */
+  getBuryCount(state: TState, config: unknown): number;
 }

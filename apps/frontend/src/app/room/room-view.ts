@@ -38,7 +38,13 @@ type RoomTab = 'chat' | 'members' | 'game';
       <!-- Game area -->
       <main class="flex-1">
         @if (gameService.state()) {
-          <app-game-table [myUserID]="myUserID()" [members]="roomContext.members()" />
+          <app-game-table
+            [myUserID]="myUserID()"
+            [members]="roomContext.members()"
+            [isOwner]="isOwner()"
+            [autostart]="roomGameTab()?.autostart() ?? false"
+            (startNextGame)="onStartNextGame()"
+          />
         }
       </main>
 
@@ -194,6 +200,7 @@ export class RoomView implements OnInit, OnDestroy {
   private readonly ws = inject(WebSocketService);
 
   private readonly membersTab = viewChild(RoomMembersTab);
+  protected readonly roomGameTab = viewChild(RoomGameTab);
 
   protected readonly myUserID = computed(() => this.auth.user()?.userId ?? 0);
   protected readonly tabs: RoomTab[] = ['chat', 'members', 'game'];
@@ -215,6 +222,15 @@ export class RoomView implements OnInit, OnDestroy {
       const err = this.roomContext.joinError();
       if (err !== null) {
         this.router.navigate(['/rooms']);
+      }
+    });
+
+    // Auto-start a game created via the fallback path in onStartNextGame
+    effect(() => {
+      const sessionId = this.gameService.sessionId();
+      if (this.pendingAutoStart && sessionId !== null) {
+        this.pendingAutoStart = false;
+        this.gameService.startGame(sessionId);
       }
     });
   }
@@ -261,5 +277,23 @@ export class RoomView implements OnInit, OnDestroy {
   protected leave(): void {
     this.ws.send(WS_EVENT.ROOM_LEAVE_ROSTER, { roomId: this.roomId });
     this.router.navigate(['/rooms']);
+  }
+
+  private pendingAutoStart = false;
+
+  protected onStartNextGame(): void {
+    // Try the game tab first (has full config state and pendingStart flow)
+    const tab = this.roomGameTab();
+    if (tab) {
+      tab.onStart();
+      return;
+    }
+    // Fallback: create game directly using the last known game type and config
+    const gameType = this.gameService.gameType();
+    const config = this.gameService.config();
+    if (this.roomId && gameType) {
+      this.pendingAutoStart = true;
+      this.gameService.createGame(this.roomId, gameType, config);
+    }
   }
 }

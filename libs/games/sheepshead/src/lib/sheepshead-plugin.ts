@@ -12,6 +12,7 @@ import {
 import { legalPlays } from './tricks';
 import {
   BlitzState,
+  Card,
   SheepsheadConfig,
   SheepsheadEvent,
   SheepsheadEventType,
@@ -140,7 +141,7 @@ function getValidActions(
       return actions;
     }
     case 'score':
-      return ['game_scored'];
+      return [];
     default:
       return [];
   }
@@ -212,9 +213,18 @@ function getPlayerView(
       ? [...state.players.slice(myIdx), ...state.players.slice(0, myIdx)]
       : [...state.players];
 
-  // Each player only sees their own hand (unless schwanzer)
+  // Each player only sees their own hand (unless schwanzer or score phase)
   const players = rotated.map((p) => {
     if (p.userID === userID) return p;
+
+    // In score phase, reveal roles and scores to all players
+    if (state.phase === 'score') {
+      return {
+        ...p,
+        hand: Array(p.hand.length).fill(null),
+        cardsWon: [],
+      };
+    }
 
     return {
       userID: p.userID,
@@ -227,9 +237,16 @@ function getPlayerView(
     };
   });
 
-  // Partner-draft: each player sees only their half of the blind during bury.
-  let blind: typeof state.blind = [];
-  if (state.phase === 'bury' && state.blind) {
+  // Blind visibility per phase:
+  // - Deal: face-down placeholders for the deck visual
+  // - Pick: face-down placeholders (no card data leaked)
+  // - Bury: picker sees actual cards; partner-draft splits between picker/partner
+  let blind: (Card | null)[] | null = [];
+  if (state.phase === 'deal') {
+    blind = Array(config.blindSize).fill(null);
+  } else if (state.phase === 'pick') {
+    blind = state.blind ? state.blind.map(() => null) : [];
+  } else if (state.phase === 'bury' && state.blind) {
     if (config.name === 'partner-draft') {
       const half = Math.floor(state.blind.length / 2);
       if (isPicker) {

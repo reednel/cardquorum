@@ -215,9 +215,9 @@ describe('GameService integration (full Sheepshead game)', () => {
     }
 
     // The score phase might be reached via a scheduled event (trick_advance → score).
-    // If we broke out of the loop because views were empty, check broadcastFn for game-over.
+    // trick_advance chains game_scored as a scheduled event (delayMs: 0),
+    // so we advance timers to fire it and let the backend auto-score.
     if (phase !== 'score') {
-      // Check if broadcastFn was called with a score phase
       const views = getFreshViews(sessionId);
       if (views.length > 0) {
         result = { gameOver: false, playerViews: views };
@@ -225,13 +225,32 @@ describe('GameService integration (full Sheepshead game)', () => {
       }
     }
 
-    // Score phase
-    expect(phase).toBe('score');
-    expect(result.gameOver).toBe(false);
+    // Advance timers to fire the chained game_scored scheduled event
+    jest.advanceTimersByTime(1);
 
-    result = await service.applyAction(sessionId, userIDs[0], {
-      type: 'game_scored',
-    });
+    // game_scored triggers handleScore → isGameOver → broadcastFn with gameOver: true
+    // Check if broadcastFn received the game-over result
+    const calls = broadcastFn.mock.calls;
+    if (calls.length > 0) {
+      const lastArg = calls[calls.length - 1][0] as {
+        gameOver: boolean;
+        playerViews: Array<[number, { state: unknown; validActions: string[] }]>;
+        store?: unknown;
+      };
+      if (lastArg.gameOver) {
+        return lastArg as {
+          gameOver: true;
+          playerViews: Array<[number, { state: unknown; validActions: string[] }]>;
+          store: unknown;
+        };
+      }
+    }
+
+    // Fallback: get fresh views (game may have ended via processScheduledEvent)
+    const finalViews = getFreshViews(sessionId);
+    if (finalViews.length > 0) {
+      result = { gameOver: false, playerViews: finalViews };
+    }
 
     return result;
   }

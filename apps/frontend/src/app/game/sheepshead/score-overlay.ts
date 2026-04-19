@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import type { UserIdentity } from '@cardquorum/shared';
 
 interface ScorePlayer {
@@ -62,12 +62,36 @@ interface ScorePlayer {
           }
         </tbody>
       </table>
+      <div class="mt-4 flex items-center justify-center gap-3">
+        <button
+          data-testid="score-close-btn"
+          (click)="dismissed.emit()"
+          aria-label="Close score overlay"
+          class="rounded-lg bg-surface-raised px-4 py-2 text-sm font-medium text-text-body hover:bg-border-input dark:bg-border-input-dark dark:text-text-heading-dark dark:hover:bg-surface-raised-dark"
+        >
+          Close
+        </button>
+        @if (isOwner()) {
+          <button
+            data-testid="score-start-next-btn"
+            (click)="startNextGame.emit()"
+            aria-label="Start next game"
+            class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover"
+          >
+            Start Next Game
+          </button>
+        }
+      </div>
     </div>
   `,
 })
 export class ScoreOverlay {
   readonly players = input.required<ScorePlayer[]>();
   readonly members = input.required<UserIdentity[]>();
+  readonly isOwner = input.required<boolean>();
+
+  readonly dismissed = output<void>();
+  readonly startNextGame = output<void>();
 
   protected displayName(userID: number): string {
     const member = this.members().find((m) => m.userId === userID);
