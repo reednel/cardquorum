@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsInt,
   IsNotEmpty,
   IsObject,
@@ -67,4 +68,22 @@ export class GameCancelDto implements GameCancelPayload {
   @IsInt()
   @Min(1)
   sessionId: number;
+}
+
+export class GameQueryTargetsDto {
+  @IsInt()
+  @Min(1)
+  sessionId: number;
+
+  @IsString()
+  @IsNotEmpty()
+  sourceStackId: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  selectedCards: string[];
+
+  @IsInt()
+  @Min(0)
+  generation: number;
 }

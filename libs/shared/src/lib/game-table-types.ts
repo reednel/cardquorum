@@ -72,4 +72,10 @@ export interface GameTablePlugin<TState = unknown, TEvent = unknown> {
 
   /** Return the number of cards the player must bury. 0 if not applicable. */
   getBuryCount(state: TState, config: unknown): number;
+
+  /** Build a move event from selected cards and target stack ID. */
+  buildMoveEvent(state: TState, selectedCards: string[], targetStackId: string): TEvent;
+
+  /** Return the default target stack ID for simple interactions, or null if a query is needed. */
+  getDefaultTarget(state: TState, validActions: string[]): string | null;
 }

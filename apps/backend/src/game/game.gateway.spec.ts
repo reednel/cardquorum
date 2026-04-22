@@ -476,6 +476,66 @@ describe('GameGateway', () => {
     });
   });
 
+  describe('handleQueryTargets', () => {
+    it('should return valid targets with the correct generation number', async () => {
+      const client = createMockClient();
+      connectionService.trackClient(client, aliceIdentity);
+
+      gameService.getValidTargets = jest.fn().mockReturnValue(['trick-pile']);
+
+      await gateway.handleQueryTargets(client, {
+        sessionId: 1,
+        sourceStackId: 'hand',
+        selectedCards: ['qc'],
+        generation: 5,
+      });
+
+      expect(gameService.getValidTargets).toHaveBeenCalledWith(1, aliceIdentity.userId, 'hand', [
+        'qc',
+      ]);
+
+      const parsed = JSON.parse((client.send as jest.Mock).mock.calls[0][0]);
+      expect(parsed.event).toBe(WS_EMIT.GAME_VALID_TARGETS);
+      expect(parsed.data.generation).toBe(5);
+      expect(parsed.data.targets).toEqual(['trick-pile']);
+    });
+
+    it('should return empty targets when getValidTargets throws', async () => {
+      const client = createMockClient();
+      connectionService.trackClient(client, aliceIdentity);
+
+      gameService.getValidTargets = jest.fn().mockImplementation(() => {
+        throw new Error('session not found');
+      });
+
+      await gateway.handleQueryTargets(client, {
+        sessionId: 999,
+        sourceStackId: 'hand',
+        selectedCards: ['qc'],
+        generation: 3,
+      });
+
+      const parsed = JSON.parse((client.send as jest.Mock).mock.calls[0][0]);
+      expect(parsed.event).toBe(WS_EMIT.GAME_VALID_TARGETS);
+      expect(parsed.data.generation).toBe(3);
+      expect(parsed.data.targets).toEqual([]);
+    });
+
+    it('should not send anything for an untracked client', async () => {
+      const client = createMockClient();
+      // Do NOT track the client
+
+      await gateway.handleQueryTargets(client, {
+        sessionId: 1,
+        sourceStackId: 'hand',
+        selectedCards: ['qc'],
+        generation: 1,
+      });
+
+      expect(client.send).not.toHaveBeenCalled();
+    });
+  });
+
   describe('disconnect cleanup', () => {
     it('should clean up waiting sessions when creator has no remaining connections', async () => {
       const client = createMockClient();

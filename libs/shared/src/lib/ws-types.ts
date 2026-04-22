@@ -103,6 +103,7 @@ export interface GameStartedPayload {
   state: unknown;
   validActions: string[];
   colorMap?: ColorAssignmentMap;
+  gameType?: string;
 }
 
 export interface GameStateUpdatePayload {

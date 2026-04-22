@@ -14,6 +14,7 @@ import {
   GameActionDto,
   GameCancelDto,
   GameCreateDto,
+  GameQueryTargetsDto,
   GameRejoinDto,
   GameStartDto,
 } from './game.dto';
@@ -214,6 +215,35 @@ export class GameGateway implements OnModuleInit {
         state: result.state,
         validActions: result.validActions,
         colorMap: result.colorMap,
+        gameType: result.gameType,
+      });
+    }
+  }
+
+  @SubscribeMessage(WS_EVENT.GAME_QUERY_TARGETS)
+  async handleQueryTargets(
+    @ConnectedSocket() client: WebSocket,
+    @MessageBody() payload: GameQueryTargetsDto,
+  ) {
+    const tracked = this.connectionService.getTracked(client);
+    if (!tracked) return;
+
+    try {
+      const targets = this.gameService.getValidTargets(
+        payload.sessionId,
+        tracked.identity.userId,
+        payload.sourceStackId,
+        payload.selectedCards,
+      );
+      this.send(client, WS_EMIT.GAME_VALID_TARGETS, {
+        generation: payload.generation,
+        targets,
+      });
+    } catch (err) {
+      this.logger.warn(`game:query-targets failed: ${err}`);
+      this.send(client, WS_EMIT.GAME_VALID_TARGETS, {
+        generation: payload.generation,
+        targets: [],
       });
     }
   }

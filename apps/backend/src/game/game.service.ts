@@ -347,6 +347,28 @@ export class GameService implements OnModuleDestroy {
     };
   }
 
+  getValidTargets(
+    sessionId: number,
+    userID: number,
+    sourceStackId: string,
+    selectedCards: string[],
+  ): string[] {
+    const game = this.activeGames.get(sessionId);
+    if (!game || game.status !== 'active') return [];
+    if (!game.playerIDs.includes(userID)) return [];
+
+    const plugin = this.plugins.get(game.gameType)!;
+    if (!plugin.getValidTargets) return [];
+
+    return plugin.getValidTargets(
+      game.config as any,
+      game.state as any,
+      userID,
+      sourceStackId,
+      selectedCards,
+    );
+  }
+
   getPlayerViewByRoom(
     roomId: number,
     userID: number,

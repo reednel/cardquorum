@@ -430,6 +430,56 @@ describe('GameService', () => {
     });
   });
 
+  describe('getValidTargets', () => {
+    async function setupActiveGame(): Promise<number> {
+      roomService.manager.joinRoom('1', 'conn-1', aliceIdentity);
+      roomService.manager.joinRoom('1', 'conn-2', bobIdentity);
+      roomService.manager.joinRoom('1', 'conn-3', charlieIdentity);
+      roomService.getRoster.mockResolvedValue(
+        buildRoster([aliceIdentity, bobIdentity, charlieIdentity]),
+      );
+
+      await service.createSession(1, 'sheepshead', validConfig, 1);
+      await service.startSession(1, 1);
+      return 1;
+    }
+
+    it('should return empty array for a non-existent session', async () => {
+      const result = service.getValidTargets(999, 1, 'hand', ['qc']);
+      expect(result).toEqual([]);
+    });
+
+    it('should return empty array for a non-player user', async () => {
+      const sessionId = await setupActiveGame();
+
+      const result = service.getValidTargets(sessionId, 99, 'hand', ['qc']);
+      expect(result).toEqual([]);
+    });
+
+    it('should return empty array when session is not active (waiting)', async () => {
+      roomService.manager.joinRoom('1', 'conn-1', aliceIdentity);
+      await service.createSession(1, 'sheepshead', validConfig, 1);
+
+      const result = service.getValidTargets(1, 1, 'hand', ['qc']);
+      expect(result).toEqual([]);
+    });
+
+    it('should delegate to plugin getValidTargets for an active session with a valid player', async () => {
+      const sessionId = await setupActiveGame();
+
+      // Deal to advance past the initial state
+      await service.applyAction(sessionId, 1, { type: 'deal' });
+
+      // Get the active player and their hand to make a valid query
+      const view = service.getPlayerView(sessionId, 1);
+      expect(view).not.toBeNull();
+
+      // The result should be an array (possibly empty depending on game state)
+      const result = service.getValidTargets(sessionId, 1, 'hand', ['qc']);
+      expect(Array.isArray(result)).toBe(true);
+    });
+  });
+
   describe('cancelSession', () => {
     it('should cancel a waiting session and clean up maps', async () => {
       roomService.manager.joinRoom('1', 'conn-1', aliceIdentity);

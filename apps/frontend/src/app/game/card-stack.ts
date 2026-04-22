@@ -32,38 +32,73 @@ import {
   type CardSelectEvent,
   type CardSelectionEvent,
 } from './card-stack-layout';
+import { InteractionController } from './interaction-controller';
+
+interface DragState {
+  cardName: string;
+  index: number;
+  dropped: boolean;
+}
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-card-stack',
   imports: [CardRenderer, CdkDropList, CdkDrag, CdkDragPreview],
+  host: {
+    '[class.stack-highlighted]': 'highlighted()',
+  },
+  styles: `
+    :host(.stack-highlighted) .card-stack-container {
+      box-shadow: 0 0 8px 2px var(--color-primary-light);
+      border: 2px solid var(--color-primary-light);
+      border-radius: 8px;
+      transition:
+        box-shadow 0.2s ease,
+        border-color 0.2s ease;
+    }
+    /* Hide CDK's placeholder for the dragged card during multi-drag */
+    .cdk-drag-placeholder {
+      visibility: hidden !important;
+    }
+    /* Hide all cards while restoring positions after a rejected drop */
+    :host(.restoring-positions) [data-testid^='card-item-'] {
+      visibility: hidden !important;
+    }
+  `,
   template: `
     @if (cards().length === 0) {
       <div
         data-testid="card-stack-placeholder"
-        class="border-2 border-dashed border-neutral-300 dark:border-neutral-600 rounded-md"
+        class="card-stack-container border-2 border-dashed border-neutral-300 dark:border-neutral-600 rounded-md"
         [class.droppable]="droppable()"
         [style.width.px]="resolvedWidth()"
         [style.height.px]="resolvedHeight()"
         role="listbox"
-        aria-label="Empty card stack"
+        [attr.aria-label]="
+          highlighted() ? 'Empty card stack, valid drop target' : 'Empty card stack'
+        "
+        [attr.tabindex]="highlighted() ? 0 : -1"
         cdkDropList
         #dropList="cdkDropList"
         [cdkDropListDisabled]="!droppable()"
         [cdkDropListData]="cards()"
         [cdkDropListConnectedTo]="connectedDropLists()"
+        [cdkDropListEnterPredicate]="dropEnterPredicate"
         (cdkDropListDropped)="onDrop($event)"
+        (click)="onStackClick()"
+        (keydown)="onPlaceholderKeydown($event)"
       ></div>
     } @else {
       <div
         data-testid="card-stack"
-        class="relative inline-block"
+        class="card-stack-container relative inline-block"
         role="listbox"
-        tabindex="-1"
-        [attr.aria-label]="'Card stack with ' + cards().length + ' cards'"
+        [attr.tabindex]="highlighted() ? 0 : -1"
+        [attr.aria-label]="stackAriaLabel()"
         [style.width.px]="scaledWidth()"
         [style.height.px]="scaledHeight()"
         (keydown)="onContainerKeydown($event)"
+        (click)="onStackClick()"
       >
         <div
           data-testid="card-stack-inner"
@@ -73,6 +108,7 @@ import {
           [cdkDropListDisabled]="!reorderable() && !droppable()"
           [cdkDropListData]="cards()"
           [cdkDropListConnectedTo]="connectedDropLists()"
+          [cdkDropListEnterPredicate]="dropEnterPredicate"
           [cdkDropListSortingDisabled]="true"
           (cdkDropListDropped)="onDrop($event)"
           [style.transform]="innerTransform()"
@@ -80,7 +116,7 @@ import {
           [style.width.px]="naturalWidth()"
           [style.height.px]="naturalHeight()"
         >
-          @for (card of cards(); track $index; let i = $index) {
+          @for (card of cards(); track card ?? $index; let i = $index) {
             <div
               [attr.data-testid]="'card-item-' + i"
               [class]="'absolute ' + cardItemClass(card)"
@@ -96,23 +132,50 @@ import {
               (cdkDragEnded)="onDragEnded($event, card, i)"
               [style.transform]="cardTranslate(i)"
               [style.z-index]="cardPositions()[i]?.zIndex ?? i"
+              [style.visibility]="isCardHiddenDuringDrag(card) ? 'hidden' : null"
             >
               <ng-template cdkDragPreview [matchSize]="true">
-                <div
-                  class="overflow-hidden"
-                  [style.width.px]="resolvedWidth()"
-                  [style.height.px]="resolvedHeight()"
-                  [style.border]="cardBorderValue(card, i)"
-                  [style.border-radius.px]="cardBorderRadius()"
-                  [style.filter]="cardFilterStyle(card)"
-                  style="box-sizing:border-box;background-color:var(--color-card-bg)"
-                >
-                  <app-card-renderer
-                    [cardName]="card"
-                    [alt]="card ?? 'Face-down card'"
-                    [width]="resolvedWidth()"
-                    [height]="resolvedHeight()"
-                  />
+                <div style="overflow:visible;position:relative">
+                  <div
+                    class="overflow-hidden"
+                    [style.width.px]="resolvedWidth()"
+                    [style.height.px]="resolvedHeight()"
+                    [style.border]="cardBorderValue(card, i)"
+                    [style.border-radius.px]="cardBorderRadius()"
+                    [style.filter]="cardFilterStyle(card)"
+                    style="box-sizing:border-box;background-color:var(--color-card-bg)"
+                  >
+                    <app-card-renderer
+                      [cardName]="card"
+                      [alt]="card ?? 'Face-down card'"
+                      [width]="resolvedWidth() - 4"
+                      [height]="resolvedHeight() - 4"
+                    />
+                  </div>
+                  @for (
+                    magnetized of getDragPreviewCompanions(card);
+                    track magnetized;
+                    let j = $index
+                  ) {
+                    <div
+                      class="absolute overflow-hidden"
+                      [style.top.px]="(j + 1) * -8"
+                      [style.left.px]="(j + 1) * 8"
+                      [style.z-index]="-j - 1"
+                      [style.width.px]="resolvedWidth()"
+                      [style.height.px]="resolvedHeight()"
+                      [style.border-radius.px]="cardBorderRadius()"
+                      [style.border]="'2px solid var(--color-primary-light)'"
+                      style="box-sizing:border-box;background-color:var(--color-card-bg)"
+                    >
+                      <app-card-renderer
+                        [cardName]="magnetized"
+                        [alt]="magnetized ?? 'Face-down card'"
+                        [width]="resolvedWidth() - 4"
+                        [height]="resolvedHeight() - 4"
+                      />
+                    </div>
+                  }
                 </div>
               </ng-template>
               <div
@@ -154,14 +217,18 @@ import {
 export class CardStack {
   /** Static registry of all active CdkDropList instances across CardStack components */
   private static readonly dropListRegistry = new Set<CdkDropList>();
+  /** Bumped whenever the registry changes so connectedDropLists recomputes */
+  private static readonly dropListVersion = signal(0);
 
   private readonly elRef = inject(ElementRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly interactionController = inject(InteractionController, { optional: true });
 
   /** Reference to this component's CdkDropList */
   private readonly dropListRef = viewChild<CdkDropList>('dropList');
 
   // ── Inputs ──
+  readonly stackId = input<string | null>(null);
   readonly cards = input<CardEntry[]>([]);
   readonly spread = input(0.5);
   readonly spreadAngle = input(0);
@@ -180,6 +247,18 @@ export class CardStack {
   readonly playerIds = input<number[] | null>(null);
   readonly biasedPlacement = input(false);
 
+  /**
+   * Opt-in to CDK's native cross-container transfer behavior.
+   *
+   * WARNING: Enabling this re-introduces the DOM-corruption-on-rejected-drop problem.
+   * CDK physically moves DOM elements between containers on enter, which causes
+   * misplaced cards when a drag is cancelled. The consuming game must handle
+   * position restoration for cross-container cancels.
+   *
+   * Default: false (IC manages all cross-stack interactions via hit-testing).
+   */
+  readonly cdkNativeTransfer = input(false);
+
   // ── Outputs ──
   readonly cardSelected = output<CardSelectEvent>();
   readonly cardConfirmed = output<CardSelectEvent>();
@@ -192,6 +271,43 @@ export class CardStack {
   // ── Selection state ──
   private readonly selection = signal<string[]>([]);
 
+  // ── Multi-drag state ──
+  private readonly dragState = signal<DragState | null>(null);
+
+  /**
+   * Returns the other selected cards (companions) for a multi-drag preview.
+   * Called from the preview template with the card being dragged.
+   * Only returns companions if the dragged card is part of the selection.
+   */
+  protected getDragPreviewCompanions(primaryCard: string | null): string[] {
+    if (!primaryCard) return [];
+    const ic = this.interactionController;
+    if (!ic) return [];
+    const selected = ic.selectedCards();
+    // Only show magnetized cards if the dragged card is part of the selection
+    if (!selected.includes(primaryCard)) return [];
+    return selected.filter((c) => c !== primaryCard);
+  }
+
+  /**
+   * Set of card names that should be hidden from their original positions during drag.
+   * Hides ALL selected cards (including the dragged one) so the preview
+   * is the only visual representation during the drag.
+   */
+  readonly cardsHiddenDuringDrag = computed(() => {
+    const draggedCard = this.dragState()?.cardName ?? null;
+    if (!draggedCard) return new Set<string>();
+    const ic = this.interactionController;
+    if (!ic) return new Set<string>();
+    const selected = ic.selectedCards();
+    // If dragging a selected card, hide all selected cards
+    if (selected.includes(draggedCard)) {
+      return new Set(selected);
+    }
+    // If dragging a non-selected card, only hide that card (single-card drag)
+    return new Set([draggedCard]);
+  });
+
   // ── Keyboard navigation state ──
   private readonly focusedIndex = signal(0);
   protected readonly liveAnnouncement = signal('');
@@ -200,6 +316,23 @@ export class CardStack {
   private readonly legalSet = computed(() => {
     const lc = this.legalCards();
     return lc ? new Set(lc) : null;
+  });
+
+  // ── Derived: highlight state ──
+  /** Whether this stack is highlighted as a valid target. */
+  readonly highlighted = computed(() => {
+    const ic = this.interactionController;
+    if (!ic) return false;
+    const id = this.stackId();
+    if (!id) return false;
+    return ic.phase() === 'targeting' && ic.validTargets().includes(id);
+  });
+
+  // ── Derived: ARIA label for the stack container ──
+  protected readonly stackAriaLabel = computed(() => {
+    const count = this.cards().length;
+    const base = `Card stack with ${count} cards`;
+    return this.highlighted() ? `${base}, valid drop target` : base;
   });
 
   // ── Derived: clamped maxSelections ──
@@ -232,12 +365,6 @@ export class CardStack {
   // ── Container width (read via afterRenderEffect) ──
   private readonly containerWidth = signal(0);
 
-  /** Tracks whether a drag resulted in a valid drop (same or cross-stack) */
-  private dragDropped = false;
-
-  /** Stores the card info during an active drag for cancel detection */
-  private activeDrag: { cardName: string; index: number } | null = null;
-
   /** Observes parent element resize to keep containerWidth current. */
   private resizeObserver: ResizeObserver | null = null;
 
@@ -263,6 +390,16 @@ export class CardStack {
       const dl = this.dropListRef();
       if (dl && !CardStack.dropListRegistry.has(dl)) {
         CardStack.dropListRegistry.add(dl);
+        CardStack.dropListVersion.update((v) => v + 1);
+      }
+    });
+
+    // Register with InteractionController when stackId is set
+    afterRenderEffect(() => {
+      const id = this.stackId();
+      const ic = this.interactionController;
+      if (id && ic) {
+        ic.register(id, this.elRef.nativeElement);
       }
     });
 
@@ -271,13 +408,21 @@ export class CardStack {
       const dl = this.dropListRef();
       if (dl) {
         CardStack.dropListRegistry.delete(dl);
+        CardStack.dropListVersion.update((v) => v + 1);
+      }
+
+      // Unregister from InteractionController
+      const id = this.stackId();
+      const ic = this.interactionController;
+      if (id && ic) {
+        ic.unregister(id);
       }
     });
   }
 
   /** Compute connected drop lists (all other CardStack drop lists except this one) */
   protected readonly connectedDropLists = computed(() => {
-    this.cards();
+    CardStack.dropListVersion(); // re-evaluate when any stack registers/unregisters
     // Only connect to other stacks if this stack can send (draggable) or receive (droppable) cards
     if (!this.draggable() && !this.droppable()) return [];
     const own = this.dropListRef();
@@ -458,6 +603,10 @@ export class CardStack {
 
   protected isSelected(card: string | null): boolean {
     if (card === null) return false;
+    const ic = this.interactionController;
+    if (ic && this.stackId()) {
+      return ic.selectedCards().includes(card);
+    }
     return this.selection().includes(card);
   }
 
@@ -502,6 +651,40 @@ export class CardStack {
     return this.topOnly() && index !== this.cards().length - 1;
   }
 
+  // ── Multi-drag visibility helper ──
+  /** Returns true if the card should be hidden during a multi-drag. */
+  protected isCardHiddenDuringDrag(card: string | null): boolean {
+    if (card === null) return false;
+    const hidden = this.cardsHiddenDuringDrag();
+    return hidden.has(card);
+  }
+
+  // ── Drop enter predicate ──
+  /**
+   * CDK enter predicate — decides whether a dragged item can enter this drop list.
+   *
+   * When the InteractionController is present, ALWAYS reject cross-container entry.
+   * This prevents CDK from transferring DOM elements between containers, which
+   * causes misplaced cards on cancelled drags. Instead, IC-managed drops are
+   * handled in onDragEnded by checking if the pointer is over a valid target.
+   *
+   * Returning false means CDK's built-in drop animations and container-transfer
+   * logic are fully bypassed — no `cdkDropListEntered` or `cdkDropListExited`
+   * events fire on target stacks. All cross-stack drop handling is manual via
+   * hit-testing in `onDragEnded` → `ic.resolveDropTarget`.
+   *
+   * The `cdkNativeTransfer` input provides a per-stack opt-in to re-enable CDK's
+   * native cross-container transfers for games that need reordering between stacks.
+   *
+   * Arrow function so `this` is bound when CDK calls it as a callback.
+   */
+  protected dropEnterPredicate = (_drag: CdkDrag): boolean => {
+    if (this.cdkNativeTransfer()) return true; // Opt-in to CDK native behavior
+    const ic = this.interactionController;
+    if (ic && this.stackId()) return false; // IC manages all cross-stack interactions
+    return true; // Standalone mode — allow
+  };
+
   // ── Roving tabindex ──
   protected cardTabindex(index: number): number {
     return index === this.focusedIndex() ? 0 : -1;
@@ -544,14 +727,51 @@ export class CardStack {
       case 'Enter':
       case ' ': {
         event.preventDefault();
+        // If this stack is a highlighted target, commit the interaction
+        if (this.highlighted()) {
+          this.onStackClick();
+          break;
+        }
         const card = cardsArr[current];
         if (this.isLegal(card) && !this.isTopOnlyRestricted(current)) {
           this.onCardClick(card, current);
         }
         break;
       }
+      case 'Escape': {
+        const ic = this.interactionController;
+        if (ic) {
+          event.preventDefault();
+          ic.cancel();
+        }
+        break;
+      }
       default:
         return; // Don't prevent default for unhandled keys
+    }
+  }
+
+  /** Keyboard handler for the empty placeholder div (used when stack is a highlighted target). */
+  protected onPlaceholderKeydown(event: KeyboardEvent): void {
+    switch (event.key) {
+      case 'Enter':
+      case ' ': {
+        event.preventDefault();
+        if (this.highlighted()) {
+          this.onStackClick();
+        }
+        break;
+      }
+      case 'Escape': {
+        const ic = this.interactionController;
+        if (ic) {
+          event.preventDefault();
+          ic.cancel();
+        }
+        break;
+      }
+      default:
+        return;
     }
   }
 
@@ -583,11 +803,31 @@ export class CardStack {
   }
 
   // ── Click handlers ──
+  protected onStackClick(): void {
+    const ic = this.interactionController;
+    const id = this.stackId();
+    if (!ic || !id) return;
+
+    if (ic.phase() === 'targeting' && ic.validTargets().includes(id)) {
+      ic.commitToTarget(id);
+    }
+  }
+
   protected onCardClick(card: string | null, index: number): void {
+    // Clear dragState if pointerdown set it but no drag started
+    this.dragState.set(null);
+
     if (!this.selectable()) return;
     if (this.isTopOnlyRestricted(index)) return;
     if (!this.isLegal(card)) return;
     if (card === null) return;
+
+    const ic = this.interactionController;
+    const id = this.stackId();
+    if (ic && id) {
+      ic.selectCard(id, card, this.effectiveMaxSelections());
+      return;
+    }
 
     this.cardSelected.emit({ cardName: card, index });
 
@@ -617,39 +857,72 @@ export class CardStack {
   }
 
   protected onCardDblClick(card: string | null, index: number): void {
+    this.dragState.set(null);
+
     if (!this.selectable()) return;
     if (this.isTopOnlyRestricted(index)) return;
     if (!this.isLegal(card)) return;
     if (card === null) return;
 
+    const ic = this.interactionController;
+    const id = this.stackId();
+    if (ic && id) {
+      ic.confirmCard(id, card);
+      return;
+    }
+
     this.cardConfirmed.emit({ cardName: card, index });
   }
 
   // ── Drag-and-drop ──
+
   protected onDragStarted(_event: CdkDragStart, card: string | null, index: number): void {
-    this.dragDropped = false;
     if (this.draggable() && card !== null) {
-      this.activeDrag = { cardName: card, index };
+      this.dragState.set({ cardName: card, index, dropped: false });
+      this.interactionController?.dragStarted();
       this.cardDragStarted.emit({ cardName: card, index });
     }
   }
 
-  protected onDragEnded(_event: CdkDragEnd, card: string | null, index: number): void {
-    // If the drag ended without a valid drop, it was cancelled
-    if (!this.dragDropped && this.activeDrag && card !== null) {
+  protected onDragEnded(event: CdkDragEnd, card: string | null, index: number): void {
+    const ic = this.interactionController;
+    const sourceId = this.stackId();
+
+    if (ic && sourceId && this.draggable() && card !== null) {
+      const dropPoint = event.dropPoint;
+      const result = dropPoint ? ic.resolveDropTarget(sourceId, card, dropPoint) : null;
+
+      if (result) {
+        if (result.mode === 'commit') {
+          ic.commitToTarget(result.targetId);
+        } else {
+          ic.confirmCard(sourceId, card);
+        }
+      } else {
+        // No valid target — restore positions
+        if (!this.dragState()?.dropped) {
+          this.cardDragCancelled.emit({ cardName: card, index });
+        }
+        this.hideCardPositions();
+        requestAnimationFrame(() => this.restoreCardPositions());
+      }
+    } else if (!this.dragState()?.dropped && this.dragState() && card !== null) {
       this.cardDragCancelled.emit({ cardName: card, index });
     }
-    this.activeDrag = null;
-    this.dragDropped = false;
+
+    this.dragState.set(null);
+    ic?.dragEnded();
   }
 
   protected onDrop(event: CdkDragDrop<CardEntry[]>): void {
-    this.dragDropped = true;
+    this.dragState.update((s) => (s ? { ...s, dropped: true } : null));
     const sameContainer = event.previousContainer === event.container;
 
     if (sameContainer) {
       // Same stack → reorder, but only if the drop point is inside the container
       if (event.dropPoint && !this.isInsideDropList(event.dropPoint)) {
+        this.hideCardPositions();
+        requestAnimationFrame(() => this.restoreCardPositions());
         return; // Dropped outside — treat as cancel, no reorder
       }
 
@@ -665,22 +938,69 @@ export class CardStack {
       }
     } else {
       // Cross-stack transfer
+      if (event.dropPoint && !this.isInsideDropList(event.dropPoint)) {
+        this.hideCardPositions();
+        requestAnimationFrame(() => this.restoreCardPositions());
+        return;
+      }
+
+      const ic = this.interactionController;
+      const id = this.stackId();
+      if (ic && id) {
+        // IC-managed: this branch should never execute (enter predicate blocks it).
+        // No-op as a safety guard.
+        return;
+      }
+
+      // Standalone drop (no IC)
       const dragData = event.item.data as { cardName: string; index: number } | undefined;
       const cardName =
         dragData?.cardName ?? (event.previousContainer.data[event.previousIndex] as string);
-      this.cardReceived.emit({ cardName, index: event.currentIndex });
+      if (cardName) {
+        this.cardReceived.emit({ cardName, index: event.currentIndex });
+      }
     }
   }
 
   /** Check if a screen-space point is inside this stack's drop list element. */
   private isInsideDropList(point: { x: number; y: number }): boolean {
     const el = this.elRef.nativeElement as HTMLElement;
-    const dropListEl = el.querySelector('[data-testid="card-stack-inner"]') as HTMLElement;
+    const dropListEl = (el.querySelector('[data-testid="card-stack-inner"]') ??
+      el.querySelector('[data-testid="card-stack-placeholder"]')) as HTMLElement;
     if (!dropListEl) return false;
     const rect = dropListEl.getBoundingClientRect();
     return (
       point.x >= rect.left && point.x <= rect.right && point.y >= rect.top && point.y <= rect.bottom
     );
+  }
+
+  /**
+   * After a rejected drop, CDK may have reordered DOM nodes.
+   * Re-apply the correct transform to each card-item based on its data-testid index,
+   * then remove the hiding class.
+   */
+  private restoreCardPositions(): void {
+    const el = this.elRef.nativeElement as HTMLElement;
+    const items = el.querySelectorAll<HTMLElement>('[data-testid^="card-item-"]');
+    items.forEach((item) => {
+      const testId = item.getAttribute('data-testid');
+      if (!testId) return;
+      const index = parseInt(testId.replace('card-item-', ''), 10);
+      if (isNaN(index)) return;
+      item.style.transform = this.cardTranslate(index);
+      const pos = this.cardPositions()[index];
+      item.style.zIndex = String(pos?.zIndex ?? index);
+    });
+    el.classList.remove('restoring-positions');
+  }
+
+  /**
+   * Hide all card-items via a host CSS class so CDK's wrong positioning
+   * isn't visible. The class uses !important to survive CDK's cleanup.
+   */
+  private hideCardPositions(): void {
+    const el = this.elRef.nativeElement as HTMLElement;
+    el.classList.add('restoring-positions');
   }
 
   /** Find the card index closest to a screen-space point. */

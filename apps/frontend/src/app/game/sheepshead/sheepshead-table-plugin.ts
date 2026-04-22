@@ -156,6 +156,24 @@ function getMyHand(state: SheepsheadPlayerView, myUserID: number): string[] {
   return me ? me.hand.filter((c) => c !== null).map((c) => c.name) : [];
 }
 
+function buildMoveEvent(
+  state: SheepsheadPlayerView,
+  selectedCards: string[],
+  targetStackId: string,
+): SheepsheadAction {
+  if (targetStackId === 'buried') {
+    return buildBuryEvent(state, selectedCards);
+  }
+  return buildPlayCardEvent(state, selectedCards[0]);
+}
+
+function getDefaultTarget(state: SheepsheadPlayerView, validActions: string[]): string | null {
+  if (state.phase === 'play' && validActions.includes('play_card')) {
+    return 'trick-pile';
+  }
+  return null;
+}
+
 export const SheepsheadTablePlugin: GameTablePlugin<SheepsheadPlayerView, SheepsheadAction> = {
   getCardAsset,
   getLegalCards,
@@ -168,4 +186,6 @@ export const SheepsheadTablePlugin: GameTablePlugin<SheepsheadPlayerView, Sheeps
   getMyHand,
   getBlindCards,
   getBuryCount,
+  buildMoveEvent,
+  getDefaultTarget,
 };

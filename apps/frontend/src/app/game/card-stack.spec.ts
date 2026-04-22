@@ -1,6 +1,8 @@
+import { CdkDrag } from '@angular/cdk/drag-drop';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import * as fc from 'fast-check';
 import { CardStack } from './card-stack';
+import { InteractionController } from './interaction-controller';
 
 describe('CardStack – empty placeholder', () => {
   let fixture: ComponentFixture<CardStack>;
@@ -1300,5 +1302,57 @@ describe('CardStack – opponent-seat renders face-down cards', () => {
       expect(svg.getAttribute('width')).toBe('40');
       expect(svg.getAttribute('height')).toBe('56');
     });
+  });
+});
+
+describe('CardStack – drop enter predicate', () => {
+  it('returns false when InteractionController is provided and stackId is set', async () => {
+    await TestBed.configureTestingModule({
+      imports: [CardStack],
+      providers: [InteractionController],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(CardStack);
+    fixture.componentRef.setInput('cards', ['qc', 'ad']);
+    fixture.componentRef.setInput('stackId', 'hand');
+    fixture.detectChanges();
+
+    const comp = fixture.componentInstance as any;
+    const result = comp.dropEnterPredicate({} as CdkDrag);
+
+    expect(result).toBe(false);
+  });
+
+  it('returns true when no InteractionController is provided (standalone mode)', async () => {
+    await TestBed.configureTestingModule({
+      imports: [CardStack],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(CardStack);
+    fixture.componentRef.setInput('cards', ['qc', 'ad']);
+    fixture.detectChanges();
+
+    const comp = fixture.componentInstance as any;
+    const result = comp.dropEnterPredicate({} as CdkDrag);
+
+    expect(result).toBe(true);
+  });
+
+  it('returns true when cdkNativeTransfer is enabled even with IC and stackId', async () => {
+    await TestBed.configureTestingModule({
+      imports: [CardStack],
+      providers: [InteractionController],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(CardStack);
+    fixture.componentRef.setInput('cards', ['qc', 'ad']);
+    fixture.componentRef.setInput('stackId', 'hand');
+    fixture.componentRef.setInput('cdkNativeTransfer', true);
+    fixture.detectChanges();
+
+    const comp = fixture.componentInstance as any;
+    const result = comp.dropEnterPredicate({} as CdkDrag);
+
+    expect(result).toBe(true);
   });
 });

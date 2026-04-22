@@ -293,7 +293,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
       partnerRule: { value: null, mode: 'hidden', options: [null] },
       noPick: { value: 'leaster', mode: 'editable', options: ALL_NO_PICK_OPTIONS },
       cracking: { value: false, mode: 'editable' },
-      blitzing: { value: false, mode: 'editable' },
+      blitzing: { value: false, mode: 'hidden' },
       doubleOnTheBump: { value: false, mode: 'editable' },
       partnerOffTheHook: { value: false, mode: 'editable' },
       noAceFaceTrump: { value: false, mode: 'editable' },

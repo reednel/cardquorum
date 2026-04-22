@@ -39,6 +39,13 @@ interface GamePlugin<TConfig, TState, TStore, TEvent extends GameEventBase> {
   getPlayerView(config: TConfig, state: TState, userID: number): Partial<TState>;
   isGameOver(state: TState): boolean;
   buildStore(config: TConfig, state: TState): TStore;
+  getValidTargets?(
+    config: TConfig,
+    state: TState,
+    userID: number,
+    sourceStackId: string,
+    selectedCards: string[],
+  ): string[];
 }
 ```
 
@@ -55,6 +62,8 @@ interface GamePlugin<TConfig, TState, TStore, TEvent extends GameEventBase> {
 **`isGameOver`** — Returns whether the game has ended. The engine checks this after each event to decide whether to finalize the session.
 
 **`buildStore`** — Constructs the permanent store record from a state snapshot. Called by the engine after the final `applyEvent` (when `isGameOver` returns true), or when a game is terminated early. This deferred construction means store data doesn't need to be maintained incrementally during play.
+
+**`getValidTargets`** _(optional)_ — Returns valid target stack IDs for a card selection. This is a read-only query used by the frontend's `InteractionController` to determine where selected cards can be moved. It receives the source stack ID and selected card names, and returns an array of target stack IDs (e.g. `["trick-pile"]`, `["buried"]`). Must not modify state. If not implemented, the server returns an empty array and the frontend falls back to plugin-side logic. See [game-table-ui.md](game-table-ui.md) for the full target query flow.
 
 ### Events
 

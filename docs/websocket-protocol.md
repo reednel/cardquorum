@@ -58,6 +58,18 @@ Client                          Server
   │       ◄── member:kicked ───────┤
 ```
 
+### Game Target Query
+
+```txt
+Client                          Server
+  │                                │
+  ├─ game:query-targets ─────────►│  (read-only: calls plugin.getValidTargets)
+  │                                │
+  │◄────── game:valid-targets ─────┤  ({ generation, targets: string[] })
+```
+
+The target query is a read-only round-trip used by the `InteractionController` to determine valid drop targets for a card selection. The `generation` counter prevents stale responses from overwriting newer queries. See [game-table-ui.md](game-table-ui.md) for the full flow.
+
 **Note:** Rooms must be created via `POST /api/rooms` before joining. Attempting to join a non-existent room returns a WS error.
 
 ## Testing with wscat

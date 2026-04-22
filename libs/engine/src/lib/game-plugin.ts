@@ -47,4 +47,16 @@ export interface GamePlugin<
 
   /** Construct the permanent store record from a state snapshot. */
   buildStore(config: TConfig, state: TState): TStore;
+
+  /**
+   * Return valid target stack IDs for a card selection. Optional.
+   * Read-only query — must not modify state.
+   */
+  getValidTargets?(
+    config: TConfig,
+    state: TState,
+    userID: number,
+    sourceStackId: string,
+    selectedCards: string[],
+  ): string[];
 }

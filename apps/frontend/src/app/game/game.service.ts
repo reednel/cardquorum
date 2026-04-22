@@ -31,6 +31,8 @@ export class GameService {
   private readonly _error = signal<string | null>(null);
   /** Color assignment map from the server. */
   private readonly _colorMap = signal<ColorAssignmentMap | undefined>(undefined);
+  /** Valid targets response from the server (for target query flow). */
+  private readonly _validTargets = signal<{ generation: number; targets: string[] } | null>(null);
   /** Room ID for reconnect-based rejoin. */
   private _activeRoomId: number | null = null;
 
@@ -42,6 +44,7 @@ export class GameService {
   readonly store = this._store.asReadonly();
   readonly error = this._error.asReadonly();
   readonly colorMap = this._colorMap.asReadonly();
+  readonly validTargetsResponse = this._validTargets.asReadonly();
 
   constructor() {
     this.ws.on<GameCreatedPayload>(WS_EMIT.GAME_CREATED, (data) => {
@@ -56,6 +59,9 @@ export class GameService {
 
     this.ws.on<GameStartedPayload>(WS_EMIT.GAME_STARTED, (data) => {
       this._sessionId.set(data.sessionId);
+      if (data.gameType) {
+        this._gameType.set(data.gameType);
+      }
       this._state.set(data.state);
       this._validActions.set(data.validActions);
       this._colorMap.set(data.colorMap);
@@ -97,6 +103,10 @@ export class GameService {
       this._error.set(data.message);
     });
 
+    this.ws.on<{ generation: number; targets: string[] }>(WS_EMIT.GAME_VALID_TARGETS, (data) =>
+      this._validTargets.set(data),
+    );
+
     // Re-send rejoin on WS reconnect so game state is restored (or cleared)
     this.ws.onConnect(() => {
       if (this._activeRoomId !== null) {
@@ -117,6 +127,18 @@ export class GameService {
     const sessionId = this._sessionId();
     if (sessionId !== null) {
       this.ws.send(WS_EVENT.GAME_ACTION, { sessionId, action });
+    }
+  }
+
+  queryTargets(sourceStackId: string, selectedCards: string[], generation: number): void {
+    const sessionId = this._sessionId();
+    if (sessionId !== null) {
+      this.ws.send(WS_EVENT.GAME_QUERY_TARGETS, {
+        sessionId,
+        sourceStackId,
+        selectedCards,
+        generation,
+      });
     }
   }
 

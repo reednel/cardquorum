@@ -16,6 +16,7 @@ export const WS_EVENT = {
   ROSTER_TOGGLE_ROTATE: 'roster:toggle-rotate',
   GAME_SETTINGS_UPDATE: 'game-settings:update',
   GAME_SETTINGS_LOAD: 'game-settings:load',
+  GAME_QUERY_TARGETS: 'game:query-targets',
 } as const;
 
 /**
@@ -41,4 +42,5 @@ export const WS_EMIT = {
   ROSTER_UPDATED: 'roster:updated',
   GAME_SETTINGS_UPDATED: 'game-settings:updated',
   GAME_SETTINGS_LOADED: 'game-settings:loaded',
+  GAME_VALID_TARGETS: 'game:valid-targets',
 } as const;

@@ -329,6 +329,43 @@ function buildStore(config: SheepsheadConfig, state: SheepsheadState): Sheepshea
   };
 }
 
+function getValidTargets(
+  config: SheepsheadConfig,
+  state: SheepsheadState,
+  userID: number,
+  sourceStackId: string,
+  selectedCards: string[],
+): string[] {
+  if (sourceStackId !== 'hand') return [];
+
+  const player = state.players.find((p) => p.userID === userID);
+  if (!player) return [];
+
+  switch (state.phase) {
+    case 'play': {
+      if (state.activePlayer !== userID) return [];
+      const { cards } = legalPlays(state, config, userID);
+      const legalNames: Set<string> = new Set(cards.map((c) => c.name));
+      if (selectedCards.every((c) => legalNames.has(c))) {
+        return ['trick-pile'];
+      }
+      return [];
+    }
+    case 'bury': {
+      if (state.activePlayer !== userID) return [];
+      if (player.role !== 'picker') return [];
+      const blindSize = config.blindSize ?? 2;
+      const buryCount = config.name === 'partner-draft' ? Math.floor(blindSize / 2) : blindSize;
+      if (selectedCards.length === buryCount) {
+        return ['buried'];
+      }
+      return [];
+    }
+    default:
+      return [];
+  }
+}
+
 /**
  * Sheepshead game plugin. Implements the generic GamePlugin interface
  * so the engine can orchestrate Sheepshead games without knowing the rules.
@@ -347,4 +384,5 @@ export const SheepsheadPlugin: GamePlugin<
   getPlayerView,
   isGameOver,
   buildStore,
+  getValidTargets,
 };
