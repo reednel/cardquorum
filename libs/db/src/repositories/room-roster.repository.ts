@@ -52,11 +52,24 @@ export class RoomRosterRepository {
   }
 
   async replaceRoster(roomId: number, players: number[], spectators: number[]): Promise<void> {
-    await this.db.transaction(async (tx) => {
-      // Delete all existing roster entries for this room
-      await tx.delete(roomRosters).where(eq(roomRosters.roomId, roomId));
+    const newMemberIds = new Set([...players, ...spectators]);
 
-      // Insert players
+    await this.db.transaction(async (tx) => {
+      // Remove members no longer in the roster
+      const existing = await tx
+        .select({ userId: roomRosters.userId })
+        .from(roomRosters)
+        .where(eq(roomRosters.roomId, roomId));
+
+      for (const row of existing) {
+        if (!newMemberIds.has(row.userId)) {
+          await tx
+            .delete(roomRosters)
+            .where(and(eq(roomRosters.roomId, roomId), eq(roomRosters.userId, row.userId)));
+        }
+      }
+
+      // Upsert each member — preserves assignedHue for existing rows
       const values = [
         ...players.map((userId, index) => ({
           roomId,
@@ -72,8 +85,14 @@ export class RoomRosterRepository {
         })),
       ];
 
-      if (values.length > 0) {
-        await tx.insert(roomRosters).values(values);
+      for (const val of values) {
+        await tx
+          .insert(roomRosters)
+          .values(val)
+          .onConflictDoUpdate({
+            target: [roomRosters.roomId, roomRosters.userId],
+            set: { section: val.section, position: val.position },
+          });
       }
     });
   }

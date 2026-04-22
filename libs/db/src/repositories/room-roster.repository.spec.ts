@@ -11,6 +11,7 @@ interface RosterRow {
   userId: number;
   section: string;
   position: number;
+  assignedHue: number | null;
   createdAt: Date;
 }
 
@@ -18,7 +19,7 @@ interface RosterRow {
  * Creates a mock DB that simulates the actual Drizzle operations used by
  * RoomRosterRepository. The in-memory store tracks rows so we can test
  * the round-trip property: replaceRoster → findByRoom should return
- * equivalent data.
+ * equivalent data, including assignedHue preservation.
  */
 function createInMemoryDb() {
   let rows: RosterRow[] = [];
@@ -35,42 +36,66 @@ function createInMemoryDb() {
     }
   }
 
-  // Build a chainable mock that captures the query intent and resolves
+  /**
+   * The new replaceRoster uses:
+   *   tx.select({ userId }).from(roomRosters).where(eq(roomId))
+   *   tx.delete(roomRosters).where(and(eq(roomId), eq(userId)))
+   *   tx.insert(roomRosters).values(val).onConflictDoUpdate({ target, set })
+   *
+   * We track a _txRoomId and a _txDeleteUserId so the mock can resolve
+   * the correct rows without evaluating Drizzle predicates.
+   */
   const db = {
     _rows: () => rows,
     _registerUsers: registerUsers,
 
-    // --- transaction support for replaceRoster ---
     transaction: jest.fn(async (fn: (tx: any) => Promise<void>) => {
-      let deletedRoomId: number | null = null;
-
       const tx = {
+        // tx.select({ userId }).from(roomRosters).where(pred) — returns existing userIds
+        select: jest.fn(() => ({
+          from: jest.fn(() => ({
+            where: jest.fn(() => {
+              const roomId = db._txRoomId;
+              return Promise.resolve(
+                rows.filter((r) => r.roomId === roomId).map((r) => ({ userId: r.userId })),
+              );
+            }),
+          })),
+        })),
+
+        // tx.delete(roomRosters).where(pred) — deletes a single (roomId, userId) row
         delete: jest.fn(() => ({
-          where: jest.fn((_predicate: any) => {
-            // The replaceRoster method calls delete with eq(roomRosters.roomId, roomId).
-            // We can't evaluate the Drizzle predicate, so we defer the actual
-            // deletion until we know the roomId from the insert values, or
-            // we set it from the transaction context.
-            // We use a trick: set deletedRoomId from _txRoomId (set externally).
-            deletedRoomId = db._txRoomId;
-            if (deletedRoomId != null) {
-              rows = rows.filter((r) => r.roomId !== deletedRoomId);
+          where: jest.fn(() => {
+            const roomId = db._txRoomId;
+            const userId = db._txDeleteUserId;
+            if (roomId != null && userId != null) {
+              rows = rows.filter((r) => !(r.roomId === roomId && r.userId === userId));
             }
           }),
         })),
+
+        // tx.insert(roomRosters).values(val).onConflictDoUpdate({ target, set })
         insert: jest.fn(() => ({
-          values: jest.fn((vals: any[]) => {
-            for (const v of vals) {
-              rows.push({
-                id: nextId++,
-                roomId: v.roomId,
-                userId: v.userId,
-                section: v.section,
-                position: v.position,
-                createdAt: new Date(),
-              });
-            }
-          }),
+          values: jest.fn((val: any) => ({
+            onConflictDoUpdate: jest.fn((opts: { target: any; set: any }) => {
+              const existing = rows.find((r) => r.roomId === val.roomId && r.userId === val.userId);
+              if (existing) {
+                // Upsert: update section and position, preserve assignedHue
+                existing.section = opts.set.section;
+                existing.position = opts.set.position;
+              } else {
+                rows.push({
+                  id: nextId++,
+                  roomId: val.roomId,
+                  userId: val.userId,
+                  section: val.section,
+                  position: val.position,
+                  assignedHue: null,
+                  createdAt: new Date(),
+                });
+              }
+            }),
+          })),
         })),
       };
       await fn(tx);
@@ -86,7 +111,6 @@ function createInMemoryDb() {
               const matching = rows
                 .filter((r) => r.roomId === roomId)
                 .sort((a, b) => {
-                  // Order by section asc ('players' < 'spectators'), then position asc
                   if (a.section < b.section) return -1;
                   if (a.section > b.section) return 1;
                   return a.position - b.position;
@@ -102,6 +126,7 @@ function createInMemoryDb() {
                     displayName: user.displayName,
                     section: r.section,
                     position: r.position,
+                    assignedHue: r.assignedHue,
                   };
                 });
               return Promise.resolve(matching);
@@ -111,16 +136,35 @@ function createInMemoryDb() {
       })),
     })),
 
+    // --- update().set().where() for setAssignedHue ---
+    update: jest.fn(() => ({
+      set: jest.fn((values: any) => ({
+        where: jest.fn(() => {
+          const roomId = db._txRoomId;
+          const userId = db._txSetHueUserId;
+          if (roomId != null && userId != null && values.assignedHue !== undefined) {
+            const row = rows.find((r) => r.roomId === roomId && r.userId === userId);
+            if (row) {
+              row.assignedHue = values.assignedHue;
+            }
+          }
+          return Promise.resolve();
+        }),
+      })),
+    })),
+
     _lastQueryRoomId: 0 as number,
     _txRoomId: null as number | null,
+    _txDeleteUserId: null as number | null,
+    _txSetHueUserId: null as number | null,
   } as any;
 
   return db;
 }
 
 /**
- * Wraps the repository so we can intercept calls and set the roomId context
- * for our in-memory DB simulation.
+ * Wraps the repository so we can intercept calls and set the roomId/userId
+ * context for our in-memory DB simulation.
  */
 function createTestRepo() {
   const db = createInMemoryDb();
@@ -133,12 +177,66 @@ function createTestRepo() {
     return originalFindByRoom(roomId);
   };
 
-  // Patch replaceRoster to set the roomId context for the transaction delete
-  const originalReplaceRoster = repo.replaceRoster.bind(repo);
+  // Patch replaceRoster — simulate upsert behavior directly since we
+  // can't evaluate Drizzle predicates in the mock.
   repo.replaceRoster = async (roomId: number, players: number[], spectators: number[]) => {
-    db._txRoomId = roomId;
-    await originalReplaceRoster(roomId, players, spectators);
-    db._txRoomId = null;
+    const newMemberIds = new Set([...players, ...spectators]);
+
+    // Remove members not in the new roster
+    const existingInRoom = db._rows().filter((r: RosterRow) => r.roomId === roomId);
+    for (const row of existingInRoom) {
+      if (!newMemberIds.has(row.userId)) {
+        const allRows = db._rows();
+        const idx = allRows.findIndex(
+          (r: RosterRow) => r.roomId === roomId && r.userId === row.userId,
+        );
+        if (idx !== -1) allRows.splice(idx, 1);
+      }
+    }
+
+    // Upsert each member — update section/position, preserve assignedHue
+    const values = [
+      ...players.map((userId: number, index: number) => ({
+        roomId,
+        userId,
+        section: 'players' as const,
+        position: index,
+      })),
+      ...spectators.map((userId: number, index: number) => ({
+        roomId,
+        userId,
+        section: 'spectators' as const,
+        position: index,
+      })),
+    ];
+
+    for (const val of values) {
+      const existing = db
+        ._rows()
+        .find((r: RosterRow) => r.roomId === val.roomId && r.userId === val.userId);
+      if (existing) {
+        existing.section = val.section;
+        existing.position = val.position;
+      } else {
+        db._rows().push({
+          id: Date.now() + Math.random(),
+          roomId: val.roomId,
+          userId: val.userId,
+          section: val.section,
+          position: val.position,
+          assignedHue: null,
+          createdAt: new Date(),
+        });
+      }
+    }
+  };
+
+  // Patch setAssignedHue to directly update the in-memory row
+  repo.setAssignedHue = async (roomId: number, userId: number, hue: number) => {
+    const row = db._rows().find((r: RosterRow) => r.roomId === roomId && r.userId === userId);
+    if (row) {
+      row.assignedHue = hue;
+    }
   };
 
   return { repo, db };
@@ -320,6 +418,48 @@ describe('Roster persistence round-trip', () => {
         expect(loadedSpectators.map((m: RosterMember) => m.userId)).toEqual(
           second.spectators.map((s) => s.userId),
         );
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  it('should preserve assignedHue for members that remain after replaceRoster', async () => {
+    await fc.assert(
+      fc.asyncProperty(arbRosterInput(), async ({ roomId, players, spectators }) => {
+        const allUsers = [...players, ...spectators];
+        if (allUsers.length === 0) return;
+
+        const { repo, db } = createTestRepo();
+        db._registerUsers(allUsers);
+
+        // Initial roster
+        await repo.replaceRoster(
+          roomId,
+          players.map((p) => p.userId),
+          spectators.map((s) => s.userId),
+        );
+
+        // Assign hues to all members
+        const hueMap = new Map<number, number>();
+        for (let i = 0; i < allUsers.length; i++) {
+          const hue = (i * 37) % 360;
+          hueMap.set(allUsers[i].userId, hue);
+          await repo.setAssignedHue(roomId, allUsers[i].userId, hue);
+        }
+
+        // Replace roster with the same members (possibly reordered sections)
+        // Swap players ↔ spectators to exercise section changes
+        await repo.replaceRoster(
+          roomId,
+          spectators.map((s) => s.userId),
+          players.map((p) => p.userId),
+        );
+
+        // All members should still have their assigned hues
+        const loaded = await repo.findByRoom(roomId);
+        for (const member of loaded) {
+          expect(member.assignedHue).toBe(hueMap.get(member.userId));
+        }
       }),
       { numRuns: 100 },
     );

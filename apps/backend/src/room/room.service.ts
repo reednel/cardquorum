@@ -506,24 +506,11 @@ export class RoomService {
       throw new ConflictException('Roster update must contain all current members');
     }
 
-    // Save existing assigned hues before replaceRoster wipes them
-    const existingHueMap = new Map<number, number | null>();
-    for (const member of currentMembers) {
-      existingHueMap.set(member.userId, member.assignedHue);
-    }
-
     await this.roomRosters.replaceRoster(roomId, players, spectators);
-
-    // Restore existing assigned hues that were wiped by replaceRoster
-    for (const [userId, hue] of existingHueMap) {
-      if (hue !== null) {
-        await this.roomRosters.setAssignedHue(roomId, userId, hue);
-      }
-    }
 
     // Assign hues to any players that don't have one yet
     for (const userId of players) {
-      const existingHue = existingHueMap.get(userId) ?? null;
+      const existingHue = currentMembers.find((m) => m.userId === userId)?.assignedHue ?? null;
 
       // Skip if the player already has an assigned hue
       if (existingHue !== null) {
