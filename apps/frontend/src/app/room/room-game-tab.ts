@@ -10,6 +10,8 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { FaIconComponent } from '@fortawesome/angular-fontawesome';
+import { faRepeat } from '@fortawesome/free-solid-svg-icons';
 import {
   ConfigFieldDef,
   FieldRegistry,
@@ -66,272 +68,271 @@ export function buildFieldEntries(
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-room-game-tab',
-  imports: [FormsModule],
+  imports: [FormsModule, FaIconComponent],
   template: `
-    <div
-      id="game-panel"
-      role="tabpanel"
-      aria-label="Game"
-      class="flex flex-1 flex-col overflow-y-auto p-4"
-    >
-      <!-- Game type -->
-      <label
-        for="game-type"
-        class="mb-1 block text-xs font-semibold uppercase tracking-wide text-text-secondary
-               dark:text-text-heading-dark"
-      >
-        Game
-      </label>
-      <select
-        id="game-type"
-        [ngModel]="selectedGame()"
-        (ngModelChange)="onGameChange($event)"
-        [disabled]="!isOwner() || formLocked()"
-        class="mb-4 w-full rounded-default border border-border-input bg-bg px-3 py-2 text-sm
-               disabled:cursor-not-allowed disabled:opacity-disabled
-               dark:border-border-input-dark dark:bg-surface-dark dark:text-white"
-      >
-        <option value="">— Select a game —</option>
-        @for (entry of gameEntries; track entry.key) {
-          <option [value]="entry.key">{{ entry.label }}</option>
-        }
-      </select>
-
-      <!-- Preset -->
-      @if (selectedGame()) {
+    <div id="game-panel" role="tabpanel" aria-label="Game" class="flex min-h-0 flex-1 flex-col">
+      <div class="flex-1 overflow-y-auto p-4">
+        <!-- Game type -->
         <label
-          for="preset"
+          for="game-type"
           class="mb-1 block text-xs font-semibold uppercase tracking-wide text-text-secondary
-                 dark:text-text-secondary-dark"
+               dark:text-text-heading-dark"
         >
-          Variant
+          Game
         </label>
         <select
-          id="preset"
-          [ngModel]="selectedPresetIndex()"
-          (ngModelChange)="onPresetChange($event)"
+          id="game-type"
+          [ngModel]="selectedGame()"
+          (ngModelChange)="onGameChange($event)"
           [disabled]="!isOwner() || formLocked()"
-          class="mb-1 w-full rounded-default border border-border-input bg-bg px-3 py-2 text-sm
-                 disabled:cursor-not-allowed disabled:opacity-disabled
-                 dark:border-border-input-dark dark:bg-surface-dark dark:text-white"
+          class="mb-4 w-full rounded-default border border-border-input bg-bg px-3 py-2 text-sm
+                disabled:opacity-disabled
+               dark:border-border-input-dark dark:bg-surface-dark dark:text-white"
         >
-          <option [value]="-1">— Select a variant —</option>
-          @for (preset of presets(); track $index) {
-            <option [value]="$index">{{ preset.label }}</option>
+          <option value="">— Select a game —</option>
+          @for (entry of gameEntries; track entry.key) {
+            <option [value]="entry.key">{{ entry.label }}</option>
           }
         </select>
-        @if (activePreset(); as preset) {
-          <p class="mb-3 text-xs text-text-secondary dark:text-text-secondary-dark">
-            {{ preset.description }}
-          </p>
-        }
-      }
 
-      <!-- Locked fields (read-only context) -->
-      @if (lockedFields().length > 0) {
-        <div
-          class="mb-4 rounded-default border border-border bg-surface p-3
+        <!-- Preset -->
+        @if (selectedGame()) {
+          <label
+            for="preset"
+            class="mb-1 block text-xs font-semibold uppercase tracking-wide text-text-secondary
+                 dark:text-text-secondary-dark"
+          >
+            Variant
+          </label>
+          <select
+            id="preset"
+            [ngModel]="selectedPresetIndex()"
+            (ngModelChange)="onPresetChange($event)"
+            [disabled]="!isOwner() || formLocked()"
+            class="mb-1 w-full rounded-default border border-border-input bg-bg px-3 py-2 text-sm
+                  disabled:opacity-disabled
+                 dark:border-border-input-dark dark:bg-surface-dark dark:text-white"
+          >
+            <option [value]="-1">— Select a variant —</option>
+            @for (preset of presets(); track $index) {
+              <option [value]="$index">{{ preset.label }}</option>
+            }
+          </select>
+          @if (activePreset(); as preset) {
+            <p class="mb-3 text-xs text-text-secondary dark:text-text-secondary-dark">
+              {{ preset.description }}
+            </p>
+          }
+        }
+
+        <!-- Locked fields (read-only context) -->
+        @if (lockedFields().length > 0) {
+          <div
+            class="mb-4 rounded-default border border-border bg-surface p-3
                     dark:border-border-dark dark:bg-surface-dark/50"
-        >
+          >
+            <h4
+              class="mb-2 text-xs font-semibold uppercase tracking-wide text-text-secondary
+                     dark:text-text-secondary-dark"
+            >
+              Fixed Rules
+            </h4>
+            <dl class="flex flex-col gap-1">
+              @for (entry of lockedFields(); track entry.key) {
+                <div class="flex items-center justify-between text-sm">
+                  <dt
+                    class="text-text-body dark:text-text-secondary-dark"
+                    [title]="entry.description"
+                  >
+                    {{ entry.displayName }}
+                  </dt>
+                  <dd class="font-medium text-text-heading dark:text-text-heading-dark">
+                    {{ displayValue(configValues()[entry.key]) }}
+                  </dd>
+                </div>
+              }
+            </dl>
+          </div>
+        }
+
+        <!-- Editable config fields -->
+        @if (editableFields().length > 0) {
           <h4
             class="mb-2 text-xs font-semibold uppercase tracking-wide text-text-secondary
-                     dark:text-text-secondary-dark"
-          >
-            Fixed Rules
-          </h4>
-          <dl class="flex flex-col gap-1">
-            @for (entry of lockedFields(); track entry.key) {
-              <div class="flex items-center justify-between text-sm">
-                <dt
-                  class="text-text-body dark:text-text-secondary-dark"
-                  [title]="entry.description"
-                >
-                  {{ entry.displayName }}
-                </dt>
-                <dd class="font-medium text-text-heading dark:text-text-heading-dark">
-                  {{ displayValue(configValues()[entry.key]) }}
-                </dd>
-              </div>
-            }
-          </dl>
-        </div>
-      }
-
-      <!-- Editable config fields -->
-      @if (editableFields().length > 0) {
-        <h4
-          class="mb-2 text-xs font-semibold uppercase tracking-wide text-text-secondary
                    dark:text-text-secondary-dark"
-        >
-          House Rules
-        </h4>
-        <div class="flex flex-col gap-3">
-          @for (field of editableFields(); track field.key) {
-            @switch (field.renderType) {
-              @case ('boolean') {
-                <label
-                  class="flex items-center justify-between text-sm text-text-body dark:text-text-body-dark"
-                >
-                  <span [title]="field.description">{{ field.displayName }}</span>
-                  <input
-                    type="checkbox"
-                    [ngModel]="configValues()[field.key]"
-                    (ngModelChange)="onFieldChange(field.key, $event)"
-                    [disabled]="!isOwner() || formLocked()"
-                    class="h-4 w-4 rounded border-border-input text-primary
+          >
+            House Rules
+          </h4>
+          <div class="flex flex-col gap-3">
+            @for (field of editableFields(); track field.key) {
+              @switch (field.renderType) {
+                @case ('boolean') {
+                  <label
+                    class="flex items-center justify-between text-sm text-text-body dark:text-text-body-dark"
+                  >
+                    <span [title]="field.description">{{ field.displayName }}</span>
+                    <input
+                      type="checkbox"
+                      [ngModel]="configValues()[field.key]"
+                      (ngModelChange)="onFieldChange(field.key, $event)"
+                      [disabled]="!isOwner() || formLocked()"
+                      class="h-4 w-4 rounded border-border-input text-primary
                            disabled:opacity-disabled
                            dark:border-border-input-dark"
-                  />
-                </label>
-              }
-              @case ('select') {
-                <div>
-                  <label
-                    [attr.for]="'field-' + field.key"
-                    [title]="field.description"
-                    class="mb-1 block text-sm text-text-body dark:text-text-body-dark"
-                  >
-                    {{ field.displayName }}
+                    />
                   </label>
-                  <select
-                    [id]="'field-' + field.key"
-                    [ngModel]="configValues()[field.key]"
-                    (ngModelChange)="onFieldChange(field.key, coerce($event))"
-                    [disabled]="!isOwner() || formLocked()"
-                    class="w-full rounded-default border border-border-input bg-bg px-3 py-1.5 text-sm
-                           disabled:cursor-not-allowed disabled:opacity-disabled
+                }
+                @case ('select') {
+                  <div>
+                    <label
+                      [attr.for]="'field-' + field.key"
+                      [title]="field.description"
+                      class="mb-1 block text-sm text-text-body dark:text-text-body-dark"
+                    >
+                      {{ field.displayName }}
+                    </label>
+                    <select
+                      [id]="'field-' + field.key"
+                      [ngModel]="configValues()[field.key]"
+                      (ngModelChange)="onFieldChange(field.key, coerce($event))"
+                      [disabled]="!isOwner() || formLocked()"
+                      class="w-full rounded-default border border-border-input bg-bg px-3 py-1.5 text-sm
+                            disabled:opacity-disabled
                            dark:border-border-input-dark dark:bg-surface-dark dark:text-white"
-                  >
-                    @for (opt of field.options; track opt) {
-                      <option [ngValue]="opt">{{ displayValue(opt) }}</option>
-                    }
-                  </select>
-                </div>
-              }
-              @case ('number') {
-                <div>
-                  <label
-                    [attr.for]="'field-' + field.key"
-                    [title]="field.description"
-                    class="mb-1 block text-sm text-text-body dark:text-text-body-dark"
-                  >
-                    {{ field.displayName }}
-                  </label>
-                  <input
-                    [id]="'field-' + field.key"
-                    type="number"
-                    [ngModel]="configValues()[field.key]"
-                    (ngModelChange)="onFieldChange(field.key, $event)"
-                    [disabled]="!isOwner() || formLocked()"
-                    class="w-full rounded-default border border-border-input bg-bg px-3 py-1.5 text-sm
-                           disabled:cursor-not-allowed disabled:opacity-disabled
-                           dark:border-border-input-dark dark:bg-surface-dark dark:text-white"
-                  />
-                </div>
-              }
-              @case ('nullable-number') {
-                <div>
-                  <label
-                    [attr.for]="'field-' + field.key"
-                    [title]="field.description"
-                    class="mb-1 block text-sm text-text-body dark:text-text-body-dark"
-                  >
-                    {{ field.displayName }}
-                  </label>
-                  <div class="flex items-center gap-2">
+                    >
+                      @for (opt of field.options; track opt) {
+                        <option [ngValue]="opt">{{ displayValue(opt) }}</option>
+                      }
+                    </select>
+                  </div>
+                }
+                @case ('number') {
+                  <div>
+                    <label
+                      [attr.for]="'field-' + field.key"
+                      [title]="field.description"
+                      class="mb-1 block text-sm text-text-body dark:text-text-body-dark"
+                    >
+                      {{ field.displayName }}
+                    </label>
                     <input
                       [id]="'field-' + field.key"
                       type="number"
-                      min="1"
-                      step="1"
                       [ngModel]="configValues()[field.key]"
                       (ngModelChange)="onFieldChange(field.key, $event)"
-                      [disabled]="!isOwner() || formLocked() || configValues()[field.key] === null"
-                      placeholder="∞"
-                      class="w-20 rounded-default border border-border-input bg-bg px-3 py-1.5 text-sm
-                             disabled:cursor-not-allowed disabled:opacity-disabled
-                             dark:border-border-input-dark dark:bg-surface-dark dark:text-white"
+                      [disabled]="!isOwner() || formLocked()"
+                      class="w-full rounded-default border border-border-input bg-bg px-3 py-1.5 text-sm
+                            disabled:opacity-disabled
+                           dark:border-border-input-dark dark:bg-surface-dark dark:text-white"
                     />
+                  </div>
+                }
+                @case ('nullable-number') {
+                  <div>
                     <label
-                      class="flex items-center gap-1.5 text-sm text-text-body dark:text-text-secondary-dark"
+                      [attr.for]="'field-' + field.key"
+                      [title]="field.description"
+                      class="mb-1 block text-sm text-text-body dark:text-text-body-dark"
                     >
+                      {{ field.displayName }}
+                    </label>
+                    <div class="flex items-center gap-2">
                       <input
-                        type="checkbox"
-                        [ngModel]="configValues()[field.key] === null"
-                        (ngModelChange)="onFieldChange(field.key, $event ? null : 1)"
-                        [disabled]="!isOwner() || formLocked()"
-                        class="h-4 w-4 rounded border-border-input text-primary
+                        [id]="'field-' + field.key"
+                        type="number"
+                        min="1"
+                        step="1"
+                        [ngModel]="configValues()[field.key]"
+                        (ngModelChange)="onFieldChange(field.key, $event)"
+                        [disabled]="
+                          !isOwner() || formLocked() || configValues()[field.key] === null
+                        "
+                        placeholder="∞"
+                        class="w-20 rounded-default border border-border-input bg-bg px-3 py-1.5 text-sm
+                              disabled:opacity-disabled
+                             dark:border-border-input-dark dark:bg-surface-dark dark:text-white"
+                      />
+                      <label
+                        class="flex items-center gap-1.5 text-sm text-text-body dark:text-text-secondary-dark"
+                      >
+                        <input
+                          type="checkbox"
+                          [ngModel]="configValues()[field.key] === null"
+                          (ngModelChange)="onFieldChange(field.key, $event ? null : 1)"
+                          [disabled]="!isOwner() || formLocked()"
+                          class="h-4 w-4 rounded border-border-input text-primary
                                disabled:opacity-disabled
                                dark:border-border-input-dark"
-                      />
-                      No Limit
-                    </label>
+                        />
+                        No Limit
+                      </label>
+                    </div>
                   </div>
-                </div>
+                }
               }
             }
-          }
-        </div>
-      }
-
-      <!-- Bottom actions -->
-      <div class="mt-auto pt-4">
-        <!-- Autostart checkbox -->
-        <label
-          data-testid="autostart-checkbox"
-          class="mb-3 flex items-center justify-between text-sm text-text-body dark:text-text-body-dark"
-        >
-          <span>Autostart Next Game</span>
-          <input
-            type="checkbox"
-            [ngModel]="autostart()"
-            (ngModelChange)="onAutostartChange($event)"
-            [disabled]="!isOwner()"
-            class="h-4 w-4 rounded border-border-input text-primary
-                   disabled:opacity-disabled
-                   dark:border-border-input-dark"
-          />
-        </label>
-
-        <!-- Start / Abort buttons -->
-        @if (isOwner()) {
-          @if (gameService.sessionId()) {
-            <button
-              data-testid="abort-game-btn"
-              (click)="onAbort()"
-              class="w-full rounded-default bg-danger px-4 py-2 text-sm font-medium text-white
-                     transition-colors hover:bg-danger-hover
-                     dark:bg-danger-dark dark:hover:bg-danger-dark-hover"
-            >
-              Abort Game
-            </button>
-          } @else {
-            @if (validationErrors().length > 0) {
-              <ul class="mb-3 list-none space-y-1">
-                @for (msg of validationErrors(); track msg) {
-                  <li
-                    data-testid="validation-message"
-                    class="text-xs text-danger dark:text-danger-light"
-                  >
-                    {{ msg }}
-                  </li>
-                }
-              </ul>
-            }
-            <button
-              data-testid="start-game-btn"
-              [disabled]="!canStart()"
-              (click)="onStart()"
-              class="w-full rounded-default bg-primary px-4 py-2 text-sm font-medium text-white
-                     transition-colors hover:bg-primary-hover
-                     disabled:cursor-not-allowed disabled:opacity-disabled
-                     dark:bg-primary-light dark:hover:bg-primary-light-hover"
-            >
-              Start Game
-            </button>
-          }
+          </div>
         }
       </div>
+
+      <!-- Bottom actions (owner only) -->
+      @if (isOwner()) {
+        <div class="border-t border-border p-4 pt-3 dark:border-border-dark">
+          @if (!gameService.sessionId() && validationErrors().length > 0) {
+            <ul class="mb-3 list-none space-y-1">
+              @for (msg of validationErrors(); track msg) {
+                <li
+                  data-testid="validation-message"
+                  class="text-xs text-danger dark:text-danger-light"
+                >
+                  {{ msg }}
+                </li>
+              }
+            </ul>
+          }
+          <div class="flex gap-2">
+            @if (gameService.sessionId()) {
+              <button
+                data-testid="abort-game-btn"
+                (click)="onAbort()"
+                class="min-w-0 flex-1 rounded-default bg-danger px-4 py-2 text-sm font-medium text-white
+                       transition-colors hover:bg-danger-hover
+                       dark:bg-danger-dark dark:hover:bg-danger-dark-hover"
+              >
+                Abort Game
+              </button>
+            } @else {
+              <button
+                data-testid="start-game-btn"
+                [disabled]="!canStart()"
+                (click)="onStart()"
+                class="min-w-0 flex-1 rounded-default bg-primary px-4 py-2 text-sm font-medium text-white
+                       transition-colors hover:bg-primary-hover
+                        disabled:opacity-disabled
+                       dark:bg-primary-light dark:hover:bg-primary-light-hover"
+              >
+                Start Game
+              </button>
+            }
+            <button
+              type="button"
+              data-testid="autostart-checkbox"
+              title="Autostart next game"
+              [attr.aria-label]="'Autostart next game'"
+              [attr.aria-pressed]="autostart()"
+              (click)="onAutostartChange(!autostart())"
+              [class]="
+                'flex aspect-square items-center justify-center rounded-default px-2 py-2 transition-colors ' +
+                (autostart()
+                  ? 'bg-primary text-white hover:bg-primary-hover dark:bg-primary-light dark:hover:bg-primary-light-hover'
+                  : 'bg-surface-raised text-text-secondary hover:text-text-body dark:bg-surface-raised-dark dark:text-text-secondary-dark dark:hover:text-text-body-dark')
+              "
+            >
+              <fa-icon [icon]="faRepeat" class="text-sm" />
+            </button>
+          </div>
+        </div>
+      }
     </div>
   `,
 })
@@ -340,6 +341,7 @@ export class RoomGameTab implements OnInit {
   readonly rosterPlayers = input<RosterMember[]>([]);
 
   protected readonly gameService = inject(GameService);
+  protected readonly faRepeat = faRepeat;
   private readonly roomContext = inject(RoomContextService);
   private readonly ws = inject(WebSocketService);
   private readonly destroyRef = inject(DestroyRef);

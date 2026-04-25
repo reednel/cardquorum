@@ -30,7 +30,7 @@ import { ChatService } from '../chat/chat.service';
           type="submit"
           [disabled]="!messageText()"
           class="rounded-default bg-primary px-3 py-2 text-sm font-semibold text-white
-                 transition-colors hover:bg-primary-hover disabled:cursor-not-allowed
+                 transition-colors hover:bg-primary-hover
                  disabled:bg-disabled disabled:text-disabled-text"
         >
           Send

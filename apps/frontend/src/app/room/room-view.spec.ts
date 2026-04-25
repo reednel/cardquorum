@@ -1,10 +1,12 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { ActivatedRoute, provideRouter, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { RoomResponse } from '@cardquorum/shared';
 import { AuthService } from '../auth/auth.service';
 import { ChatService } from '../chat/chat.service';
+import { ThemeService } from '../shell/theme.service';
 import { RoomContextService } from './room-context.service';
 import { RoomView } from './room-view';
 import { RoomService } from './room.service';
@@ -60,6 +62,10 @@ describe('RoomView', () => {
     user: signal({ userId: 10, username: 'alice', displayName: 'Alice' }),
   };
 
+  const mockThemeService = {
+    darkMode: signal(false),
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
     mockRoomContext.roomDeleted.set(null);
@@ -68,6 +74,7 @@ describe('RoomView', () => {
     await TestBed.configureTestingModule({
       imports: [RoomView],
       providers: [
+        provideNoopAnimations(),
         provideRouter([{ path: 'rooms', component: RoomView }]),
         {
           provide: ActivatedRoute,
@@ -77,6 +84,7 @@ describe('RoomView', () => {
         { provide: ChatService, useValue: mockChatService },
         { provide: RoomService, useValue: mockRoomService },
         { provide: AuthService, useValue: mockAuthService },
+        { provide: ThemeService, useValue: mockThemeService },
       ],
     }).compileComponents();
 
@@ -167,12 +175,17 @@ describe('RoomView — invalid room', () => {
     user: signal({ userId: 99, username: 'nobody', displayName: 'Nobody' }),
   };
 
+  const mockThemeService = {
+    darkMode: signal(false),
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
 
     await TestBed.configureTestingModule({
       imports: [RoomView],
       providers: [
+        provideNoopAnimations(),
         provideRouter([{ path: 'rooms', component: RoomView }]),
         {
           provide: ActivatedRoute,
@@ -182,6 +195,7 @@ describe('RoomView — invalid room', () => {
         { provide: ChatService, useValue: mockChatService },
         { provide: RoomService, useValue: mockRoomService },
         { provide: AuthService, useValue: mockAuthService },
+        { provide: ThemeService, useValue: mockThemeService },
       ],
     }).compileComponents();
 

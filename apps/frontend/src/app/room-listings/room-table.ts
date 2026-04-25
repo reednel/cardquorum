@@ -90,7 +90,7 @@ import { DetailsPopoverComponent } from './details-popover';
                   [class]="
                     'rounded-default px-3 py-1 text-xs font-medium ' +
                     (isRoomFull(room)
-                      ? 'bg-disabled text-disabled-text cursor-not-allowed dark:bg-surface-raised-dark dark:text-text-secondary'
+                      ? 'bg-disabled text-disabled-text dark:bg-surface-raised-dark dark:text-text-secondary'
                       : 'bg-primary text-white hover:bg-primary-hover')
                   "
                 >

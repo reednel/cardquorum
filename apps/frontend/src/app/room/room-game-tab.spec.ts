@@ -476,13 +476,11 @@ describe('RoomGameTab — form locking during active session', () => {
       el.querySelectorAll<HTMLInputElement>('input[type="checkbox"]'),
     );
     for (const cb of configCheckboxes) {
-      // Skip the autostart checkbox — it's inside a label with data-testid="autostart-checkbox"
-      if (cb.closest('[data-testid="autostart-checkbox"]')) continue;
       expect(cb.disabled).toBe(true);
     }
   });
 
-  it('keeps autostart checkbox enabled for owner during active session', async () => {
+  it('keeps autostart button enabled for owner during active session', async () => {
     await createWithPreset(true);
 
     // Activate a session
@@ -491,12 +489,11 @@ describe('RoomGameTab — form locking during active session', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    const autostartLabel = el.querySelector('[data-testid="autostart-checkbox"]');
-    const autostartInput = autostartLabel?.querySelector(
-      'input[type="checkbox"]',
-    ) as HTMLInputElement;
-    expect(autostartInput).toBeTruthy();
-    expect(autostartInput.disabled).toBe(false);
+    const autostartBtn = el.querySelector(
+      '[data-testid="autostart-checkbox"]',
+    ) as HTMLButtonElement;
+    expect(autostartBtn).toBeTruthy();
+    expect(autostartBtn.disabled).toBe(false);
   });
 
   it('re-enables form fields when session ends', async () => {
@@ -570,46 +567,43 @@ describe('RoomGameTab — Autostart checkbox', () => {
     fixture.detectChanges();
   }
 
-  it('renders autostart checkbox for owner', () => {
+  it('renders autostart button for owner', () => {
     createComponent(true);
 
-    const autostartLabel = el.querySelector('[data-testid="autostart-checkbox"]');
-    expect(autostartLabel).toBeTruthy();
-
-    const checkbox = autostartLabel?.querySelector('input[type="checkbox"]') as HTMLInputElement;
-    expect(checkbox).toBeTruthy();
-    expect(checkbox.disabled).toBe(false);
+    const autostartBtn = el.querySelector(
+      '[data-testid="autostart-checkbox"]',
+    ) as HTMLButtonElement;
+    expect(autostartBtn).toBeTruthy();
+    expect(autostartBtn.disabled).toBe(false);
   });
 
-  it('renders autostart checkbox as disabled for non-owner', async () => {
+  it('hides autostart button for non-owner', async () => {
     createComponent(false);
     await fixture.whenStable();
     fixture.detectChanges();
 
-    const autostartLabel = el.querySelector('[data-testid="autostart-checkbox"]');
-    expect(autostartLabel).toBeTruthy();
-
-    const checkbox = autostartLabel?.querySelector('input[type="checkbox"]') as HTMLInputElement;
-    expect(checkbox).toBeTruthy();
-    expect(checkbox.disabled).toBe(true);
+    const autostartBtn = el.querySelector('[data-testid="autostart-checkbox"]');
+    expect(autostartBtn).toBeFalsy();
   });
 
-  it('keeps autostart checkbox enabled for owner during active session', () => {
+  it('keeps autostart button enabled for owner during active session', () => {
     sessionIdSignal.set(99);
     createComponent(true);
 
-    const autostartLabel = el.querySelector('[data-testid="autostart-checkbox"]');
-    const checkbox = autostartLabel?.querySelector('input[type="checkbox"]') as HTMLInputElement;
-    expect(checkbox.disabled).toBe(false);
+    const autostartBtn = el.querySelector(
+      '[data-testid="autostart-checkbox"]',
+    ) as HTMLButtonElement;
+    expect(autostartBtn.disabled).toBe(false);
   });
 
   it('sends game-settings:update via WS when owner toggles autostart', () => {
     createComponent(true);
 
-    const autostartLabel = el.querySelector('[data-testid="autostart-checkbox"]');
-    const checkbox = autostartLabel?.querySelector('input[type="checkbox"]') as HTMLInputElement;
+    const autostartBtn = el.querySelector(
+      '[data-testid="autostart-checkbox"]',
+    ) as HTMLButtonElement;
 
-    checkbox.click();
+    autostartBtn.click();
     fixture.detectChanges();
 
     expect(mockWsService.send).toHaveBeenCalledWith(
@@ -716,10 +710,11 @@ describe('RoomGameTab — settings persistence via WebSocket', () => {
     const gameSelect = el.querySelector('#game-type') as HTMLSelectElement;
     expect(gameSelect.value).toBe('sheepshead');
 
-    // Verify autostart is checked
-    const autostartLabel = el.querySelector('[data-testid="autostart-checkbox"]');
-    const checkbox = autostartLabel?.querySelector('input[type="checkbox"]') as HTMLInputElement;
-    expect(checkbox.checked).toBe(true);
+    // Verify autostart is active
+    const autostartBtn = el.querySelector(
+      '[data-testid="autostart-checkbox"]',
+    ) as HTMLButtonElement;
+    expect(autostartBtn.getAttribute('aria-pressed')).toBe('true');
   });
 
   it('updates form from game-settings:updated broadcast', async () => {

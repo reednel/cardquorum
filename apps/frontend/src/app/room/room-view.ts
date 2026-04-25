@@ -1,3 +1,4 @@
+import { animate, style, transition, trigger } from '@angular/animations';
 import { TitleCasePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -14,6 +15,8 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Title } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
+import { FaIconComponent } from '@fortawesome/angular-fontawesome';
+import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 import { RoomResponse, WS_EVENT } from '@cardquorum/shared';
 import { AuthService } from '../auth/auth.service';
 import { ChatService } from '../chat/chat.service';
@@ -32,7 +35,16 @@ type RoomTab = 'chat' | 'members' | 'game';
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-room-view',
-  imports: [TitleCasePipe, RoomChatTab, RoomMembersTab, RoomGameTab, GameTable],
+  imports: [TitleCasePipe, FaIconComponent, RoomChatTab, RoomMembersTab, RoomGameTab, GameTable],
+  animations: [
+    trigger('slidePanel', [
+      transition(':enter', [
+        style({ transform: 'translateX(100%)' }),
+        animate('200ms ease-out', style({ transform: 'translateX(0)' })),
+      ]),
+      transition(':leave', [animate('150ms ease-in', style({ transform: 'translateX(100%)' }))]),
+    ]),
+  ],
   template: `
     <div class="flex h-full bg-bg text-text-heading dark:bg-bg-dark dark:text-white">
       <!-- Game area -->
@@ -54,41 +66,30 @@ type RoomTab = 'chat' | 'members' | 'game';
           data-testid="expand-panel-btn"
           (click)="panelOpen.set(true)"
           aria-label="Open side panel"
-          class="absolute right-0 top-1/2 z-10 -translate-y-1/2 rounded-l-md border border-r-0
-                 border-border bg-surface px-1 py-3 text-text-secondary shadow-md
+          class="absolute right-0 top-0 z-10 flex items-center rounded-bl-md border-b border-l
+                 border-border bg-surface px-1.5 py-2 text-text-secondary
                  transition-colors hover:bg-surface-raised hover:text-text-body
                  dark:border-border-dark dark:bg-surface-dark
                  dark:text-text-secondary-dark dark:hover:bg-surface-raised-dark
                  dark:hover:text-text-heading-dark"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-4 w-4"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            aria-hidden="true"
-          >
-            <path
-              fill-rule="evenodd"
-              d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-              clip-rule="evenodd"
-            />
-          </svg>
+          <fa-icon [icon]="faChevronLeft" class="text-xs" aria-hidden="true" />
         </button>
       }
 
       <!-- Right panel -->
       @if (panelOpen()) {
         <aside
+          @slidePanel
           class="flex w-80 shrink-0 flex-col border-l border-border bg-surface
                  dark:border-border-dark dark:bg-surface-dark"
         >
           <!-- Room header -->
           <div
-            class="flex items-center justify-between border-b border-border px-4 py-3
+            class="flex items-center justify-between border-b border-border px-2 py-2
                    dark:border-border-dark"
           >
-            <div class="flex min-w-0 items-center gap-1">
+            <div class="flex min-w-0 items-center gap-2">
               <button
                 data-testid="collapse-panel-btn"
                 (click)="panelOpen.set(false)"
@@ -98,19 +99,7 @@ type RoomTab = 'chat' | 'members' | 'game';
                        dark:text-text-secondary-dark dark:hover:bg-surface-raised-dark
                        dark:hover:text-text-heading-dark"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-4 w-4"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    fill-rule="evenodd"
-                    d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
+                <fa-icon [icon]="faChevronRight" class="text-xs" aria-hidden="true" />
               </button>
               <p
                 class="truncate text-sm font-semibold text-text-heading dark:text-white"
@@ -187,6 +176,9 @@ type RoomTab = 'chat' | 'members' | 'game';
   },
 })
 export class RoomView implements OnInit, OnDestroy {
+  protected readonly faChevronLeft = faChevronLeft;
+  protected readonly faChevronRight = faChevronRight;
+
   protected readonly chatService = inject(ChatService);
   protected readonly roomContext = inject(RoomContextService);
   protected readonly gameService = inject(GameService);

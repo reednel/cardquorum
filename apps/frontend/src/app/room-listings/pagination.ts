@@ -13,7 +13,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
         [class]="
           'rounded-default px-3 py-1.5 text-sm font-medium ' +
           (currentPage() === 1
-            ? 'bg-disabled text-disabled-text cursor-not-allowed dark:bg-surface-raised-dark dark:text-text-secondary'
+            ? 'bg-disabled text-disabled-text dark:bg-surface-raised-dark dark:text-text-secondary'
             : 'bg-surface-raised text-text-heading hover:bg-surface-raised/80 dark:bg-surface-dark dark:text-text-heading-dark dark:hover:bg-surface-dark/80')
         "
         aria-label="Go to previous page"
@@ -36,7 +36,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
         [class]="
           'rounded-default px-3 py-1.5 text-sm font-medium ' +
           (currentPage() === totalPages()
-            ? 'bg-disabled text-disabled-text cursor-not-allowed dark:bg-surface-raised-dark dark:text-text-secondary'
+            ? 'bg-disabled text-disabled-text dark:bg-surface-raised-dark dark:text-text-secondary'
             : 'bg-surface-raised text-text-heading hover:bg-surface-raised/80 dark:bg-surface-dark dark:text-text-heading-dark dark:hover:bg-surface-dark/80')
         "
         aria-label="Go to next page"

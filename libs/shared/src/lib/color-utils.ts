@@ -27,8 +27,8 @@ export function isValidPaletteHue(hue: number): boolean {
 
 /**
  * Build a CSS hsl() color string from a hue integer and theme.
- * S=75, L=33 for dark theme, L=66 for light theme.
+ * S=75, L=66 for dark theme (lighter for contrast), L=33 for light theme (darker for contrast).
  */
 export function hueToHsl(hue: number, theme: 'dark' | 'light'): string {
-  return `hsl(${hue}, 75%, ${theme === 'dark' ? 33 : 66}%)`;
+  return `hsl(${hue}, 75%, ${theme === 'dark' ? 66 : 33}%)`;
 }

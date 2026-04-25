@@ -5,6 +5,7 @@ import { of } from 'rxjs';
 import { RoomResponse, RosterMember } from '@cardquorum/shared';
 import { AuthService } from '../auth/auth.service';
 import { GameService } from '../game/game.service';
+import { ThemeService } from '../shell/theme.service';
 import { WebSocketService } from '../websocket.service';
 import { RoomContextService } from './room-context.service';
 import { RoomMembersTab } from './room-members-tab';
@@ -108,6 +109,10 @@ describe('RoomMembersTab', () => {
     }),
   };
 
+  const mockThemeService = {
+    darkMode: signal(false),
+  };
+
   function setup(opts: { userId?: number; room?: Partial<RoomResponse> } = {}) {
     const userId = opts.userId ?? OWNER_ID;
     userSignal.set({ userId, username: `user${userId}`, displayName: null });
@@ -137,6 +142,7 @@ describe('RoomMembersTab', () => {
         { provide: RoomService, useValue: mockRoomService },
         { provide: HttpClient, useValue: mockHttpClient },
         { provide: WebSocketService, useValue: mockWsService },
+        { provide: ThemeService, useValue: mockThemeService },
       ],
     }).compileComponents();
   });

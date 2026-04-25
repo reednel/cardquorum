@@ -18,6 +18,7 @@
     "*.ts": "eslint --fix"
   },
   "dependencies": {
+    "@angular/animations": "^21.1.6",
     "@angular/cdk": "~21.1.6",
     "@angular/common": "~21.1.0",
     "@angular/compiler": "~21.1.0",
@@ -28,6 +29,9 @@
     "@angular/router": "~21.1.0",
     "@fastify/cookie": "^11.0.2",
     "@fastify/helmet": "^13.0.2",
+    "@fortawesome/angular-fontawesome": "^4.0.0",
+    "@fortawesome/fontawesome-svg-core": "^7.2.0",
+    "@fortawesome/free-solid-svg-icons": "^7.2.0",
     "@nestjs/common": "^11.0.0",
     "@nestjs/config": "^4.0.3",
     "@nestjs/core": "^11.0.0",

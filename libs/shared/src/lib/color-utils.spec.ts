@@ -68,16 +68,16 @@ describe('isValidPaletteHue', () => {
 });
 
 describe('hueToHsl', () => {
-  it('returns dark theme string with L=33', () => {
-    expect(hueToHsl(200, 'dark')).toBe('hsl(200, 75%, 33%)');
+  it('returns dark theme string with L=66 for contrast against dark backgrounds', () => {
+    expect(hueToHsl(200, 'dark')).toBe('hsl(200, 75%, 66%)');
   });
 
-  it('returns light theme string with L=66', () => {
-    expect(hueToHsl(200, 'light')).toBe('hsl(200, 75%, 66%)');
+  it('returns light theme string with L=33 for contrast against light backgrounds', () => {
+    expect(hueToHsl(200, 'light')).toBe('hsl(200, 75%, 33%)');
   });
 
   it('handles hue 0', () => {
-    expect(hueToHsl(0, 'dark')).toBe('hsl(0, 75%, 33%)');
-    expect(hueToHsl(0, 'light')).toBe('hsl(0, 75%, 66%)');
+    expect(hueToHsl(0, 'dark')).toBe('hsl(0, 75%, 66%)');
+    expect(hueToHsl(0, 'light')).toBe('hsl(0, 75%, 33%)');
   });
 });

@@ -398,7 +398,7 @@ test.describe('Room Flows', () => {
 
       await page.getByRole('tab', { name: 'Members' }).click();
 
-      await expect(page.locator('[data-testid="roster-count"]')).toBeVisible();
+      await expect(page.locator('[data-testid="spectators-list"]')).toBeVisible();
     } finally {
       await context.close();
     }

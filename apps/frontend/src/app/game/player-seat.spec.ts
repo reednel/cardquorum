@@ -14,24 +14,24 @@ describe('PlayerSeat', () => {
     el = fixture.nativeElement;
   });
 
-  it('renders border-bottom when hue is present', () => {
+  it('applies border-color on the pill when hue is present', () => {
     fixture.componentRef.setInput('displayName', 'Alice');
     fixture.componentRef.setInput('hue', 200);
     fixture.detectChanges();
 
-    const nameSpan = el.querySelector<HTMLElement>('.truncate')!;
-    expect(nameSpan).toBeTruthy();
-    expect(nameSpan.style.borderBottom).toContain('2px solid');
+    const pill = el.querySelector<HTMLElement>('.seat-pill')!;
+    expect(pill).toBeTruthy();
+    expect(pill.style.borderColor).toContain('hsl(200');
   });
 
-  it('renders no border-bottom when hue is null', () => {
+  it('does not apply border-color when hue is null', () => {
     fixture.componentRef.setInput('displayName', 'Bob');
     fixture.componentRef.setInput('hue', null);
     fixture.detectChanges();
 
-    const nameSpan = el.querySelector<HTMLElement>('.truncate')!;
-    expect(nameSpan).toBeTruthy();
-    expect(nameSpan.style.borderBottom).toBe('');
+    const pill = el.querySelector<HTMLElement>('.seat-pill')!;
+    expect(pill).toBeTruthy();
+    expect(pill.style.borderColor).toBe('');
   });
 
   it('uses the provided hue in the border color', () => {
@@ -39,10 +39,8 @@ describe('PlayerSeat', () => {
     fixture.componentRef.setInput('hue', 120);
     fixture.detectChanges();
 
-    const nameSpan = el.querySelector<HTMLElement>('.truncate')!;
-    const border = nameSpan.style.borderBottom;
-    expect(border).toContain('2px solid');
-    expect(border).toContain('hsl(120');
+    const pill = el.querySelector<HTMLElement>('.seat-pill')!;
+    expect(pill.style.borderColor).toContain('hsl(120');
   });
 
   it('uses a different hue value when hue changes', () => {
@@ -50,8 +48,7 @@ describe('PlayerSeat', () => {
     fixture.componentRef.setInput('hue', 240);
     fixture.detectChanges();
 
-    const nameSpan = el.querySelector<HTMLElement>('.truncate')!;
-    const border = nameSpan.style.borderBottom;
-    expect(border).toContain('hsl(240');
+    const pill = el.querySelector<HTMLElement>('.seat-pill')!;
+    expect(pill.style.borderColor).toContain('hsl(240');
   });
 });

@@ -334,7 +334,7 @@ Two border modes:
 
 - **Default** — `1px solid var(--color-card-border)`. The color is defined in `theme.css` (`#d4d4d4` light, `#525252` dark). Provides visual separation when cards overlap.
 - **Selected** — `2px solid var(--color-primary-light)`. Applied when a card is in the selection set. Takes priority over the player halo.
-- **Player halo** — `2px solid hsl(hue 75% var(--card-halo-lightness))` using the player's color from `colorMap`. The thicker border replaces the default, so there's no doubling. Lightness adapts to dark mode via the `--card-halo-lightness` CSS variable (66% light, 33% dark).
+- **Player halo** — `2px solid hsl(hue, 75%, L%)` using the player's color from `colorMap`. The thicker border replaces the default, so there's no doubling. Lightness is resolved via the shared `hueToHsl()` utility (L=66% dark, L=33% light for contrast).
 
 Border priority: selected > player halo > default. The `cardBorderValue(card, index)` method resolves this.
 

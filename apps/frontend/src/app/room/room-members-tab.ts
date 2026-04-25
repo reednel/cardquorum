@@ -16,7 +16,10 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FaIconComponent } from '@fortawesome/angular-fontawesome';
+import { faCrown, faGripVertical, faRotate, faUser } from '@fortawesome/free-solid-svg-icons';
 import {
+  hueToHsl,
   RoomBanResponse,
   RoomInviteResponse,
   RoomResponse,
@@ -25,6 +28,7 @@ import {
 } from '@cardquorum/shared';
 import { AuthService } from '../auth/auth.service';
 import { GameService } from '../game/game.service';
+import { ThemeService } from '../shell/theme.service';
 import { OverflowAction, OverflowMenuComponent } from './overflow-menu';
 import { RoomContextService } from './room-context.service';
 import { RoomService } from './room.service';
@@ -38,40 +42,40 @@ import {
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-room-members-tab',
-  imports: [CdkDropList, CdkDrag, OverflowMenuComponent],
+  imports: [CdkDropList, CdkDrag, OverflowMenuComponent, FaIconComponent],
   template: `
     <div id="members-panel" role="tabpanel" aria-label="Members" class="flex-1 overflow-y-auto p-4">
-      <!-- Roster count -->
-      <p
-        class="mb-3 text-sm font-medium text-text-body dark:text-text-body-dark"
-        data-testid="roster-count"
-      >
-        Members: {{ rosterCount() }}
-      </p>
-
-      <!-- Rotate Players toggle (owner only) -->
-      @if (isOwner()) {
-        <label
-          class="mb-3 flex items-center gap-2 text-sm text-text-body dark:text-text-body-dark"
-          data-testid="rotate-toggle"
+      <!-- Players section header with rotate toggle -->
+      <div class="mb-2 flex items-center justify-between">
+        <h3
+          class="text-sm font-semibold uppercase tracking-wide text-text-secondary dark:text-text-secondary-dark"
+          data-testid="players-section"
         >
-          <input
-            type="checkbox"
-            [checked]="rosterService.rotatePlayers()"
-            (change)="onToggleRotate($event)"
-            class="h-4 w-4 rounded border-border-input text-primary"
-          />
-          Rotate Players
-        </label>
-      }
-
-      <!-- Players section -->
-      <h3
-        class="mb-2 text-sm font-semibold uppercase tracking-wide text-text-secondary dark:text-text-secondary-dark"
-        data-testid="players-section"
-      >
-        Players ({{ rosterService.players().length }})
-      </h3>
+          Players ({{ rosterService.players().length }})
+        </h3>
+        @if (isOwner()) {
+          <button
+            type="button"
+            [title]="
+              rosterService.rotatePlayers() ? 'Disable player rotation' : 'Enable player rotation'
+            "
+            [attr.aria-label]="
+              rosterService.rotatePlayers() ? 'Disable player rotation' : 'Enable player rotation'
+            "
+            [attr.aria-pressed]="rosterService.rotatePlayers()"
+            (click)="onToggleRotate()"
+            data-testid="rotate-toggle"
+            [class]="
+              'rounded p-0.5 transition-colors ' +
+              (rosterService.rotatePlayers()
+                ? 'text-primary dark:text-primary-light-text'
+                : 'text-text-secondary dark:text-text-secondary-dark hover:text-text-body dark:hover:text-text-body-dark')
+            "
+          >
+            <fa-icon [icon]="faRotate" class="text-sm" />
+          </button>
+        }
+      </div>
       <ul
         cdkDropList
         #playersList="cdkDropList"
@@ -80,24 +84,54 @@ import {
         [cdkDropListDisabled]="!dragEnabled()"
         (cdkDropListDropped)="onDrop($event)"
         data-testid="players-list"
-        class="mb-4 flex min-h-8 flex-col gap-1"
+        class="mb-4 flex min-h-8 flex-col gap-0.5"
       >
         @for (member of rosterService.players(); track member.userId) {
           <li
             cdkDrag
             [cdkDragData]="member"
-            class="flex items-center justify-between rounded px-1 py-0.5 text-sm text-text-body dark:text-text-body-dark"
+            [class]="
+              'group flex items-center justify-between rounded px-1 py-1 text-sm text-text-body dark:text-text-body-dark' +
+              (dragEnabled()
+                ? ' cursor-grab hover:bg-surface-raised dark:hover:bg-surface-raised-dark'
+                : '')
+            "
           >
             <span class="flex items-center gap-2">
-              <span
-                [class]="
-                  'inline-block h-2 w-2 shrink-0 rounded-full ' + statusDotClass(member.userId)
-                "
-                [title]="statusTooltip(member.userId)"
-                [attr.aria-label]="statusTooltip(member.userId)"
-                role="img"
-                [attr.data-testid]="'status-dot-' + member.userId"
-              ></span>
+              @if (dragEnabled()) {
+                <fa-icon
+                  [icon]="faGripVertical"
+                  class="shrink-0 text-xs text-text-secondary opacity-0 transition-opacity group-hover:opacity-100 dark:text-text-secondary-dark"
+                  aria-hidden="true"
+                />
+              }
+              <span class="relative shrink-0">
+                @if (member.userId === room().ownerId) {
+                  <fa-icon
+                    [icon]="faCrown"
+                    class="text-sm"
+                    [style.color]="memberIconColor(member)"
+                    aria-hidden="true"
+                  />
+                } @else {
+                  <fa-icon
+                    [icon]="faUser"
+                    class="text-sm"
+                    [style.color]="memberIconColor(member)"
+                    aria-hidden="true"
+                  />
+                }
+                <span
+                  [class]="
+                    'absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border border-white dark:border-bg-dark ' +
+                    statusDotClass(member.userId)
+                  "
+                  [title]="statusTooltip(member.userId)"
+                  [attr.aria-label]="statusTooltip(member.userId)"
+                  role="img"
+                  [attr.data-testid]="'status-dot-' + member.userId"
+                ></span>
+              </span>
               {{ member.displayName ?? member.username }}
             </span>
             @if (isOwner() && member.userId !== room().ownerId) {
@@ -122,24 +156,54 @@ import {
         [cdkDropListDisabled]="!dragEnabled()"
         (cdkDropListDropped)="onDrop($event)"
         data-testid="spectators-list"
-        class="mb-4 flex min-h-8 flex-col gap-1"
+        class="mb-4 flex min-h-8 flex-col gap-0.5"
       >
         @for (member of rosterService.spectators(); track member.userId) {
           <li
             cdkDrag
             [cdkDragData]="member"
-            class="flex items-center justify-between rounded px-1 py-0.5 text-sm text-text-body dark:text-text-body-dark"
+            [class]="
+              'group flex items-center justify-between rounded px-1 py-1 text-sm text-text-body dark:text-text-body-dark' +
+              (dragEnabled()
+                ? ' cursor-grab hover:bg-surface-raised dark:hover:bg-surface-raised-dark'
+                : '')
+            "
           >
             <span class="flex items-center gap-2">
-              <span
-                [class]="
-                  'inline-block h-2 w-2 shrink-0 rounded-full ' + statusDotClass(member.userId)
-                "
-                [title]="statusTooltip(member.userId)"
-                [attr.aria-label]="statusTooltip(member.userId)"
-                role="img"
-                [attr.data-testid]="'status-dot-' + member.userId"
-              ></span>
+              @if (dragEnabled()) {
+                <fa-icon
+                  [icon]="faGripVertical"
+                  class="shrink-0 text-xs text-text-secondary opacity-0 transition-opacity group-hover:opacity-100 dark:text-text-secondary-dark"
+                  aria-hidden="true"
+                />
+              }
+              <span class="relative shrink-0">
+                @if (member.userId === room().ownerId) {
+                  <fa-icon
+                    [icon]="faCrown"
+                    class="text-sm"
+                    [style.color]="memberIconColor(member)"
+                    aria-hidden="true"
+                  />
+                } @else {
+                  <fa-icon
+                    [icon]="faUser"
+                    class="text-sm"
+                    [style.color]="memberIconColor(member)"
+                    aria-hidden="true"
+                  />
+                }
+                <span
+                  [class]="
+                    'absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border border-white dark:border-bg-dark ' +
+                    statusDotClass(member.userId)
+                  "
+                  [title]="statusTooltip(member.userId)"
+                  [attr.aria-label]="statusTooltip(member.userId)"
+                  role="img"
+                  [attr.data-testid]="'status-dot-' + member.userId"
+                ></span>
+              </span>
               {{ member.displayName ?? member.username }}
             </span>
             @if (isOwner() && member.userId !== room().ownerId) {
@@ -157,19 +221,22 @@ import {
         >
           Invited ({{ invitedList().length }})
         </h3>
-        <ul class="mb-4 flex flex-col gap-1">
+        <ul class="mb-4 flex flex-col gap-0.5">
           @for (inv of invitedList(); track inv.userId) {
             <li
-              class="flex items-center justify-between text-sm text-text-secondary dark:text-text-secondary-dark"
+              class="flex items-center justify-between rounded px-1 py-1 text-sm text-text-secondary dark:text-text-secondary-dark"
             >
               <span class="flex items-center gap-2">
-                <span
-                  class="inline-block h-2 w-2 shrink-0 rounded-full bg-border-input dark:bg-border-input-dark"
-                  title="Not in room"
-                  aria-label="Not in room"
-                  role="img"
-                  [attr.data-testid]="'status-dot-' + inv.userId"
-                ></span>
+                <span class="relative shrink-0">
+                  <fa-icon [icon]="faUser" class="text-sm text-disabled" aria-hidden="true" />
+                  <span
+                    class="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border border-white bg-border-input dark:border-bg-dark dark:bg-border-input-dark"
+                    title="Not in room"
+                    aria-label="Not in room"
+                    role="img"
+                    [attr.data-testid]="'status-dot-' + inv.userId"
+                  ></span>
+                </span>
                 {{ inv.displayName ?? inv.username }}
               </span>
               @if (isOwner()) {
@@ -267,6 +334,7 @@ export class RoomMembersTab {
   private readonly auth = inject(AuthService);
   private readonly roomService = inject(RoomService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly themeService = inject(ThemeService);
 
   protected readonly invites = signal<RoomInviteResponse[]>([]);
   protected readonly bans = signal<RoomBanResponse[]>([]);
@@ -295,6 +363,11 @@ export class RoomMembersTab {
 
   protected readonly dragEnabled = computed(() => this.isOwner() && !this.gameService.sessionId());
 
+  protected readonly faRotate = faRotate;
+  protected readonly faGripVertical = faGripVertical;
+  protected readonly faCrown = faCrown;
+  protected readonly faUser = faUser;
+
   loadData(): void {
     if (this.isOwner()) {
       this.loadInvites();
@@ -302,6 +375,13 @@ export class RoomMembersTab {
     } else if (this.room().visibility === 'invite-only') {
       this.loadInvites();
     }
+  }
+
+  protected memberIconColor(member: RosterMember): string {
+    if (member.assignedHue === null) {
+      return this.themeService.darkMode() ? '#a3a3a3' : '#737373';
+    }
+    return hueToHsl(member.assignedHue, this.themeService.darkMode() ? 'dark' : 'light');
   }
 
   protected statusDotClass(userId: number): string {
@@ -316,7 +396,7 @@ export class RoomMembersTab {
   protected rosterMemberActions(userId: number): OverflowAction[] {
     return [
       { label: 'Kick', handler: () => this.onKick(userId) },
-      { label: 'Ban', handler: () => this.onBan(userId) },
+      { label: 'Ban', variant: 'danger', handler: () => this.onBan(userId) },
     ];
   }
 
@@ -341,8 +421,8 @@ export class RoomMembersTab {
     this.rosterService.reorderRoster(this.room().id, playerIds, spectatorIds).subscribe();
   }
 
-  protected onToggleRotate(event: Event): void {
-    const enabled = (event.target as HTMLInputElement).checked;
+  protected onToggleRotate(): void {
+    const enabled = !this.rosterService.rotatePlayers();
     this.rosterService.toggleRotate(this.room().id, enabled).subscribe();
   }
 
