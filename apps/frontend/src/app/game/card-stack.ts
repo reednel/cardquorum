@@ -49,12 +49,31 @@ interface DragState {
   },
   styles: `
     :host(.stack-highlighted) .card-stack-container {
-      box-shadow: 0 0 8px 2px var(--color-primary-light);
-      border: 2px solid var(--color-primary-light);
-      border-radius: 8px;
-      transition:
-        box-shadow 0.2s ease,
-        border-color 0.2s ease;
+      filter: drop-shadow(0 0 4px var(--color-primary-light))
+        drop-shadow(0 0 8px var(--color-primary-light));
+      animation: target-glow 1.6s ease-in-out infinite;
+      cursor: pointer;
+    }
+    :host(.stack-highlighted) .card-stack-container button {
+      cursor: pointer;
+    }
+    @keyframes target-glow {
+      0%,
+      100% {
+        filter: drop-shadow(0 0 4px var(--color-primary-light))
+          drop-shadow(0 0 8px var(--color-primary-light));
+      }
+      50% {
+        filter: drop-shadow(0 0 6px var(--color-primary-light))
+          drop-shadow(0 0 14px var(--color-primary-light));
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      :host(.stack-highlighted) .card-stack-container {
+        animation: none;
+        filter: drop-shadow(0 0 5px var(--color-primary-light))
+          drop-shadow(0 0 10px var(--color-primary-light));
+      }
     }
     /* Hide CDK's placeholder for the dragged card during multi-drag */
     .cdk-drag-placeholder {
@@ -69,7 +88,7 @@ interface DragState {
     @if (cards().length === 0) {
       <div
         data-testid="card-stack-placeholder"
-        class="card-stack-container border-2 border-dashed border-neutral-300 dark:border-neutral-600 rounded-md"
+        class="card-stack-container border-2 border-dashed border-text-secondary dark:border-text-secondary-dark rounded-md"
         [class.droppable]="droppable()"
         [style.width.px]="resolvedWidth()"
         [style.height.px]="resolvedHeight()"
@@ -159,8 +178,8 @@ interface DragState {
                   ) {
                     <div
                       class="absolute overflow-hidden"
-                      [style.top.px]="(j + 1) * -8"
-                      [style.left.px]="(j + 1) * 8"
+                      [style.top.px]="(j + 1) * 10"
+                      [style.left.px]="(j + 1) * 10"
                       [style.z-index]="-j - 1"
                       [style.width.px]="resolvedWidth()"
                       [style.height.px]="resolvedHeight()"

@@ -5,14 +5,14 @@
 
 @theme {
   /* --- Primary Palette --- */
-  --color-primary: #4f46e5; /* buttons, links, active tabs */
-  --color-primary-hover: #4338ca;
-  --color-primary-light: #6366f1; /* dark-mode buttons, focus rings */
-  --color-primary-light-text: #818cf8; /* dark-mode links / text */
-  --color-primary-surface: #e0e7ff; /* chip / tag bg */
-  --color-primary-surface-dark: #6366f11a; /* dark chip bg */
-  --color-primary-on-surface: #3730a3; /* chip text */
-  --color-primary-on-surface-dark: #a5b4fc; /* dark chip text */
+  --color-primary: #527a2e; /* buttons, links, active tabs */
+  --color-primary-hover: #436524;
+  --color-primary-light: #6a9b3e; /* dark-mode buttons, focus rings */
+  --color-primary-light-text: #8dbe5e; /* dark-mode links / text */
+  --color-primary-surface: #e6f0d8; /* chip / tag bg */
+  --color-primary-surface-dark: #6a9b3e1a; /* dark chip bg */
+  --color-primary-on-surface: #365220; /* chip text */
+  --color-primary-on-surface-dark: #a4d174; /* dark chip text */
 
   /* --- Neutral Palette --- */
   --color-bg: #eeeeee; /* page / card backgrounds */
@@ -51,28 +51,6 @@
   --color-success-surface: #f0fdf4; /* ghost-button hover */
   --color-success-surface-dark: #16a34a1a; /* dark ghost hover */
 
-  /* --- Accent Palette --- */
-  --color-accent-blitz: #9333ea; /* blitz button bg */
-  --color-accent-blitz-hover: #7e22ce;
-  --color-accent-blitz-ring: #a855f7;
-  --color-accent-dealer: #f59e0b; /* dealer chip */
-  --color-game-felt: #548948; /* card table surface */
-  --color-game-felt-dark: #294323; /* card table surface */
-
-  /* --- Visibility Tag Palette --- */
-  --color-vis-public: #dcfce7;
-  --color-vis-public-text: #166534;
-  --color-vis-public-dark: #16a34a1a;
-  --color-vis-public-text-dark: #4ade80;
-  --color-vis-friends: #dbeafe;
-  --color-vis-friends-text: #1e40af;
-  --color-vis-friends-dark: #3b82f61a;
-  --color-vis-friends-text-dark: #60a5fa;
-  --color-vis-invite: #fef3c7;
-  --color-vis-invite-text: #92400e;
-  --color-vis-invite-dark: #f59e0b1a;
-  --color-vis-invite-text-dark: #fbbf24;
-
   /* --- Border Radius --- */
   --radius-default: 0.375rem;
   --radius-lg: 0.5rem;
@@ -81,7 +59,11 @@
   /* --- Opacity --- */
   --opacity-disabled: 60%;
 
-  /* --- Card Color Tokens --- */
+  /* --- Game Palette --- */
+  --color-game-felt: #daebcb; /* card table surface */
+  --color-game-felt-dark: #17240f; /* card table surface */
+
+  /* --- Card Color --- */
   --color-card-bg: #ffffff;
   --color-card-border: #d4d4d4;
   --card-halo-lightness: 33%;

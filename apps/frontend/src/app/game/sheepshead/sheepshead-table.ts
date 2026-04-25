@@ -188,7 +188,7 @@ const CALL_OPTIONS: { value: string; label: string }[] = [
               <button
                 data-testid="recrack-btn"
                 (click)="onAction({ type: 're_crack' })"
-                class="rounded-lg bg-danger-hover px-5 py-2 text-sm font-medium text-white hover:bg-danger-dark-hover"
+                class="rounded-lg bg-danger px-5 py-2 text-sm font-medium text-white hover:bg-danger-hover"
               >
                 Re-crack
               </button>
@@ -197,7 +197,7 @@ const CALL_OPTIONS: { value: string; label: string }[] = [
               <button
                 data-testid="blitz-btn"
                 (click)="onAction({ type: 'blitz', payload: { blitzType: 'black-blitz' } })"
-                class="rounded-lg bg-accent-blitz px-5 py-2 text-sm font-medium text-white hover:bg-accent-blitz-hover"
+                class="rounded-lg bg-danger px-5 py-2 text-sm font-medium text-white hover:bg-danger-hover"
               >
                 Blitz
               </button>
