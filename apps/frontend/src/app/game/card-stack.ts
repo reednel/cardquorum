@@ -21,6 +21,8 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { hueToHsl } from '@cardquorum/shared';
+import { ThemeService } from '../shell/theme.service';
 import { CardRenderer } from './card-renderer';
 import {
   computeBiasedPosition,
@@ -242,6 +244,7 @@ export class CardStack {
   private readonly elRef = inject(ElementRef);
   private readonly destroyRef = inject(DestroyRef);
   private readonly interactionController = inject(InteractionController, { optional: true });
+  private readonly themeService = inject(ThemeService);
 
   /** Reference to this component's CdkDropList */
   private readonly dropListRef = viewChild<CdkDropList>('dropList');
@@ -610,7 +613,7 @@ export class CardStack {
     if (map[playerID] === undefined) return '';
 
     const hue = map[playerID];
-    return `hsl(${hue} 75% var(--card-halo-lightness))`;
+    return hueToHsl(hue, this.themeService.darkMode() ? 'dark' : 'light');
   }
 
   // ── Legal / Selected helpers ──

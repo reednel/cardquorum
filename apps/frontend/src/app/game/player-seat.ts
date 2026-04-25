@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { hueToHsl } from '@cardquorum/shared';
+import { ThemeService } from '../shell/theme.service';
 import { CardStack } from './card-stack';
 
 @Component({
@@ -60,6 +62,8 @@ export class PlayerSeat {
   readonly isActive = input(false);
   readonly hue = input<number | null>(null);
 
+  private readonly themeService = inject(ThemeService);
+
   protected readonly cardBacks = computed(() => {
     const count = Math.min(this.handSize(), 10);
     return Array.from({ length: count }, () => null) as (string | null)[];
@@ -69,6 +73,6 @@ export class PlayerSeat {
   protected readonly hueColor = computed(() => {
     const h = this.hue();
     if (h === null) return '';
-    return `hsl(${h} 75% var(--card-halo-lightness))`;
+    return hueToHsl(h, this.themeService.darkMode() ? 'dark' : 'light');
   });
 }

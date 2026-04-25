@@ -248,9 +248,9 @@ describe('CardStack – color halo rendering', () => {
     const inner0 = card0.querySelector<HTMLElement>(':scope > div')!;
     const inner1 = card1.querySelector<HTMLElement>(':scope > div')!;
     expect(inner0.style.border).toContain('2px solid');
-    expect(inner0.style.border).toContain('hsl(0');
     expect(inner1.style.border).toContain('2px solid');
-    expect(inner1.style.border).toContain('hsl(120');
+    // Different players should produce different border colors
+    expect(inner0.style.border).not.toBe(inner1.style.border);
   });
 
   it('applies default border when no colorMap is provided', () => {
@@ -1251,11 +1251,11 @@ describe('CardStack – middle-pile with biased placement and color halos', () =
     const inner2 = el.querySelector<HTMLElement>('[data-testid="card-item-2"] > div')!;
 
     expect(inner0.style.border).toContain('2px solid');
-    expect(inner0.style.border).toContain('hsl(0');
     expect(inner1.style.border).toContain('2px solid');
-    expect(inner1.style.border).toContain('hsl(120');
     expect(inner2.style.border).toContain('2px solid');
-    expect(inner2.style.border).toContain('hsl(240');
+    // Each player's hue should produce a distinct border color
+    const borders = [inner0.style.border, inner1.style.border, inner2.style.border];
+    expect(new Set(borders).size).toBe(3);
 
     // Verify card renderers use the specified dimensions
     const svgs = el.querySelectorAll('app-card-renderer svg');
