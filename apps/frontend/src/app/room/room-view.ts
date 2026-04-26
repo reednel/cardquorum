@@ -67,8 +67,8 @@ type RoomTab = 'chat' | 'members' | 'game';
           data-testid="expand-panel-btn"
           (click)="panelOpen.set(true)"
           aria-label="Open side panel"
-          class="absolute right-0 top-0 z-10 flex items-center rounded-bl-md border-b border-l
-                 border-border bg-surface px-1.5 py-2 text-text-secondary
+          class="absolute right-0 top-0 z-10 flex h-(--height-panel-header) items-center border-b border-l
+                 border-border bg-surface px-1.5 text-text-secondary
                  transition-colors hover:bg-surface-raised hover:text-text-body
                  dark:border-border-dark dark:bg-surface-dark
                  dark:text-text-secondary-dark dark:hover:bg-surface-raised-dark
@@ -87,23 +87,24 @@ type RoomTab = 'chat' | 'members' | 'game';
         >
           <!-- Room header -->
           <div
-            class="flex items-center justify-between border-b border-border px-2 py-2
+            class="flex h-(--height-panel-header) items-center justify-between border-b border-border
                    dark:border-border-dark"
           >
-            <div class="flex min-w-0 items-center gap-2">
+            <div class="flex min-w-0 items-center">
               <button
                 data-testid="collapse-panel-btn"
                 (click)="panelOpen.set(false)"
                 aria-label="Collapse side panel"
-                class="shrink-0 rounded-default p-1 text-text-secondary transition-colors
+                class="flex h-(--height-panel-header) shrink-0 items-center border-r border-border
+                       px-2 text-text-secondary transition-colors
                        hover:bg-surface-raised hover:text-text-body
-                       dark:text-text-secondary-dark dark:hover:bg-surface-raised-dark
-                       dark:hover:text-text-heading-dark"
+                       dark:border-border-dark dark:text-text-secondary-dark
+                       dark:hover:bg-surface-raised-dark dark:hover:text-text-heading-dark"
               >
                 <fa-icon [icon]="faChevronRight" class="text-xs" aria-hidden="true" />
               </button>
               <p
-                class="truncate text-sm font-semibold text-text-heading dark:text-white"
+                class="truncate px-2 text-sm font-semibold text-text-heading dark:text-white"
                 [title]="roomName()"
               >
                 {{ roomName() }}

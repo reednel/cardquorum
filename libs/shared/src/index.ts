@@ -80,7 +80,8 @@ export type {
   CardAsset,
   SeatInfo,
   TrickPlayView,
-  StatusInfo,
+  StatusItem,
+  StatusBarConfig,
   GameTablePlugin,
 } from './lib/game-table-types';
 export {

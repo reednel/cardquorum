@@ -3,7 +3,7 @@ import type {
   ColorAssignmentMap,
   GameTablePlugin,
   SeatInfo,
-  StatusInfo,
+  StatusBarConfig,
   UserIdentity,
 } from '@cardquorum/shared';
 import { GameStatusBar } from './game-status-bar';
@@ -15,7 +15,7 @@ import { PlayerSeat } from './player-seat';
   imports: [PlayerSeat, GameStatusBar],
   template: `
     <div class="flex h-full flex-col">
-      <app-game-status-bar [status]="statusInfo()" />
+      <app-game-status-bar [config]="statusInfo()" />
 
       <!-- Table surface -->
       <div class="relative flex-1 overflow-hidden bg-game-felt dark:bg-game-felt-dark">
@@ -62,6 +62,7 @@ export class GameTableShell {
   readonly myUserID = input.required<number>();
   readonly members = input.required<UserIdentity[]>();
   readonly colorMap = input<ColorAssignmentMap | undefined>(undefined);
+  readonly config = input<unknown>(null);
 
   /**
    * Accumulates member identities so that players who leave mid-game
@@ -80,8 +81,8 @@ export class GameTableShell {
     this.plugin().getPlayerSeats(this.state(), this.myUserID()),
   );
 
-  protected readonly statusInfo = computed<StatusInfo>(() =>
-    this.plugin().getStatusInfo(this.state()),
+  protected readonly statusInfo = computed<StatusBarConfig>(() =>
+    this.plugin().getStatusInfo(this.state(), this.myUserID(), this.config()),
   );
 
   /** Compute percentage positions around an arc for each opponent seat. */

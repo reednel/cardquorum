@@ -27,8 +27,4 @@ body {
   summary {
     cursor: pointer;
   }
-  button:disabled,
-  [aria-disabled='true'] {
-    cursor: not-allowed;
-  }
 }

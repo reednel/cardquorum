@@ -26,11 +26,21 @@ export interface TrickPlayView {
   cardName: string;
 }
 
-/** Display-friendly game status info. */
-export interface StatusInfo {
-  phaseLabel: string;
-  trickNumber: number;
-  totalTricks: number;
+/** A single item rendered in the game status bar. */
+export type StatusItem =
+  | { type: 'text'; key: string; label: string; variant?: 'default' | 'muted' }
+  | {
+      type: 'badge';
+      key: string;
+      label: string;
+      color: 'red' | 'yellow' | 'green' | 'blue' | 'purple' | 'pink' | 'dark';
+    }
+  | { type: 'separator' };
+
+/** Configuration returned by a plugin to drive the status bar. */
+export interface StatusBarConfig {
+  items: StatusItem[];
+  barVariant?: 'default' | 'active-turn' | 'urgent';
 }
 
 /**
@@ -61,8 +71,8 @@ export interface GameTablePlugin<TState = unknown, TEvent = unknown> {
   /** Extract seat info for all OTHER players (not the local player). */
   getPlayerSeats(state: TState, myUserID: number): SeatInfo[];
 
-  /** Get display-friendly game status info. */
-  getStatusInfo(state: TState): StatusInfo;
+  /** Get status bar configuration for the current state. */
+  getStatusInfo(state: TState, myUserID: number, config: unknown): StatusBarConfig;
 
   /** Get the local player's hand as card name strings. */
   getMyHand(state: TState, myUserID: number): string[];

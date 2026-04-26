@@ -156,16 +156,91 @@ describe('SheepsheadTablePlugin', () => {
   });
 
   describe('getStatusInfo', () => {
-    it('returns phase label and trick info', () => {
+    const gameConfig = { handSize: 6 };
+
+    it('returns phase label and trick count from config handSize', () => {
       const state: any = {
         phase: 'play',
         trickNumber: 3,
+        activePlayer: 1,
+        crack: null,
+        blitz: null,
         players: [{ hand: [{ name: 'a' }, { name: 'b' }, { name: 'c' }, { name: 'd' }] }],
       };
-      const info = SheepsheadTablePlugin.getStatusInfo(state);
-      expect(info.phaseLabel).toBe('Play');
-      expect(info.trickNumber).toBe(3);
-      expect(info.totalTricks).toBe(4);
+      const result = SheepsheadTablePlugin.getStatusInfo(state, 1, gameConfig);
+      const labels = result.items.filter((i) => 'label' in i).map((i) => (i as any).label);
+      expect(labels).toContain('Play');
+      expect(labels).toContain('Trick 3 / 6');
+    });
+
+    it('includes crack badge when cracked', () => {
+      const state: any = {
+        phase: 'play',
+        trickNumber: 1,
+        activePlayer: 2,
+        crack: { crackedBy: 2, reCrackedBy: null },
+        blitz: null,
+        players: [{ hand: [{ name: 'a' }] }],
+      };
+      const result = SheepsheadTablePlugin.getStatusInfo(state, 1, gameConfig);
+      const badge = result.items.find((i) => i.type === 'badge' && i.key === 'crack');
+      expect(badge).toBeDefined();
+      expect((badge as any).label).toBe('Cracked!');
+    });
+
+    it('includes re-cracked badge when re-cracked', () => {
+      const state: any = {
+        phase: 'play',
+        trickNumber: 1,
+        activePlayer: 2,
+        crack: { crackedBy: 2, reCrackedBy: 1 },
+        blitz: null,
+        players: [{ hand: [{ name: 'a' }] }],
+      };
+      const result = SheepsheadTablePlugin.getStatusInfo(state, 1, gameConfig);
+      const badge = result.items.find((i) => i.type === 'badge' && i.key === 'crack');
+      expect((badge as any).label).toBe('Re-cracked!');
+    });
+
+    it('includes blitz badge', () => {
+      const state: any = {
+        phase: 'play',
+        trickNumber: 1,
+        activePlayer: 2,
+        crack: null,
+        blitz: { type: 'black', blitzedBy: 3 },
+        players: [{ hand: [{ name: 'a' }] }],
+      };
+      const result = SheepsheadTablePlugin.getStatusInfo(state, 1, gameConfig);
+      const badge = result.items.find((i) => i.type === 'badge' && i.key === 'blitz');
+      expect(badge).toBeDefined();
+      expect((badge as any).color).toBe('dark');
+    });
+
+    it('sets active-turn variant when it is my turn', () => {
+      const state: any = {
+        phase: 'play',
+        trickNumber: 1,
+        activePlayer: 5,
+        crack: null,
+        blitz: null,
+        players: [{ hand: [{ name: 'a' }] }],
+      };
+      const result = SheepsheadTablePlugin.getStatusInfo(state, 5, gameConfig);
+      expect(result.barVariant).toBe('active-turn');
+    });
+
+    it('sets default variant when it is not my turn', () => {
+      const state: any = {
+        phase: 'play',
+        trickNumber: 1,
+        activePlayer: 2,
+        crack: null,
+        blitz: null,
+        players: [{ hand: [{ name: 'a' }] }],
+      };
+      const result = SheepsheadTablePlugin.getStatusInfo(state, 5, gameConfig);
+      expect(result.barVariant).toBe('default');
     });
   });
 

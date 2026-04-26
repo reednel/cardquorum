@@ -40,6 +40,7 @@ const CALL_OPTIONS: { value: string; label: string }[] = [
       [myUserID]="myUserID()"
       [members]="members()"
       [colorMap]="gameService.colorMap()"
+      [config]="gameService.config()"
     >
       <!-- Play area: phase-dependent content -->
       <div playArea class="flex w-64 flex-col items-center gap-3">

@@ -247,6 +247,7 @@ export class GameGateway implements OnModuleInit {
         validActions: result.validActions,
         colorMap: result.colorMap,
         gameType: result.gameType,
+        config: result.config,
       });
     }
   }

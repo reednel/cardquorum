@@ -68,7 +68,7 @@ interface GameTablePlugin<TState = unknown, TEvent = unknown> {
   buildBuryEvent(state: TState, cardNames: string[]): TEvent;
   getCurrentTrick(state: TState): TrickPlayView[] | null;
   getPlayerSeats(state: TState, myUserID: number): SeatInfo[];
-  getStatusInfo(state: TState): StatusInfo;
+  getStatusInfo(state: TState, myUserID: number, config: unknown): StatusBarConfig;
   getMyHand(state: TState, myUserID: number): string[];
   getBlindCards(state: TState): (string | null)[];
   getBuryCount(state: TState, config: unknown): number;

@@ -2,7 +2,8 @@ import type {
   CardAsset,
   GameTablePlugin,
   SeatInfo,
-  StatusInfo,
+  StatusBarConfig,
+  StatusItem,
   TrickPlayView,
 } from '@cardquorum/shared';
 
@@ -133,7 +134,11 @@ function getPlayerSeats(state: SheepsheadPlayerView, myUserID: number): SeatInfo
     }));
 }
 
-function getStatusInfo(state: SheepsheadPlayerView): StatusInfo {
+function getStatusInfo(
+  state: SheepsheadPlayerView,
+  myUserID: number,
+  config: unknown,
+): StatusBarConfig {
   const phaseLabels: Record<string, string> = {
     deal: 'Dealing',
     pick: 'Pick Phase',
@@ -142,12 +147,41 @@ function getStatusInfo(state: SheepsheadPlayerView): StatusInfo {
     play: 'Play',
     score: 'Scoring',
   };
-  const me = state.players[0];
-  const handSize = me?.hand.length ?? 0;
+
+  const items: StatusItem[] = [
+    { type: 'text', key: 'phase', label: phaseLabels[state.phase] ?? state.phase },
+  ];
+
+  if (state.phase === 'play' && state.trickNumber > 0) {
+    const cfg = config as { handSize?: number } | null;
+    const totalTricks = cfg?.handSize ?? state.trickNumber;
+    items.push({
+      type: 'text',
+      key: 'trick',
+      label: `Trick ${state.trickNumber} / ${totalTricks}`,
+    });
+  }
+
+  if (state.crack) {
+    const label = state.crack.reCrackedBy != null ? 'Re-cracked!' : 'Cracked!';
+    items.push({ type: 'badge', key: 'crack', label, color: 'yellow' });
+  }
+
+  if (state.blitz) {
+    const color = state.blitz.type === 'black' ? 'dark' : 'red';
+    items.push({
+      type: 'badge',
+      key: 'blitz',
+      label: `${state.blitz.type.charAt(0).toUpperCase() + state.blitz.type.slice(1)} Blitz`,
+      color,
+    });
+  }
+
+  const isMyTurn = state.activePlayer === myUserID;
+
   return {
-    phaseLabel: phaseLabels[state.phase] ?? state.phase,
-    trickNumber: state.trickNumber,
-    totalTricks: handSize > 0 ? handSize : state.trickNumber,
+    items,
+    barVariant: isMyTurn ? 'active-turn' : 'default',
   };
 }
 

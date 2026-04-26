@@ -62,6 +62,9 @@ export class GameService {
       if (data.gameType) {
         this._gameType.set(data.gameType);
       }
+      if (data.config !== undefined) {
+        this._config.set(data.config);
+      }
       this._state.set(data.state);
       this._validActions.set(data.validActions);
       this._colorMap.set(data.colorMap);

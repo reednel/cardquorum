@@ -34,6 +34,25 @@
   --color-disabled: #a3a3a3; /* disabled button bg */
   --color-disabled-text: #737373; /* disabled button text */
 
+  /* --- Info Palette --- */
+  --color-info: #2563eb; /* informational states */
+  --color-info-light: #60a5fa; /* dark-mode info text */
+  --color-info-surface: #eff6ff; /* info bg */
+  --color-info-surface-dark: #1e40af1a; /* dark info bg */
+
+  /* --- Success Palette --- */
+  --color-success: #16a34a;
+  --color-success-hover: #15803d;
+  --color-success-light: #4ade80; /* dark-mode success text */
+  --color-success-surface: #f0fdf4; /* ghost-button hover */
+  --color-success-surface-dark: #16a34a1a; /* dark ghost hover */
+
+  /* --- Warning Palette --- */
+  --color-warning: #d97706; /* crack, caution states */
+  --color-warning-light: #fbbf24; /* dark-mode warning text */
+  --color-warning-surface: #fffbeb; /* warning bg */
+  --color-warning-surface-dark: #92400e1a; /* dark warning bg */
+
   /* --- Danger Palette --- */
   --color-danger: #dc2626; /* destructive buttons, error text */
   --color-danger-hover: #b91c1c; /* hover, dark-mode base, intense actions */
@@ -44,17 +63,44 @@
   --color-danger-surface-dark: #7f1d1d1a; /* dark error bg */
   --color-danger-border: #fca5a5; /* danger outline border */
 
-  /* --- Success Palette --- */
-  --color-success: #16a34a;
-  --color-success-hover: #15803d;
-  --color-success-light: #4ade80; /* dark-mode success text */
-  --color-success-surface: #f0fdf4; /* ghost-button hover */
-  --color-success-surface-dark: #16a34a1a; /* dark ghost hover */
+  /* --- Badge Color Palette (game status bar) --- */
+  --color-badge-red: #dc2626;
+  --color-badge-red-light: #f87171;
+  --color-badge-red-surface: #fef2f2;
+  --color-badge-red-surface-dark: #7f1d1d1a;
+
+  --color-badge-yellow: #d97706;
+  --color-badge-yellow-light: #fbbf24;
+  --color-badge-yellow-surface: #fffbeb;
+  --color-badge-yellow-surface-dark: #92400e1a;
+
+  --color-badge-green: #16a34a;
+  --color-badge-green-light: #4ade80;
+  --color-badge-green-surface: #f0fdf4;
+  --color-badge-green-surface-dark: #16a34a1a;
+
+  --color-badge-blue: #2563eb;
+  --color-badge-blue-light: #60a5fa;
+  --color-badge-blue-surface: #eff6ff;
+  --color-badge-blue-surface-dark: #1e40af1a;
+
+  --color-badge-purple: #7c3aed;
+  --color-badge-purple-light: #a78bfa;
+  --color-badge-purple-surface: #f5f3ff;
+  --color-badge-purple-surface-dark: #5b21b61a;
+
+  --color-badge-pink: #db2777;
+  --color-badge-pink-light: #f472b6;
+  --color-badge-pink-surface: #fdf2f8;
+  --color-badge-pink-surface-dark: #9d174d1a;
 
   /* --- Border Radius --- */
   --radius-default: 0.375rem;
   --radius-lg: 0.5rem;
   --radius-full: 9999px;
+
+  /* --- Sizing --- */
+  --height-panel-header: 2.25rem; /* shared height: status bar, sidebar header, expand btn */
 
   /* --- Opacity --- */
   --opacity-disabled: 60%;
