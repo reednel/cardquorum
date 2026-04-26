@@ -147,7 +147,7 @@ const ROTATION_MODES: { icon: typeof faBan; tooltip: string; value: RotationMode
                     [attr.aria-label]="
                       member.readyToPlay ? 'Set not ready to play' : 'Set ready to play'
                     "
-                    class="cursor-pointer hover:opacity-80"
+                    class="hover:opacity-80"
                     (click)="onToggleReady()"
                     data-testid="toggle-ready-btn"
                   >
@@ -241,7 +241,7 @@ const ROTATION_MODES: { icon: typeof faBan; tooltip: string; value: RotationMode
                     [attr.aria-label]="
                       member.readyToPlay ? 'Set not ready to play' : 'Set ready to play'
                     "
-                    class="cursor-pointer hover:opacity-80"
+                    class="hover:opacity-80"
                     (click)="onToggleReady()"
                     data-testid="toggle-ready-btn"
                   >
@@ -296,7 +296,7 @@ const ROTATION_MODES: { icon: typeof faBan; tooltip: string; value: RotationMode
               <button
                 type="button"
                 aria-label="Dismiss ready prompt"
-                class="ml-auto shrink-0 cursor-pointer hover:opacity-80"
+                class="ml-auto shrink-0 hover:opacity-80"
                 (click)="dismissReadyPrompt()"
                 data-testid="ready-prompt-dismiss"
               >

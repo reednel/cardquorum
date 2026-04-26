@@ -32,7 +32,7 @@ export interface OverflowAction {
         aria-label="More actions"
         [attr.aria-expanded]="open()"
         (click)="toggle($event)"
-        class="flex items-center justify-center rounded p-1 cursor-pointer text-text-secondary hover:bg-surface-raised
+        class="flex items-center justify-center rounded p-1 text-text-secondary hover:bg-surface-raised
                dark:text-text-secondary-dark dark:hover:bg-surface-raised-dark"
       >
         <fa-icon [icon]="faEllipsisVertical" class="text-sm" />
