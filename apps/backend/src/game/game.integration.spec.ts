@@ -20,6 +20,8 @@ describe('GameService integration (full Sheepshead game)', () => {
     getRoster: jest.Mock;
     handlePostGame: jest.Mock;
     toggleReady: jest.Mock;
+    broadcastToRoom: jest.Mock;
+    demoteToSpectator: jest.Mock;
   };
 
   const userIDs = [1, 2, 3];
@@ -81,6 +83,8 @@ describe('GameService integration (full Sheepshead game)', () => {
         spectators: [],
         rotationMode: 'rotate-players' as const,
       } satisfies RosterState),
+      broadcastToRoom: jest.fn(),
+      demoteToSpectator: jest.fn().mockResolvedValue(undefined),
     };
 
     players.forEach((p, i) => {

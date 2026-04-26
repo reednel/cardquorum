@@ -391,8 +391,13 @@ export class RoomGameTab implements OnInit {
       const canStart = this.canStart();
       const justEnded = prevStore === null && store !== null;
       prevStore = store;
-      if (justEnded && autostartEnabled && canStart) {
-        this.onStart();
+      if (justEnded && autostartEnabled) {
+        if (canStart) {
+          this.onStart();
+        }
+        // Clear the game display so the game table disappears — the score
+        // overlay is hidden when autostart is enabled, so nothing else will.
+        this.gameService.clearDisplay();
       }
     });
 

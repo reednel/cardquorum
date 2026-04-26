@@ -1,7 +1,7 @@
 import { forwardRef, Inject, Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { GameSessionRepository } from '@cardquorum/db';
 import { GamePlugin, WithScheduledEvents } from '@cardquorum/engine';
-import { ColorAssignmentMap } from '@cardquorum/shared';
+import { ColorAssignmentMap, WS_EMIT } from '@cardquorum/shared';
 import { SheepsheadPlugin } from '@cardquorum/sheepshead';
 import { RoomService } from '../room/room.service';
 import { resolveCancellationStatus } from './game-status';
@@ -188,6 +188,7 @@ export class GameService implements OnModuleDestroy {
     gameOver: boolean;
     playerViews: Array<[number, { state: unknown; validActions: string[] }]>;
     store?: unknown;
+    roomId?: number;
   }> {
     if (this.isActionBlocked(sessionId)) {
       throw new Error('A transition is in progress');
@@ -243,15 +244,17 @@ export class GameService implements OnModuleDestroy {
       await this.sessionRepo.updateStatusAndTimestamp(sessionId, 'finished', 'finishedAt');
 
       this.activeGames.delete(sessionId);
-      this.roomToSession.delete(game.roomId);
 
       this.logger.log(`Game session ${sessionId} finished`);
 
-      // Post-game pipeline (demote not-ready + rotate) after cleanup so clients see game-over before roster change
+      // Post-game pipeline (demote not-ready + rotate) before freeing the room
+      // slot, so autostart sees the correct roster.
       const requiredPlayerCount = (game.config as { playerCount: number }).playerCount;
       await this.roomService.handlePostGame(game.roomId, requiredPlayerCount);
 
-      return { gameOver: true, playerViews, store };
+      this.finalizeGameEnd(game.roomId, sessionId);
+
+      return { gameOver: true, playerViews, store, roomId: game.roomId };
     }
 
     const playerViews = this.buildPlayerViews(game, plugin);
@@ -288,7 +291,14 @@ export class GameService implements OnModuleDestroy {
    * Invokes the plugin's onPlayerAbandon if available, otherwise falls back to 'abandoned' status.
    * Triggers post-game pipeline and demotes the abandoning player.
    */
-  async abandonGame(sessionId: number, userId: number, broadcastFn?: BroadcastFn): Promise<void> {
+  async abandonGame(
+    sessionId: number,
+    userId: number,
+  ): Promise<{
+    roomId: number;
+    playerViews: Array<[number, { state: unknown; validActions: string[] }]>;
+    store?: unknown;
+  }> {
     const game = this.activeGames.get(sessionId);
     if (!game) {
       throw new Error('Game session not found');
@@ -315,31 +325,25 @@ export class GameService implements OnModuleDestroy {
       await this.sessionRepo.updateStatusAndTimestamp(sessionId, 'abandoned', 'finishedAt');
     }
 
-    // Broadcast game-over to all players
-    if (broadcastFn) {
-      const playerViews = this.buildPlayerViews(game, plugin);
-      broadcastFn({ gameOver: true, playerViews, store });
-    }
-
-    // Clean up in-memory state
+    // Remove from activeGames so concurrent actions are rejected, but keep
+    // roomToSession until post-game pipeline completes to prevent premature
+    // new game creation.
     this.clearPendingTimers(sessionId);
     this.activeGames.delete(sessionId);
-    this.roomToSession.delete(game.roomId);
 
     this.logger.log(`Game session ${sessionId} abandoned by user ${userId}`);
 
-    // Post-game pipeline (demote not-ready players + rotate)
+    // Post-game pipeline: demote not-ready players, rotate, then demote abandoner
     await this.roomService.handlePostGame(game.roomId, requiredPlayerCount);
+    await this.roomService.demoteToSpectator(game.roomId, userId);
 
-    // Demote the abandoning player: since the game is now over, toggling ready
-    // to false will immediately demote them to spectators
-    const roster = await this.roomService.getRoster(game.roomId);
-    const playerInRoster = roster.players.find((p) => p.userId === userId);
-    if (playerInRoster) {
-      if (playerInRoster.readyToPlay) {
-        await this.roomService.toggleReady(game.roomId, userId);
-      }
-    }
+    // Build player views from the (now-finished) game state
+    const playerViews = this.buildPlayerViews(game, plugin);
+
+    // Free the room slot and notify spectators
+    this.finalizeGameEnd(game.roomId, sessionId);
+
+    return { roomId: game.roomId, playerViews, store };
   }
 
   /**
@@ -522,13 +526,14 @@ export class GameService implements OnModuleDestroy {
         .then(() => this.sessionRepo.updateStatusAndTimestamp(sessionId, 'finished', 'finishedAt'));
 
       this.activeGames.delete(sessionId);
-      this.roomToSession.delete(game.roomId);
       this.pendingTimers.delete(sessionId);
 
       this.logger.log(`Game session ${sessionId} finished (scheduled event)`);
 
       const requiredPlayerCount = (game.config as { playerCount: number }).playerCount;
-      this.roomService.handlePostGame(game.roomId, requiredPlayerCount);
+      this.roomService.handlePostGame(game.roomId, requiredPlayerCount).then(() => {
+        this.finalizeGameEnd(game.roomId, sessionId);
+      });
 
       broadcastFn({ gameOver: true, playerViews, store });
       return;
@@ -576,6 +581,16 @@ export class GameService implements OnModuleDestroy {
   private isUserInRoom(roomId: number, userId: number): boolean {
     const members = this.roomService.manager.getRoomMembers(String(roomId));
     return members.some((m) => m.userId === userId);
+  }
+
+  /**
+   * Free the room slot and notify all room members that the game session ended.
+   * Players receive GAME_OVER separately; this GAME_CANCELLED ensures spectators
+   * (who only received GAME_CREATED) also clear their stale session state.
+   */
+  private finalizeGameEnd(roomId: number, sessionId: number): void {
+    this.roomToSession.delete(roomId);
+    this.roomService.broadcastToRoom(String(roomId), WS_EMIT.GAME_CANCELLED, { sessionId });
   }
 
   private buildPlayerViews(

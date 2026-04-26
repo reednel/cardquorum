@@ -626,6 +626,29 @@ export class RoomService {
     return roster;
   }
 
+  /**
+   * Unconditionally demote a player to spectators and broadcast the update.
+   * No-ops if the user is not currently in the players section.
+   */
+  async demoteToSpectator(roomId: number, userId: number): Promise<void> {
+    const roster = await this.getRoster(roomId);
+    const isPlayer = roster.players.some((p) => p.userId === userId);
+    if (!isPlayer) return;
+
+    const demoted = demotePlayer(roster, userId);
+
+    const playerIds = demoted.players.map((m) => m.userId);
+    const spectatorIds = demoted.spectators.map((m) => m.userId);
+    await this.roomRosters.replaceRoster(roomId, playerIds, spectatorIds);
+    await this.roomRosters.setReadyToPlay(roomId, userId, false);
+
+    const updatedRoster = await this.getRoster(roomId);
+    this.broadcastToRoom(String(roomId), WS_EMIT.ROSTER_UPDATED, {
+      roomId,
+      roster: updatedRoster,
+    });
+  }
+
   async handlePostGame(roomId: number, requiredPlayerCount: number): Promise<RosterState> {
     let roster = await this.getRoster(roomId);
 

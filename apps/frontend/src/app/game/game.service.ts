@@ -80,15 +80,6 @@ export class GameService {
         this._store.set(data.store);
         this._validActions.set([]);
         this._sessionId.set(null);
-
-        // Derive score state from store if state wasn't already updated
-        const currentState = this._state() as { phase?: string } | null;
-        if (!currentState || currentState.phase !== 'score') {
-          const derived = this.deriveScoreState(data.store);
-          if (derived) {
-            this._state.set(derived);
-          }
-        }
       }
     });
 
@@ -172,46 +163,9 @@ export class GameService {
     // while the user is still in the room
   }
 
-  /**
-   * Build a minimal SheepsheadPlayerView-shaped object from the game store
-   * so the score overlay can render even if GAME_STATE_UPDATE was missed.
-   */
-  private deriveScoreState(store: unknown): Record<string, unknown> | null {
-    const s = store as {
-      players?: Array<{
-        userID: number;
-        role: string | null;
-        scoreDelta: number | null;
-      }>;
-    };
-    if (!s?.players || !Array.isArray(s.players)) {
-      return null;
-    }
-    return {
-      phase: 'score',
-      players: s.players.map((p) => ({
-        userID: p.userID,
-        role: p.role,
-        hand: [],
-        tricksWon: 0,
-        pointsWon: 0,
-        scoreDelta: p.scoreDelta,
-        cardsWon: [],
-      })),
-      activePlayer: null,
-      trickNumber: 0,
-      tricks: [],
-      blind: null,
-      buried: null,
-      calledCard: null,
-      hole: null,
-      crack: null,
-      blitz: null,
-      previousGameDouble: null,
-      noPick: null,
-      redeals: null,
-      legalCardNames: null,
-      dealerUserID: null,
-    };
+  /** Clear the game display (state) after the score screen is dismissed. */
+  clearDisplay(): void {
+    this._state.set(null);
+    this._store.set(null);
   }
 }

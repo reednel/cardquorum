@@ -15,6 +15,8 @@ describe('GameService', () => {
     getRoster: jest.Mock;
     handlePostGame: jest.Mock;
     toggleReady: jest.Mock;
+    broadcastToRoom: jest.Mock;
+    demoteToSpectator: jest.Mock;
   };
 
   const aliceIdentity = { userId: 1, username: 'alice', displayName: 'Alice' };
@@ -80,6 +82,8 @@ describe('GameService', () => {
       getRoster: jest.fn().mockResolvedValue(buildRoster([])),
       handlePostGame: jest.fn().mockResolvedValue(buildRoster([])),
       toggleReady: jest.fn().mockResolvedValue(buildRoster([])),
+      broadcastToRoom: jest.fn(),
+      demoteToSpectator: jest.fn().mockResolvedValue(undefined),
     };
 
     service = new GameService(

@@ -193,23 +193,19 @@ export class GameGateway implements OnModuleInit {
     const tracked = this.connectionService.getTracked(client);
     if (!tracked) return;
 
-    const broadcastFn = (result: {
-      gameOver: boolean;
-      playerViews: Array<[number, { state: unknown; validActions: string[] }]>;
-      store?: unknown;
-    }) => {
-      if (result.gameOver) {
-        this.sendPlayerViews(result.playerViews, payload.sessionId, WS_EMIT.GAME_STATE_UPDATE);
-        this.sendToPlayers(
-          result.playerViews.map(([id]) => id),
-          WS_EMIT.GAME_OVER,
-          { sessionId: payload.sessionId, store: result.store },
-        );
-      }
-    };
-
     try {
-      await this.gameService.abandonGame(payload.sessionId, tracked.identity.userId, broadcastFn);
+      const { roomId, playerViews, store } = await this.gameService.abandonGame(
+        payload.sessionId,
+        tracked.identity.userId,
+      );
+
+      // Send final state + game-over to players
+      this.sendPlayerViews(playerViews, payload.sessionId, WS_EMIT.GAME_STATE_UPDATE);
+      this.sendToPlayers(
+        playerViews.map(([id]) => id),
+        WS_EMIT.GAME_OVER,
+        { sessionId: payload.sessionId, store },
+      );
     } catch (err) {
       this.logger.warn(`game:abandon failed for session ${payload.sessionId}: ${err}`);
       this.send(client, WS_EMIT.GAME_ERROR, {

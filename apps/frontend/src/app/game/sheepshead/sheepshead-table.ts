@@ -222,7 +222,7 @@ const CALL_OPTIONS: { value: string; label: string }[] = [
               [members]="members()"
               [isOwner]="isOwner()"
               [canStartNext]="canStartNext()"
-              (dismissed)="scoreDismissed.set(true)"
+              (dismissed)="onScoreDismissed()"
               (startNextGame)="onStartNextGame()"
             />
           </app-phase-overlay>
@@ -386,7 +386,13 @@ export class SheepsheadTable {
   }
 
   protected onStartNextGame(): void {
+    this.gameService.clearDisplay();
     this.startNextGame().emit();
+  }
+
+  protected onScoreDismissed(): void {
+    this.scoreDismissed.set(true);
+    this.gameService.clearDisplay();
   }
 
   protected onHandReordered(newOrder: (string | null)[]): void {
