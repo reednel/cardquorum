@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   forwardRef,
@@ -16,7 +17,14 @@ import {
   RoomRosterRepository,
   UserRepository,
 } from '@cardquorum/db';
-import { RoomManager, rotateSeat as rosterRotateSeat } from '@cardquorum/engine';
+import {
+  demoteNotReadyPlayers,
+  demotePlayer,
+  RoomManager,
+  rotateSeat as rosterRotateSeat,
+  rotateSeatV2,
+  validateReorder,
+} from '@cardquorum/engine';
 import {
   PaginatedResponse,
   RoomBanResponse,
@@ -25,6 +33,7 @@ import {
   RoomVisibility,
   RosterMember,
   RosterState,
+  RotationMode,
   WS_EMIT,
 } from '@cardquorum/shared';
 import { BlockService } from '../block/block.service';
@@ -117,6 +126,9 @@ export class RoomService {
     memberLimit?: number | null,
     description?: string | null,
   ) {
+    if (memberLimit != null && (memberLimit < 1 || memberLimit > MAX_ROOM_MEMBERS)) {
+      throw new BadRequestException('Member limit must be between 1 and 128');
+    }
     const room = await this.rooms.create(name, ownerId, visibility, memberLimit, description);
     this.logger.log(`Room ${room.id} "${name}" created by user ${ownerId}`);
     return room;
@@ -373,6 +385,15 @@ export class RoomService {
       throw new ConflictException('User is already banned');
     }
 
+    // Reject if target is a player during an active game
+    if (this.gameService.isGameActive(roomId)) {
+      const members = await this.roomRosters.findByRoom(roomId);
+      const member = members.find((m) => m.userId === userId);
+      if (member && member.section === 'players') {
+        throw new ConflictException('Cannot ban a player while a game is active');
+      }
+    }
+
     await this.roomBans.create(roomId, userId);
     // Also remove invite if one exists
     await this.roomInvites.delete(roomId, userId);
@@ -417,7 +438,7 @@ export class RoomService {
   async getRoster(roomId: number): Promise<RosterState> {
     const members = await this.roomRosters.findByRoom(roomId);
     const room = await this.rooms.findById(roomId);
-    const rotatePlayers = room?.rotatePlayers ?? false;
+    const rotationMode: RotationMode = (room?.rotationMode as RotationMode) ?? 'rotate-players';
 
     const players: RosterMember[] = members
       .filter((m) => m.section === 'players')
@@ -427,7 +448,7 @@ export class RoomService {
       .filter((m) => m.section === 'spectators')
       .map((m, i) => ({ ...m, position: i }));
 
-    return { players, spectators, rotatePlayers };
+    return { players, spectators, rotationMode };
   }
 
   async addToRoster(roomId: number, userId: number): Promise<RosterState> {
@@ -436,12 +457,14 @@ export class RoomService {
       throw new NotFoundException('Room not found');
     }
 
+    const effectiveLimit =
+      room.memberLimit != null && room.memberLimit > 0
+        ? Math.min(room.memberLimit, MAX_ROOM_MEMBERS)
+        : MAX_ROOM_MEMBERS;
+
     const currentCount = await this.roomRosters.countMembers(roomId);
-    if (currentCount >= MAX_ROOM_MEMBERS) {
-      throw new ConflictException('Room is full');
-    }
-    if (room.memberLimit != null && room.memberLimit > 0 && currentCount >= room.memberLimit) {
-      throw new ConflictException(`Room is full (limit: ${room.memberLimit})`);
+    if (currentCount >= effectiveLimit) {
+      throw new ConflictException(`Room is full (limit: ${effectiveLimit})`);
     }
 
     // Get user info for the roster member
@@ -463,6 +486,15 @@ export class RoomService {
 
     if (room.ownerId === userId) {
       throw new ForbiddenException('Room owner cannot leave the room');
+    }
+
+    // Reject if target is a player during an active game
+    if (this.gameService.isGameActive(roomId)) {
+      const members = await this.roomRosters.findByRoom(roomId);
+      const member = members.find((m) => m.userId === userId);
+      if (member && member.section === 'players') {
+        throw new ConflictException('Cannot leave while a game is active. Abandon the game first.');
+      }
     }
 
     await this.roomRosters.removeMember(roomId, userId);
@@ -506,6 +538,13 @@ export class RoomService {
       throw new ConflictException('Roster update must contain all current members');
     }
 
+    // Validate non-ready spectators cannot be moved to players
+    const currentRoster = await this.getRoster(roomId);
+    const validation = validateReorder(currentRoster, players, spectators);
+    if (!validation.valid) {
+      throw new ConflictException((validation as { valid: false; reason: string }).reason);
+    }
+
     await this.roomRosters.replaceRoster(roomId, players, spectators);
 
     // Assign hues to any players that don't have one yet
@@ -534,6 +573,15 @@ export class RoomService {
   }
 
   async kickUser(roomId: number, userId: number): Promise<RosterState> {
+    // Reject if target is a player during an active game
+    if (this.gameService.isGameActive(roomId)) {
+      const members = await this.roomRosters.findByRoom(roomId);
+      const member = members.find((m) => m.userId === userId);
+      if (member && member.section === 'players') {
+        throw new ConflictException('Cannot kick a player while a game is active');
+      }
+    }
+
     const roster = await this.removeFromRoster(roomId, userId);
 
     // Disconnect WS and send MEMBER_KICKED to kicked user
@@ -542,8 +590,82 @@ export class RoomService {
     return roster;
   }
 
-  async toggleRotatePlayers(roomId: number, enabled: boolean): Promise<RosterState> {
-    await this.rooms.update(roomId, { rotatePlayers: enabled });
+  async toggleReady(roomId: number, userId: number): Promise<RosterState> {
+    const members = await this.roomRosters.findByRoom(roomId);
+    const member = members.find((m) => m.userId === userId);
+    if (!member) {
+      throw new NotFoundException('Member not found on roster');
+    }
+
+    const newReady = !member.readyToPlay;
+
+    // If the member is a player, no active game, and toggling to false: immediately demote
+    if (member.section === 'players' && !this.gameService.isGameActive(roomId) && !newReady) {
+      const roster = await this.getRoster(roomId);
+      const demoted = demotePlayer(roster, userId);
+
+      const playerIds = demoted.players.map((m) => m.userId);
+      const spectatorIds = demoted.spectators.map((m) => m.userId);
+      await this.roomRosters.replaceRoster(roomId, playerIds, spectatorIds);
+      // readyToPlay is set to false by demotePlayer, persist it
+      await this.roomRosters.setReadyToPlay(roomId, userId, false);
+
+      const updatedRoster = await this.getRoster(roomId);
+      this.broadcastToRoom(String(roomId), WS_EMIT.ROSTER_UPDATED, {
+        roomId,
+        roster: updatedRoster,
+      });
+      return updatedRoster;
+    }
+
+    // Otherwise just toggle readyToPlay
+    await this.roomRosters.setReadyToPlay(roomId, userId, newReady);
+
+    const roster = await this.getRoster(roomId);
+    this.broadcastToRoom(String(roomId), WS_EMIT.ROSTER_UPDATED, { roomId, roster });
+    return roster;
+  }
+
+  async handlePostGame(roomId: number, requiredPlayerCount: number): Promise<RosterState> {
+    let roster = await this.getRoster(roomId);
+
+    // Step 1: demote not-ready players
+    roster = demoteNotReadyPlayers(roster);
+
+    // Step 2: apply rotation
+    roster = rotateSeatV2(roster, roster.rotationMode, requiredPlayerCount);
+
+    // Step 3: persist
+    const playerIds = roster.players.map((m) => m.userId);
+    const spectatorIds = roster.spectators.map((m) => m.userId);
+    await this.roomRosters.replaceRoster(roomId, playerIds, spectatorIds);
+
+    // Persist readyToPlay for demoted members (they were set to false by demoteNotReadyPlayers)
+    for (const s of roster.spectators) {
+      await this.roomRosters.setReadyToPlay(roomId, s.userId, s.readyToPlay);
+    }
+    for (const p of roster.players) {
+      await this.roomRosters.setReadyToPlay(roomId, p.userId, p.readyToPlay);
+    }
+
+    // Step 4: broadcast single ROSTER_UPDATED
+    const updatedRoster = await this.getRoster(roomId);
+    this.broadcastToRoom(String(roomId), WS_EMIT.ROSTER_UPDATED, {
+      roomId,
+      roster: updatedRoster,
+    });
+    return updatedRoster;
+  }
+
+  async setRotationMode(roomId: number, mode: RotationMode): Promise<RosterState> {
+    const validModes: RotationMode[] = ['none', 'rotate-players', 'rotate-spectators'];
+    if (!validModes.includes(mode)) {
+      throw new BadRequestException(
+        'Invalid rotation mode. Must be one of: none, rotate-players, rotate-spectators',
+      );
+    }
+
+    await this.rooms.update(roomId, { rotationMode: mode });
 
     const roster = await this.getRoster(roomId);
     this.broadcastToRoom(String(roomId), WS_EMIT.ROSTER_UPDATED, { roomId, roster });

@@ -11,24 +11,39 @@ import {
   Component,
   computed,
   DestroyRef,
+  effect,
   inject,
   input,
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
-import { faCrown, faGripVertical, faRotate, faUser } from '@fortawesome/free-solid-svg-icons';
+import {
+  faArrowRotateRight,
+  faArrowsRotate,
+  faBan,
+  faCrown,
+  faGripVertical,
+  faRotate,
+  faUserCheck,
+  faUserXmark,
+  faXmark,
+} from '@fortawesome/free-solid-svg-icons';
 import {
   hueToHsl,
   RoomBanResponse,
   RoomInviteResponse,
   RoomResponse,
   RosterMember,
+  RotationMode,
   UserSearchResult,
+  WS_EVENT,
 } from '@cardquorum/shared';
 import { AuthService } from '../auth/auth.service';
 import { GameService } from '../game/game.service';
+import { ConfirmDialog } from '../shared/confirm-dialog';
 import { ThemeService } from '../shell/theme.service';
+import { WebSocketService } from '../websocket.service';
 import { OverflowAction, OverflowMenuComponent } from './overflow-menu';
 import { RoomContextService } from './room-context.service';
 import { RoomService } from './room.service';
@@ -39,13 +54,27 @@ import {
   RosterService,
 } from './roster.service';
 
+const ROTATION_MODES: { icon: typeof faBan; tooltip: string; value: RotationMode }[] = [
+  { icon: faBan, tooltip: 'No seat rotation', value: 'none' },
+  {
+    icon: faArrowRotateRight,
+    tooltip: 'Rotate players by one seat each game',
+    value: 'rotate-players',
+  },
+  {
+    icon: faArrowsRotate,
+    tooltip: 'Rotate one readied spectator into play each game',
+    value: 'rotate-spectators',
+  },
+];
+
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-room-members-tab',
-  imports: [CdkDropList, CdkDrag, OverflowMenuComponent, FaIconComponent],
+  imports: [CdkDropList, CdkDrag, OverflowMenuComponent, FaIconComponent, ConfirmDialog],
   template: `
     <div id="members-panel" role="tabpanel" aria-label="Members" class="flex-1 overflow-y-auto p-4">
-      <!-- Players section header with rotate toggle -->
+      <!-- Players section header with rotation mode control -->
       <div class="mb-2 flex items-center justify-between">
         <h3
           class="text-sm font-semibold uppercase tracking-wide text-text-secondary dark:text-text-secondary-dark"
@@ -54,26 +83,32 @@ import {
           Players ({{ rosterService.players().length }})
         </h3>
         @if (isOwner()) {
-          <button
-            type="button"
-            [title]="
-              rosterService.rotatePlayers() ? 'Disable player rotation' : 'Enable player rotation'
-            "
-            [attr.aria-label]="
-              rosterService.rotatePlayers() ? 'Disable player rotation' : 'Enable player rotation'
-            "
-            [attr.aria-pressed]="rosterService.rotatePlayers()"
-            (click)="onToggleRotate()"
-            data-testid="rotate-toggle"
-            [class]="
-              'rounded p-0.5 transition-colors ' +
-              (rosterService.rotatePlayers()
-                ? 'text-primary dark:text-primary-light-text'
-                : 'text-text-secondary dark:text-text-secondary-dark hover:text-text-body dark:hover:text-text-body-dark')
-            "
+          <div
+            role="radiogroup"
+            aria-label="Rotation mode"
+            class="flex overflow-hidden rounded border border-border dark:border-border-dark"
+            data-testid="rotation-mode-group"
           >
-            <fa-icon [icon]="faRotate" class="text-sm" />
-          </button>
+            @for (opt of rotationModes; track opt.value) {
+              <button
+                type="button"
+                role="radio"
+                [attr.aria-checked]="rosterService.rotationMode() === opt.value"
+                [attr.aria-label]="opt.tooltip"
+                [title]="opt.tooltip"
+                (click)="onSetRotationMode(opt.value)"
+                [attr.data-testid]="'rotation-mode-' + opt.value"
+                [class]="
+                  'px-2 py-0.5 text-xs transition-colors ' +
+                  (rosterService.rotationMode() === opt.value
+                    ? 'bg-primary text-white dark:bg-primary-light-text dark:text-bg-dark'
+                    : 'text-text-secondary hover:text-text-body dark:text-text-secondary-dark dark:hover:text-text-body-dark')
+                "
+              >
+                <fa-icon [icon]="opt.icon" aria-hidden="true" />
+              </button>
+            }
+          </div>
         }
       </div>
       <ul
@@ -106,20 +141,32 @@ import {
                 />
               }
               <span class="relative shrink-0">
-                @if (member.userId === room().ownerId) {
-                  <fa-icon
-                    [icon]="faCrown"
-                    class="text-sm"
-                    [style.color]="memberIconColor(member)"
-                    aria-hidden="true"
-                  />
+                @if (member.userId === auth.user()?.userId) {
+                  <button
+                    type="button"
+                    [attr.aria-label]="
+                      member.readyToPlay ? 'Set not ready to play' : 'Set ready to play'
+                    "
+                    class="cursor-pointer hover:opacity-80"
+                    (click)="onToggleReady()"
+                    data-testid="toggle-ready-btn"
+                  >
+                    <fa-icon
+                      [icon]="member.readyToPlay ? faUserCheck : faUserXmark"
+                      class="text-sm"
+                      [style.color]="memberIconColor(member)"
+                      [attr.data-testid]="'ready-icon-' + member.userId"
+                    />
+                  </button>
                 } @else {
-                  <fa-icon
-                    [icon]="faUser"
-                    class="text-sm"
-                    [style.color]="memberIconColor(member)"
-                    aria-hidden="true"
-                  />
+                  <span>
+                    <fa-icon
+                      [icon]="member.readyToPlay ? faUserCheck : faUserXmark"
+                      class="text-sm"
+                      [style.color]="memberIconColor(member)"
+                      [attr.data-testid]="'ready-icon-' + member.userId"
+                    />
+                  </span>
                 }
                 <span
                   [class]="
@@ -133,8 +180,16 @@ import {
                 ></span>
               </span>
               {{ member.displayName ?? member.username }}
+              @if (member.userId === room().ownerId) {
+                <fa-icon
+                  [icon]="faCrown"
+                  class="text-xs text-amber-500"
+                  aria-hidden="true"
+                  [attr.data-testid]="'crown-icon-' + member.userId"
+                />
+              }
             </span>
-            @if (isOwner() && member.userId !== room().ownerId) {
+            @if (isOwner() && member.userId !== room().ownerId && !gameService.sessionId()) {
               <app-overflow-menu [actions]="rosterMemberActions(member.userId)" />
             }
           </li>
@@ -162,15 +217,17 @@ import {
           <li
             cdkDrag
             [cdkDragData]="member"
+            [cdkDragDisabled]="!member.readyToPlay || !dragEnabled()"
             [class]="
               'group flex items-center justify-between rounded px-1 py-1 text-sm text-text-body dark:text-text-body-dark' +
-              (dragEnabled()
+              (dragEnabled() && member.readyToPlay
                 ? ' cursor-grab hover:bg-surface-raised dark:hover:bg-surface-raised-dark'
                 : '')
             "
+            [attr.data-testid]="!member.readyToPlay ? 'drag-disabled-' + member.userId : null"
           >
             <span class="flex items-center gap-2">
-              @if (dragEnabled()) {
+              @if (dragEnabled() && member.readyToPlay) {
                 <fa-icon
                   [icon]="faGripVertical"
                   class="shrink-0 text-xs text-text-secondary opacity-0 transition-opacity group-hover:opacity-100 dark:text-text-secondary-dark"
@@ -178,20 +235,32 @@ import {
                 />
               }
               <span class="relative shrink-0">
-                @if (member.userId === room().ownerId) {
-                  <fa-icon
-                    [icon]="faCrown"
-                    class="text-sm"
-                    [style.color]="memberIconColor(member)"
-                    aria-hidden="true"
-                  />
+                @if (member.userId === auth.user()?.userId) {
+                  <button
+                    type="button"
+                    [attr.aria-label]="
+                      member.readyToPlay ? 'Set not ready to play' : 'Set ready to play'
+                    "
+                    class="cursor-pointer hover:opacity-80"
+                    (click)="onToggleReady()"
+                    data-testid="toggle-ready-btn"
+                  >
+                    <fa-icon
+                      [icon]="member.readyToPlay ? faUserCheck : faUserXmark"
+                      class="text-sm"
+                      [style.color]="memberIconColor(member)"
+                      [attr.data-testid]="'ready-icon-' + member.userId"
+                    />
+                  </button>
                 } @else {
-                  <fa-icon
-                    [icon]="faUser"
-                    class="text-sm"
-                    [style.color]="memberIconColor(member)"
-                    aria-hidden="true"
-                  />
+                  <span>
+                    <fa-icon
+                      [icon]="member.readyToPlay ? faUserCheck : faUserXmark"
+                      class="text-sm"
+                      [style.color]="memberIconColor(member)"
+                      [attr.data-testid]="'ready-icon-' + member.userId"
+                    />
+                  </span>
                 }
                 <span
                   [class]="
@@ -205,11 +274,36 @@ import {
                 ></span>
               </span>
               {{ member.displayName ?? member.username }}
+              @if (member.userId === room().ownerId) {
+                <fa-icon
+                  [icon]="faCrown"
+                  class="text-xs text-amber-500"
+                  aria-hidden="true"
+                  [attr.data-testid]="'crown-icon-' + member.userId"
+                />
+              }
             </span>
             @if (isOwner() && member.userId !== room().ownerId) {
               <app-overflow-menu [actions]="rosterMemberActions(member.userId)" />
             }
           </li>
+          @if (member.userId === auth.user()?.userId && showReadyPrompt()) {
+            <div
+              class="ml-6 mt-1 mb-1 flex items-center gap-2 rounded bg-surface-raised px-3 py-2 text-xs text-text-secondary dark:bg-surface-raised-dark dark:text-text-secondary-dark"
+              data-testid="ready-prompt"
+            >
+              <span>Toggle ready to become eligible for games</span>
+              <button
+                type="button"
+                aria-label="Dismiss ready prompt"
+                class="ml-auto shrink-0 cursor-pointer hover:opacity-80"
+                (click)="dismissReadyPrompt()"
+                data-testid="ready-prompt-dismiss"
+              >
+                <fa-icon [icon]="faXmark" class="text-xs" />
+              </button>
+            </div>
+          }
         }
       </ul>
 
@@ -228,7 +322,7 @@ import {
             >
               <span class="flex items-center gap-2">
                 <span class="relative shrink-0">
-                  <fa-icon [icon]="faUser" class="text-sm text-disabled" aria-hidden="true" />
+                  <fa-icon [icon]="faUserXmark" class="text-sm text-disabled" aria-hidden="true" />
                   <span
                     class="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border border-white bg-border-input dark:border-bg-dark dark:bg-border-input-dark"
                     title="Not in room"
@@ -322,6 +416,32 @@ import {
         </ul>
       }
     </div>
+
+    @if (showAbandonButton()) {
+      <div class="shrink-0 border-t border-border px-4 py-3 dark:border-border-dark">
+        <button
+          type="button"
+          class="w-full rounded-default border border-danger px-3 py-2 text-sm font-medium
+                 text-danger hover:bg-danger-surface
+                 dark:border-danger-light dark:text-danger-light dark:hover:bg-danger-surface-dark"
+          (click)="confirmingAbandon.set(true)"
+          data-testid="abandon-game-btn"
+        >
+          Abandon Game
+        </button>
+      </div>
+    }
+
+    @if (confirmingAbandon()) {
+      <app-confirm-dialog
+        title="Abandon Game"
+        message="This will forefit the current game to your opponents."
+        confirmLabel="Abandon"
+        titleId="abandon-dialog-title"
+        (confirmed)="onConfirmAbandon()"
+        (closed)="confirmingAbandon.set(false)"
+      />
+    }
   `,
 })
 export class RoomMembersTab {
@@ -329,16 +449,20 @@ export class RoomMembersTab {
 
   protected readonly rosterService = inject(RosterService);
   private readonly roomContext = inject(RoomContextService);
-  private readonly gameService = inject(GameService);
+  protected readonly gameService = inject(GameService);
   private readonly http = inject(HttpClient);
-  private readonly auth = inject(AuthService);
+  protected readonly auth = inject(AuthService);
   private readonly roomService = inject(RoomService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly themeService = inject(ThemeService);
+  private readonly ws = inject(WebSocketService);
 
   protected readonly invites = signal<RoomInviteResponse[]>([]);
   protected readonly bans = signal<RoomBanResponse[]>([]);
   protected readonly inviteSearchResults = signal<UserSearchResult[]>([]);
+  protected readonly showReadyPrompt = signal(false);
+  protected readonly confirmingAbandon = signal(false);
+  private readyPromptDismissed = false;
 
   protected readonly isOwner = computed(() => this.room().ownerId === this.auth.user()?.userId);
 
@@ -350,7 +474,7 @@ export class RoomMembersTab {
     computeInvitedList(this.invites(), {
       players: this.rosterService.players(),
       spectators: this.rosterService.spectators(),
-      rotatePlayers: this.rosterService.rotatePlayers(),
+      rotationMode: this.rosterService.rotationMode(),
     }),
   );
 
@@ -363,10 +487,44 @@ export class RoomMembersTab {
 
   protected readonly dragEnabled = computed(() => this.isOwner() && !this.gameService.sessionId());
 
+  /** Show abandon button when there's an active game and the current user is a player */
+  protected readonly showAbandonButton = computed(() => {
+    const sessionId = this.gameService.sessionId();
+    if (sessionId === null) return false;
+    const userId = this.auth.user()?.userId;
+    if (userId == null) return false;
+    return this.rosterService.players().some((m) => m.userId === userId);
+  });
+
+  protected readonly rotationModes = ROTATION_MODES;
+  protected readonly faBan = faBan;
+  protected readonly faArrowRotateRight = faArrowRotateRight;
+  protected readonly faArrowsRotate = faArrowsRotate;
   protected readonly faRotate = faRotate;
   protected readonly faGripVertical = faGripVertical;
   protected readonly faCrown = faCrown;
-  protected readonly faUser = faUser;
+  protected readonly faUserCheck = faUserCheck;
+  protected readonly faUserXmark = faUserXmark;
+  protected readonly faXmark = faXmark;
+
+  constructor() {
+    // Watch for ready prompt: show when current user is a non-ready spectator
+    effect(() => {
+      if (this.readyPromptDismissed) return;
+      const userId = this.auth.user()?.userId;
+      if (userId == null) {
+        this.showReadyPrompt.set(false);
+        return;
+      }
+      const spectator = this.rosterService.spectators().find((m) => m.userId === userId);
+      if (spectator && !spectator.readyToPlay) {
+        this.showReadyPrompt.set(true);
+      } else {
+        // Auto-dismiss when user toggles ready or is no longer a non-ready spectator
+        this.showReadyPrompt.set(false);
+      }
+    });
+  }
 
   loadData(): void {
     if (this.isOwner()) {
@@ -421,9 +579,30 @@ export class RoomMembersTab {
     this.rosterService.reorderRoster(this.room().id, playerIds, spectatorIds).subscribe();
   }
 
+  protected onToggleReady(): void {
+    this.rosterService.toggleReady(this.room().id);
+  }
+
+  protected onSetRotationMode(mode: RotationMode): void {
+    this.rosterService.setRotationMode(this.room().id, mode);
+  }
+
   protected onToggleRotate(): void {
-    const enabled = !this.rosterService.rotatePlayers();
+    const enabled = this.rosterService.rotationMode() === 'none';
     this.rosterService.toggleRotate(this.room().id, enabled).subscribe();
+  }
+
+  protected onConfirmAbandon(): void {
+    this.confirmingAbandon.set(false);
+    const sessionId = this.gameService.sessionId();
+    if (sessionId !== null) {
+      this.ws.send(WS_EVENT.GAME_ABANDON, { sessionId });
+    }
+  }
+
+  protected dismissReadyPrompt(): void {
+    this.readyPromptDismissed = true;
+    this.showReadyPrompt.set(false);
   }
 
   protected onKick(userId: number): void {

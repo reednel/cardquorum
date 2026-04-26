@@ -221,6 +221,7 @@ const CALL_OPTIONS: { value: string; label: string }[] = [
               [players]="scorePlayers()"
               [members]="members()"
               [isOwner]="isOwner()"
+              [canStartNext]="canStartNext()"
               (dismissed)="scoreDismissed.set(true)"
               (startNextGame)="onStartNextGame()"
             />
@@ -239,6 +240,7 @@ export class SheepsheadTable {
   readonly members = input.required<UserIdentity[]>();
   readonly isOwner = input.required<boolean>();
   readonly autostart = input.required<boolean>();
+  readonly canStartNext = input.required<boolean>();
   readonly startNextGame = input.required<OutputEmitterRef<void>>();
 
   // ── Plugin reference ──

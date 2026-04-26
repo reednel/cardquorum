@@ -85,7 +85,7 @@ async function setup(gameServiceOverrides: Partial<Record<string, unknown>> = {}
       set: {
         selector: 'app-sheepshead-table',
         template: '<div data-testid="sheepshead-table-stub"></div>',
-        inputs: ['myUserID', 'members', 'isOwner', 'autostart', 'startNextGame'],
+        inputs: ['myUserID', 'members', 'isOwner', 'autostart', 'canStartNext', 'startNextGame'],
       },
     })
     .overrideProvider(GameService, { useValue: mockGameService })
@@ -96,6 +96,7 @@ async function setup(gameServiceOverrides: Partial<Record<string, unknown>> = {}
   fixture.componentRef.setInput('members', []);
   fixture.componentRef.setInput('isOwner', false);
   fixture.componentRef.setInput('autostart', false);
+  fixture.componentRef.setInput('canStartNext', false);
   fixture.detectChanges();
 
   return { fixture, mockGameService };

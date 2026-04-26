@@ -70,6 +70,12 @@ export class GameCancelDto implements GameCancelPayload {
   sessionId: number;
 }
 
+export class GameAbandonDto {
+  @IsInt()
+  @Type(() => Number)
+  sessionId: number;
+}
+
 export class GameQueryTargetsDto {
   @IsInt()
   @Min(1)

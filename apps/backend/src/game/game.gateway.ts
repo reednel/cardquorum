@@ -11,6 +11,7 @@ import { RoomService } from '../room/room.service';
 import { WsConnectionService } from '../ws/ws-connection.service';
 import { WsValidationPipe } from '../ws/ws-validation.pipe';
 import {
+  GameAbandonDto,
   GameActionDto,
   GameCancelDto,
   GameCreateDto,
@@ -180,6 +181,40 @@ export class GameGateway implements OnModuleInit {
       this.send(client, WS_EMIT.GAME_ERROR, {
         sessionId: payload.sessionId,
         message: 'Failed to cancel game session',
+      });
+    }
+  }
+
+  @SubscribeMessage(WS_EVENT.GAME_ABANDON)
+  async handleGameAbandon(
+    @ConnectedSocket() client: WebSocket,
+    @MessageBody() payload: GameAbandonDto,
+  ) {
+    const tracked = this.connectionService.getTracked(client);
+    if (!tracked) return;
+
+    const broadcastFn = (result: {
+      gameOver: boolean;
+      playerViews: Array<[number, { state: unknown; validActions: string[] }]>;
+      store?: unknown;
+    }) => {
+      if (result.gameOver) {
+        this.sendPlayerViews(result.playerViews, payload.sessionId, WS_EMIT.GAME_STATE_UPDATE);
+        this.sendToPlayers(
+          result.playerViews.map(([id]) => id),
+          WS_EMIT.GAME_OVER,
+          { sessionId: payload.sessionId, store: result.store },
+        );
+      }
+    };
+
+    try {
+      await this.gameService.abandonGame(payload.sessionId, tracked.identity.userId, broadcastFn);
+    } catch (err) {
+      this.logger.warn(`game:abandon failed for session ${payload.sessionId}: ${err}`);
+      this.send(client, WS_EMIT.GAME_ERROR, {
+        sessionId: payload.sessionId,
+        message: err instanceof Error ? err.message : 'Failed to abandon game',
       });
     }
   }

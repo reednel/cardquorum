@@ -616,11 +616,12 @@ describe('RoomService', () => {
       section,
       position: 0,
       assignedHue,
+      readyToPlay: true,
     });
 
     beforeEach(() => {
       // getRoster calls rooms.findById after reorder
-      mockRepo.findById.mockResolvedValue({ id: roomId, rotatePlayers: false });
+      mockRepo.findById.mockResolvedValue({ id: roomId, rotationMode: 'none' });
     });
 
     it('should assign a hue when a spectator is first promoted to player', async () => {

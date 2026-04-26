@@ -46,6 +46,7 @@ interface GamePlugin<TConfig, TState, TStore, TEvent extends GameEventBase> {
     sourceStackId: string,
     selectedCards: string[],
   ): string[];
+  onPlayerAbandon?(config: TConfig, state: TState, userId: number): TState;
 }
 ```
 
@@ -64,6 +65,8 @@ interface GamePlugin<TConfig, TState, TStore, TEvent extends GameEventBase> {
 **`buildStore`** — Constructs the permanent store record from a state snapshot. Called by the engine after the final `applyEvent` (when `isGameOver` returns true), or when a game is terminated early. This deferred construction means store data doesn't need to be maintained incrementally during play.
 
 **`getValidTargets`** _(optional)_ — Returns valid target stack IDs for a card selection. This is a read-only query used by the frontend's `InteractionController` to determine where selected cards can be moved. It receives the source stack ID and selected card names, and returns an array of target stack IDs (e.g. `["trick-pile"]`, `["buried"]`). Must not modify state. If not implemented, the server returns an empty array and the frontend falls back to plugin-side logic. See [game-table-ui.md](game-table-ui.md) for the full target query flow.
+
+**`onPlayerAbandon`** _(optional)_ — Handles a player abandoning the game mid-play. Accepts config, current state, and the abandoning player's userId. Must return a new state where `isGameOver` returns `true` (a terminal state). If not implemented, `GameService` falls back to cancelling the session with status `abandoned`. Abandonment always ends the game — the plugin cannot continue with fewer players.
 
 ### Events
 
@@ -85,12 +88,12 @@ Each game defines a union of specific event types. The `type` field drives dispa
 
 A game session maps to one row in `game_sessions`:
 
-| Column      | Content                                                  |
-| ----------- | -------------------------------------------------------- |
-| `game_type` | Matches `plugin.gameType`                                |
-| `config`    | JSONB — the validated `TConfig`                          |
-| `store`     | JSONB — the `TStore`, built at game end via `buildStore` |
-| `status`    | `'waiting'` / `'active'` / `'finished'`                  |
+| Column      | Content                                                                               |
+| ----------- | ------------------------------------------------------------------------------------- |
+| `game_type` | Matches `plugin.gameType`                                                             |
+| `config`    | JSONB — the validated `TConfig`                                                       |
+| `store`     | JSONB — the `TStore`, built at game end via `buildStore`                              |
+| `status`    | `'waiting'` / `'active'` / `'finished'` / `'cancelled'` / `'aborted'` / `'abandoned'` |
 
 State is not persisted. On reconnect, the engine holds state in memory (or reconstructs it if needed).
 

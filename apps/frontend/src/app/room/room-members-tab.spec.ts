@@ -25,6 +25,7 @@ function makeMember(
     section,
     position,
     assignedHue: null,
+    readyToPlay: false,
   };
 }
 
@@ -58,15 +59,19 @@ describe('RoomMembersTab', () => {
 
   const playersSignal = signal<RosterMember[]>([]);
   const spectatorsSignal = signal<RosterMember[]>([]);
-  const rotateSignal = signal(false);
+  const rotationModeSignal = signal<'none' | 'rotate-players' | 'rotate-spectators'>(
+    'rotate-players',
+  );
 
   const mockRosterService = {
     players: playersSignal,
     spectators: spectatorsSignal,
-    rotatePlayers: rotateSignal,
+    rotationMode: rotationModeSignal,
     reorderRoster: jest.fn().mockReturnValue(of({})),
     kickUser: jest.fn().mockReturnValue(of({})),
     toggleRotate: jest.fn().mockReturnValue(of({})),
+    toggleReady: jest.fn(),
+    setRotationMode: jest.fn(),
   };
 
   const membersSignal = signal<{ userId: number; username: string; displayName: string | null }[]>(
@@ -107,6 +112,7 @@ describe('RoomMembersTab', () => {
     on: jest.fn().mockReturnValue(() => {
       /* empty */
     }),
+    send: jest.fn(),
   };
 
   const mockThemeService = {
@@ -127,7 +133,7 @@ describe('RoomMembersTab', () => {
     jest.clearAllMocks();
     playersSignal.set([]);
     spectatorsSignal.set([]);
-    rotateSignal.set(false);
+    rotationModeSignal.set('rotate-players');
     membersSignal.set([]);
     sessionIdSignal.set(null);
     userSignal.set(null);
@@ -264,19 +270,19 @@ describe('RoomMembersTab', () => {
     expect(playersList.classList.contains('cdk-drop-list-disabled')).toBe(true);
   });
 
-  // --- Rotate toggle visibility (Req 11.1, 11.2) ---
+  // --- Rotation mode group visibility ---
 
-  it('shows rotate toggle for owner', () => {
+  it('shows rotation mode group for owner', () => {
     setup({ userId: OWNER_ID });
 
-    const toggle = el.querySelector('[data-testid="rotate-toggle"]');
-    expect(toggle).toBeTruthy();
+    const group = el.querySelector('[data-testid="rotation-mode-group"]');
+    expect(group).toBeTruthy();
   });
 
-  it('hides rotate toggle for non-owner', () => {
+  it('hides rotation mode group for non-owner', () => {
     setup({ userId: 2 });
 
-    const toggle = el.querySelector('[data-testid="rotate-toggle"]');
-    expect(toggle).toBeFalsy();
+    const group = el.querySelector('[data-testid="rotation-mode-group"]');
+    expect(group).toBeFalsy();
   });
 });

@@ -1,4 +1,5 @@
 import {
+  boolean,
   index,
   integer,
   pgTable,
@@ -26,6 +27,7 @@ export const roomRosters = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     lastVisitedAt: timestamp('last_visited_at', { withTimezone: true }).notNull().defaultNow(),
     assignedHue: smallint('assigned_hue'),
+    readyToPlay: boolean('ready_to_play').notNull().default(false),
   },
   (table) => [
     uniqueIndex('room_rosters_pair_unique').on(table.roomId, table.userId),

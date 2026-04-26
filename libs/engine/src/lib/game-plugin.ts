@@ -59,4 +59,11 @@ export interface GamePlugin<
     sourceStackId: string,
     selectedCards: string[],
   ): string[];
+
+  /**
+   * Handle a player abandoning the game. Returns the new state
+   * which must be a terminal (game-over) state.
+   * If not implemented, GameService falls back to cancelling with status 'abandoned'.
+   */
+  onPlayerAbandon?(config: TConfig, state: TState, userId: number): TState;
 }

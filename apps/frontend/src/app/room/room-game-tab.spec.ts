@@ -175,6 +175,7 @@ describe('RoomGameTab — component rendering', () => {
     createGame: jest.fn(),
     startGame: jest.fn(),
     cancelGame: jest.fn(),
+    error: signal(null),
   };
 
   const mockRoomContext = {
@@ -250,6 +251,7 @@ describe('RoomGameTab — Start/Abort buttons', () => {
     createGame: jest.fn(),
     startGame: jest.fn(),
     cancelGame: jest.fn(),
+    error: signal(null),
   };
 
   const mockRoomContext = {
@@ -356,6 +358,12 @@ describe('RoomGameTab — Start/Abort buttons', () => {
     abortBtn.click();
     fixture.detectChanges();
 
+    const confirmBtn = document.querySelector(
+      '[data-testid="confirm-dialog-confirm"]',
+    ) as HTMLButtonElement;
+    confirmBtn.click();
+    fixture.detectChanges();
+
     expect(mockGameService.cancelGame).toHaveBeenCalled();
   });
 
@@ -389,6 +397,7 @@ describe('RoomGameTab — form locking during active session', () => {
     createGame: jest.fn(),
     startGame: jest.fn(),
     cancelGame: jest.fn(),
+    error: signal(null),
   };
 
   const mockRoomContext = {
@@ -531,6 +540,7 @@ describe('RoomGameTab — Autostart checkbox', () => {
     createGame: jest.fn(),
     startGame: jest.fn(),
     cancelGame: jest.fn(),
+    error: signal(null),
   };
 
   const mockRoomContext = {
@@ -630,6 +640,7 @@ describe('RoomGameTab — settings persistence via WebSocket', () => {
     createGame: jest.fn(),
     startGame: jest.fn(),
     cancelGame: jest.fn(),
+    error: signal(null),
   };
 
   const mockRoomContext = {
@@ -842,6 +853,7 @@ describe('Game action button visibility', () => {
     createGame: jest.fn(),
     startGame: jest.fn(),
     cancelGame: jest.fn(),
+    error: signal(null),
   };
 
   const mockRoomContext = {

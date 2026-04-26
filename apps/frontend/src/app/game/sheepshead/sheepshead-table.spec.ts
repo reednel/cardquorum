@@ -133,6 +133,7 @@ async function setup(gameServiceOverrides: Partial<Record<string, unknown>> = {}
   fixture.componentRef.setInput('members', []);
   fixture.componentRef.setInput('isOwner', false);
   fixture.componentRef.setInput('autostart', false);
+  fixture.componentRef.setInput('canStartNext', false);
   fixture.componentRef.setInput('startNextGame', createMockStartNextGame());
   fixture.detectChanges();
 

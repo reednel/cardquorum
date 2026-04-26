@@ -28,7 +28,7 @@ describe('RoomController', () => {
       | 'kickUser'
       | 'getRoster'
       | 'reorderRoster'
-      | 'toggleRotatePlayers'
+      | 'setRotationMode'
       | 'countMembers'
       | 'isMember'
       | 'loadGameSettings'
@@ -57,7 +57,7 @@ describe('RoomController', () => {
     ownerUsername: 'alice',
     visibility: 'public',
     memberLimit: null as number | null,
-    rotatePlayers: false,
+    rotationMode: 'none',
     createdAt: now,
     updatedAt: now,
   };
@@ -81,14 +81,14 @@ describe('RoomController', () => {
       getInvites: jest.fn().mockResolvedValue([]),
       getBans: jest.fn().mockResolvedValue([]),
       bulkInvite: jest.fn().mockResolvedValue(undefined),
-      kickUser: jest.fn().mockResolvedValue({ players: [], spectators: [], rotatePlayers: false }),
-      getRoster: jest.fn().mockResolvedValue({ players: [], spectators: [], rotatePlayers: false }),
+      kickUser: jest.fn().mockResolvedValue({ players: [], spectators: [], rotationMode: 'none' }),
+      getRoster: jest.fn().mockResolvedValue({ players: [], spectators: [], rotationMode: 'none' }),
       reorderRoster: jest
         .fn()
-        .mockResolvedValue({ players: [], spectators: [], rotatePlayers: false }),
-      toggleRotatePlayers: jest
+        .mockResolvedValue({ players: [], spectators: [], rotationMode: 'none' }),
+      setRotationMode: jest
         .fn()
-        .mockResolvedValue({ players: [], spectators: [], rotatePlayers: false }),
+        .mockResolvedValue({ players: [], spectators: [], rotationMode: 'none' }),
       countMembers: jest.fn().mockResolvedValue(0),
       isMember: jest.fn().mockResolvedValue(false),
       loadGameSettings: jest.fn().mockResolvedValue(nullGameSettings),
@@ -100,7 +100,7 @@ describe('RoomController', () => {
       searchDiscoverable: jest.fn().mockResolvedValue([]),
       removeFromRoster: jest
         .fn()
-        .mockResolvedValue({ players: [], spectators: [], rotatePlayers: false }),
+        .mockResolvedValue({ players: [], spectators: [], rotationMode: 'none' }),
     };
 
     gameService = {
@@ -615,6 +615,7 @@ describe('RoomController', () => {
           section: 'players' as const,
           position: 0,
           assignedHue: null,
+          readyToPlay: true,
         },
       ],
       spectators: [
@@ -625,9 +626,10 @@ describe('RoomController', () => {
           section: 'spectators' as const,
           position: 0,
           assignedHue: null,
+          readyToPlay: false,
         },
       ],
-      rotatePlayers: false,
+      rotationMode: 'none' as const,
     };
 
     it('should return roster for accessible room', async () => {
@@ -683,6 +685,7 @@ describe('RoomController', () => {
           section: 'players' as const,
           position: 0,
           assignedHue: null,
+          readyToPlay: true,
         },
       ],
       spectators: [
@@ -693,9 +696,10 @@ describe('RoomController', () => {
           section: 'spectators' as const,
           position: 0,
           assignedHue: null,
+          readyToPlay: false,
         },
       ],
-      rotatePlayers: false,
+      rotationMode: 'none' as const,
     };
 
     it('should reorder roster when owner requests', async () => {
@@ -747,16 +751,16 @@ describe('RoomController', () => {
     const rosterWithRotate = {
       players: [],
       spectators: [],
-      rotatePlayers: true,
+      rotationMode: 'rotate-players' as const,
     };
 
     it('should toggle rotation when owner requests', async () => {
       roomService.findById.mockResolvedValue(dbRoom);
-      roomService.toggleRotatePlayers.mockResolvedValue(rosterWithRotate);
+      roomService.setRotationMode.mockResolvedValue(rosterWithRotate);
 
       const result = await controller.toggleRotate(makeRequest(alice), 1, { enabled: true });
 
-      expect(roomService.toggleRotatePlayers).toHaveBeenCalledWith(1, true);
+      expect(roomService.setRotationMode).toHaveBeenCalledWith(1, 'rotate-players');
       expect(result).toEqual(rosterWithRotate);
     });
 

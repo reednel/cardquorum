@@ -10,7 +10,12 @@ describe('GameService', () => {
   let mockSessionRepo: jest.Mocked<
     Pick<GameSessionRepository, 'create' | 'updateStatusAndTimestamp' | 'updateStore'>
   >;
-  let roomService: { manager: RoomManager; getRoster: jest.Mock; rotateSeat: jest.Mock };
+  let roomService: {
+    manager: RoomManager;
+    getRoster: jest.Mock;
+    handlePostGame: jest.Mock;
+    toggleReady: jest.Mock;
+  };
 
   const aliceIdentity = { userId: 1, username: 'alice', displayName: 'Alice' };
   const bobIdentity = { userId: 2, username: 'bob', displayName: 'Bob' };
@@ -47,6 +52,7 @@ describe('GameService', () => {
         section: 'players' as const,
         position: i,
         assignedHue: null as number | null,
+        readyToPlay: true,
       })),
       spectators: spectators.map((s, i) => ({
         userId: s.userId,
@@ -55,8 +61,9 @@ describe('GameService', () => {
         section: 'spectators' as const,
         position: i,
         assignedHue: null as number | null,
+        readyToPlay: false,
       })),
-      rotatePlayers: false,
+      rotationMode: 'rotate-players' as const,
     };
   }
 
@@ -71,7 +78,8 @@ describe('GameService', () => {
     roomService = {
       manager: new RM(),
       getRoster: jest.fn().mockResolvedValue(buildRoster([])),
-      rotateSeat: jest.fn().mockResolvedValue(buildRoster([])),
+      handlePostGame: jest.fn().mockResolvedValue(buildRoster([])),
+      toggleReady: jest.fn().mockResolvedValue(buildRoster([])),
     };
 
     service = new GameService(
@@ -224,6 +232,7 @@ describe('GameService', () => {
             section: 'players' as const,
             position: 0,
             assignedHue: 40,
+            readyToPlay: true,
           },
           {
             userId: 2,
@@ -232,6 +241,7 @@ describe('GameService', () => {
             section: 'players' as const,
             position: 1,
             assignedHue: 160,
+            readyToPlay: true,
           },
           {
             userId: 3,
@@ -240,10 +250,11 @@ describe('GameService', () => {
             section: 'players' as const,
             position: 2,
             assignedHue: 280,
+            readyToPlay: true,
           },
         ],
         spectators: [],
-        rotatePlayers: false,
+        rotationMode: 'rotate-players' as const,
       };
       roomService.getRoster.mockResolvedValue(rosterWithHues);
 
@@ -267,6 +278,7 @@ describe('GameService', () => {
             section: 'players' as const,
             position: 0,
             assignedHue: 100,
+            readyToPlay: true,
           },
           {
             userId: 2,
@@ -275,6 +287,7 @@ describe('GameService', () => {
             section: 'players' as const,
             position: 1,
             assignedHue: null,
+            readyToPlay: true,
           },
           {
             userId: 3,
@@ -283,10 +296,11 @@ describe('GameService', () => {
             section: 'players' as const,
             position: 2,
             assignedHue: 220,
+            readyToPlay: true,
           },
         ],
         spectators: [],
-        rotatePlayers: false,
+        rotationMode: 'rotate-players' as const,
       };
       roomService.getRoster.mockResolvedValue(rosterWithPartialHues);
 

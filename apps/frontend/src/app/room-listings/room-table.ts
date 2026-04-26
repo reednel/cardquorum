@@ -122,11 +122,8 @@ export class RoomTableComponent {
   }
 
   protected isRoomFull(room: RoomResponse): boolean {
-    return (
-      room.memberLimit != null &&
-      room.memberLimit > 0 &&
-      room.rosterCount >= room.memberLimit &&
-      !room.isOnRoster
-    );
+    const effectiveLimit =
+      room.memberLimit != null && room.memberLimit > 0 ? room.memberLimit : 128;
+    return room.rosterCount >= effectiveLimit && !room.isOnRoster;
   }
 }

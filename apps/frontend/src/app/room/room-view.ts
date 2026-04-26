@@ -55,6 +55,7 @@ type RoomTab = 'chat' | 'members' | 'game';
             [members]="roomContext.members()"
             [isOwner]="isOwner()"
             [autostart]="roomGameTab()?.autostart() ?? false"
+            [canStartNext]="roomGameTab()?.canStart() ?? false"
             (startNextGame)="onStartNextGame()"
           />
         }
@@ -111,11 +112,19 @@ type RoomTab = 'chat' | 'members' | 'game';
             @if (!isOwner()) {
               <button
                 data-testid="leave-btn"
+                [disabled]="isActivePlayer()"
+                [title]="
+                  isActivePlayer()
+                    ? 'Finish or abandon the current game before leaving'
+                    : 'Leave room'
+                "
                 (click)="leave()"
-                class="shrink-0 rounded-default px-2 py-1 text-xs text-text-secondary transition-colors
-                       hover:bg-surface-raised hover:text-text-body
-                       dark:text-text-secondary-dark dark:hover:bg-surface-raised-dark
-                       dark:hover:text-text-heading-dark"
+                [class]="
+                  'shrink-0 rounded-default px-2 py-1 text-xs transition-colors ' +
+                  (isActivePlayer()
+                    ? 'cursor-not-allowed text-disabled'
+                    : 'text-text-secondary hover:bg-surface-raised hover:text-text-body dark:text-text-secondary-dark dark:hover:bg-surface-raised-dark dark:hover:text-text-heading-dark')
+                "
               >
                 Leave
               </button>
@@ -195,6 +204,14 @@ export class RoomView implements OnInit, OnDestroy {
   protected readonly roomGameTab = viewChild(RoomGameTab);
 
   protected readonly myUserID = computed(() => this.auth.user()?.userId ?? 0);
+
+  /** True when the current user is playing in an active game and cannot leave. */
+  protected readonly isActivePlayer = computed(() => {
+    if (this.gameService.sessionId() === null) return false;
+    const userId = this.auth.user()?.userId;
+    if (userId == null) return false;
+    return this.rosterService.players().some((m) => m.userId === userId);
+  });
   protected readonly tabs: RoomTab[] = ['chat', 'members', 'game'];
   protected readonly activeTab = signal<RoomTab>('chat');
   protected readonly panelOpen = signal(true);

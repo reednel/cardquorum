@@ -15,7 +15,7 @@ describe('RoomGateway', () => {
   const bobIdentity: UserIdentity = { userId: 2, username: 'bob', displayName: 'Bob' };
   const charlieIdentity: UserIdentity = { userId: 3, username: 'charlie', displayName: 'Charlie' };
 
-  const emptyRoster: RosterState = { players: [], spectators: [], rotatePlayers: false };
+  const emptyRoster: RosterState = { players: [], spectators: [], rotationMode: 'none' };
 
   const createMockClient = () => ({ send: jest.fn(), close: jest.fn() }) as unknown as WebSocket;
 
@@ -164,9 +164,10 @@ describe('RoomGateway', () => {
             section: 'spectators',
             position: 0,
             assignedHue: null,
+            readyToPlay: false,
           },
         ],
-        rotatePlayers: false,
+        rotationMode: 'none',
       };
       (roomService.addToRoster as jest.Mock).mockResolvedValue(rosterWithBob);
 
@@ -352,7 +353,7 @@ describe('RoomGateway', () => {
       const roomKey = '1';
 
       // Step 1: Broadcast ROSTER_UPDATED (roster without Bob)
-      const rosterWithoutBob: RosterState = { players: [], spectators: [], rotatePlayers: false };
+      const rosterWithoutBob: RosterState = { players: [], spectators: [], rotationMode: 'none' };
       roomService.broadcastToRoom(roomKey, WS_EMIT.ROSTER_UPDATED, {
         roomId: 1,
         roster: rosterWithoutBob,
@@ -401,6 +402,7 @@ describe('RoomGateway', () => {
             section: 'players',
             position: 0,
             assignedHue: null,
+            readyToPlay: true,
           },
         ],
         spectators: [
@@ -411,9 +413,10 @@ describe('RoomGateway', () => {
             section: 'spectators',
             position: 0,
             assignedHue: null,
+            readyToPlay: false,
           },
         ],
-        rotatePlayers: false,
+        rotationMode: 'none',
       };
 
       // reorderRoster broadcasts ROSTER_UPDATED internally — mock it to simulate the broadcast

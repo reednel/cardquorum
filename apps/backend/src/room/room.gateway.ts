@@ -17,6 +17,8 @@ import {
   LeaveRoomDto,
   LeaveRosterDto,
   RosterReorderDto,
+  RosterSetRotationModeDto,
+  RosterToggleReadyDto,
   RosterToggleRotateDto,
 } from './room.dto';
 import { RoomService } from './room.service';
@@ -205,10 +207,58 @@ export class RoomGateway implements OnModuleInit {
     }
 
     try {
-      await this.roomService.toggleRotatePlayers(roomId, payload.enabled);
+      // Legacy handler — map boolean to rotation mode
+      const mode = payload.enabled ? 'rotate-players' : 'none';
+      await this.roomService.setRotationMode(roomId, mode);
     } catch (err) {
       this.send(client, WS_EMIT.ERROR, {
         message: err instanceof Error ? err.message : 'Failed to toggle rotation',
+      });
+    }
+  }
+
+  @SubscribeMessage(WS_EVENT.ROSTER_TOGGLE_READY)
+  async handleToggleReady(
+    @ConnectedSocket() client: WebSocket,
+    @MessageBody() payload: RosterToggleReadyDto,
+  ) {
+    const tracked = this.connectionService.getTracked(client);
+    if (!tracked) return;
+
+    try {
+      await this.roomService.toggleReady(payload.roomId, tracked.identity.userId);
+    } catch (err) {
+      this.send(client, WS_EMIT.ERROR, {
+        message: err instanceof Error ? err.message : 'Failed to toggle ready status',
+      });
+    }
+  }
+
+  @SubscribeMessage(WS_EVENT.ROSTER_SET_ROTATION_MODE)
+  async handleSetRotationMode(
+    @ConnectedSocket() client: WebSocket,
+    @MessageBody() payload: RosterSetRotationModeDto,
+  ) {
+    const tracked = this.connectionService.getTracked(client);
+    if (!tracked) return;
+
+    const roomId = payload.roomId;
+    const userId = tracked.identity.userId;
+
+    // Verify the requesting user is the room owner
+    const room = await this.roomService.findById(roomId);
+    if (!room || room.ownerId !== userId) {
+      this.send(client, WS_EMIT.ERROR, {
+        message: 'Only the room owner can change rotation mode',
+      });
+      return;
+    }
+
+    try {
+      await this.roomService.setRotationMode(roomId, payload.mode as any);
+    } catch (err) {
+      this.send(client, WS_EMIT.ERROR, {
+        message: err instanceof Error ? err.message : 'Failed to set rotation mode',
       });
     }
   }

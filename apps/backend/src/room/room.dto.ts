@@ -164,3 +164,21 @@ export class GameSettingsLoadDto {
   @Min(1)
   roomId!: number;
 }
+
+// --- Roster ready / rotation mode DTOs ---
+
+export class RosterToggleReadyDto {
+  @IsInt()
+  @Type(() => Number)
+  roomId!: number;
+}
+
+export class RosterSetRotationModeDto {
+  @IsInt()
+  @Type(() => Number)
+  roomId!: number;
+
+  @IsString()
+  @IsIn(['none', 'rotate-players', 'rotate-spectators'])
+  mode!: string;
+}

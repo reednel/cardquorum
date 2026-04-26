@@ -33,14 +33,17 @@ Current tables:
 
 ### `rooms`
 
-| Column       | Type           | Notes                                                                  |
-| ------------ | -------------- | ---------------------------------------------------------------------- |
-| `id`         | `serial`       | PK, auto-increment                                                     |
-| `name`       | `varchar(255)` | Not null, unique                                                       |
-| `owner_id`   | `integer`      | FK → `users.id`, cascade delete, not null                              |
-| `visibility` | `varchar(20)`  | Not null, default `'public'` (`public`, `friends-only`, `invite-only`) |
-| `created_at` | `timestamptz`  | Not null, default `now()`                                              |
-| `updated_at` | `timestamptz`  | Not null, default `now()`                                              |
+| Column          | Type           | Notes                                                                                             |
+| --------------- | -------------- | ------------------------------------------------------------------------------------------------- |
+| `id`            | `serial`       | PK, auto-increment                                                                                |
+| `name`          | `varchar(255)` | Not null, unique                                                                                  |
+| `description`   | `varchar(256)` | Nullable                                                                                          |
+| `owner_id`      | `integer`      | FK → `users.id`, cascade delete, not null                                                         |
+| `visibility`    | `varchar(20)`  | Not null, default `'public'` (`public`, `friends-only`, `invite-only`)                            |
+| `member_limit`  | `integer`      | Nullable. When set, must be 1–128. Null means no displayed limit (128 enforced server-side).      |
+| `rotation_mode` | `varchar(20)`  | Not null, default `'rotate-players'`. One of `'none'`, `'rotate-players'`, `'rotate-spectators'`. |
+| `created_at`    | `timestamptz`  | Not null, default `now()`                                                                         |
+| `updated_at`    | `timestamptz`  | Not null, default `now()`                                                                         |
 
 ### `room_invites`
 
@@ -114,12 +117,14 @@ export class ChatService {
 
 Available repositories:
 
-- **`RoomRepository`** — `findById`, `findAll`, `create`, `update`, `delete`
+- **`RoomRepository`** — `findById`, `findAll`, `create`, `update`, `delete`, `findMemberships`, `findDiscoverablePublic`, `findDiscoverablePrivate`, `searchDiscoverable`
+- **`RoomRosterRepository`** — `findByRoom`, `addMember`, `removeMember`, `replaceRoster`, `countMembers`, `isMember`, `setReadyToPlay`, `getRotationMode`, `setRotationMode`, `getAssignedHues`, `setAssignedHue`
 - **`RoomInviteRepository`** — `create`, `createMany`, `delete`, `findByRoom`, `isInvited`, `findInvitedRoomIds`
 - **`RoomBanRepository`** — `create`, `delete`, `findByRoom`, `isBanned`, `findBannedRoomIds`
 - **`MessageRepository`** — `insert`, `findByRoomId`
 - **`UserRepository`** — `findById`, `findByUsername`, `create`
 - **`CredentialRepository`** — `findCredentialByUserId`, `findUserByCredential`, `upsertCredential`, `findOrCreateUserByOidc`, `insertCredential`, `findMethodsByUserId`, `deleteByUserIdAndMethod`, `deleteAllByUserId`
+- **`GameSessionRepository`** — `create`, `updateStatusAndTimestamp`, `updateStore`
 
 ## Common Operations
 

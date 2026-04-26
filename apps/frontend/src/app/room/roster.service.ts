@@ -7,7 +7,9 @@ import {
   RosterMember,
   RosterState,
   RosterUpdatePayload,
+  RotationMode,
   WS_EMIT,
+  WS_EVENT,
 } from '@cardquorum/shared';
 import { WebSocketService } from '../websocket.service';
 
@@ -41,7 +43,7 @@ export function formatRosterCount(count: number, limit: number | null): string {
 export class RosterService {
   readonly players = signal<RosterMember[]>([]);
   readonly spectators = signal<RosterMember[]>([]);
-  readonly rotatePlayers = signal<boolean>(false);
+  readonly rotationMode = signal<RotationMode>('rotate-players');
 
   private readonly ws = inject(WebSocketService);
   private readonly http = inject(HttpClient);
@@ -73,11 +75,21 @@ export class RosterService {
     return this.http.patch<RosterState>(`/api/rooms/${roomId}/roster/rotate`, { enabled });
   }
 
+  // --- WebSocket methods ---
+
+  toggleReady(roomId: number): void {
+    this.ws.send(WS_EVENT.ROSTER_TOGGLE_READY, { roomId });
+  }
+
+  setRotationMode(roomId: number, mode: RotationMode): void {
+    this.ws.send(WS_EVENT.ROSTER_SET_ROTATION_MODE, { roomId, mode });
+  }
+
   // --- Internal helpers ---
 
   private applyRoster(roster: RosterState): void {
     this.players.set(roster.players);
     this.spectators.set(roster.spectators);
-    this.rotatePlayers.set(roster.rotatePlayers);
+    this.rotationMode.set(roster.rotationMode);
   }
 }

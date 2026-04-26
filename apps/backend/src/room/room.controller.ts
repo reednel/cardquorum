@@ -409,7 +409,7 @@ export class RoomController {
   ): Promise<RosterState> {
     const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
     await this.assertOwner(id, user.userId);
-    return this.roomService.toggleRotatePlayers(id, dto.enabled);
+    return this.roomService.setRotationMode(id, dto.enabled ? 'rotate-players' : 'none');
   }
 
   // --- Helpers ---

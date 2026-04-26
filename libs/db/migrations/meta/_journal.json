@@ -43,6 +43,13 @@
       "when": 1776028060685,
       "tag": "0005_watery_starjammers",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1777000000000,
+      "tag": "0006_roster_overhaul",
+      "breakpoints": true
     }
   ]
 }

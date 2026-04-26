@@ -76,12 +76,28 @@ export interface RosterMember {
   section: RosterSection;
   position: number;
   assignedHue: number | null;
+  readyToPlay: boolean;
 }
+
+export type RotationMode = 'none' | 'rotate-players' | 'rotate-spectators';
 
 export interface RosterState {
   players: RosterMember[];
   spectators: RosterMember[];
-  rotatePlayers: boolean;
+  rotationMode: RotationMode;
+}
+
+export interface RosterToggleReadyPayload {
+  roomId: number;
+}
+
+export interface GameAbandonPayload {
+  sessionId: number;
+}
+
+export interface RosterSetRotationModePayload {
+  roomId: number;
+  mode: RotationMode;
 }
 
 export interface RosterUpdatePayload {

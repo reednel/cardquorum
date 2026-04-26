@@ -36,6 +36,7 @@ export class GameTable {
   readonly members = input.required<UserIdentity[]>();
   readonly isOwner = input.required<boolean>();
   readonly autostart = input.required<boolean>();
+  readonly canStartNext = input.required<boolean>();
   readonly startNextGame = output<void>();
 
   /** Resolve the plugin from the game type. */
@@ -56,6 +57,7 @@ export class GameTable {
     members: this.members(),
     isOwner: this.isOwner(),
     autostart: this.autostart(),
+    canStartNext: this.canStartNext(),
     startNextGame: this.startNextGame,
   }));
 

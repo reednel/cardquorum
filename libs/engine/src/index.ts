@@ -5,7 +5,12 @@ export {
   removeMember,
   reorderRoster,
   rotateSeat,
+  rotateSeatV2,
   handleDisconnect,
+  toggleReady,
+  demotePlayer,
+  demoteNotReadyPlayers,
+  validateReorder,
 } from './lib/roster-logic';
 export type {
   GamePlugin,

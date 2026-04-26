@@ -247,8 +247,9 @@ export class GameService implements OnModuleDestroy {
 
       this.logger.log(`Game session ${sessionId} finished`);
 
-      // Rotate seats after game-over cleanup so clients see game-over before roster change
-      await this.roomService.rotateSeat(game.roomId);
+      // Post-game pipeline (demote not-ready + rotate) after cleanup so clients see game-over before roster change
+      const requiredPlayerCount = (game.config as { playerCount: number }).playerCount;
+      await this.roomService.handlePostGame(game.roomId, requiredPlayerCount);
 
       return { gameOver: true, playerViews, store };
     }
@@ -280,6 +281,65 @@ export class GameService implements OnModuleDestroy {
     this.logger.log(`Game session ${sessionId} ${finalStatus} by user ${requestedBy}`);
 
     return { roomId: game.roomId };
+  }
+
+  /**
+   * Handle a player abandoning an active game.
+   * Invokes the plugin's onPlayerAbandon if available, otherwise falls back to 'abandoned' status.
+   * Triggers post-game pipeline and demotes the abandoning player.
+   */
+  async abandonGame(sessionId: number, userId: number, broadcastFn?: BroadcastFn): Promise<void> {
+    const game = this.activeGames.get(sessionId);
+    if (!game) {
+      throw new Error('Game session not found');
+    }
+    if (game.status !== 'active') {
+      throw new Error('Game session is not active');
+    }
+    if (!game.playerIDs.includes(userId)) {
+      throw new Error('User is not a player in this session');
+    }
+
+    const plugin = this.plugins.get(game.gameType)!;
+    const requiredPlayerCount = (game.config as { playerCount: number }).playerCount;
+
+    let store: unknown | undefined;
+
+    if (plugin.onPlayerAbandon) {
+      const newState = plugin.onPlayerAbandon(game.config as any, game.state as any, userId);
+      game.state = newState;
+      store = plugin.buildStore(game.config as any, newState);
+      await this.sessionRepo.updateStore(sessionId, store);
+      await this.sessionRepo.updateStatusAndTimestamp(sessionId, 'finished', 'finishedAt');
+    } else {
+      await this.sessionRepo.updateStatusAndTimestamp(sessionId, 'abandoned', 'finishedAt');
+    }
+
+    // Broadcast game-over to all players
+    if (broadcastFn) {
+      const playerViews = this.buildPlayerViews(game, plugin);
+      broadcastFn({ gameOver: true, playerViews, store });
+    }
+
+    // Clean up in-memory state
+    this.clearPendingTimers(sessionId);
+    this.activeGames.delete(sessionId);
+    this.roomToSession.delete(game.roomId);
+
+    this.logger.log(`Game session ${sessionId} abandoned by user ${userId}`);
+
+    // Post-game pipeline (demote not-ready players + rotate)
+    await this.roomService.handlePostGame(game.roomId, requiredPlayerCount);
+
+    // Demote the abandoning player: since the game is now over, toggling ready
+    // to false will immediately demote them to spectators
+    const roster = await this.roomService.getRoster(game.roomId);
+    const playerInRoster = roster.players.find((p) => p.userId === userId);
+    if (playerInRoster) {
+      if (playerInRoster.readyToPlay) {
+        await this.roomService.toggleReady(game.roomId, userId);
+      }
+    }
   }
 
   /**
@@ -467,7 +527,8 @@ export class GameService implements OnModuleDestroy {
 
       this.logger.log(`Game session ${sessionId} finished (scheduled event)`);
 
-      this.roomService.rotateSeat(game.roomId);
+      const requiredPlayerCount = (game.config as { playerCount: number }).playerCount;
+      this.roomService.handlePostGame(game.roomId, requiredPlayerCount);
 
       broadcastFn({ gameOver: true, playerViews, store });
       return;

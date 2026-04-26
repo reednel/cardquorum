@@ -29,6 +29,7 @@ import {
 import { SheepsheadConfigPlugin } from '@cardquorum/sheepshead';
 import { GameRegistry } from '../game/game-registry';
 import { GameService } from '../game/game.service';
+import { ConfirmDialog } from '../shared/confirm-dialog';
 import { WebSocketService } from '../websocket.service';
 import { validateGameForm } from './game-form-validation';
 import { RoomContextService } from './room-context.service';
@@ -68,7 +69,7 @@ export function buildFieldEntries(
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-room-game-tab',
-  imports: [FormsModule, FaIconComponent],
+  imports: [FormsModule, FaIconComponent, ConfirmDialog],
   template: `
     <div id="game-panel" role="tabpanel" aria-label="Game" class="flex min-h-0 flex-1 flex-col">
       <div class="flex-1 overflow-y-auto p-4">
@@ -294,7 +295,7 @@ export function buildFieldEntries(
             @if (gameService.sessionId()) {
               <button
                 data-testid="abort-game-btn"
-                (click)="onAbort()"
+                (click)="confirmingAbort.set(true)"
                 class="min-w-0 flex-1 rounded-default bg-danger px-4 py-2 text-sm font-medium text-white
                        transition-colors hover:bg-danger-hover
                        dark:bg-danger-dark dark:hover:bg-danger-dark-hover"
@@ -334,6 +335,17 @@ export function buildFieldEntries(
         </div>
       }
     </div>
+
+    @if (confirmingAbort()) {
+      <app-confirm-dialog
+        title="Abort Game"
+        message="This will end the current game for all players. This does not count as a forefit."
+        confirmLabel="Abort"
+        titleId="abort-dialog-title"
+        (confirmed)="onAbort()"
+        (closed)="confirmingAbort.set(false)"
+      />
+    }
   `,
 })
 export class RoomGameTab implements OnInit {
@@ -348,6 +360,9 @@ export class RoomGameTab implements OnInit {
 
   /** Set to true after createGame is called; cleared once startGame fires. */
   private readonly pendingStart = signal(false);
+
+  /** Whether the abort confirmation dialog is open. */
+  protected readonly confirmingAbort = signal(false);
 
   /** Autostart next game when current one ends. */
   readonly autostart = signal(false);
@@ -378,6 +393,17 @@ export class RoomGameTab implements OnInit {
       prevStore = store;
       if (justEnded && autostartEnabled && canStart) {
         this.onStart();
+      }
+    });
+
+    // When a GAME_ERROR arrives while pendingStart is true, the auto-start
+    // sequence failed (e.g., player count mismatch). Cancel the orphaned
+    // waiting session so the UI reverts to "Start Game".
+    effect(() => {
+      const error = this.gameService.error();
+      if (error && this.pendingStart()) {
+        this.pendingStart.set(false);
+        this.gameService.cancelGame();
       }
     });
 
@@ -452,7 +478,7 @@ export class RoomGameTab implements OnInit {
     });
   });
 
-  protected readonly canStart = computed(() => this.validationErrors().length === 0);
+  readonly canStart = computed(() => this.validationErrors().length === 0);
 
   /** True when a game session is active — locks game type, variant, and config fields. */
   protected readonly formLocked = computed(() => this.gameService.sessionId() !== null);
@@ -489,6 +515,7 @@ export class RoomGameTab implements OnInit {
   }
 
   protected onAbort(): void {
+    this.confirmingAbort.set(false);
     this.gameService.cancelGame();
   }
 

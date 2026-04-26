@@ -15,7 +15,12 @@ describe('GameService integration (full Sheepshead game)', () => {
   let mockSessionRepo: jest.Mocked<
     Pick<GameSessionRepository, 'create' | 'updateStatusAndTimestamp' | 'updateStore'>
   >;
-  let roomService: { manager: RoomManager; getRoster: jest.Mock; rotateSeat: jest.Mock };
+  let roomService: {
+    manager: RoomManager;
+    getRoster: jest.Mock;
+    handlePostGame: jest.Mock;
+    toggleReady: jest.Mock;
+  };
 
   const userIDs = [1, 2, 3];
   const players = [
@@ -61,14 +66,20 @@ describe('GameService integration (full Sheepshead game)', () => {
           section: 'players' as const,
           position: i,
           assignedHue: null as number | null,
+          readyToPlay: true,
         })),
         spectators: [],
-        rotatePlayers: false,
+        rotationMode: 'rotate-players' as const,
       } satisfies RosterState),
-      rotateSeat: jest.fn().mockResolvedValue({
+      handlePostGame: jest.fn().mockResolvedValue({
         players: [],
         spectators: [],
-        rotatePlayers: false,
+        rotationMode: 'rotate-players' as const,
+      } satisfies RosterState),
+      toggleReady: jest.fn().mockResolvedValue({
+        players: [],
+        spectators: [],
+        rotationMode: 'rotate-players' as const,
       } satisfies RosterState),
     };
 
@@ -330,18 +341,18 @@ describe('GameService integration (full Sheepshead game)', () => {
     expect(roomService.getRoster).toHaveBeenCalledWith(1);
   });
 
-  it('should call rotateSeat after game-over', async () => {
+  it('should call handlePostGame after game-over', async () => {
     await service.createSession(1, 'sheepshead', validConfig, 1);
     await service.startSession(1, 1);
 
     const result = await driveFullGame(1);
     expect(result.gameOver).toBe(true);
 
-    // rotateSeat should have been called with the room ID
-    expect(roomService.rotateSeat).toHaveBeenCalledWith(1);
+    // handlePostGame should have been called with the room ID and required player count
+    expect(roomService.handlePostGame).toHaveBeenCalledWith(1, validConfig.playerCount);
   });
 
-  it('should not call rotateSeat during non-game-over actions', async () => {
+  it('should not call handlePostGame during non-game-over actions', async () => {
     await service.createSession(1, 'sheepshead', validConfig, 1);
     await service.startSession(1, 1);
 
@@ -349,10 +360,10 @@ describe('GameService integration (full Sheepshead game)', () => {
     const active = getActiveFromService(1);
     await service.applyAction(1, active, { type: 'deal' });
 
-    expect(roomService.rotateSeat).not.toHaveBeenCalled();
+    expect(roomService.handlePostGame).not.toHaveBeenCalled();
   });
 
-  it('should call rotateSeat even when spectators list is empty', async () => {
+  it('should call handlePostGame even when spectators list is empty', async () => {
     // Roster already has empty spectators in the default mock setup
     expect(roomService.getRoster).not.toHaveBeenCalled();
 
@@ -362,8 +373,8 @@ describe('GameService integration (full Sheepshead game)', () => {
     const result = await driveFullGame(1);
     expect(result.gameOver).toBe(true);
 
-    // rotateSeat is still called — it handles the empty spectators case internally
-    expect(roomService.rotateSeat).toHaveBeenCalledWith(1);
+    // handlePostGame is still called — it handles the empty spectators case internally
+    expect(roomService.handlePostGame).toHaveBeenCalledWith(1, validConfig.playerCount);
   });
 
   it('should produce correct per-player fog-of-war views throughout', async () => {

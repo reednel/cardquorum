@@ -17,7 +17,7 @@ const ROOM: RoomResponse = {
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
   onlineCount: 0,
-  memberLimit: null,
+  memberLimit: 128,
   rosterCount: 0,
   isOnRoster: false,
   gameType: null,
@@ -129,7 +129,7 @@ describe('CreateRoomModal', () => {
       description: null,
       visibility: 'invite-only',
       invitedUserIds: [2],
-      memberLimit: null,
+      memberLimit: undefined,
     });
   });
 
@@ -163,18 +163,18 @@ describe('CreateRoomModal', () => {
     });
   });
 
-  it('passes null memberLimit when field is empty', () => {
+  it('omits memberLimit when not set', () => {
     mockRoomService.createRoom.mockReturnValue(of(ROOM));
 
-    fixture.componentRef.instance['form'].patchValue({ name: 'Unlimited', memberLimit: null });
+    fixture.componentRef.instance['form'].patchValue({ name: 'Default Limit' });
     fixture.componentRef.instance['onSubmit']();
 
     expect(mockRoomService.createRoom).toHaveBeenCalledWith({
-      name: 'Unlimited',
+      name: 'Default Limit',
       description: null,
       visibility: 'public',
       invitedUserIds: undefined,
-      memberLimit: null,
+      memberLimit: undefined,
     });
   });
 
@@ -197,7 +197,7 @@ describe('CreateRoomModal', () => {
       description: 'A fun room',
       visibility: 'public',
       invitedUserIds: undefined,
-      memberLimit: null,
+      memberLimit: undefined,
     });
   });
 
@@ -212,7 +212,7 @@ describe('CreateRoomModal', () => {
       description: null,
       visibility: 'public',
       invitedUserIds: undefined,
-      memberLimit: null,
+      memberLimit: undefined,
     });
   });
 

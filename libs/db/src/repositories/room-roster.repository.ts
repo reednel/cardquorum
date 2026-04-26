@@ -11,6 +11,7 @@ export interface RosterMember {
   section: RosterSection;
   position: number;
   assignedHue: number | null;
+  readyToPlay: boolean;
 }
 
 export class RoomRosterRepository {
@@ -25,6 +26,7 @@ export class RoomRosterRepository {
         section: roomRosters.section,
         position: roomRosters.position,
         assignedHue: roomRosters.assignedHue,
+        readyToPlay: roomRosters.readyToPlay,
       })
       .from(roomRosters)
       .innerJoin(users, eq(roomRosters.userId, users.id))
@@ -91,7 +93,11 @@ export class RoomRosterRepository {
           .values(val)
           .onConflictDoUpdate({
             target: [roomRosters.roomId, roomRosters.userId],
-            set: { section: val.section, position: val.position },
+            set: {
+              section: val.section,
+              position: val.position,
+              readyToPlay: sql`${roomRosters.readyToPlay}`,
+            },
           });
       }
     });
@@ -114,17 +120,24 @@ export class RoomRosterRepository {
     return rows.length > 0;
   }
 
-  async getRotatePlayers(roomId: number): Promise<boolean> {
+  async getRotationMode(roomId: number): Promise<string> {
     const [row] = await this.db
-      .select({ rotatePlayers: rooms.rotatePlayers })
+      .select({ rotationMode: rooms.rotationMode })
       .from(rooms)
       .where(eq(rooms.id, roomId))
       .limit(1);
-    return row?.rotatePlayers ?? false;
+    return row?.rotationMode ?? 'rotate-players';
   }
 
-  async setRotatePlayers(roomId: number, enabled: boolean): Promise<void> {
-    await this.db.update(rooms).set({ rotatePlayers: enabled }).where(eq(rooms.id, roomId));
+  async setRotationMode(roomId: number, mode: string): Promise<void> {
+    await this.db.update(rooms).set({ rotationMode: mode }).where(eq(rooms.id, roomId));
+  }
+
+  async setReadyToPlay(roomId: number, userId: number, value: boolean): Promise<void> {
+    await this.db
+      .update(roomRosters)
+      .set({ readyToPlay: value })
+      .where(and(eq(roomRosters.roomId, roomId), eq(roomRosters.userId, userId)));
   }
 
   async getAssignedHues(

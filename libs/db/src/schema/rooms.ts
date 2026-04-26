@@ -1,4 +1,4 @@
-import { boolean, integer, pgTable, serial, timestamp, varchar } from 'drizzle-orm/pg-core';
+import { integer, pgTable, serial, timestamp, varchar } from 'drizzle-orm/pg-core';
 import { users } from './users';
 
 export const rooms = pgTable('rooms', {
@@ -10,7 +10,7 @@ export const rooms = pgTable('rooms', {
     .references(() => users.id, { onDelete: 'cascade' }),
   visibility: varchar('visibility', { length: 20 }).notNull().default('public'),
   memberLimit: integer('member_limit'),
-  rotatePlayers: boolean('rotate_players').notNull().default(false),
+  rotationMode: varchar('rotation_mode', { length: 20 }).notNull().default('rotate-players'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });

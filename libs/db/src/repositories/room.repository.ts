@@ -16,7 +16,7 @@ export class RoomRepository {
         ownerUsername: users.username,
         visibility: rooms.visibility,
         memberLimit: rooms.memberLimit,
-        rotatePlayers: rooms.rotatePlayers,
+        rotationMode: rooms.rotationMode,
         createdAt: rooms.createdAt,
         updatedAt: rooms.updatedAt,
       })
@@ -83,7 +83,7 @@ export class RoomRepository {
     fields: {
       name?: string;
       visibility?: string;
-      rotatePlayers?: boolean;
+      rotationMode?: string;
       description?: string | null;
     },
   ) {

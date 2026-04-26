@@ -17,6 +17,9 @@ export const WS_EVENT = {
   GAME_SETTINGS_UPDATE: 'game-settings:update',
   GAME_SETTINGS_LOAD: 'game-settings:load',
   GAME_QUERY_TARGETS: 'game:query-targets',
+  ROSTER_TOGGLE_READY: 'roster:toggle-ready',
+  GAME_ABANDON: 'game:abandon',
+  ROSTER_SET_ROTATION_MODE: 'roster:set-rotation-mode',
 } as const;
 
 /**

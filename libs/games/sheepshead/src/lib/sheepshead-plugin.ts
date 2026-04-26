@@ -329,6 +329,22 @@ function buildStore(config: SheepsheadConfig, state: SheepsheadState): Sheepshea
   };
 }
 
+function onPlayerAbandon(
+  _config: SheepsheadConfig,
+  state: SheepsheadState,
+  _userId: number,
+): SheepsheadState {
+  return {
+    ...state,
+    phase: 'score',
+    activePlayer: null,
+    players: state.players.map((p) => ({
+      ...p,
+      scoreDelta: 0,
+    })),
+  };
+}
+
 function getValidTargets(
   config: SheepsheadConfig,
   state: SheepsheadState,
@@ -385,4 +401,5 @@ export const SheepsheadPlugin: GamePlugin<
   isGameOver,
   buildStore,
   getValidTargets,
+  onPlayerAbandon,
 };

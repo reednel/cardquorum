@@ -17,6 +17,7 @@ const arbRosterMember = (
   section,
   position,
   assignedHue: null,
+  readyToPlay: false,
 });
 
 const arbRosterState = (): fc.Arbitrary<RosterState> =>
@@ -32,7 +33,7 @@ const arbRosterState = (): fc.Arbitrary<RosterState> =>
         return {
           players: playerIds.map((id, i) => arbRosterMember(id, 'players', i)),
           spectators: spectatorIds.map((id, i) => arbRosterMember(id, 'spectators', i)),
-          rotatePlayers: false,
+          rotationMode: 'rotate-players' as const,
         };
       }),
     );

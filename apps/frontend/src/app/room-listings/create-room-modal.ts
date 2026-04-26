@@ -124,8 +124,9 @@ import { RoomService } from '../room/room.service';
               data-testid="member-limit-input"
               formControlName="memberLimit"
               type="number"
-              min="0"
-              placeholder="Unlimited"
+              min="1"
+              max="128"
+              placeholder="1 - 128"
               class="w-full rounded-default border border-border-input px-3 py-2 text-sm
                      dark:border-border-input-dark dark:bg-surface-dark
                      dark:text-text-heading-dark"
@@ -244,7 +245,7 @@ export class CreateRoomModal {
     name: ['', Validators.required],
     description: ['', Validators.maxLength(256)],
     visibility: ['public'],
-    memberLimit: [null as number | null],
+    memberLimit: [null as number | null, [Validators.min(1), Validators.max(128)]],
   });
 
   constructor() {
@@ -286,7 +287,6 @@ export class CreateRoomModal {
     const { name, description, visibility, memberLimit } = this.form.getRawValue();
     const invitedUserIds =
       visibility === 'invite-only' ? this.invitedUsers().map((u) => u.userId) : undefined;
-    const parsedLimit = memberLimit != null && memberLimit > 0 ? memberLimit : null;
     const parsedDescription = description?.trim() || null;
 
     this.roomService
@@ -295,7 +295,7 @@ export class CreateRoomModal {
         description: parsedDescription,
         visibility: visibility as RoomVisibility,
         invitedUserIds,
-        memberLimit: parsedLimit,
+        memberLimit: memberLimit ?? undefined,
       })
       .subscribe({
         next: (room) => {

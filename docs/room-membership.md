@@ -57,23 +57,26 @@ A user can be on the roster but not connected (gray status dot), or connected bu
 
 ### `room_rosters` table
 
-| Column       | Type          | Notes                                     |
-| ------------ | ------------- | ----------------------------------------- |
-| `id`         | `serial`      | PK                                        |
-| `room_id`    | `integer`     | FK → `rooms.id`, cascade delete, not null |
-| `user_id`    | `integer`     | FK → `users.id`, cascade delete, not null |
-| `section`    | `varchar(20)` | `'players'` or `'spectators'`, not null   |
-| `position`   | `integer`     | Order within section, 0-indexed, not null |
-| `created_at` | `timestamptz` | Not null, default `now()`                 |
+| Column            | Type          | Notes                                     |
+| ----------------- | ------------- | ----------------------------------------- |
+| `id`              | `serial`      | PK                                        |
+| `room_id`         | `integer`     | FK → `rooms.id`, cascade delete, not null |
+| `user_id`         | `integer`     | FK → `users.id`, cascade delete, not null |
+| `section`         | `varchar(20)` | `'players'` or `'spectators'`, not null   |
+| `position`        | `integer`     | Order within section, 0-indexed, not null |
+| `ready_to_play`   | `boolean`     | Not null, default `false`                 |
+| `assigned_hue`    | `smallint`    | Nullable, palette hue for player color    |
+| `created_at`      | `timestamptz` | Not null, default `now()`                 |
+| `last_visited_at` | `timestamptz` | Not null, default `now()`                 |
 
 Constraints: `UNIQUE(room_id, user_id)`, index on `room_id`
 
-### Columns added to `rooms` table
+### Columns on `rooms` table (roster-related)
 
-| Column           | Type      | Notes                                |
-| ---------------- | --------- | ------------------------------------ |
-| `member_limit`   | `integer` | Nullable. Null or 0 means unlimited. |
-| `rotate_players` | `boolean` | Not null, default `false`            |
+| Column          | Type          | Notes                                                                                             |
+| --------------- | ------------- | ------------------------------------------------------------------------------------------------- |
+| `member_limit`  | `integer`     | Nullable. When set, must be 1–128. Null means no displayed limit (128 enforced server-side).      |
+| `rotation_mode` | `varchar(20)` | Not null, default `'rotate-players'`. One of `'none'`, `'rotate-players'`, `'rotate-spectators'`. |
 
 ## Room Visibility and Access Control
 
@@ -160,7 +163,17 @@ Every roster member belongs to one of two sections:
 - **Players** — participate in game sessions
 - **Spectators** — observe but do not play
 
-New members always join as the last spectator. The room owner can drag members between sections and reorder within sections.
+New members always join as the last spectator with `readyToPlay` set to `false`.
+
+### Ready to Play
+
+Each roster member has a `readyToPlay` boolean flag that controls game eligibility:
+
+- **Spectators**: only ready spectators can be moved into the players section (by the owner via drag-drop or by automatic rotation). Non-ready spectators have drag disabled.
+- **Players (no active game)**: toggling to not-ready immediately demotes the player to the bottom of spectators.
+- **Players (active game)**: toggling to not-ready defers demotion until the game ends. Toggling back to ready before game end cancels the pending demotion.
+
+The room owner can drag members between sections and reorder within sections, but cannot move a non-ready spectator into the players section.
 
 ## Owner Actions
 
@@ -176,7 +189,16 @@ The room owner has exclusive access to these actions, all behind a "..." overflo
 The owner also controls:
 
 - **Drag-and-drop reordering** of the Players and Spectators lists (disabled during active games)
-- **Rotate Players toggle** for automatic seat rotation after games
+- **Rotation mode** — a three-option segmented control for `None`, `Rotate Players`, or `Rotate Spectators`
+
+### Active Game Restrictions
+
+During an active game, the following restrictions apply:
+
+- Players cannot leave the room or be kicked/banned (backend rejects with 409 Conflict)
+- Spectators can still leave/be kicked/banned normally
+- Kick/ban overflow menu options are hidden for players during active games
+- Roster reordering is disabled
 
 ## Roster Reordering
 
@@ -186,35 +208,52 @@ Validation rules:
 
 - Only the room owner can reorder
 - The new roster must contain exactly the same set of user IDs (no additions or removals)
+- Non-ready spectators cannot be moved into the players section (rejected with 409 Conflict)
 - Reordering is blocked while a game session is active (409 Conflict)
 
 After a successful reorder, the server broadcasts `ROSTER_UPDATED` to all connected room members.
 
 ## Seat Rotation
 
-When the "Rotate Players" toggle is enabled and a game ends:
+Rooms have three rotation modes, controlled by the `rotation_mode` column:
+
+### Post-Game Pipeline
+
+When a game ends, `RoomService.handlePostGame()` executes this sequence:
+
+1. **Demote not-ready players** — all players with `readyToPlay === false` are moved to spectators
+2. **Apply rotation** — based on the room's rotation mode
+3. **Broadcast** — a single `ROSTER_UPDATED` event reflecting both demotions and rotation
+
+### Rotation Modes
+
+**None** — no changes to player order after game end.
+
+**Rotate Players** (default) — the first player cycles to the bottom of the players list:
 
 ```text
-Before (rotate ON, spectators non-empty):
+Before:
   Players:    [A, B, C]
   Spectators: [D, E]
+
+After game-over:
+  Players:    [B, C, A]
+  Spectators: [D, E]
+```
+
+**Rotate Spectators** — swaps the first player with the first ready spectator. If player slots are available (below the game's required count), fills them from ready spectators without removing existing players. Falls back to rotate-players behavior when no ready spectators exist:
+
+```text
+Before (player count = required, ready spectator exists):
+  Players:    [A, B, C]
+  Spectators: [D(ready), E(not ready)]
 
 After game-over:
   Players:    [B, C, D]     ← D promoted from spectators
   Spectators: [E, A]        ← A demoted from players
 ```
 
-When the toggle is off (or spectators list is empty), the first player cycles to the bottom of the players list:
-
-```text
-Before (rotate OFF):
-  Players:    [A, B, C]
-
-After game-over:
-  Players:    [B, C, A]
-```
-
-The rotation logic is implemented as a pure function in `libs/engine/src/lib/roster-logic.ts` and called by `RoomService.rotateSeat()` after game-over.
+The rotation logic is implemented as pure functions in `libs/engine/src/lib/roster-logic.ts` (`rotateSeatV2`, `demoteNotReadyPlayers`) and orchestrated by `RoomService.handlePostGame()`.
 
 ## Game Integration
 
@@ -236,14 +275,34 @@ Validate: playerIDs.length === config.playerCount
 Initialize game state with playerIDs
 ```
 
+### Game Abandonment
+
+Players can abandon an active game via the `game:abandon` WS event. This triggers the plugin's `onPlayerAbandon` method (if implemented) to transition the game to a terminal state, or falls back to cancelling with status `abandoned`.
+
+After abandonment:
+
+- Game-over is broadcast to all players
+- The post-game pipeline runs (demote not-ready + rotate)
+- The abandoning player is demoted to spectator with `readyToPlay` set to `false`
+
+### Reconnection During Active Game
+
+When a player disconnects during an active game:
+
+- Their roster section is preserved as `players` (disconnect does not trigger abandonment)
+- On reconnect, they are restored to their original roster section
+- The game rejoin flow restores their player view and valid actions
+
 ## Membership Limit
 
-Rooms can have an optional member limit set at creation time. This caps the total number of roster members (players + spectators). The limit is immutable after creation.
+Rooms have an optional member limit (1–128) that caps the total number of roster members (players + spectators). When no limit is set (`null`), the backend enforces a hard cap of 128.
 
-- Displayed in the room list as `rosterCount / memberLimit` (e.g., "5 / 8")
-- Rooms without a limit show just the count (e.g., "5")
+- `null` or `0` stored values are treated as 128 for capacity enforcement, but are not displayed as a limit in the UI
+- Backend rejects `memberLimit` values outside 1–128 on create/update
+- Room listings display `rosterCount / memberLimit` when a limit is set, or just `rosterCount` when null
 - The Join button is grayed out and shows "Full" when the room is at capacity and the user is not already on the roster
 - Existing roster members can always rejoin regardless of capacity
+- The room creation form accepts an optional limit (1–128), with placeholder text "1 - 128"; when left empty, no limit is sent
 
 ## Real-Time Synchronization
 
@@ -255,8 +314,10 @@ Events that trigger a roster broadcast:
 - Member leaves (removed from roster)
 - Member kicked or banned (removed from roster)
 - Owner reorders the roster
-- Owner toggles the rotate setting
-- Seat rotation after game-over
+- Owner changes the rotation mode
+- Member toggles ready-to-play (with possible immediate demotion)
+- Post-game pipeline (demotions + rotation)
+- Game abandonment (demotes abandoning player)
 
 ## REST API
 
@@ -271,13 +332,16 @@ Events that trigger a roster broadcast:
 
 ### Client → Server
 
-| Event                  | Payload                               | Description                              |
-| ---------------------- | ------------------------------------- | ---------------------------------------- |
-| `room:join`            | `{ roomId }`                          | Join room (adds to roster if new)        |
-| `room:leave`           | `{ roomId }`                          | Disconnect from WS only (stay on roster) |
-| `room:leave-roster`    | `{ roomId }`                          | Leave the roster and disconnect          |
-| `roster:update`        | `{ roomId, players[], spectators[] }` | Owner reorders roster                    |
-| `roster:toggle-rotate` | `{ roomId, enabled }`                 | Owner toggles rotation                   |
+| Event                      | Payload                               | Description                              |
+| -------------------------- | ------------------------------------- | ---------------------------------------- |
+| `room:join`                | `{ roomId }`                          | Join room (adds to roster if new)        |
+| `room:leave`               | `{ roomId }`                          | Disconnect from WS only (stay on roster) |
+| `room:leave-roster`        | `{ roomId }`                          | Leave the roster and disconnect          |
+| `roster:update`            | `{ roomId, players[], spectators[] }` | Owner reorders roster                    |
+| `roster:toggle-rotate`     | `{ roomId, enabled }`                 | Owner toggles rotation (legacy)          |
+| `roster:toggle-ready`      | `{ roomId }`                          | Toggle own ready-to-play status          |
+| `roster:set-rotation-mode` | `{ roomId, mode }`                    | Owner sets rotation mode                 |
+| `game:abandon`             | `{ sessionId }`                       | Player abandons active game              |
 
 ### Server → Client
 
@@ -293,31 +357,40 @@ Events that trigger a roster broadcast:
 
 ### MembershipsPage / DiscoverPage
 
-The Memberships page displays rooms the user belongs to in a table. The Discover page displays rooms the user can join. Both use the shared `RoomTableComponent`. The Members column shows `rosterCount / memberLimit` for capped rooms. The Join button is disabled with "Full" text when the room is at capacity and the current user is not on the roster.
+The Memberships page displays rooms the user belongs to in a table. The Discover page displays rooms the user can join. Both use the shared `RoomTableComponent`. The Members column shows `rosterCount / memberLimit` when a limit is set, or just `rosterCount` when null. The Join button is disabled with "Full" text when the room is at capacity and the current user is not on the roster.
 
 ### RoomMembersTab
 
 The main roster UI inside the room view. Sections from top to bottom:
 
 1. Roster count display
-2. Rotate Players toggle (owner only)
+2. Rotation mode segmented control — None / Players / Spectators (owner only)
 3. Players list (drag-drop enabled for owner, disabled during games)
-4. Spectators list (drag-drop, connected to players list for cross-list drops)
-5. Invited list (invite-only rooms, non-roster invitees)
-6. Invite search (owner of invite-only rooms)
-7. Banned list (owner only)
+4. Spectators list (drag-drop, connected to players list for cross-list drops; non-ready spectators have drag disabled)
+5. Abandon Game button (visible to players during active games)
+6. Invited list (invite-only rooms, non-roster invitees)
+7. Invite search (owner of invite-only rooms)
+8. Banned list (owner only)
 
-Each roster member row shows a status dot (green = connected, gray = disconnected) with a tooltip ("In room" / "Not in room") and an overflow menu for owner actions.
+Each roster member row shows:
+
+- A ready-to-play icon (`user-check` or `user-x`) on the left — interactive button for the current user, static for others
+- A status dot (green = connected, gray = disconnected) with tooltip
+- The member's display name
+- A crown icon to the right of the name for the room owner
+- An overflow menu for owner actions (hidden for players during active games)
+
+A dismissible tooltip appears near the user's own spectator entry when they join as not-ready, prompting them to toggle ready.
 
 ### RosterService
 
-Singleton Angular service managing roster state via signals. Listens for `ROSTER_UPDATED` and `ROOM_JOINED` WS events to keep `players`, `spectators`, and `rotatePlayers` signals in sync. Provides HTTP methods for reorder, kick, and toggle operations.
+Singleton Angular service managing roster state via signals. Listens for `ROSTER_UPDATED` and `ROOM_JOINED` WS events to keep `players`, `spectators`, and `rotationMode` signals in sync. Provides HTTP methods for reorder, kick, and toggle operations, plus WS methods for `toggleReady` and `setRotationMode`.
 
 Exports three pure helper functions for testability:
 
 - `computeStatus(userId, onlineUserIds)` — returns `'online'` or `'offline'`
 - `computeInvitedList(invites, roster)` — filters invitees who are not on the roster
-- `formatRosterCount(count, limit)` — formats as `"N / M"` or `"N"`
+- `formatRosterCount(count, limit)` — formats as `"N / M"` when limit is set, or just `"N"` when null
 
 ### OverflowMenuComponent
 
@@ -327,10 +400,15 @@ A small standalone component rendering a "..." trigger button with an accessible
 
 Core roster manipulation functions live in `libs/engine/src/lib/roster-logic.ts` as pure functions (no side effects, no DB access). The backend services call these and handle persistence separately.
 
-| Function                                         | Description                                                  |
-| ------------------------------------------------ | ------------------------------------------------------------ |
-| `addMember(roster, member, limit?)`              | Adds to bottom of spectators. Returns `null` if at capacity. |
-| `removeMember(roster, userId)`                   | Removes from either list, reindexes positions.               |
-| `reorderRoster(roster, players[], spectators[])` | Validates same member set, rebuilds with new order.          |
-| `rotateSeat(roster)`                             | Applies seat rotation logic based on `rotatePlayers` flag.   |
-| `handleDisconnect(roster, userId)`               | Identity function (disconnect does not modify roster).       |
+| Function                                             | Description                                                                            |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `addMember(roster, member, limit?)`                  | Adds to bottom of spectators with `readyToPlay: false`. Returns `null` if at capacity. |
+| `removeMember(roster, userId)`                       | Removes from either list, reindexes positions.                                         |
+| `reorderRoster(roster, players[], spectators[])`     | Validates same member set, rebuilds with new order.                                    |
+| `rotateSeat(roster)`                                 | Legacy rotation — cycles first player to bottom of players.                            |
+| `rotateSeatV2(roster, mode, requiredPlayerCount)`    | Three-mode rotation: none, rotate-players, rotate-spectators.                          |
+| `toggleReady(roster, userId)`                        | Flips only the target member's `readyToPlay`.                                          |
+| `demotePlayer(roster, userId)`                       | Moves a player to bottom of spectators, sets `readyToPlay` to `false`.                 |
+| `demoteNotReadyPlayers(roster)`                      | Moves all players with `readyToPlay === false` to spectators.                          |
+| `validateReorder(roster, newPlayers, newSpectators)` | Rejects reorders that move non-ready spectators into players.                          |
+| `handleDisconnect(roster, userId)`                   | Identity function (disconnect does not modify roster).                                 |
