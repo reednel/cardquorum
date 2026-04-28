@@ -1,0 +1,44 @@
+node_modules
+dist
+.nx
+.angular
+.git
+.github
+.husky
+.vscode
+.claude
+.kiro
+.cursor
+.superpowers
+coverage
+tmp
+data
+docs
+scripts
+
+# Config/tooling not needed in build
+.editorconfig
+.prettierrc
+.prettierignore
+.gitattributes
+.gitignore
+.DS_Store
+jest.config.ts
+jest.preset.js
+eslint.config.mjs
+compose.dev.yml
+AGENTS.md
+CLAUDE.md
+CHANGES.md
+CODE_OF_CONDUCT.md
+CONTRIBUTING.md
+LICENSE
+README.md
+
+# Env files (secrets should never be in the image)
+.env
+.env.*
+!.env.template
+
+# Logs
+*.log

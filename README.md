@@ -4,6 +4,21 @@
 
 A free and open source PWA for card games online. Or, it will be soon.
 
+## Self-Hosting
+
+Requires [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/).
+
+```sh
+git clone https://github.com/reednel/cardquorum.git
+cd cardquorum
+cp .env.template .env  # edit with real values
+docker compose up --build -d
+```
+
+The app will be available at `http://localhost:3000`. Database migrations run automatically on startup.
+
+See [docs/deployment.md](docs/deployment.md) for configuration options, reverse proxy setup, and more.
+
 ## Development Instructions
 
 Requires [Node.js](https://nodejs.org/) (v20+), [pnpm](https://pnpm.io/), and [Docker](https://www.docker.com/).

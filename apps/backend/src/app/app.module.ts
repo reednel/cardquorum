@@ -1,6 +1,9 @@
+import { existsSync } from 'fs';
+import { join } from 'path';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { ServeStaticModule } from '@nestjs/serve-static';
 import { ThrottlerModule } from '@nestjs/throttler';
 import * as Joi from 'joi';
 import { LoggerModule } from 'nestjs-pino';
@@ -17,8 +20,19 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConditionalThrottlerGuard } from './conditional-throttler.guard';
 
+const staticPath = join(__dirname, '..', 'public');
+const serveStaticImports = existsSync(staticPath)
+  ? [
+      ServeStaticModule.forRoot({
+        rootPath: staticPath,
+        exclude: ['/api/(.*)'],
+      }),
+    ]
+  : [];
+
 @Module({
   imports: [
+    ...serveStaticImports,
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema: Joi.object({

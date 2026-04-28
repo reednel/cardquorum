@@ -1,7 +1,12 @@
 const { NxAppWebpackPlugin } = require('@nx/webpack/app-plugin');
 const { join } = require('path');
+const CopyPlugin = require('copy-webpack-plugin');
 
 module.exports = {
+  entry: {
+    main: './src/main.ts',
+    migrate: './src/migrate.ts',
+  },
   output: {
     path: join(__dirname, '../../dist/apps/backend'),
     clean: true,
@@ -20,6 +25,14 @@ module.exports = {
       outputHashing: 'none',
       generatePackageJson: true,
       sourceMap: true,
+    }),
+    new CopyPlugin({
+      patterns: [
+        {
+          from: join(__dirname, '../../libs/db/migrations'),
+          to: join(__dirname, '../../dist/apps/backend/migrations'),
+        },
+      ],
     }),
   ],
 };
