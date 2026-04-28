@@ -16,7 +16,7 @@ export async function registerHelmet(
         styleSrc: ["'self'"],
         imgSrc: ["'self'"],
         fontSrc: ["'self'"],
-        connectSrc: isDev ? ["'self'", 'ws://localhost:*'] : ["'self'"],
+        connectSrc: isDev ? ["'self'", 'ws://localhost:*'] : ["'self'", 'wss:'],
         workerSrc: ["'self'"],
         manifestSrc: ["'self'"],
         baseUri: ["'self'"],

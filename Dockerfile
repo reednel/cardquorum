@@ -36,8 +36,8 @@ COPY --from=builder /app/pnpm-lock.yaml ./
 COPY apps/backend/docker-entrypoint.sh ./
 
 # Install only production dependencies
-RUN pnpm install --prod --frozen-lockfile \
-    && chmod +x docker-entrypoint.sh
+# Install only production dependencies
+RUN pnpm install --prod && chmod +x docker-entrypoint.sh
 
 ENV NODE_ENV=production
 ENV PORT=3000

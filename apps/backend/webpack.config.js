@@ -3,10 +3,6 @@ const { join } = require('path');
 const CopyPlugin = require('copy-webpack-plugin');
 
 module.exports = {
-  entry: {
-    main: './src/main.ts',
-    migrate: './src/migrate.ts',
-  },
   output: {
     path: join(__dirname, '../../dist/apps/backend'),
     clean: true,
@@ -25,6 +21,8 @@ module.exports = {
       outputHashing: 'none',
       generatePackageJson: true,
       sourceMap: true,
+      additionalEntryPoints: [{ entryName: 'migrate', entryPath: './src/migrate.ts' }],
+      runtimeDependencies: ['tslib'],
     }),
     new CopyPlugin({
       patterns: [
