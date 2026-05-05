@@ -36,14 +36,13 @@ COPY --from=builder /app/pnpm-lock.yaml ./
 COPY apps/backend/docker-entrypoint.sh ./
 
 # Install only production dependencies
-# Install only production dependencies
 RUN pnpm install --prod && chmod +x docker-entrypoint.sh
 
 ENV NODE_ENV=production
 ENV PORT=3000
 EXPOSE 3000
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget -qO- http://localhost:3000/api/healthz || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/api/healthz', r => r.statusCode === 200 ? process.exit(0) : process.exit(1)).on('error', () => process.exit(1))"
 
 ENTRYPOINT ["./docker-entrypoint.sh"]

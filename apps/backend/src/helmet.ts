@@ -13,7 +13,7 @@ export async function registerHelmet(
       directives: {
         defaultSrc: ["'none'"],
         scriptSrc: ["'self'"],
-        styleSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'"],
         fontSrc: ["'self'"],
         connectSrc: isDev ? ["'self'", 'ws://localhost:*'] : ["'self'", 'wss:'],

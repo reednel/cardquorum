@@ -3,7 +3,6 @@ import { join } from 'path';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
-import { ServeStaticModule } from '@nestjs/serve-static';
 import { ThrottlerModule } from '@nestjs/throttler';
 import * as Joi from 'joi';
 import { LoggerModule } from 'nestjs-pino';
@@ -20,19 +19,25 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConditionalThrottlerGuard } from './conditional-throttler.guard';
 
-const staticPath = join(__dirname, '..', 'public');
-const serveStaticImports = existsSync(staticPath)
-  ? [
-      ServeStaticModule.forRoot({
-        rootPath: staticPath,
-        exclude: ['/api/(.*)'],
-      }),
-    ]
-  : [];
+const staticPath = join(process.cwd(), 'public');
+
+function getServeStaticImports() {
+  if (!existsSync(staticPath)) return [];
+  // Dynamic require — only loads @nestjs/serve-static (and its @fastify/static
+  // peer) when the public/ directory exists (i.e. inside the Docker image).
+  // This avoids side-effects from the import during local development.
+  const { ServeStaticModule } = require('@nestjs/serve-static');
+  return [
+    ServeStaticModule.forRoot({
+      rootPath: staticPath,
+      exclude: ['/api/(.*)'],
+    }),
+  ];
+}
 
 @Module({
   imports: [
-    ...serveStaticImports,
+    ...getServeStaticImports(),
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema: Joi.object({
