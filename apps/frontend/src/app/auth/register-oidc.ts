@@ -96,7 +96,15 @@ export class RegisterOidc {
       .oidcRegister(this.form.getRawValue())
       .pipe(finalize(() => this.submitting.set(false)))
       .subscribe({
-        next: () => this.router.navigate(['/']),
+        next: () => {
+          const returnUrl = sessionStorage.getItem('cq_return_url');
+          sessionStorage.removeItem('cq_return_url');
+          if (returnUrl && returnUrl.startsWith('/')) {
+            this.router.navigateByUrl(returnUrl);
+          } else {
+            this.router.navigate(['/']);
+          }
+        },
         error: (err: HttpErrorResponse) => {
           this.errorMessage.set(
             err.status === 409

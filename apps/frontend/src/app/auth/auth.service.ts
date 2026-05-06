@@ -37,6 +37,7 @@ export class AuthService {
     return firstValueFrom(
       this.http.get<SessionIdentity>('/api/auth/me').pipe(
         tap((user) => this._user.set(user)),
+        tap(() => this.consumeReturnUrl()),
         map(() => undefined),
       ),
     ).catch(() => {
@@ -114,6 +115,7 @@ export class AuthService {
 
   logout(): void {
     if (!this._user()) return;
+    this.saveReturnUrl();
     this._user.set(null);
     this._credentials.set([]);
     this.ws.disconnect();
@@ -124,9 +126,26 @@ export class AuthService {
   /** Clears local auth state without POSTing to /api/auth/logout (session already gone server-side). */
   clearLocalState(): void {
     if (!this._user()) return;
+    this.saveReturnUrl();
     this._user.set(null);
     this._credentials.set([]);
     this.ws.disconnect();
     this.router.navigate(['/login']);
+  }
+
+  private saveReturnUrl(): void {
+    const url = this.router.url;
+    if (url && url !== '/login' && url !== '/register') {
+      sessionStorage.setItem('cq_return_url', url);
+    }
+  }
+
+  /** If a return URL was stashed (e.g. before OIDC redirect), navigate there now. */
+  private consumeReturnUrl(): void {
+    const returnUrl = sessionStorage.getItem('cq_return_url');
+    sessionStorage.removeItem('cq_return_url');
+    if (returnUrl && returnUrl.startsWith('/')) {
+      this.router.navigateByUrl(returnUrl);
+    }
   }
 }

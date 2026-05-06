@@ -124,12 +124,22 @@ export class Login {
       .login(this.form.getRawValue())
       .pipe(finalize(() => this.submitting.set(false)))
       .subscribe({
-        next: () => this.router.navigate(['/']),
+        next: () => this.navigateAfterLogin(),
         error: (err: HttpErrorResponse) => {
           this.errorMessage.set(
             err.status === 401 ? 'Invalid username or password' : 'Something went wrong',
           );
         },
       });
+  }
+
+  private navigateAfterLogin(): void {
+    const returnUrl = sessionStorage.getItem('cq_return_url');
+    sessionStorage.removeItem('cq_return_url');
+    if (returnUrl && returnUrl.startsWith('/')) {
+      this.router.navigateByUrl(returnUrl);
+    } else {
+      this.router.navigate(['/']);
+    }
   }
 }

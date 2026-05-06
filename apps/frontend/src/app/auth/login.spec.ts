@@ -10,6 +10,7 @@ describe('Login', () => {
   let router: Router;
 
   beforeEach(async () => {
+    sessionStorage.clear();
     await TestBed.configureTestingModule({
       imports: [Login],
       providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
@@ -20,6 +21,7 @@ describe('Login', () => {
   });
 
   afterEach(() => {
+    sessionStorage.clear();
     httpTesting.verify();
   });
 
@@ -44,6 +46,21 @@ describe('Login', () => {
     req.flush({ userId: 1, displayName: 'Alice' });
 
     expect(navigateSpy).toHaveBeenCalledWith(['/']);
+  });
+
+  it('should navigate to stored return URL after login', () => {
+    sessionStorage.setItem('cq_return_url', '/rooms/42');
+    const fixture = TestBed.createComponent(Login);
+    fixture.detectChanges();
+    const navigateByUrlSpy = jest.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+
+    fixture.componentInstance['form'].setValue({ username: 'alice', password: 'pass' });
+    fixture.componentInstance['onSubmit']();
+
+    httpTesting.expectOne('/api/auth/login').flush({ userId: 1, displayName: 'Alice' });
+
+    expect(navigateByUrlSpy).toHaveBeenCalledWith('/rooms/42');
+    expect(sessionStorage.getItem('cq_return_url')).toBeNull();
   });
 
   it('should show error message on 401', () => {

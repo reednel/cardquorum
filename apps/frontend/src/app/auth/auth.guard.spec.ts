@@ -21,7 +21,12 @@ describe('authGuard', () => {
     httpTesting = TestBed.inject(HttpTestingController);
   }
 
+  beforeEach(() => {
+    sessionStorage.clear();
+  });
+
   afterEach(() => {
+    sessionStorage.clear();
     httpTesting?.verify();
   });
 
@@ -34,7 +39,7 @@ describe('authGuard', () => {
     httpTesting.expectOne('/api/auth/login').flush({ userId: 1, displayName: 'Test' });
 
     const result = TestBed.runInInjectionContext(() =>
-      authGuard({} as ActivatedRouteSnapshot, {} as RouterStateSnapshot),
+      authGuard({} as ActivatedRouteSnapshot, { url: '/rooms/1' } as RouterStateSnapshot),
     );
     expect(result).toBe(true);
   });
@@ -43,11 +48,21 @@ describe('authGuard', () => {
     setup();
 
     const result = TestBed.runInInjectionContext(() =>
-      authGuard({} as ActivatedRouteSnapshot, {} as RouterStateSnapshot),
+      authGuard({} as ActivatedRouteSnapshot, { url: '/rooms/1' } as RouterStateSnapshot),
     );
     expect(result).toBeInstanceOf(UrlTree);
 
     const router = TestBed.inject(Router);
     expect((result as UrlTree).toString()).toBe(router.createUrlTree(['/login']).toString());
+  });
+
+  it('should store the attempted URL in sessionStorage when not authenticated', () => {
+    setup();
+
+    TestBed.runInInjectionContext(() =>
+      authGuard({} as ActivatedRouteSnapshot, { url: '/rooms/42' } as RouterStateSnapshot),
+    );
+
+    expect(sessionStorage.getItem('cq_return_url')).toBe('/rooms/42');
   });
 });

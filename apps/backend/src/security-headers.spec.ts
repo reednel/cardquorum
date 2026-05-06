@@ -59,10 +59,10 @@ describe('Security headers', () => {
     const directives = parseCsp(csp);
     expect(directives['default-src']).toBe("'none'");
     expect(directives['script-src']).toBe("'self'");
-    expect(directives['style-src']).toBe("'self'");
+    expect(directives['style-src']).toBe("'self' 'unsafe-inline'");
     expect(directives['img-src']).toBe("'self'");
     expect(directives['font-src']).toBe("'self'");
-    expect(directives['connect-src']).toBe("'self'");
+    expect(directives['connect-src']).toBe("'self' wss:");
     expect(directives['worker-src']).toBe("'self'");
     expect(directives['manifest-src']).toBe("'self'");
     expect(directives['base-uri']).toBe("'self'");

@@ -65,7 +65,7 @@ type RoomTab = 'chat' | 'members' | 'game';
       @if (!panelOpen()) {
         <button
           data-testid="expand-panel-btn"
-          (click)="panelOpen.set(true)"
+          (click)="togglePanel(true)"
           aria-label="Open side panel"
           class="absolute right-0 top-0 z-10 flex h-(--height-panel-header) items-center border-b border-l
                  border-border bg-surface px-1.5 text-text-secondary
@@ -93,7 +93,7 @@ type RoomTab = 'chat' | 'members' | 'game';
             <div class="flex min-w-0 items-center">
               <button
                 data-testid="collapse-panel-btn"
-                (click)="panelOpen.set(false)"
+                (click)="togglePanel(false)"
                 aria-label="Collapse side panel"
                 class="flex h-(--height-panel-header) shrink-0 items-center border-r border-border
                        px-2 text-text-secondary transition-colors
@@ -214,8 +214,8 @@ export class RoomView implements OnInit, OnDestroy {
     return this.rosterService.players().some((m) => m.userId === userId);
   });
   protected readonly tabs: RoomTab[] = ['chat', 'members', 'game'];
-  protected readonly activeTab = signal<RoomTab>('chat');
-  protected readonly panelOpen = signal(true);
+  protected readonly activeTab = signal<RoomTab>(this.loadActiveTab());
+  protected readonly panelOpen = signal(this.loadPanelOpen());
   protected readonly roomName = signal('');
   protected readonly room = signal<RoomResponse | null>(null);
   protected readonly isOwner = signal(false);
@@ -279,6 +279,7 @@ export class RoomView implements OnInit, OnDestroy {
 
   protected onTabClick(tab: RoomTab): void {
     this.activeTab.set(tab);
+    localStorage.setItem('cq_panel_tab', tab);
     if (tab === 'members') {
       this.membersTab()?.loadData();
     }
@@ -305,5 +306,20 @@ export class RoomView implements OnInit, OnDestroy {
       this.pendingAutoStart = true;
       this.gameService.createGame(this.roomId, gameType, config);
     }
+  }
+
+  protected togglePanel(open: boolean): void {
+    this.panelOpen.set(open);
+    localStorage.setItem('cq_panel_open', String(open));
+  }
+
+  private loadPanelOpen(): boolean {
+    return localStorage.getItem('cq_panel_open') !== 'false';
+  }
+
+  private loadActiveTab(): RoomTab {
+    const stored = localStorage.getItem('cq_panel_tab');
+    if (stored === 'chat' || stored === 'members' || stored === 'game') return stored;
+    return 'chat';
   }
 }
