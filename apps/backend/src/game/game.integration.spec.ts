@@ -8,6 +8,7 @@ import { GameSessionRepository } from '@cardquorum/db';
 import { RoomManager } from '@cardquorum/engine';
 import { RosterState } from '@cardquorum/shared';
 import { RoomService } from '../room/room.service';
+import { EventLogService } from './event-log.service';
 import { GameService } from './game.service';
 
 describe('GameService integration (full Sheepshead game)', () => {
@@ -94,6 +95,13 @@ describe('GameService integration (full Sheepshead game)', () => {
     service = new GameService(
       mockSessionRepo as unknown as GameSessionRepository,
       roomService as unknown as RoomService,
+      {
+        bufferEvent: jest.fn(),
+        flushBuffer: jest.fn().mockResolvedValue(undefined),
+        recordParticipants: jest.fn().mockResolvedValue(undefined),
+        getRoomLog: jest.fn().mockResolvedValue([]),
+        getCatchUpEntries: jest.fn().mockReturnValue([]),
+      } as unknown as EventLogService,
     );
   });
 
@@ -291,6 +299,12 @@ describe('GameService integration (full Sheepshead game)', () => {
 
     // Drive the full game
     const finalResult = await driveFullGame(1);
+
+    // Allow async .then() chains in processScheduledEvent to resolve
+    // (flushBuffer → updateStore → updateStatusAndTimestamp)
+    for (let i = 0; i < 5; i++) {
+      await Promise.resolve();
+    }
 
     expect(finalResult.gameOver).toBe(true);
     expect(finalResult.store).toBeDefined();

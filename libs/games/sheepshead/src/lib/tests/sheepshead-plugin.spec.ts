@@ -363,7 +363,7 @@ describe('SheepsheadPlugin', () => {
     it('returns empty for non-active player in pick phase', () => {
       const config = makeConfig();
       let state = SheepsheadPlugin.createInitialState(config, [1, 2, 3, 4, 5]);
-      state = SheepsheadPlugin.applyEvent(config, state, { type: 'deal' });
+      state = SheepsheadPlugin.applyEvent(config, state, { type: 'deal', userID: 1 });
       // activePlayer is 2 (left of dealer)
       expect(state.activePlayer).toBe(2);
       const actions = SheepsheadPlugin.getValidActions(config, state, 3);
@@ -374,7 +374,7 @@ describe('SheepsheadPlugin', () => {
     it('returns pick/pass for active player in pick phase', () => {
       const config = makeConfig();
       let state = SheepsheadPlugin.createInitialState(config, [1, 2, 3, 4, 5]);
-      state = SheepsheadPlugin.applyEvent(config, state, { type: 'deal' });
+      state = SheepsheadPlugin.applyEvent(config, state, { type: 'deal', userID: 1 });
       const actions = SheepsheadPlugin.getValidActions(config, state, 2);
       expect(actions).toContain('pick');
       expect(actions).toContain('pass');
@@ -383,7 +383,7 @@ describe('SheepsheadPlugin', () => {
     it('forced-pick: last player (dealer) can only pick, not pass', () => {
       const config = makeConfig({ noPick: 'forced-pick' });
       let state = SheepsheadPlugin.createInitialState(config, [1, 2, 3, 4, 5]);
-      state = SheepsheadPlugin.applyEvent(config, state, { type: 'deal' });
+      state = SheepsheadPlugin.applyEvent(config, state, { type: 'deal', userID: 1 });
 
       // Pass all players until dealer (player 1) is active
       state = SheepsheadPlugin.applyEvent(config, state, { type: 'pass', userID: 2 });
@@ -400,7 +400,7 @@ describe('SheepsheadPlugin', () => {
     it('returns play_card only for active player in play phase', () => {
       const config = makeConfig({ partnerRule: 'jd' });
       let state = SheepsheadPlugin.createInitialState(config, [1, 2, 3]);
-      state = SheepsheadPlugin.applyEvent(config, state, { type: 'deal' });
+      state = SheepsheadPlugin.applyEvent(config, state, { type: 'deal', userID: 1 });
       state = SheepsheadPlugin.applyEvent(config, state, { type: 'pick', userID: 2 });
       const toBury = state.players[1].hand.slice(0, 2);
       state = SheepsheadPlugin.applyEvent(config, state, {
@@ -430,7 +430,7 @@ describe('SheepsheadPlugin', () => {
     it('crack not available during pick phase', () => {
       const config = makeConfig({ cracking: true });
       let state = SheepsheadPlugin.createInitialState(config, [1, 2, 3, 4, 5]);
-      state = SheepsheadPlugin.applyEvent(config, state, { type: 'deal' });
+      state = SheepsheadPlugin.applyEvent(config, state, { type: 'deal', userID: 1 });
       state = SheepsheadPlugin.applyEvent(config, state, { type: 'pick', userID: 2 });
       // Force back to pick phase to verify crack isn't offered there
       const state2 = {
@@ -703,7 +703,7 @@ describe('SheepsheadPlugin', () => {
       const userIDs: UserID[] = [1, 2, 3];
 
       let state = SheepsheadPlugin.createInitialState(config, userIDs);
-      state = SheepsheadPlugin.applyEvent(config, state, { type: 'deal' });
+      state = SheepsheadPlugin.applyEvent(config, state, { type: 'deal', userID: 1 });
       state = SheepsheadPlugin.applyEvent(config, state, { type: 'pick', userID: 2 });
       const toBury = state.players[1].hand.slice(0, 2);
       state = SheepsheadPlugin.applyEvent(config, state, {
@@ -752,7 +752,7 @@ describe('SheepsheadPlugin', () => {
       let state = SheepsheadPlugin.createInitialState(config, userIDs);
 
       // Deal
-      state = SheepsheadPlugin.applyEvent(config, state, { type: 'deal' });
+      state = SheepsheadPlugin.applyEvent(config, state, { type: 'deal', userID: 1 });
       expect(state.phase).toBe('pick');
       expect(state.activePlayer).toBe(2);
 

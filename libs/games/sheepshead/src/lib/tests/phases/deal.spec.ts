@@ -4,7 +4,7 @@ import { card, makeConfig, makeState } from '../test-helpers';
 describe('handleDeal', () => {
   it('distributes cards to players and sets blind', () => {
     const config = makeConfig();
-    const state = handleDeal(makeState(), config);
+    const { state } = handleDeal(makeState(), config);
 
     expect(state.phase).toBe('pick');
     expect(state.blind).toHaveLength(config.blindSize);
@@ -15,13 +15,13 @@ describe('handleDeal', () => {
 
   it('sets activePlayer to player after dealer (index 1)', () => {
     const config = makeConfig();
-    const state = handleDeal(makeState(), config);
+    const { state } = handleDeal(makeState(), config);
     expect(state.activePlayer).toBe(2); // userID of index 1
   });
 
   it('all 32 cards accounted for', () => {
     const config = makeConfig();
-    const state = handleDeal(makeState(), config);
+    const { state } = handleDeal(makeState(), config);
     const allCards = [...(state.blind ?? []), ...state.players.flatMap((p) => p.hand)];
     expect(allCards).toHaveLength(32);
     expect(new Set(allCards.map((c) => c.name)).size).toBe(32);
@@ -36,7 +36,7 @@ describe('handleDeal', () => {
       partnerRule: 'qc-qs',
       noPick: null,
     });
-    const state = handleDeal(makeState(4), config);
+    const { state } = handleDeal(makeState(4), config);
 
     expect(state.phase).toBe('play');
     expect(state.blind).toHaveLength(0);
@@ -50,7 +50,7 @@ describe('handleDeal', () => {
 
   it('deals correctly for 6 players', () => {
     const config = makeConfig({ playerCount: 6, handSize: 5, blindSize: 2, partnerRule: 'jc' });
-    const state = handleDeal(makeState(6), config);
+    const { state } = handleDeal(makeState(6), config);
     expect(state.players).toHaveLength(6);
     for (const p of state.players) {
       expect(p.hand).toHaveLength(5);
@@ -60,7 +60,7 @@ describe('handleDeal', () => {
 
   it('deals correctly for 7 players', () => {
     const config = makeConfig({ playerCount: 7, handSize: 4, blindSize: 4, partnerRule: 'jd' });
-    const state = handleDeal(makeState(7), config);
+    const { state } = handleDeal(makeState(7), config);
     expect(state.players).toHaveLength(7);
     for (const p of state.players) {
       expect(p.hand).toHaveLength(4);
@@ -77,7 +77,7 @@ describe('handleDeal', () => {
       partnerRule: 'qc-qs',
       noPick: null,
     });
-    const state = handleDeal(makeState(8), config);
+    const { state } = handleDeal(makeState(8), config);
     expect(state.players).toHaveLength(8);
     for (const p of state.players) {
       expect(p.hand).toHaveLength(4);
@@ -94,7 +94,7 @@ describe('handleDeal', () => {
       partnerRule: 'called-ace',
       cardsRemoved: ['7c', '7s'],
     });
-    const state = handleDeal(makeState(4), config);
+    const { state } = handleDeal(makeState(4), config);
     const allCards = [...(state.blind ?? []), ...state.players.flatMap((p) => p.hand)];
     expect(allCards).toHaveLength(30);
     const names = allCards.map((c) => c.name);
@@ -111,7 +111,7 @@ describe('handleDeal', () => {
       partnerRule: 'called-ace',
       noPick: null,
     });
-    const state = handleDeal(makeState(5), config);
+    const { state } = handleDeal(makeState(5), config);
 
     expect(state.phase).toBe('bury');
     // Player at index 1 (left of dealer) should be picker
@@ -119,5 +119,31 @@ describe('handleDeal', () => {
     // Picker should have hand + blind cards
     expect(state.players[1].hand).toHaveLength(6 + 2);
     expect(state.activePlayer).toBe(state.players[1].userID);
+  });
+
+  it('returns deal payload with hands mapped by userID and blind', () => {
+    const config = makeConfig();
+    const { state, dealPayload } = handleDeal(makeState(), config);
+
+    // dealPayload should have hands for each player
+    for (const p of state.players) {
+      expect(dealPayload.hands[p.userID]).toEqual(p.hand);
+    }
+    expect(dealPayload.blind).toEqual(state.blind);
+  });
+
+  it('uses provided replay payload instead of shuffling', () => {
+    const config = makeConfig();
+    // First deal to get valid cards
+    const { state: firstDeal, dealPayload } = handleDeal(makeState(), config);
+
+    // Replay with the same payload
+    const { state: replayState } = handleDeal(makeState(), config, dealPayload);
+
+    // Should produce the same hands and blind
+    for (const p of replayState.players) {
+      expect(p.hand).toEqual(firstDeal.players.find((fp) => fp.userID === p.userID)!.hand);
+    }
+    expect(replayState.blind).toEqual(firstDeal.blind);
   });
 });

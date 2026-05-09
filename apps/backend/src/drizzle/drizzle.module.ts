@@ -8,6 +8,8 @@ import {
   CredentialRepository,
   FriendshipRepository,
   FriendshipRequestRepository,
+  GameEventRepository,
+  GameParticipantRepository,
   GameSessionRepository,
   MessageRepository,
   RoomBanRepository,
@@ -97,6 +99,16 @@ export const DRIZZLE = Symbol('DRIZZLE');
       inject: [DRIZZLE],
       useFactory: (db: any) => new RoomGameSettingsRepository(db),
     },
+    {
+      provide: GameEventRepository,
+      inject: [DRIZZLE],
+      useFactory: (db: any) => new GameEventRepository(db),
+    },
+    {
+      provide: GameParticipantRepository,
+      inject: [DRIZZLE],
+      useFactory: (db: any) => new GameParticipantRepository(db),
+    },
   ],
   exports: [
     DRIZZLE,
@@ -113,6 +125,8 @@ export const DRIZZLE = Symbol('DRIZZLE');
     FriendshipRepository,
     FriendshipRequestRepository,
     RoomGameSettingsRepository,
+    GameEventRepository,
+    GameParticipantRepository,
   ],
 })
 export class DrizzleModule implements OnApplicationShutdown {

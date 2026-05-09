@@ -3,6 +3,7 @@ import { RoomManager } from '@cardquorum/engine';
 import { UserIdentity, WS_EMIT } from '@cardquorum/shared';
 import { RoomService } from '../room/room.service';
 import { WsConnectionService } from '../ws/ws-connection.service';
+import { EventLogService } from './event-log.service';
 import { GameGateway } from './game.gateway';
 import { GameService } from './game.service';
 
@@ -14,6 +15,7 @@ describe('GameGateway', () => {
     manager: RoomManager;
     broadcastToRoom: (roomId: string, event: string, data: unknown) => void;
     findById: jest.Mock;
+    isMember: jest.Mock;
   };
 
   const aliceIdentity: UserIdentity = { userId: 1, username: 'alice', displayName: 'Alice' };
@@ -29,6 +31,7 @@ describe('GameGateway', () => {
     roomService = {
       manager,
       findById: jest.fn().mockResolvedValue({ id: 1, ownerId: aliceIdentity.userId }),
+      isMember: jest.fn().mockResolvedValue(true),
       broadcastToRoom(roomId: string, event: string, data: unknown) {
         const room = manager.getRoom(roomId);
         if (!room) return;
@@ -48,12 +51,20 @@ describe('GameGateway', () => {
       cleanupDisconnectedCreator: jest.fn(),
       getPlayerViewByRoom: jest.fn(),
       getSessionInfoByRoom: jest.fn(),
+      getEventBufferByRoom: jest.fn().mockReturnValue(null),
     } as any;
 
     gateway = new GameGateway(
       connectionService,
       roomService as unknown as RoomService,
       gameService,
+      {
+        bufferEvent: jest.fn(),
+        flushBuffer: jest.fn().mockResolvedValue(undefined),
+        recordParticipants: jest.fn().mockResolvedValue(undefined),
+        getRoomLog: jest.fn().mockResolvedValue([]),
+        getCatchUpEntries: jest.fn().mockReturnValue([]),
+      } as unknown as EventLogService,
     );
     gateway.onModuleInit();
   });

@@ -345,12 +345,12 @@ test.describe('Room Flows', () => {
     }
   });
 
-  test('entering a room shows the Chat tab as the default active tab', async ({
+  test('entering a room shows the Feed tab as the default active tab', async ({
     browser,
     request,
   }) => {
     const { context, page } = await authenticatedContext(browser, request);
-    const roomName = `TabChat-${Date.now()}`;
+    const roomName = `TabFeed-${Date.now()}`;
 
     try {
       await page.goto('/memberships');
@@ -367,8 +367,8 @@ test.describe('Room Flows', () => {
       // Wait for room view to fully render
       await page.locator(`p[title="${roomName}"]`).waitFor({ state: 'visible', timeout: 10000 });
 
-      const chatTab = page.getByRole('tab', { name: 'Chat' });
-      await expect(chatTab).toHaveAttribute('aria-selected', 'true');
+      const feedTab = page.getByRole('tab', { name: 'Feed' });
+      await expect(feedTab).toHaveAttribute('aria-selected', 'true');
     } finally {
       await context.close();
     }

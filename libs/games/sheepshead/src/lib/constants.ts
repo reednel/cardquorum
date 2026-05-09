@@ -70,3 +70,23 @@ export const FAIL_ACES: readonly CardName[] = ['ac', 'as', 'ah'];
 
 /** The three fail 10s. */
 export const FAIL_TENS: readonly CardName[] = ['xc', 'xs', 'xh'];
+
+/** Unicode suit symbols for display. */
+export const SUIT_SYMBOLS: Record<Suit, string> = {
+  clubs: '♣',
+  spades: '♠',
+  hearts: '♥',
+  diamonds: '♦',
+};
+
+/** Short display abbreviations for card ranks. */
+export const RANK_ABBREVIATIONS: Record<string, string> = {
+  '7': '7',
+  '8': '8',
+  '9': '9',
+  '10': '10',
+  jack: 'J',
+  queen: 'Q',
+  king: 'K',
+  ace: 'A',
+};

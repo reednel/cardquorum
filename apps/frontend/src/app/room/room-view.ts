@@ -1,5 +1,4 @@
 import { animate, style, transition, trigger } from '@angular/animations';
-import { TitleCasePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -16,26 +15,35 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Title } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
-import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
+import {
+  faChevronLeft,
+  faChevronRight,
+  faSliders,
+  faStream,
+  faUsers,
+} from '@fortawesome/free-solid-svg-icons';
 import { RoomResponse, WS_EVENT } from '@cardquorum/shared';
 import { AuthService } from '../auth/auth.service';
 import { ChatService } from '../chat/chat.service';
+import { FeedFilterToggle } from '../chat/feed-filter-toggle';
+import { FeedMode } from '../chat/game-log-utils';
+import { GameLogService } from '../chat/game-log.service';
 import { GameTable } from '../game/game-table';
 import { GameService } from '../game/game.service';
 import { WebSocketService } from '../websocket.service';
-import { RoomChatTab } from './room-chat-tab';
 import { RoomContextService } from './room-context.service';
+import { RoomFeedTab } from './room-feed-tab';
 import { RoomGameTab } from './room-game-tab';
 import { RoomMembersTab } from './room-members-tab';
 import { RoomService } from './room.service';
 import { RosterService } from './roster.service';
 
-type RoomTab = 'chat' | 'members' | 'game';
+type RoomTab = 'feed' | 'members' | 'game';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-room-view',
-  imports: [TitleCasePipe, FaIconComponent, RoomChatTab, RoomMembersTab, RoomGameTab, GameTable],
+  imports: [FaIconComponent, FeedFilterToggle, RoomFeedTab, RoomMembersTab, RoomGameTab, GameTable],
   animations: [
     trigger('slidePanel', [
       transition(':enter', [
@@ -133,33 +141,59 @@ type RoomTab = 'chat' | 'members' | 'game';
           </div>
 
           <!-- Tabs -->
-          <nav
-            class="flex border-b border-border dark:border-border-dark"
-            role="tablist"
-            aria-label="Room panels"
-          >
-            @for (tab of tabs; track tab) {
+          <div class="relative flex border-b border-border dark:border-border-dark">
+            <nav class="flex flex-1" role="tablist" aria-label="Room panels">
               <button
                 role="tab"
-                [attr.aria-selected]="activeTab() === tab"
-                [attr.aria-controls]="tab + '-panel'"
+                [attr.aria-selected]="activeTab() === 'feed'"
+                aria-controls="feed-panel"
+                [title]="tabTooltips['feed']"
                 [class]="
-                  'flex-1 px-3 py-2 text-sm font-medium transition-colors ' +
-                  (activeTab() === tab
+                  'flex-1 flex items-center justify-center px-3 py-2 text-sm transition-colors ' +
+                  (activeTab() === 'feed'
                     ? 'border-b-2 border-primary-light text-primary dark:text-primary-light-text'
                     : 'text-text-secondary hover:text-text-body dark:text-text-secondary-dark dark:hover:text-text-heading-dark')
                 "
-                (click)="onTabClick(tab)"
+                (click)="onTabClick('feed')"
               >
-                {{ tab | titlecase }}
+                @if (activeTab() !== 'feed') {
+                  <fa-icon [icon]="faStream" aria-hidden="true" />
+                }
+                <span class="sr-only">Feed</span>
               </button>
+              @for (tab of secondaryTabs; track tab) {
+                <button
+                  role="tab"
+                  [attr.aria-selected]="activeTab() === tab"
+                  [attr.aria-controls]="tab + '-panel'"
+                  [title]="tabTooltips[tab]"
+                  [class]="
+                    'flex-1 flex items-center justify-center px-3 py-2 text-sm transition-colors ' +
+                    (activeTab() === tab
+                      ? 'border-b-2 border-primary-light text-primary dark:text-primary-light-text'
+                      : 'text-text-secondary hover:text-text-body dark:text-text-secondary-dark dark:hover:text-text-heading-dark')
+                  "
+                  (click)="onTabClick(tab)"
+                >
+                  <fa-icon [icon]="tabIcons[tab]" aria-hidden="true" />
+                  <span class="sr-only">{{ tabTooltips[tab] }}</span>
+                </button>
+              }
+            </nav>
+            @if (activeTab() === 'feed') {
+              <app-feed-filter-toggle
+                [mode]="feedMode()"
+                (modeChange)="onFeedModeChange($event)"
+                class="absolute inset-y-0 left-0 flex w-1/3 items-center justify-center"
+              />
             }
-          </nav>
+          </div>
 
           <!-- Tab panels -->
           <div class="flex min-h-0 flex-1 flex-col">
-            <app-room-chat-tab
-              [class.hidden]="activeTab() !== 'chat'"
+            <app-room-feed-tab
+              [feedMode]="feedMode()"
+              [class.hidden]="activeTab() !== 'feed'"
               class="flex min-h-0 flex-1 flex-col"
             />
             @if (room(); as r) {
@@ -188,8 +222,24 @@ type RoomTab = 'chat' | 'members' | 'game';
 export class RoomView implements OnInit, OnDestroy {
   protected readonly faChevronLeft = faChevronLeft;
   protected readonly faChevronRight = faChevronRight;
+  protected readonly faStream = faStream;
+  protected readonly faUsers = faUsers;
+  protected readonly faSliders = faSliders;
+
+  protected readonly tabIcons: Record<RoomTab, typeof faStream> = {
+    feed: faStream,
+    members: faUsers,
+    game: faSliders,
+  };
+
+  protected readonly tabTooltips: Record<RoomTab, string> = {
+    feed: 'Feed',
+    members: 'Members',
+    game: 'Game settings',
+  };
 
   protected readonly chatService = inject(ChatService);
+  private readonly gameLogService = inject(GameLogService);
   protected readonly roomContext = inject(RoomContextService);
   protected readonly gameService = inject(GameService);
   protected readonly rosterService = inject(RosterService);
@@ -213,9 +263,11 @@ export class RoomView implements OnInit, OnDestroy {
     if (userId == null) return false;
     return this.rosterService.players().some((m) => m.userId === userId);
   });
-  protected readonly tabs: RoomTab[] = ['chat', 'members', 'game'];
+  protected readonly tabs: RoomTab[] = ['feed', 'members', 'game'];
+  protected readonly secondaryTabs: RoomTab[] = ['members', 'game'];
   protected readonly activeTab = signal<RoomTab>(this.loadActiveTab());
   protected readonly panelOpen = signal(this.loadPanelOpen());
+  protected readonly feedMode = signal<FeedMode>(this.loadFeedMode());
   protected readonly roomName = signal('');
   protected readonly room = signal<RoomResponse | null>(null);
   protected readonly isOwner = signal(false);
@@ -274,6 +326,7 @@ export class RoomView implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.roomContext.leaveRoom();
     this.chatService.clearMessages();
+    this.gameLogService.clearEntries();
     this.gameService.leaveRoom();
   }
 
@@ -319,7 +372,18 @@ export class RoomView implements OnInit, OnDestroy {
 
   private loadActiveTab(): RoomTab {
     const stored = localStorage.getItem('cq_panel_tab');
-    if (stored === 'chat' || stored === 'members' || stored === 'game') return stored;
-    return 'chat';
+    if (stored === 'feed' || stored === 'members' || stored === 'game') return stored;
+    return 'feed';
+  }
+
+  protected onFeedModeChange(mode: FeedMode): void {
+    this.feedMode.set(mode);
+    localStorage.setItem('cq_feed_mode', mode);
+  }
+
+  private loadFeedMode(): FeedMode {
+    const stored = localStorage.getItem('cq_feed_mode');
+    if (stored === 'chat' || stored === 'game-log' || stored === 'all') return stored;
+    return 'all';
   }
 }

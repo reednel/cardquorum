@@ -76,6 +76,22 @@ export class GameAbandonDto {
   sessionId: number;
 }
 
+export class GameLogHistoryDto {
+  @IsInt()
+  @Min(1)
+  roomId: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  cursor?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  pageSize?: number;
+}
+
 export class GameQueryTargetsDto {
   @IsInt()
   @Min(1)

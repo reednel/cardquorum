@@ -5,7 +5,7 @@ import { card, makeConfig, makeState, pickContinue } from '../test-helpers';
 describe('handleBury', () => {
   it('removes buried cards from picker hand', () => {
     const config = makeConfig();
-    const dealt = handleDeal(makeState(), config);
+    const { state: dealt } = handleDeal(makeState(), config);
     const picked = pickContinue(handlePick(dealt, { type: 'pick', userID: 2 }, config));
 
     const handBefore = picked.players[1].hand;
@@ -27,7 +27,7 @@ describe('handleBury', () => {
 
   it('transitions to call phase for called-ace rule', () => {
     const config = makeConfig({ partnerRule: 'called-ace' });
-    const dealt = handleDeal(makeState(), config);
+    const { state: dealt } = handleDeal(makeState(), config);
     const picked = pickContinue(handlePick(dealt, { type: 'pick', userID: 2 }, config));
 
     const toBury = picked.players[1].hand.slice(0, 2);
@@ -46,7 +46,7 @@ describe('handleBury', () => {
 
   it('throws when burying wrong number of cards', () => {
     const config = makeConfig(); // blindSize = 2
-    const dealt = handleDeal(makeState(), config);
+    const { state: dealt } = handleDeal(makeState(), config);
     const picked = pickContinue(handlePick(dealt, { type: 'pick', userID: 2 }, config));
 
     const onlyOne = picked.players[1].hand.slice(0, 1);
@@ -57,7 +57,7 @@ describe('handleBury', () => {
 
   it('throws when burying cards not in hand', () => {
     const config = makeConfig();
-    const dealt = handleDeal(makeState(), config);
+    const { state: dealt } = handleDeal(makeState(), config);
     const picked = pickContinue(handlePick(dealt, { type: 'pick', userID: 2 }, config));
 
     // Find a card NOT in picker's hand
@@ -81,7 +81,7 @@ describe('handleBury', () => {
 
     function setupDraft() {
       const state = makeState(7);
-      const dealt = handleDeal(state, draftConfig);
+      const { state: dealt } = handleDeal(state, draftConfig);
       // Player 2 (left of dealer) picks
       return pickContinue(handlePick(dealt, { type: 'pick', userID: 2 }, draftConfig));
     }
@@ -170,7 +170,7 @@ describe('handleBury', () => {
 
   it('transitions to play phase for non-called-ace rules', () => {
     const config = makeConfig({ partnerRule: 'jd' });
-    const dealt = handleDeal(makeState(), config);
+    const { state: dealt } = handleDeal(makeState(), config);
     const picked = pickContinue(handlePick(dealt, { type: 'pick', userID: 2 }, config));
 
     const toBury = picked.players[1].hand.slice(0, 2);

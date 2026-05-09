@@ -4,7 +4,7 @@ import { makeConfig, makeState, pickContinue } from '../test-helpers';
 describe('handlePick', () => {
   it('pick: sets player as picker and adds blind to hand', () => {
     const config = makeConfig();
-    const dealt = handleDeal(makeState(), config);
+    const { state: dealt } = handleDeal(makeState(), config);
     const blindSize = dealt.blind?.length ?? 0;
     const handSize = dealt.players[1].hand.length;
 
@@ -17,7 +17,7 @@ describe('handlePick', () => {
 
   it('pass: advances activePlayer to next', () => {
     const config = makeConfig();
-    const dealt = handleDeal(makeState(), config);
+    const { state: dealt } = handleDeal(makeState(), config);
 
     const state = pickContinue(handlePick(dealt, { type: 'pass', userID: 2 }, config));
 
@@ -26,7 +26,7 @@ describe('handlePick', () => {
 
   it('all pass with leaster noPick: transitions to play as leaster', () => {
     const config = makeConfig({ noPick: 'leaster' });
-    const dealt = handleDeal(makeState(), config);
+    const { state: dealt } = handleDeal(makeState(), config);
 
     // All 3 players pass: active starts at 2, pass→3, pass→1, pass→back to 2 (full circle)
     let s = pickContinue(handlePick(dealt, { type: 'pass', userID: 2 }, config));
@@ -40,7 +40,7 @@ describe('handlePick', () => {
 
   it('all pass with forced-pick: last player is forced to pick', () => {
     const config = makeConfig({ noPick: 'forced-pick' });
-    const dealt = handleDeal(makeState(), config);
+    const { state: dealt } = handleDeal(makeState(), config);
 
     let s = pickContinue(handlePick(dealt, { type: 'pass', userID: 2 }, config));
     s = pickContinue(handlePick(s, { type: 'pass', userID: 3 }, config));
@@ -58,7 +58,7 @@ describe('handlePick', () => {
     'all pass with %s noPick: transitions to play with all opposition',
     (noPick) => {
       const config = makeConfig({ noPick });
-      const dealt = handleDeal(makeState(), config);
+      const { state: dealt } = handleDeal(makeState(), config);
 
       let s = pickContinue(handlePick(dealt, { type: 'pass', userID: 2 }, config));
       s = pickContinue(handlePick(s, { type: 'pass', userID: 3 }, config));
@@ -72,7 +72,7 @@ describe('handlePick', () => {
 
   it('all pass with schwanzer: transitions to score (showdown)', () => {
     const config = makeConfig({ noPick: 'schwanzer' });
-    const dealt = handleDeal(makeState(), config);
+    const { state: dealt } = handleDeal(makeState(), config);
 
     let s = pickContinue(handlePick(dealt, { type: 'pass', userID: 2 }, config));
     s = pickContinue(handlePick(s, { type: 'pass', userID: 3 }, config));
@@ -85,7 +85,7 @@ describe('handlePick', () => {
 
   it('all pass with doubler: signals doubler-redeal with redeals recorded', () => {
     const config = makeConfig({ noPick: 'doubler' });
-    const dealt = handleDeal(makeState(), config);
+    const { state: dealt } = handleDeal(makeState(), config);
 
     let s = pickContinue(handlePick(dealt, { type: 'pass', userID: 2 }, config));
     s = pickContinue(handlePick(s, { type: 'pass', userID: 3 }, config));

@@ -1,6 +1,10 @@
 export { blocks } from './blocks';
 export { friendships } from './friendships';
 export { friendshipRequests } from './friendship-requests';
+export { gameEvents } from './game-events';
+export type { GameEvent, NewGameEvent } from './game-events';
+export { gameParticipants } from './game-participants';
+export type { GameParticipant, NewGameParticipant } from './game-participants';
 export { gameSessions } from './game-sessions';
 export { messages } from './messages';
 export { roomBans } from './room-bans';

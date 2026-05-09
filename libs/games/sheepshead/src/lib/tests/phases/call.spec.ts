@@ -5,7 +5,7 @@ import { card, makeConfig, makeState, pickContinue } from '../test-helpers';
 describe('handleCall', () => {
   it('sets calledCard and assigns roles', () => {
     const config = makeConfig({ partnerRule: 'called-ace', callOwnAce: false });
-    const dealt = handleDeal(makeState(), config);
+    const { state: dealt } = handleDeal(makeState(), config);
     const picked = pickContinue(handlePick(dealt, { type: 'pick', userID: 2 }, config));
 
     // Find a fail ace the picker does NOT hold so the call is valid
@@ -239,7 +239,7 @@ describe('handleCall', () => {
 
   it('allows going alone', () => {
     const config = makeConfig({ partnerRule: 'called-ace', callOwnAce: false });
-    const dealt = handleDeal(makeState(), config);
+    const { state: dealt } = handleDeal(makeState(), config);
     const picked = pickContinue(handlePick(dealt, { type: 'pick', userID: 2 }, config));
     const toBury = picked.players[1].hand.slice(0, 2);
     const buried = handleBury(

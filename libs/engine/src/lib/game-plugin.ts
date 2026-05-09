@@ -66,4 +66,15 @@ export interface GamePlugin<
    * If not implemented, GameService falls back to cancelling with status 'abandoned'.
    */
   onPlayerAbandon?(config: TConfig, state: TState, userId: number): TState;
+
+  /**
+   * Produce a human-readable description of a game event.
+   * Returns null to suppress the event from the visible log.
+   *
+   * @param event - The raw game event
+   * @param state - The post-event state (after applyEvent)
+   * @param playerNames - Map of userID → display name
+   * @returns A spectator-safe description string, or null
+   */
+  describeEvent?(event: TEvent, state: TState, playerNames: Map<number, string>): string | null;
 }

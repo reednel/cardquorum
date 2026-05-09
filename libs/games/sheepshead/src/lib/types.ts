@@ -166,8 +166,15 @@ export type SheepsheadEvent =
   | GameScoredEvent
   | TrickAdvanceEvent;
 
+export interface DealEventPayload {
+  hands: Record<number, Card[]>;
+  blind: Card[];
+}
+
 export interface DealEvent {
   type: 'deal';
+  userID: UserID;
+  payload?: DealEventPayload;
 }
 
 export interface PickEvent {

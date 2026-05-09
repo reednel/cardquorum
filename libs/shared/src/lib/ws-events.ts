@@ -20,6 +20,7 @@ export const WS_EVENT = {
   ROSTER_TOGGLE_READY: 'roster:toggle-ready',
   GAME_ABANDON: 'game:abandon',
   ROSTER_SET_ROTATION_MODE: 'roster:set-rotation-mode',
+  GAME_LOG_HISTORY: 'game-log:history',
 } as const;
 
 /**
@@ -46,4 +47,7 @@ export const WS_EMIT = {
   GAME_SETTINGS_UPDATED: 'game-settings:updated',
   GAME_SETTINGS_LOADED: 'game-settings:loaded',
   GAME_VALID_TARGETS: 'game:valid-targets',
+  GAME_LOG_ENTRY: 'game-log:entry',
+  GAME_LOG_HISTORY: 'game-log:history',
+  GAME_LOG_CATCHUP: 'game-log:catchup',
 } as const;

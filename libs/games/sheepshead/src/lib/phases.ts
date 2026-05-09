@@ -9,6 +9,7 @@ import {
   CallAceEvent,
   Card,
   CardName,
+  DealEventPayload,
   PassEvent,
   PickEvent,
   PickPhaseResult,
@@ -36,28 +37,48 @@ function seatIndex(state: SheepsheadState, userID: UserID): number {
 /**
  * Deal phase: shuffle deck, deal cards, set blind, transition to pick.
  * Retries automatically if noAceFaceTrump is enabled and a hand qualifies.
+ * If a payload is provided (replay mode), uses those cards directly instead of shuffling.
+ * Returns both the new state and the deal payload (hands mapped by userID + blind).
  */
-export function handleDeal(state: SheepsheadState, config: SheepsheadConfig): SheepsheadState {
-  const maxRetries = 100;
+export function handleDeal(
+  state: SheepsheadState,
+  config: SheepsheadConfig,
+  replayPayload?: DealEventPayload,
+): { state: SheepsheadState; dealPayload: DealEventPayload } {
   let hands: Card[][] = [];
   let blind: Card[] = [];
 
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    const deck = createShuffledDeck(config.cardsRemoved);
-    const dealt = deal(deck, config);
+  if (replayPayload) {
+    // Replay mode: use provided cards directly
+    hands = state.players.map((p) => replayPayload.hands[p.userID]);
+    blind = replayPayload.blind;
+  } else {
+    const maxRetries = 100;
 
-    if (config.noAceFaceTrump && hasNoAceFaceTrump(dealt.hands)) {
-      continue; // redeal
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      const deck = createShuffledDeck(config.cardsRemoved);
+      const dealt = deal(deck, config);
+
+      if (config.noAceFaceTrump && hasNoAceFaceTrump(dealt.hands)) {
+        continue; // redeal
+      }
+
+      hands = dealt.hands;
+      blind = dealt.blind;
+      break;
     }
 
-    hands = dealt.hands;
-    blind = dealt.blind;
-    break;
+    if (hands.length === 0) {
+      throw new Error('Unable to deal a valid hand after maximum retries');
+    }
   }
 
-  if (hands.length === 0) {
-    throw new Error('Unable to deal a valid hand after maximum retries');
-  }
+  // Build the payload mapping userID → hand
+  const handsRecord: Record<number, Card[]> = {};
+  state.players.forEach((p, i) => {
+    handsRecord[p.userID] = hands[i];
+  });
+  const dealPayload: DealEventPayload = { hands: handsRecord, blind };
 
   let players = state.players.map((p, i) => ({
     ...p,
@@ -73,13 +94,16 @@ export function handleDeal(state: SheepsheadState, config: SheepsheadConfig): Sh
       players = stateWithRoles.players;
     }
     return {
-      ...state,
-      players,
-      phase: 'play',
-      blind,
-      activePlayer: players[firstPlayerIdx].userID,
-      trickNumber: 1,
-      tricks: [{ plays: [], winner: null }],
+      state: {
+        ...state,
+        players,
+        phase: 'play',
+        blind,
+        activePlayer: players[firstPlayerIdx].userID,
+        trickNumber: 1,
+        tricks: [{ plays: [], winner: null }],
+      },
+      dealPayload,
     };
   }
 
@@ -89,21 +113,27 @@ export function handleDeal(state: SheepsheadState, config: SheepsheadConfig): Sh
     players[firstPlayerIdx].hand = [...players[firstPlayerIdx].hand, ...blind];
 
     return {
-      ...state,
-      players,
-      phase: 'bury',
-      blind,
-      activePlayer: players[firstPlayerIdx].userID,
+      state: {
+        ...state,
+        players,
+        phase: 'bury',
+        blind,
+        activePlayer: players[firstPlayerIdx].userID,
+      },
+      dealPayload,
     };
   }
 
   // Autonomous — normal pick phase
   return {
-    ...state,
-    players,
-    phase: 'pick',
-    blind,
-    activePlayer: players[firstPlayerIdx].userID,
+    state: {
+      ...state,
+      players,
+      phase: 'pick',
+      blind,
+      activePlayer: players[firstPlayerIdx].userID,
+    },
+    dealPayload,
   };
 }
 

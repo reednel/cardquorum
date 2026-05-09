@@ -1,5 +1,7 @@
 import { GamePlugin } from '@cardquorum/engine';
+import { formatCard } from './cards';
 import { SheepsheadConfigSchema } from './config';
+import { DECK } from './constants';
 import {
   handleBury,
   handleCall,
@@ -13,6 +15,7 @@ import { legalPlays } from './tricks';
 import {
   BlitzState,
   Card,
+  DealEvent,
   SheepsheadConfig,
   SheepsheadEvent,
   SheepsheadEventType,
@@ -153,8 +156,12 @@ function applyEvent(
   event: SheepsheadEvent,
 ): SheepsheadState {
   switch (event.type) {
-    case 'deal':
-      return handleDeal(state, config);
+    case 'deal': {
+      const { state: newState, dealPayload } = handleDeal(state, config, event.payload);
+      // Enrich the event with the deal payload for storage/replay
+      (event as DealEvent).payload = dealPayload;
+      return newState;
+    }
     case 'pick':
     case 'pass': {
       const result = handlePick(state, event, config);
@@ -163,7 +170,10 @@ function applyEvent(
         const freshState = createInitialState(config, userIDs);
         freshState.previousGameDouble = true;
         freshState.redeals = result.redeals;
-        return handleDeal(freshState, config);
+        const { state: newState, dealPayload } = handleDeal(freshState, config);
+        // Enrich the original event with the redeal payload
+        (event as any).dealPayload = dealPayload;
+        return newState;
       }
       return result.state;
     }
@@ -382,6 +392,59 @@ function getValidTargets(
   }
 }
 
+function describeEvent(
+  event: SheepsheadEvent,
+  _state: SheepsheadState,
+  playerNames: Map<number, string>,
+): string | null {
+  switch (event.type) {
+    case 'deal': {
+      const name = playerNames.get(event.userID) ?? 'Unknown';
+      return `${name} dealt`;
+    }
+    case 'pick': {
+      const name = playerNames.get(event.userID) ?? 'Unknown';
+      return `${name} picked`;
+    }
+    case 'pass': {
+      const name = playerNames.get(event.userID) ?? 'Unknown';
+      return `${name} passed`;
+    }
+    case 'bury': {
+      const name = playerNames.get(event.userID) ?? 'Unknown';
+      return `${name} buried`;
+    }
+    case 'call_ace': {
+      const name = playerNames.get(event.userID) ?? 'Unknown';
+      if (event.payload.card === 'alone') {
+        return `${name} is going alone`;
+      }
+      const card = DECK.find((c) => c.name === event.payload.card);
+      return `${name} called the ${card ? formatCard(card) : event.payload.card}`;
+    }
+    case 'crack': {
+      const name = playerNames.get(event.userID) ?? 'Unknown';
+      return `${name} cracked`;
+    }
+    case 're_crack': {
+      const name = playerNames.get(event.userID) ?? 'Unknown';
+      return `${name} re-cracked`;
+    }
+    case 'blitz': {
+      const name = playerNames.get(event.userID) ?? 'Unknown';
+      return `${name} declared ${event.payload.blitzType.replace('-', ' ')}`;
+    }
+    case 'play_card': {
+      const name = playerNames.get(event.userID) ?? 'Unknown';
+      return `${name} played the ${formatCard(event.payload.card)}`;
+    }
+    case 'game_scored':
+      return null;
+    case 'trick_advance':
+      return null;
+  }
+}
+
 /**
  * Sheepshead game plugin. Implements the generic GamePlugin interface
  * so the engine can orchestrate Sheepshead games without knowing the rules.
@@ -402,4 +465,5 @@ export const SheepsheadPlugin: GamePlugin<
   buildStore,
   getValidTargets,
   onPlayerAbandon,
+  describeEvent,
 };

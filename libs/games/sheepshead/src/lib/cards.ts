@@ -1,5 +1,5 @@
-import { FAIL_RANK_ORDER, TRUMP_ORDER } from './constants';
-import { Card, Rank, Suit, TrickState } from './types';
+import { FAIL_RANK_ORDER, RANK_ABBREVIATIONS, SUIT_SYMBOLS, TRUMP_ORDER } from './constants';
+import { CalledCard, Card, Rank, Suit, TrickState } from './types';
 
 /** Whether a card is trump (queens, jacks, or diamonds). */
 export function isTrump(card: Card): boolean {
@@ -39,4 +39,25 @@ export function cardPower(card: Card, leadSuit: Suit): number {
 /** Whether two cards are the same. */
 export function cardsEqual(a: Card, b: Card): boolean {
   return a.suit === b.suit && a.rank === b.rank;
+}
+
+/** Format a card for display (e.g. "Q♣", "A♠"). */
+export function formatCard(card: Card): string {
+  return `${RANK_ABBREVIATIONS[card.rank]}${SUIT_SYMBOLS[card.suit]}`;
+}
+
+/** Map a CalledCard code to a human-readable suit label. */
+export function calledCardSuitLabel(card: CalledCard): string {
+  if (card === 'alone') return 'alone';
+  const suitCode = card.charAt(card.length - 1);
+  switch (suitCode) {
+    case 'c':
+      return 'Clubs';
+    case 's':
+      return 'Spades';
+    case 'h':
+      return 'Hearts';
+    default:
+      return 'Diamonds';
+  }
 }

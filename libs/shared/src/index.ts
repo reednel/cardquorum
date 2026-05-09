@@ -77,6 +77,11 @@ export type { FriendshipResponse } from './lib/friend-types';
 export type { FriendRequestBody, FriendRequestResponse } from './lib/friend-request-types';
 export type { BlockedUserResponse, BlockUserRequest } from './lib/block-types';
 export type {
+  GameLogBroadcast,
+  EventBufferEntry,
+  GameLogHistoryPayload,
+} from './lib/game-log-types';
+export type {
   CardAsset,
   SeatInfo,
   TrickPlayView,

@@ -6,6 +6,8 @@ export { MessageRepository } from './message.repository';
 export { SessionRepository } from './session.repository';
 export { UserRepository } from './user.repository';
 export { CredentialRepository } from './credential.repository';
+export { GameEventRepository } from './game-event.repository';
+export { GameParticipantRepository } from './game-participant.repository';
 export { GameSessionRepository } from './game-session.repository';
 export { RoomGameSettingsRepository } from './room-game-settings.repository';
 export { FriendshipRepository } from './friendship.repository';

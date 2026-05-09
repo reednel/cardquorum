@@ -10,11 +10,13 @@ import { ColorAssignmentMap, WS_EMIT, WS_EVENT } from '@cardquorum/shared';
 import { RoomService } from '../room/room.service';
 import { WsConnectionService } from '../ws/ws-connection.service';
 import { WsValidationPipe } from '../ws/ws-validation.pipe';
+import { EventLogService } from './event-log.service';
 import {
   GameAbandonDto,
   GameActionDto,
   GameCancelDto,
   GameCreateDto,
+  GameLogHistoryDto,
   GameQueryTargetsDto,
   GameRejoinDto,
   GameStartDto,
@@ -30,6 +32,7 @@ export class GameGateway implements OnModuleInit {
     private readonly connectionService: WsConnectionService,
     private readonly roomService: RoomService,
     private readonly gameService: GameService,
+    private readonly eventLogService: EventLogService,
   ) {}
 
   onModuleInit() {
@@ -249,6 +252,15 @@ export class GameGateway implements OnModuleInit {
         gameType: result.gameType,
         config: result.config,
       });
+
+      // Send catch-up log entries for the active session
+      const buffer = this.gameService.getEventBufferByRoom(payload.roomId);
+      if (buffer) {
+        const catchUpEntries = this.eventLogService.getCatchUpEntries(buffer);
+        if (catchUpEntries.length > 0) {
+          this.send(client, WS_EMIT.GAME_LOG_CATCHUP, { entries: catchUpEntries });
+        }
+      }
     }
   }
 
@@ -277,6 +289,45 @@ export class GameGateway implements OnModuleInit {
         generation: payload.generation,
         targets: [],
       });
+    }
+  }
+
+  @SubscribeMessage(WS_EVENT.GAME_LOG_HISTORY)
+  async handleGameLogHistory(
+    @ConnectedSocket() client: WebSocket,
+    @MessageBody() payload: GameLogHistoryDto,
+  ) {
+    const tracked = this.connectionService.getTracked(client);
+    if (!tracked) return;
+
+    // Verify user is a member of the room
+    const isMember = await this.roomService.isMember(payload.roomId, tracked.identity.userId);
+    if (!isMember) {
+      this.send(client, WS_EMIT.GAME_LOG_HISTORY, { entries: [], hasMore: false });
+      return;
+    }
+
+    try {
+      const rows = await this.eventLogService.getRoomLog(
+        payload.roomId,
+        payload.cursor,
+        payload.pageSize,
+      );
+      this.logger.log(
+        `[GameLog] history request: roomId=${payload.roomId}, cursor=${payload.cursor}, pageSize=${payload.pageSize} → ${rows.length} entries (sessions: ${[...new Set(rows.map((r) => r.sessionId))].join(',')})`,
+      );
+      const entries = rows.map((row) => ({
+        id: row.id,
+        sessionId: row.sessionId,
+        userId: row.userId,
+        eventType: row.eventType,
+        message: row.message,
+        timestamp: row.createdAt.toISOString(),
+      }));
+      this.send(client, WS_EMIT.GAME_LOG_HISTORY, { entries });
+    } catch (err) {
+      this.logger.warn(`game-log:history failed: ${err}`);
+      this.send(client, WS_EMIT.GAME_LOG_HISTORY, { entries: [] });
     }
   }
 

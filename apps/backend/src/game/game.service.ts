@@ -4,6 +4,7 @@ import { GamePlugin, WithScheduledEvents } from '@cardquorum/engine';
 import { ColorAssignmentMap, WS_EMIT } from '@cardquorum/shared';
 import { SheepsheadPlugin } from '@cardquorum/sheepshead';
 import { RoomService } from '../room/room.service';
+import { EventBufferEntry, EventLogService } from './event-log.service';
 import { resolveCancellationStatus } from './game-status';
 
 type BroadcastFn = (result: {
@@ -19,9 +20,11 @@ interface ActiveGame {
   config: unknown;
   state: unknown | null;
   playerIDs: number[];
+  playerNames: Map<number, string>;
   createdBy: number;
   status: 'waiting' | 'active';
   createdAt: number;
+  eventBuffer: EventBufferEntry[];
 }
 
 /** How long a waiting session can sit before being auto-cancelled (30 minutes). */
@@ -51,6 +54,7 @@ export class GameService implements OnModuleDestroy {
     private readonly sessionRepo: GameSessionRepository,
     @Inject(forwardRef(() => RoomService))
     private readonly roomService: RoomService,
+    private readonly eventLogService: EventLogService,
   ) {
     this.sweepTimer = setInterval(() => this.sweepAbandoned(), SWEEP_INTERVAL_MS);
   }
@@ -111,9 +115,11 @@ export class GameService implements OnModuleDestroy {
       config,
       state: null,
       playerIDs: [],
+      playerNames: new Map(),
       createdBy,
       status: 'waiting',
       createdAt: Date.now(),
+      eventBuffer: [],
     };
 
     this.activeGames.set(row.id, game);
@@ -162,7 +168,22 @@ export class GameService implements OnModuleDestroy {
     game.state = plugin.createInitialState(game.config as any, playerIDs);
     game.status = 'active';
 
+    // Build player names map from roster
+    const playerNames = new Map<number, string>();
+    for (const player of roster.players) {
+      playerNames.set(player.userId, player.displayName || player.username);
+    }
+    game.playerNames = playerNames;
+
     await this.sessionRepo.updateStatusAndTimestamp(sessionId, 'active', 'startedAt');
+
+    // Record participants in the event log
+    await this.eventLogService.recordParticipants(sessionId, playerIDs);
+
+    // Append synthetic "game_started" event
+    const gameStartedMessage = `${game.gameType.charAt(0).toUpperCase() + game.gameType.slice(1)} game started`;
+    this.bufferSyntheticEvent(game, 'game_started', gameStartedMessage);
+    this.broadcastLogEntry(game, null, 'game_started', gameStartedMessage);
 
     const playerViews = this.buildPlayerViews(game, plugin);
 
@@ -216,6 +237,23 @@ export class GameService implements OnModuleDestroy {
     const newState = plugin.applyEvent(game.config as any, game.state as any, event);
     game.state = newState;
 
+    // Buffer the event with a human-readable description
+    let message: string | null = null;
+    if (plugin.describeEvent) {
+      try {
+        message = plugin.describeEvent(event as any, newState, game.playerNames);
+      } catch (err) {
+        this.logger.warn(`describeEvent failed for ${event.type}: ${err}`);
+        message = null;
+      }
+    }
+    this.eventLogService.bufferEvent(game.eventBuffer, event, message, game.roomId, game.sessionId);
+
+    // Broadcast log entry in real time if message is non-null
+    if (message !== null) {
+      this.broadcastLogEntry(game, event.userID ?? null, event.type, message);
+    }
+
     // Check for scheduled events and set up timers
     const stateWithScheduled = newState as WithScheduledEvents;
     if (
@@ -239,6 +277,11 @@ export class GameService implements OnModuleDestroy {
     if (gameOver) {
       const store = plugin.buildStore(game.config as any, newState);
       const playerViews = this.buildPlayerViews(game, plugin);
+
+      // Append synthetic "game_finished" event and flush buffer
+      this.bufferSyntheticEvent(game, 'game_finished', 'Game finished');
+      this.broadcastLogEntry(game, null, 'game_finished', 'Game finished');
+      await this.eventLogService.flushBuffer(game.eventBuffer);
 
       await this.sessionRepo.updateStore(sessionId, store);
       await this.sessionRepo.updateStatusAndTimestamp(sessionId, 'finished', 'finishedAt');
@@ -272,6 +315,13 @@ export class GameService implements OnModuleDestroy {
 
     if (!this.isUserInRoom(game.roomId, requestedBy)) {
       throw new Error('User is no longer in the room');
+    }
+
+    // Append synthetic "game_cancelled" event and flush buffer if there are events
+    this.bufferSyntheticEvent(game, 'game_cancelled', 'Game cancelled');
+    this.broadcastLogEntry(game, null, 'game_cancelled', 'Game cancelled');
+    if (game.eventBuffer.length > 0) {
+      await this.eventLogService.flushBuffer(game.eventBuffer);
     }
 
     const finalStatus = resolveCancellationStatus(game.status, 'owner-cancel');
@@ -312,6 +362,12 @@ export class GameService implements OnModuleDestroy {
 
     const plugin = this.plugins.get(game.gameType)!;
     const requiredPlayerCount = (game.config as { playerCount: number }).playerCount;
+
+    // Append synthetic "game_abandoned" event and flush buffer
+    const abandonerName = game.playerNames.get(userId) ?? `User ${userId}`;
+    this.bufferSyntheticEvent(game, 'game_abandoned', `Game abandoned by ${abandonerName}`);
+    this.broadcastLogEntry(game, userId, 'game_abandoned', `Game abandoned by ${abandonerName}`);
+    await this.eventLogService.flushBuffer(game.eventBuffer);
 
     let store: unknown | undefined;
 
@@ -446,6 +502,17 @@ export class GameService implements OnModuleDestroy {
     return { sessionId, ...view };
   }
 
+  /** Get the event buffer for the active game in a room (for catch-up on rejoin). */
+  getEventBufferByRoom(roomId: number): EventBufferEntry[] | null {
+    const sessionId = this.roomToSession.get(roomId);
+    if (sessionId === undefined) return null;
+
+    const game = this.activeGames.get(sessionId);
+    if (!game || game.status !== 'active') return null;
+
+    return game.eventBuffer;
+  }
+
   /** Return session info for rejoin, covering both waiting and active games. */
   async getSessionInfoByRoom(
     roomId: number,
@@ -509,6 +576,20 @@ export class GameService implements OnModuleDestroy {
     const newState = plugin.applyEvent(game.config as any, game.state as any, event);
     game.state = newState;
 
+    // Buffer the scheduled event (message may be null)
+    let message: string | null = null;
+    if (plugin.describeEvent) {
+      try {
+        message = plugin.describeEvent(event as any, newState, game.playerNames);
+      } catch {
+        message = null;
+      }
+    }
+    this.eventLogService.bufferEvent(game.eventBuffer, event, message, game.roomId, sessionId);
+    if (message !== null) {
+      this.broadcastLogEntry(game, null, event.type, message);
+    }
+
     // Remove the fired timer from pendingTimers
     const timers = this.pendingTimers.get(sessionId);
     if (timers) {
@@ -521,9 +602,16 @@ export class GameService implements OnModuleDestroy {
       const store = plugin.buildStore(game.config as any, newState);
       const playerViews = this.buildPlayerViews(game, plugin);
 
-      this.sessionRepo
-        .updateStore(sessionId, store)
-        .then(() => this.sessionRepo.updateStatusAndTimestamp(sessionId, 'finished', 'finishedAt'));
+      // Buffer and broadcast the synthetic game_finished event
+      this.bufferSyntheticEvent(game, 'game_finished', 'Game finished');
+      this.broadcastLogEntry(game, null, 'game_finished', 'Game finished');
+
+      // Flush event buffer and update session in DB
+      this.eventLogService
+        .flushBuffer(game.eventBuffer)
+        .then(() => this.sessionRepo.updateStore(sessionId, store))
+        .then(() => this.sessionRepo.updateStatusAndTimestamp(sessionId, 'finished', 'finishedAt'))
+        .catch((err) => this.logger.warn(`Scheduled game-over flush failed: ${err}`));
 
       this.activeGames.delete(sessionId);
       this.pendingTimers.delete(sessionId);
@@ -591,6 +679,34 @@ export class GameService implements OnModuleDestroy {
   private finalizeGameEnd(roomId: number, sessionId: number): void {
     this.roomToSession.delete(roomId);
     this.roomService.broadcastToRoom(String(roomId), WS_EMIT.GAME_CANCELLED, { sessionId });
+  }
+
+  /** Buffer a synthetic event (no userID) with a given type and message. */
+  private bufferSyntheticEvent(game: ActiveGame, type: string, message: string): void {
+    const syntheticEvent = { type };
+    this.eventLogService.bufferEvent(
+      game.eventBuffer,
+      syntheticEvent,
+      message,
+      game.roomId,
+      game.sessionId,
+    );
+  }
+
+  /** Broadcast a game log entry to all room members. */
+  private broadcastLogEntry(
+    game: ActiveGame,
+    userId: number | null,
+    eventType: string,
+    message: string,
+  ): void {
+    this.roomService.broadcastToRoom(String(game.roomId), WS_EMIT.GAME_LOG_ENTRY, {
+      sessionId: game.sessionId,
+      userId,
+      eventType,
+      message,
+      timestamp: new Date().toISOString(),
+    });
   }
 
   private buildPlayerViews(
