@@ -35,6 +35,14 @@ import { UserDropdown } from './user-dropdown';
         >
           Discover
         </a>
+        <a
+          data-testid="nav-replay"
+          routerLink="/replay"
+          routerLinkActive="text-primary dark:text-primary-light-text font-semibold"
+          class="text-sm text-text-secondary hover:text-primary dark:text-text-secondary-dark dark:hover:text-primary-light-text"
+        >
+          Replay
+        </a>
       </nav>
 
       <div class="flex items-center gap-4">

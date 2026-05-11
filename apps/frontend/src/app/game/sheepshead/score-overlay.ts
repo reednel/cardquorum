@@ -71,7 +71,7 @@ interface ScorePlayer {
         >
           Close
         </button>
-        @if (isOwner() && canStartNext()) {
+        @if (isOwner() && canStartNext() && !hideStartNext()) {
           <button
             data-testid="score-start-next-btn"
             (click)="startNextGame.emit()"
@@ -90,6 +90,7 @@ export class ScoreOverlay {
   readonly members = input.required<UserIdentity[]>();
   readonly isOwner = input.required<boolean>();
   readonly canStartNext = input.required<boolean>();
+  readonly hideStartNext = input<boolean>(false);
 
   readonly dismissed = output<void>();
   readonly startNextGame = output<void>();

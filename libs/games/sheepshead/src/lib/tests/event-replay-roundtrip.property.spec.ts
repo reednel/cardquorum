@@ -5,6 +5,35 @@ import { CalledCard, SheepsheadConfig, SheepsheadEvent, SheepsheadState } from '
 
 const { createInitialState, applyEvent, getValidActions, isGameOver } = SheepsheadPlugin;
 
+/** Helper: apply event, capture sideEffects into event payload, return new state. */
+function applyAndCapture(
+  config: SheepsheadConfig,
+  state: SheepsheadState,
+  event: SheepsheadEvent,
+): SheepsheadState {
+  const result = applyEvent(config, state, event);
+  // Simulate backend behavior: store sideEffects as the event payload
+  if (result.sideEffects !== undefined) {
+    if ((result.sideEffects as any).dealPayload) {
+      // Redeal case: store dealPayload on the event for replay
+      (event as any).dealPayload = (result.sideEffects as any).dealPayload;
+    } else {
+      // Deal case: store deal payload directly
+      (event as any).payload = result.sideEffects;
+    }
+  }
+  return result.state;
+}
+
+/** Helper: apply event during replay (just unwrap state). */
+function applyReplay(
+  config: SheepsheadConfig,
+  state: SheepsheadState,
+  event: SheepsheadEvent,
+): SheepsheadState {
+  return applyEvent(config, state, event).state;
+}
+
 function makeConfig(overrides: Partial<SheepsheadConfig> = {}): SheepsheadConfig {
   return {
     name: 'jack-of-diamonds',
@@ -57,9 +86,9 @@ function playRandomGame(
     };
     if (stateWithScheduled.scheduledEvents && stateWithScheduled.scheduledEvents.length > 0) {
       const scheduledEvent = stateWithScheduled.scheduledEvents[0].event as SheepsheadEvent;
-      // Deep clone the event so applyEvent can enrich it
+      // Deep clone the event so we can capture sideEffects into it
       const eventCopy = JSON.parse(JSON.stringify(scheduledEvent));
-      state = applyEvent(config, state, eventCopy);
+      state = applyAndCapture(config, state, eventCopy);
       events.push(eventCopy);
       continue;
     }
@@ -86,7 +115,7 @@ function playRandomGame(
     const event = buildEvent(actionType, actingPlayer, state, config, rng);
     if (!event) continue;
 
-    state = applyEvent(config, state, event);
+    state = applyAndCapture(config, state, event);
     events.push(event);
   }
 
@@ -211,7 +240,7 @@ describe('Event replay round-trip produces equivalent states', () => {
         for (const event of events) {
           // Deep clone the event to avoid mutation during replay
           const eventCopy = JSON.parse(JSON.stringify(event));
-          replayState = applyEvent(config, replayState, eventCopy);
+          replayState = applyReplay(config, replayState, eventCopy);
         }
 
         // Final states should be equivalent
@@ -239,7 +268,7 @@ describe('Event replay round-trip produces equivalent states', () => {
           let state = createInitialState(config, userIDs);
           for (const event of evts) {
             const eventCopy = JSON.parse(JSON.stringify(event));
-            state = applyEvent(config, state, eventCopy);
+            state = applyReplay(config, state, eventCopy);
           }
           return state;
         };

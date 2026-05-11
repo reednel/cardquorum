@@ -1,4 +1,4 @@
-import { GamePlugin } from '@cardquorum/engine';
+import { ApplyEventResult, GamePlugin } from '@cardquorum/engine';
 import { formatCard } from './cards';
 import { SheepsheadConfigSchema } from './config';
 import { DECK } from './constants';
@@ -15,7 +15,7 @@ import { legalPlays } from './tricks';
 import {
   BlitzState,
   Card,
-  DealEvent,
+  DealEventPayload,
   SheepsheadConfig,
   SheepsheadEvent,
   SheepsheadEventType,
@@ -154,13 +154,15 @@ function applyEvent(
   config: SheepsheadConfig,
   state: SheepsheadState,
   event: SheepsheadEvent,
-): SheepsheadState {
+): ApplyEventResult<SheepsheadState> {
   switch (event.type) {
     case 'deal': {
+      // Replay path: if payload already contains hands and blind, use them deterministically
       const { state: newState, dealPayload } = handleDeal(state, config, event.payload);
-      // Enrich the event with the deal payload for storage/replay
-      (event as DealEvent).payload = dealPayload;
-      return newState;
+      // If the event already had a payload (replay), no sideEffects needed
+      // If it didn't (live play), return the generated deal as sideEffects for storage
+      const hasDealData = event.payload?.hands && event.payload?.blind;
+      return hasDealData ? { state: newState } : { state: newState, sideEffects: dealPayload };
     }
     case 'pick':
     case 'pass': {
@@ -170,38 +172,41 @@ function applyEvent(
         const freshState = createInitialState(config, userIDs);
         freshState.previousGameDouble = true;
         freshState.redeals = result.redeals;
-        const { state: newState, dealPayload } = handleDeal(freshState, config);
-        // Enrich the original event with the redeal payload
-        (event as any).dealPayload = dealPayload;
-        return newState;
+        // Replay path: if event has a dealPayload (stored sideEffects), use it
+        const replayPayload = (event as { dealPayload?: DealEventPayload }).dealPayload;
+        const { state: newState, dealPayload } = handleDeal(freshState, config, replayPayload);
+        // If replay payload was provided, no sideEffects needed; otherwise return for storage
+        return replayPayload
+          ? { state: newState }
+          : { state: newState, sideEffects: { dealPayload } };
       }
-      return result.state;
+      return { state: result.state };
     }
     case 'bury':
-      return handleBury(state, event, config);
+      return { state: handleBury(state, event, config) };
     case 'call_ace':
-      return handleCall(state, event, config);
+      return { state: handleCall(state, event, config) };
     case 'play_card':
-      return handlePlayCard(state, event, config);
+      return { state: handlePlayCard(state, event, config) };
     case 'game_scored':
-      return handleScore(state, config);
+      return { state: handleScore(state, config) };
     case 'crack':
-      return { ...state, crack: { crackedBy: event.userID, reCrackedBy: null } };
+      return { state: { ...state, crack: { crackedBy: event.userID, reCrackedBy: null } } };
     case 're_crack': {
       if (!state.crack) {
         throw new Error('Cannot re-crack without an existing crack');
       }
-      return { ...state, crack: { ...state.crack, reCrackedBy: event.userID } };
+      return { state: { ...state, crack: { ...state.crack, reCrackedBy: event.userID } } };
     }
     case 'blitz': {
       if (state.blitz) {
         throw new Error('Blitz already declared');
       }
       const blitz: BlitzState = { type: event.payload.blitzType, blitzedBy: event.userID };
-      return { ...state, blitz };
+      return { state: { ...state, blitz } };
     }
     case 'trick_advance':
-      return handleTrickAdvance(state);
+      return { state: handleTrickAdvance(state) };
     default:
       throw new Error(`Unknown event type: ${(event as { type: string }).type}`);
   }

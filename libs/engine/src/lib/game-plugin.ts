@@ -13,6 +13,12 @@ export interface GameEventBase {
   payload?: unknown;
 }
 
+export interface ApplyEventResult<TState> {
+  state: TState;
+  /** Side effects to persist (e.g., deal card assignments). Stored alongside the event. */
+  sideEffects?: unknown;
+}
+
 /**
  * Contract that every game plugin implements.
  * The engine orchestrates games through this interface without
@@ -36,8 +42,17 @@ export interface GamePlugin<
   /** Return which actions are valid for a given player in the current state. */
   getValidActions(config: TConfig, state: TState, userID: number): TEvent['type'][];
 
-  /** Apply an event to the state, returning the new state. Throws if invalid. */
-  applyEvent(config: TConfig, state: TState, event: TEvent): TState;
+  /**
+   * Apply an event to the state, returning the new state and optional side effects.
+   * Must be a pure function — same inputs always produce same outputs.
+   * Must not mutate state or event arguments.
+   *
+   * During live play: if the event payload is empty/partial (e.g., a bare 'deal' event),
+   * the function generates randomness and returns it in sideEffects for storage.
+   * During replay: the event payload already contains the stored sideEffects from the
+   * original game, so the function uses those deterministically.
+   */
+  applyEvent(config: TConfig, state: TState, event: TEvent): ApplyEventResult<TState>;
 
   /** Derive the state visible to a specific player (hides other hands, etc.). */
   getPlayerView(config: TConfig, state: TState, userID: number): Partial<TState>;

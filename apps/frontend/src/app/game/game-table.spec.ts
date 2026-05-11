@@ -11,6 +11,7 @@ function createMockGameService(overrides: Partial<Record<string, unknown>> = {})
     state: signal(overrides['state'] ?? null),
     validActions: signal(overrides['validActions'] ?? []),
     gameType: signal(overrides['gameType'] ?? null),
+    config: signal(overrides['config'] ?? null),
     colorMap: signal(overrides['colorMap'] ?? undefined),
     validTargetsResponse: signal(overrides['validTargetsResponse'] ?? null),
     queryTargets: jest.fn(),
@@ -85,7 +86,19 @@ async function setup(gameServiceOverrides: Partial<Record<string, unknown>> = {}
       set: {
         selector: 'app-sheepshead-table',
         template: '<div data-testid="sheepshead-table-stub"></div>',
-        inputs: ['myUserID', 'members', 'isOwner', 'autostart', 'canStartNext', 'startNextGame'],
+        inputs: [
+          'myUserID',
+          'members',
+          'isOwner',
+          'autostart',
+          'canStartNext',
+          'startNextGame',
+          'state',
+          'validActions',
+          'config',
+          'colorMap',
+          'actionDispatcher',
+        ],
       },
     })
     .overrideProvider(GameService, { useValue: mockGameService })

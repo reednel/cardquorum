@@ -1,26 +1,12 @@
-import { CUSTOM_ELEMENTS_SCHEMA, signal } from '@angular/core';
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CardStack } from '../card-stack';
-import { GameService } from '../game.service';
 import { InteractionController } from '../interaction-controller';
 import { PhaseOverlay } from '../phase-overlay';
 import { ScoreOverlay } from './score-overlay';
 import { SheepsheadTable } from './sheepshead-table';
 
 // ── Mock factories ──
-
-function createMockGameService(overrides: Partial<Record<string, unknown>> = {}) {
-  return {
-    state: signal(overrides['state'] ?? null),
-    validActions: signal((overrides['validActions'] as string[]) ?? []),
-    gameType: signal(overrides['gameType'] ?? 'sheepshead'),
-    config: signal(overrides['config'] ?? null),
-    colorMap: signal(overrides['colorMap'] ?? undefined),
-    validTargetsResponse: signal(overrides['validTargetsResponse'] ?? null),
-    queryTargets: jest.fn(),
-    sendAction: jest.fn(),
-  };
-}
 
 function createMockStartNextGame() {
   return { emit: jest.fn() } as any;
@@ -83,8 +69,15 @@ const PLAY_STATE = makeState('play', {
 
 // ── Test setup ──
 
-async function setup(gameServiceOverrides: Partial<Record<string, unknown>> = {}) {
-  const mockGameService = createMockGameService(gameServiceOverrides);
+async function setup(
+  overrides: {
+    state?: unknown;
+    validActions?: string[];
+    config?: unknown;
+    colorMap?: Record<number, number>;
+    actionDispatcher?: ((event: { type: string; payload?: unknown }) => void) | null;
+  } = {},
+) {
   const ic = new InteractionController();
 
   await TestBed.configureTestingModule({
@@ -120,15 +113,19 @@ async function setup(gameServiceOverrides: Partial<Record<string, unknown>> = {}
       set: {
         selector: 'app-score-overlay',
         template: '<div data-testid="stub-score-overlay"></div>',
-        inputs: ['players', 'members', 'isOwner'],
+        inputs: ['players', 'members', 'isOwner', 'canStartNext', 'hideStartNext'],
         outputs: ['dismissed', 'startNextGame'],
       },
     })
-    .overrideProvider(GameService, { useValue: mockGameService })
     .overrideProvider(InteractionController, { useValue: ic })
     .compileComponents();
 
   const fixture = TestBed.createComponent(SheepsheadTable);
+  fixture.componentRef.setInput('state', overrides.state ?? null);
+  fixture.componentRef.setInput('validActions', overrides.validActions ?? []);
+  fixture.componentRef.setInput('config', overrides.config ?? null);
+  fixture.componentRef.setInput('colorMap', overrides.colorMap ?? undefined);
+  fixture.componentRef.setInput('actionDispatcher', overrides.actionDispatcher ?? null);
   fixture.componentRef.setInput('myUserID', 1);
   fixture.componentRef.setInput('members', []);
   fixture.componentRef.setInput('isOwner', false);
@@ -137,7 +134,7 @@ async function setup(gameServiceOverrides: Partial<Record<string, unknown>> = {}
   fixture.componentRef.setInput('startNextGame', createMockStartNextGame());
   fixture.detectChanges();
 
-  return { fixture, mockGameService, ic };
+  return { fixture, ic };
 }
 
 function getCardStacks(fixture: ComponentFixture<SheepsheadTable>): HTMLElement[] {
@@ -295,5 +292,33 @@ describe('SheepsheadTable – corner actions', () => {
     dismissBtn.click();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[data-testid="corner-actions"]')).toBeNull();
+  });
+});
+
+describe('SheepsheadTable – action dispatching', () => {
+  it('calls actionDispatcher when an action button is clicked', async () => {
+    const dispatcher = jest.fn();
+    const { fixture } = await setup({
+      state: DEAL_STATE,
+      validActions: ['deal'],
+      actionDispatcher: dispatcher,
+    });
+    const dealBtn = fixture.nativeElement.querySelector(
+      '[data-testid="deal-btn"]',
+    ) as HTMLButtonElement;
+    dealBtn.click();
+    expect(dispatcher).toHaveBeenCalledWith({ type: 'deal' });
+  });
+
+  it('does not throw when actionDispatcher is null and action is triggered', async () => {
+    const { fixture } = await setup({
+      state: DEAL_STATE,
+      validActions: ['deal'],
+      actionDispatcher: null,
+    });
+    const dealBtn = fixture.nativeElement.querySelector(
+      '[data-testid="deal-btn"]',
+    ) as HTMLButtonElement;
+    expect(() => dealBtn.click()).not.toThrow();
   });
 });

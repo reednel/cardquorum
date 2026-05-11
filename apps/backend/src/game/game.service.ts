@@ -180,13 +180,6 @@ export class GameService implements OnModuleDestroy {
     // Record participants in the event log
     await this.eventLogService.recordParticipants(sessionId, playerIDs);
 
-    // Append synthetic "game_started" event
-    const gameStartedMessage = `${game.gameType.charAt(0).toUpperCase() + game.gameType.slice(1)} game started`;
-    this.bufferSyntheticEvent(game, 'game_started', gameStartedMessage);
-    this.broadcastLogEntry(game, null, 'game_started', gameStartedMessage);
-
-    const playerViews = this.buildPlayerViews(game, plugin);
-
     // Build color assignment map from roster assigned hues
     const colorMap: ColorAssignmentMap = {};
     for (const player of roster.players) {
@@ -194,6 +187,13 @@ export class GameService implements OnModuleDestroy {
         colorMap[player.userId] = player.assignedHue;
       }
     }
+
+    // Append synthetic "game_started" event with colorMap in payload
+    const gameStartedMessage = `${game.gameType.charAt(0).toUpperCase() + game.gameType.slice(1)} game started`;
+    this.bufferSyntheticEvent(game, 'game_started', gameStartedMessage, { colorMap });
+    this.broadcastLogEntry(game, null, 'game_started', gameStartedMessage);
+
+    const playerViews = this.buildPlayerViews(game, plugin);
 
     this.logger.log(`Game session ${sessionId} started with ${playerIDs.length} players`);
 
@@ -234,8 +234,17 @@ export class GameService implements OnModuleDestroy {
     }
 
     const event = { type: action.type, userID, payload: action.payload };
-    const newState = plugin.applyEvent(game.config as any, game.state as any, event);
+    const { state: newState, sideEffects } = plugin.applyEvent(
+      game.config as any,
+      game.state as any,
+      event,
+    );
     game.state = newState;
+
+    // If the plugin returned sideEffects, store them as the event payload (overrides client payload)
+    if (sideEffects !== undefined) {
+      event.payload = sideEffects;
+    }
 
     // Buffer the event with a human-readable description
     let message: string | null = null;
@@ -573,8 +582,17 @@ export class GameService implements OnModuleDestroy {
 
     const plugin = this.plugins.get(game.gameType)!;
 
-    const newState = plugin.applyEvent(game.config as any, game.state as any, event);
+    const { state: newState, sideEffects } = plugin.applyEvent(
+      game.config as any,
+      game.state as any,
+      event,
+    );
     game.state = newState;
+
+    // If the plugin returned sideEffects, store them as the event payload (overrides client payload)
+    if (sideEffects !== undefined) {
+      (event as any).payload = sideEffects;
+    }
 
     // Buffer the scheduled event (message may be null)
     let message: string | null = null;
@@ -682,8 +700,13 @@ export class GameService implements OnModuleDestroy {
   }
 
   /** Buffer a synthetic event (no userID) with a given type and message. */
-  private bufferSyntheticEvent(game: ActiveGame, type: string, message: string): void {
-    const syntheticEvent = { type };
+  private bufferSyntheticEvent(
+    game: ActiveGame,
+    type: string,
+    message: string,
+    payload?: unknown,
+  ): void {
+    const syntheticEvent = { type, payload };
     this.eventLogService.bufferEvent(
       game.eventBuffer,
       syntheticEvent,

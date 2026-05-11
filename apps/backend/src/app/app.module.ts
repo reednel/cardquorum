@@ -13,6 +13,7 @@ import { DrizzleModule } from '../drizzle/drizzle.module';
 import { FriendModule } from '../friend/friend.module';
 import { GameModule } from '../game/game.module';
 import { HealthModule } from '../health/health.module';
+import { ReplayModule } from '../replay/replay.module';
 import { UserModule } from '../user/user.module';
 import { WsModule } from '../ws/ws.module';
 import { AppController } from './app.controller';
@@ -109,6 +110,7 @@ function getServeStaticImports() {
     WsModule,
     ChatModule,
     GameModule,
+    ReplayModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ConditionalThrottlerGuard }],

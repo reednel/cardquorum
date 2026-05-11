@@ -17,6 +17,7 @@ export type {
   GameEventBase,
   ScheduledEvent,
   WithScheduledEvents,
+  ApplyEventResult,
 } from './lib/game-plugin';
 export type {
   FieldMode,

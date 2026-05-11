@@ -350,10 +350,6 @@ describe('Seat rotation correctness (legacy rotateSeat)', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// New Property Tests (Tasks 4.6 – 4.16)
-// ---------------------------------------------------------------------------
-
 describe('New members default to not ready', () => {
   it('should produce a member with readyToPlay === false in spectators', () => {
     fc.assert(
@@ -813,10 +809,6 @@ describe('Member limit normalization helper logic', () => {
     );
   });
 });
-
-// ---------------------------------------------------------------------------
-// Integration-Level Property Tests (Tasks 15.1 – 15.5)
-// ---------------------------------------------------------------------------
 
 describe('Deferred demotion during active game', () => {
   it('should keep a player in the players section after toggling readyToPlay to false (demotion deferred)', () => {

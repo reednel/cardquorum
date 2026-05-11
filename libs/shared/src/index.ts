@@ -107,3 +107,11 @@ export {
   isValidPaletteHue,
   hueToHsl,
 } from './lib/color-utils';
+
+export type {
+  ReplayEventDto,
+  ReplayParticipantDto,
+  ReplayDataResponse,
+  ReplaySessionSummary,
+  ReplaySessionListResponse,
+} from './lib/replay-types';

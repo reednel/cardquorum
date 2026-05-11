@@ -59,6 +59,11 @@ export class GameTable {
     autostart: this.autostart(),
     canStartNext: this.canStartNext(),
     startNextGame: this.startNextGame,
+    state: this.gameService.state(),
+    validActions: this.gameService.validActions(),
+    config: this.gameService.config(),
+    colorMap: this.gameService.colorMap(),
+    actionDispatcher: this.actionDispatcherFn,
   }));
 
   /** Track the game phase for reset logic. */
@@ -75,6 +80,11 @@ export class GameTable {
     queryTargets: (sourceStackId, selectedCards, generation) =>
       this.gameService.queryTargets(sourceStackId, selectedCards, generation),
     sendAction: (event) => this.gameService.sendAction(event),
+  };
+
+  /** Stable action dispatcher function passed to game-specific table components. */
+  private readonly actionDispatcherFn = (event: { type: string; payload?: unknown }): void => {
+    this.gameService.sendAction(event);
   };
 
   constructor() {

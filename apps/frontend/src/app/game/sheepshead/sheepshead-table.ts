@@ -8,10 +8,9 @@ import {
   signal,
   type OutputEmitterRef,
 } from '@angular/core';
-import type { GameTablePlugin, UserIdentity } from '@cardquorum/shared';
+import type { ColorAssignmentMap, GameTablePlugin, UserIdentity } from '@cardquorum/shared';
 import { CardStack } from '../card-stack';
 import { GameTableShell } from '../game-table-shell';
-import { GameService } from '../game.service';
 import { InteractionController } from '../interaction-controller';
 import { PhaseOverlay } from '../phase-overlay';
 import { ScoreOverlay } from './score-overlay';
@@ -35,12 +34,12 @@ const CALL_OPTIONS: { value: string; label: string }[] = [
   template: `
     <app-game-table-shell
       [plugin]="plugin"
-      [state]="gameService.state()"
-      [validActions]="gameService.validActions()"
+      [state]="state()"
+      [validActions]="validActions()"
       [myUserID]="myUserID()"
       [members]="members()"
-      [colorMap]="gameService.colorMap()"
-      [config]="gameService.config()"
+      [colorMap]="colorMap()"
+      [config]="config()"
     >
       <!-- Play area: phase-dependent content -->
       <div playArea class="flex w-64 flex-col items-center gap-3">
@@ -143,7 +142,7 @@ const CALL_OPTIONS: { value: string; label: string }[] = [
               [biasedPlacement]="true"
               [cardWidth]="100"
               [droppable]="true"
-              [colorMap]="gameService.colorMap() ?? null"
+              [colorMap]="colorMap() ?? null"
               [playerIds]="trickPlayerIds()"
             />
           }
@@ -223,6 +222,7 @@ const CALL_OPTIONS: { value: string; label: string }[] = [
               [members]="members()"
               [isOwner]="isOwner()"
               [canStartNext]="canStartNext()"
+              [hideStartNext]="actionDispatcher() === null"
               (dismissed)="onScoreDismissed()"
               (startNextGame)="onStartNextGame()"
             />
@@ -233,8 +233,16 @@ const CALL_OPTIONS: { value: string; label: string }[] = [
   `,
 })
 export class SheepsheadTable {
-  private readonly interactionController = inject(InteractionController);
-  protected readonly gameService = inject(GameService);
+  private readonly interactionController = inject(InteractionController, { optional: true });
+
+  // ── Data inputs (replacing GameService reads) ──
+  readonly state = input.required<unknown>();
+  readonly validActions = input.required<string[]>();
+  readonly config = input<unknown>(null);
+  readonly colorMap = input<ColorAssignmentMap | undefined>(undefined);
+  readonly actionDispatcher = input<((event: { type: string; payload?: unknown }) => void) | null>(
+    null,
+  );
 
   // ── Inputs from GameTable via NgComponentOutlet ──
   readonly myUserID = input.required<number>();
@@ -255,24 +263,24 @@ export class SheepsheadTable {
 
   // ── Current game phase ──
   protected readonly currentPhase = computed(() => {
-    const state = this.gameService.state() as { phase?: string } | null;
+    const state = this.state() as { phase?: string } | null;
     return state?.phase ?? 'deal';
   });
 
   // ── Blind cards for deck/blind CardStack ──
   protected readonly blindCards = computed(() => {
-    const state = this.gameService.state();
+    const state = this.state();
     return state ? this.plugin.getBlindCards(state) : [];
   });
 
   // ── Whether we're in bury phase with bury action available ──
   protected readonly isBuryPhase = computed(
-    () => this.currentPhase() === 'bury' && this.gameService.validActions().includes('bury'),
+    () => this.currentPhase() === 'bury' && this.validActions().includes('bury'),
   );
 
   // ── Whether crack/re-crack/blitz actions are available from the server ──
   private readonly hasCrackActions = computed(() => {
-    const va = this.gameService.validActions();
+    const va = this.validActions();
     return va.includes('crack') || va.includes('re_crack') || va.includes('blitz');
   });
 
@@ -282,21 +290,19 @@ export class SheepsheadTable {
   );
 
   // ── Helper booleans for template ──
-  protected readonly canDeal = computed(() => this.gameService.validActions().includes('deal'));
-  protected readonly canPick = computed(() => this.gameService.validActions().includes('pick'));
-  protected readonly canPass = computed(() => this.gameService.validActions().includes('pass'));
+  protected readonly canDeal = computed(() => this.validActions().includes('deal'));
+  protected readonly canPick = computed(() => this.validActions().includes('pick'));
+  protected readonly canPass = computed(() => this.validActions().includes('pass'));
   protected readonly canPickOrPass = computed(() => this.canPick() || this.canPass());
-  protected readonly canBury = computed(() => this.gameService.validActions().includes('bury'));
-  protected readonly canCall = computed(() => this.gameService.validActions().includes('call_ace'));
-  protected readonly canCrack = computed(() => this.gameService.validActions().includes('crack'));
-  protected readonly canReCrack = computed(() =>
-    this.gameService.validActions().includes('re_crack'),
-  );
-  protected readonly canBlitz = computed(() => this.gameService.validActions().includes('blitz'));
+  protected readonly canBury = computed(() => this.validActions().includes('bury'));
+  protected readonly canCall = computed(() => this.validActions().includes('call_ace'));
+  protected readonly canCrack = computed(() => this.validActions().includes('crack'));
+  protected readonly canReCrack = computed(() => this.validActions().includes('re_crack'));
+  protected readonly canBlitz = computed(() => this.validActions().includes('blitz'));
 
   // ── Player hand with local reorder support ──
   protected readonly myHand = computed(() => {
-    const state = this.gameService.state();
+    const state = this.state();
     const serverHand = state ? this.plugin.getMyHand(state, this.myUserID()) : [];
     const localOrder = this.handOrder();
     if (!localOrder) return serverHand;
@@ -310,16 +316,16 @@ export class SheepsheadTable {
 
   // ── Legal cards (only during play phase) ──
   protected readonly legalCards = computed(() => {
-    const state = this.gameService.state();
+    const state = this.state();
     if (!state) return [];
     const phase = this.currentPhase();
     if (phase !== 'play') return null;
-    return this.plugin.getLegalCards(state, this.gameService.validActions());
+    return this.plugin.getLegalCards(state, this.validActions());
   });
 
   // ── Current trick ──
   protected readonly currentTrick = computed(() => {
-    const state = this.gameService.state();
+    const state = this.state();
     return state ? this.plugin.getCurrentTrick(state) : null;
   });
 
@@ -335,20 +341,20 @@ export class SheepsheadTable {
 
   // ── Active overlay ──
   protected readonly activeOverlay = computed(() => {
-    const state = this.gameService.state();
+    const state = this.state();
     if (!state) return null;
-    return this.plugin.getActiveOverlay(state, this.gameService.validActions());
+    return this.plugin.getActiveOverlay(state, this.validActions());
   });
 
   // ── Bury count ──
   protected readonly buryCount = computed(() => {
-    const state = this.gameService.state();
-    return state ? this.plugin.getBuryCount(state, this.gameService.config()) : 2;
+    const state = this.state();
+    return state ? this.plugin.getBuryCount(state, this.config()) : 2;
   });
 
   // ── Score players ──
   protected readonly scorePlayers = computed(() => {
-    const state = this.gameService.state() as {
+    const state = this.state() as {
       players?: Array<{ userID: number; role: string | null; scoreDelta: number | null }>;
     } | null;
     return state?.players ?? [];
@@ -387,13 +393,11 @@ export class SheepsheadTable {
   }
 
   protected onStartNextGame(): void {
-    this.gameService.clearDisplay();
     this.startNextGame().emit();
   }
 
   protected onScoreDismissed(): void {
     this.scoreDismissed.set(true);
-    this.gameService.clearDisplay();
   }
 
   protected onHandReordered(newOrder: (string | null)[]): void {
@@ -401,6 +405,6 @@ export class SheepsheadTable {
   }
 
   protected onAction(event: { type: string; payload?: unknown }): void {
-    this.gameService.sendAction(event);
+    this.actionDispatcher()?.(event);
   }
 }

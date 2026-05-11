@@ -48,6 +48,11 @@ export const appRoutes: Route[] = [
         pathMatch: 'full',
       },
       {
+        path: 'replay',
+        title: 'Replay — CardQuorum',
+        loadComponent: () => import('./replay/replay-page').then((m) => m.ReplayPage),
+      },
+      {
         path: 'user',
         loadComponent: () => import('./account/account-shell').then((m) => m.AccountShell),
         children: [
