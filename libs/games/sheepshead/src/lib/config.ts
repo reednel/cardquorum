@@ -396,7 +396,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
     },
   },
   {
-    name: 'called-ace',
+    name: 'called-ace-4p',
     label: 'Called Ace (4p)',
     description: 'Black 7s removed. Picker calls a fail ace for partner.',
     allowedPlayerCounts: [4],
@@ -418,7 +418,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
   },
   // 5 players
   {
-    name: 'called-ace',
+    name: 'called-ace-5p',
     label: 'Called Ace (5p)',
     description: 'Picker calls a fail ace for partner.',
     allowedPlayerCounts: [5],
