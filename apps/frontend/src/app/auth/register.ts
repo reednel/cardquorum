@@ -29,76 +29,97 @@ import { AuthService } from './auth.service';
           </div>
         }
 
-        <form [formGroup]="form" (ngSubmit)="onSubmit()">
-          <div class="mb-4">
-            <label
-              for="username"
-              class="mb-1 block text-sm font-medium text-text-body dark:text-text-body-dark"
-            >
-              Username
-            </label>
-            <input
-              id="username"
-              formControlName="username"
-              type="text"
-              autocomplete="username"
-              required
-              [attr.aria-describedby]="errorMessage() ? 'register-error' : null"
-              class="w-full rounded-default border border-border-input px-3 py-2 text-sm dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
-            />
-            <p class="mt-1 text-xs text-text-secondary dark:text-text-secondary-dark">
-              {{ USERNAME_MIN }}–{{ USERNAME_MAX }} characters, letters/numbers/underscores
-            </p>
-          </div>
+        @if (showBasic()) {
+          <form [formGroup]="form" (ngSubmit)="onSubmit()">
+            <div class="mb-4">
+              <label
+                for="username"
+                class="mb-1 block text-sm font-medium text-text-body dark:text-text-body-dark"
+              >
+                Username
+              </label>
+              <input
+                id="username"
+                formControlName="username"
+                type="text"
+                autocomplete="username"
+                required
+                [attr.aria-describedby]="errorMessage() ? 'register-error' : null"
+                class="w-full rounded-default border border-border-input px-3 py-2 text-sm dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
+              />
+              <p class="mt-1 text-xs text-text-secondary dark:text-text-secondary-dark">
+                {{ USERNAME_MIN }}–{{ USERNAME_MAX }} characters, letters/numbers/underscores
+              </p>
+            </div>
 
-          <div class="mb-4">
-            <label
-              for="password"
-              class="mb-1 block text-sm font-medium text-text-body dark:text-text-body-dark"
-            >
-              Password
-            </label>
-            <input
-              id="password"
-              formControlName="password"
-              type="password"
-              autocomplete="new-password"
-              required
-              class="w-full rounded-default border border-border-input px-3 py-2 text-sm dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
-            />
-            <p class="mt-1 text-xs text-text-secondary dark:text-text-secondary-dark">
-              {{ PASSWORD_MIN }}–{{ PASSWORD_MAX }} characters
-            </p>
-          </div>
+            <div class="mb-4">
+              <label
+                for="password"
+                class="mb-1 block text-sm font-medium text-text-body dark:text-text-body-dark"
+              >
+                Password
+              </label>
+              <input
+                id="password"
+                formControlName="password"
+                type="password"
+                autocomplete="new-password"
+                required
+                class="w-full rounded-default border border-border-input px-3 py-2 text-sm dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
+              />
+              <p class="mt-1 text-xs text-text-secondary dark:text-text-secondary-dark">
+                {{ PASSWORD_MIN }}–{{ PASSWORD_MAX }} characters
+              </p>
+            </div>
 
-          <div class="mb-6">
-            <label
-              for="confirmPassword"
-              class="mb-1 block text-sm font-medium text-text-body dark:text-text-body-dark"
-            >
-              Confirm Password
-            </label>
-            <input
-              id="confirmPassword"
-              formControlName="confirmPassword"
-              type="password"
-              autocomplete="new-password"
-              required
-              class="w-full rounded-default border border-border-input px-3 py-2 text-sm dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
-            />
-            @if (passwordMismatch()) {
-              <p class="mt-1 text-xs text-danger dark:text-danger-light">Passwords do not match</p>
-            }
-          </div>
+            <div class="mb-6">
+              <label
+                for="confirmPassword"
+                class="mb-1 block text-sm font-medium text-text-body dark:text-text-body-dark"
+              >
+                Confirm Password
+              </label>
+              <input
+                id="confirmPassword"
+                formControlName="confirmPassword"
+                type="password"
+                autocomplete="new-password"
+                required
+                class="w-full rounded-default border border-border-input px-3 py-2 text-sm dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
+              />
+              @if (passwordMismatch()) {
+                <p class="mt-1 text-xs text-danger dark:text-danger-light">
+                  Passwords do not match
+                </p>
+              }
+            </div>
 
-          <button
-            type="submit"
-            [disabled]="form.invalid || passwordMismatch() || submitting()"
-            class="w-full rounded-default bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover disabled:bg-disabled disabled:text-disabled-text"
+            <button
+              type="submit"
+              [disabled]="form.invalid || passwordMismatch() || submitting()"
+              class="w-full rounded-default bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover disabled:bg-disabled disabled:text-disabled-text"
+            >
+              {{ submitting() ? 'Registering...' : 'Register' }}
+            </button>
+          </form>
+        }
+
+        @if (showOidc()) {
+          @if (showBasic()) {
+            <div class="my-4 flex items-center gap-2">
+              <div class="h-px flex-1 bg-border-input dark:bg-border-dark"></div>
+              <span class="text-xs text-text-secondary dark:text-text-secondary-dark">or</span>
+              <div class="h-px flex-1 bg-border-input dark:bg-border-dark"></div>
+            </div>
+          }
+
+          <a
+            href="/api/auth/oidc/login"
+            class="block w-full rounded-default border border-border-input px-4 py-2 text-center text-sm font-medium text-text-body hover:bg-surface dark:border-border-input-dark dark:text-text-body-dark dark:hover:bg-surface-dark"
           >
-            {{ submitting() ? 'Registering...' : 'Register' }}
-          </button>
-        </form>
+            Register with SSO
+          </a>
+        }
 
         <p class="mt-4 text-center text-sm text-text-secondary dark:text-text-secondary-dark">
           Already have an account?
@@ -119,6 +140,9 @@ export class Register {
   protected readonly USERNAME_MAX = USERNAME_MAX;
   protected readonly PASSWORD_MIN = PASSWORD_MIN;
   protected readonly PASSWORD_MAX = PASSWORD_MAX;
+
+  protected readonly showBasic = computed(() => this.auth.strategies().includes('basic'));
+  protected readonly showOidc = computed(() => this.auth.strategies().includes('oidc'));
 
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly submitting = signal(false);

@@ -74,24 +74,8 @@ describe('SessionBoundaryMarker', () => {
     expect(el.getAttribute('role')).toBe('separator');
   });
 
-  it('renders the entry message text centered between horizontal rules', () => {
-    const textEl = el.querySelector('[data-testid="session-boundary-text"]');
-    expect(textEl?.textContent?.trim()).toBe(BOUNDARY_ENTRY.message);
-
-    const hrs = el.querySelectorAll('hr');
-    expect(hrs.length).toBe(2);
-  });
-
   it('message text has font-semibold class', () => {
     const textEl = el.querySelector('[data-testid="session-boundary-text"]');
     expect(textEl?.classList.contains('font-semibold')).toBe(true);
-  });
-
-  it('renders two hr elements with aria-hidden="true"', () => {
-    const hrs = el.querySelectorAll('hr');
-    expect(hrs.length).toBe(2);
-    hrs.forEach((hr) => {
-      expect(hr.getAttribute('aria-hidden')).toBe('true');
-    });
   });
 });

@@ -28,57 +28,61 @@ import { AuthService } from './auth.service';
           </div>
         }
 
-        <form [formGroup]="form" (ngSubmit)="onSubmit()">
-          <div class="mb-4">
-            <label
-              for="username"
-              class="mb-1 block text-sm font-medium text-text-body dark:text-text-body-dark"
-            >
-              Username
-            </label>
-            <input
-              id="username"
-              formControlName="username"
-              type="text"
-              autocomplete="username"
-              required
-              [attr.aria-describedby]="errorMessage() ? 'login-error' : null"
-              class="w-full rounded-default border border-border-input px-3 py-2 text-sm dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
-            />
-          </div>
+        @if (showBasic()) {
+          <form [formGroup]="form" (ngSubmit)="onSubmit()">
+            <div class="mb-4">
+              <label
+                for="username"
+                class="mb-1 block text-sm font-medium text-text-body dark:text-text-body-dark"
+              >
+                Username
+              </label>
+              <input
+                id="username"
+                formControlName="username"
+                type="text"
+                autocomplete="username"
+                required
+                [attr.aria-describedby]="errorMessage() ? 'login-error' : null"
+                class="w-full rounded-default border border-border-input px-3 py-2 text-sm dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
+              />
+            </div>
 
-          <div class="mb-6">
-            <label
-              for="password"
-              class="mb-1 block text-sm font-medium text-text-body dark:text-text-body-dark"
-            >
-              Password
-            </label>
-            <input
-              id="password"
-              formControlName="password"
-              type="password"
-              autocomplete="current-password"
-              required
-              class="w-full rounded-default border border-border-input px-3 py-2 text-sm dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
-            />
-          </div>
+            <div class="mb-6">
+              <label
+                for="password"
+                class="mb-1 block text-sm font-medium text-text-body dark:text-text-body-dark"
+              >
+                Password
+              </label>
+              <input
+                id="password"
+                formControlName="password"
+                type="password"
+                autocomplete="current-password"
+                required
+                class="w-full rounded-default border border-border-input px-3 py-2 text-sm dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
+              />
+            </div>
 
-          <button
-            type="submit"
-            [disabled]="form.invalid || submitting()"
-            class="w-full rounded-default bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover disabled:bg-disabled disabled:text-disabled-text"
-          >
-            {{ submitting() ? 'Logging in...' : 'Log in' }}
-          </button>
-        </form>
+            <button
+              type="submit"
+              [disabled]="form.invalid || submitting()"
+              class="w-full rounded-default bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover disabled:bg-disabled disabled:text-disabled-text"
+            >
+              {{ submitting() ? 'Logging in...' : 'Log in' }}
+            </button>
+          </form>
+        }
 
         @if (showOidc()) {
-          <div class="my-4 flex items-center gap-2">
-            <div class="h-px flex-1 bg-border-input dark:bg-border-dark"></div>
-            <span class="text-xs text-text-secondary dark:text-text-secondary-dark">or</span>
-            <div class="h-px flex-1 bg-border-input dark:bg-border-dark"></div>
-          </div>
+          @if (showBasic()) {
+            <div class="my-4 flex items-center gap-2">
+              <div class="h-px flex-1 bg-border-input dark:bg-border-dark"></div>
+              <span class="text-xs text-text-secondary dark:text-text-secondary-dark">or</span>
+              <div class="h-px flex-1 bg-border-input dark:bg-border-dark"></div>
+            </div>
+          }
 
           <a
             href="/api/auth/oidc/login"
@@ -105,6 +109,7 @@ export class Login {
   private readonly fb = inject(FormBuilder);
 
   protected readonly showOidc = computed(() => this.auth.strategies().includes('oidc'));
+  protected readonly showBasic = computed(() => this.auth.strategies().includes('basic'));
 
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly submitting = signal(false);
