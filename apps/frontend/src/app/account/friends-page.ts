@@ -83,7 +83,7 @@ import { FriendService } from './friend.service';
       }
 
       @if (searchError()) {
-        <p class="mt-2 text-sm text-danger dark:text-danger-light">{{ searchError() }}</p>
+        <p class="mt-2 text-sm text-danger dark:text-danger-dark">{{ searchError() }}</p>
       }
     </section>
 

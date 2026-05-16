@@ -46,9 +46,9 @@ interface ScorePlayer {
                 [class]="
                   'px-2 py-1.5 text-right font-medium ' +
                   (player.scoreDelta !== null && player.scoreDelta > 0
-                    ? 'text-success dark:text-success-light'
+                    ? 'text-success dark:text-success-dark'
                     : player.scoreDelta !== null && player.scoreDelta < 0
-                      ? 'text-danger dark:text-danger-light'
+                      ? 'text-danger dark:text-danger-dark'
                       : 'text-text-secondary dark:text-text-secondary-dark')
                 "
               >

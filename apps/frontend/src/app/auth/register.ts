@@ -22,7 +22,7 @@ import { AuthService } from './auth.service';
         @if (errorMessage()) {
           <div
             id="register-error"
-            class="mb-4 rounded-default bg-danger-surface p-3 text-sm text-danger dark:bg-danger-surface-dark dark:text-danger-light"
+            class="mb-4 rounded-default bg-danger-surface p-3 text-sm text-danger dark:bg-danger-surface-dark dark:text-danger-dark"
             role="alert"
           >
             {{ errorMessage() }}
@@ -88,9 +88,7 @@ import { AuthService } from './auth.service';
                 class="w-full rounded-default border border-border-input px-3 py-2 text-sm dark:border-border-input-dark dark:bg-surface-dark dark:text-text-heading-dark"
               />
               @if (passwordMismatch()) {
-                <p class="mt-1 text-xs text-danger dark:text-danger-light">
-                  Passwords do not match
-                </p>
+                <p class="mt-1 text-xs text-danger dark:text-danger-dark">Passwords do not match</p>
               }
             </div>
 
@@ -123,7 +121,7 @@ import { AuthService } from './auth.service';
 
         <p class="mt-4 text-center text-sm text-text-secondary dark:text-text-secondary-dark">
           Already have an account?
-          <a routerLink="/login" class="text-primary underline dark:text-primary-light-text">
+          <a routerLink="/login" class="text-primary underline dark:text-primary-dark-text">
             Log in
           </a>
         </p>

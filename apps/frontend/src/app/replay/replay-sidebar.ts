@@ -21,7 +21,7 @@ export type ReplaySidebarTab = 'games' | 'controls';
           [class]="
             'flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm transition-colors ' +
             (tab() === 'games'
-              ? 'border-b-2 border-primary-light text-primary dark:text-primary-light-text'
+              ? 'border-b-2 border-primary-dark text-primary dark:text-primary-dark-text'
               : 'text-text-secondary hover:text-text-body dark:text-text-secondary-dark dark:hover:text-text-heading-dark')
           "
           (click)="onTabClick('games')"
@@ -37,7 +37,7 @@ export type ReplaySidebarTab = 'games' | 'controls';
           [class]="
             'flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm transition-colors ' +
             (tab() === 'controls'
-              ? 'border-b-2 border-primary-light text-primary dark:text-primary-light-text'
+              ? 'border-b-2 border-primary-dark text-primary dark:text-primary-dark-text'
               : 'text-text-secondary hover:text-text-body dark:text-text-secondary-dark dark:hover:text-text-heading-dark')
           "
           (click)="onTabClick('controls')"

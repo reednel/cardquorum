@@ -151,7 +151,7 @@ type RoomTab = 'feed' | 'members' | 'game';
                 [class]="
                   'flex-1 flex items-center justify-center px-3 py-2 text-sm transition-colors ' +
                   (activeTab() === 'feed'
-                    ? 'border-b-2 border-primary-light text-primary dark:text-primary-light-text'
+                    ? 'border-b-2 border-primary-dark text-primary dark:text-primary-dark-text'
                     : 'text-text-secondary hover:text-text-body dark:text-text-secondary-dark dark:hover:text-text-heading-dark')
                 "
                 (click)="onTabClick('feed')"
@@ -170,7 +170,7 @@ type RoomTab = 'feed' | 'members' | 'game';
                   [class]="
                     'flex-1 flex items-center justify-center px-3 py-2 text-sm transition-colors ' +
                     (activeTab() === tab
-                      ? 'border-b-2 border-primary-light text-primary dark:text-primary-light-text'
+                      ? 'border-b-2 border-primary-dark text-primary dark:text-primary-dark-text'
                       : 'text-text-secondary hover:text-text-body dark:text-text-secondary-dark dark:hover:text-text-heading-dark')
                   "
                   (click)="onTabClick(tab)"

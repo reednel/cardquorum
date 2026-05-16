@@ -71,7 +71,7 @@ import { UserService } from './user.service';
                 </button>
               </div>
               @if (usernameErrorMessage()) {
-                <p class="mt-1 text-sm text-danger dark:text-danger-light">
+                <p class="mt-1 text-sm text-danger dark:text-danger-dark">
                   {{ usernameErrorMessage() }}
                 </p>
               }
@@ -82,7 +82,7 @@ import { UserService } from './user.service';
               <button
                 data-testid="edit-username-btn"
                 (click)="startUsernameEdit()"
-                class="ml-2 text-sm text-primary hover:underline dark:text-primary-light-text"
+                class="ml-2 text-sm text-primary hover:underline dark:text-primary-dark-text"
               >
                 Edit
               </button>
@@ -126,7 +126,7 @@ import { UserService } from './user.service';
                 </button>
               </div>
               @if (displayNameErrorMessage()) {
-                <p class="mt-1 text-sm text-danger dark:text-danger-light">
+                <p class="mt-1 text-sm text-danger dark:text-danger-dark">
                   {{ displayNameErrorMessage() }}
                 </p>
               }
@@ -141,7 +141,7 @@ import { UserService } from './user.service';
               <button
                 data-testid="edit-display-name-btn"
                 (click)="startDisplayNameEdit()"
-                class="ml-2 text-sm text-primary hover:underline dark:text-primary-light-text"
+                class="ml-2 text-sm text-primary hover:underline dark:text-primary-dark-text"
               >
                 Edit
               </button>
@@ -166,7 +166,11 @@ import { UserService } from './user.service';
         <p class="mt-1 text-sm text-text-secondary dark:text-text-secondary-dark">
           Choose a color that will represent you in games.
         </p>
-        <div class="mt-4 flex flex-wrap gap-2" role="radiogroup" aria-label="Color preference">
+        <div
+          class="mt-4 grid w-fit grid-cols-6 gap-2"
+          role="radiogroup"
+          aria-label="Color preference"
+        >
           @for (hue of paletteHues; track hue) {
             <button
               type="button"
@@ -211,8 +215,8 @@ import { UserService } from './user.service';
             class="mt-2 text-sm"
             [class]="
               colorMessageIsError()
-                ? 'text-danger dark:text-danger-light'
-                : 'text-success dark:text-success-light'
+                ? 'text-danger dark:text-danger-dark'
+                : 'text-success dark:text-success-dark'
             "
           >
             {{ colorMessage() }}
@@ -229,12 +233,12 @@ import { UserService } from './user.service';
         </h2>
 
         @if (successMessage()) {
-          <p class="mt-2 text-sm text-success dark:text-success-light">
+          <p class="mt-2 text-sm text-success dark:text-success-dark">
             {{ successMessage() }}
           </p>
         }
         @if (credentialError()) {
-          <p class="mt-2 text-sm text-danger dark:text-danger-light">
+          <p class="mt-2 text-sm text-danger dark:text-danger-dark">
             {{ credentialError() }}
           </p>
         }
@@ -250,7 +254,7 @@ import { UserService } from './user.service';
                 <span class="font-medium text-text-heading dark:text-text-heading-dark"
                   >Password</span
                 >
-                <span class="ml-2 text-sm text-success dark:text-success-light">Linked</span>
+                <span class="ml-2 text-sm text-success dark:text-success-dark">Linked</span>
               </div>
               @if (canRemoveBasic()) {
                 @if (confirmingUnlinkBasic()) {
@@ -286,7 +290,7 @@ import { UserService } from './user.service';
                   <button
                     data-testid="unlink-basic-btn"
                     (click)="startUnlinkBasic()"
-                    class="text-sm text-danger hover:underline dark:text-danger-light"
+                    class="text-sm text-danger hover:underline dark:text-danger-dark"
                   >
                     Remove
                   </button>
@@ -294,7 +298,7 @@ import { UserService } from './user.service';
               }
             </div>
             @if (unlinkBasicError()) {
-              <p class="text-sm text-danger dark:text-danger-light">
+              <p class="text-sm text-danger dark:text-danger-dark">
                 {{ unlinkBasicError() }}
               </p>
             }
@@ -358,7 +362,7 @@ import { UserService } from './user.service';
                   </div>
                 </div>
                 @if (changePasswordError()) {
-                  <p class="mt-1 text-sm text-danger dark:text-danger-light">
+                  <p class="mt-1 text-sm text-danger dark:text-danger-dark">
                     {{ changePasswordError() }}
                   </p>
                 }
@@ -367,7 +371,7 @@ import { UserService } from './user.service';
               <button
                 data-testid="change-pw-btn"
                 (click)="startChangePassword()"
-                class="text-sm text-primary hover:underline dark:text-primary-light-text"
+                class="text-sm text-primary hover:underline dark:text-primary-dark-text"
               >
                 Change Password
               </button>
@@ -436,7 +440,7 @@ import { UserService } from './user.service';
                   </div>
                 </div>
                 @if (linkBasicError()) {
-                  <p class="mt-1 text-sm text-danger dark:text-danger-light">
+                  <p class="mt-1 text-sm text-danger dark:text-danger-dark">
                     {{ linkBasicError() }}
                   </p>
                 }
@@ -455,7 +459,7 @@ import { UserService } from './user.service';
                   >Single Sign-On (OIDC)</span
                 >
                 @if (hasOidc()) {
-                  <span class="ml-2 text-sm text-success dark:text-success-light">Linked</span>
+                  <span class="ml-2 text-sm text-success dark:text-success-dark">Linked</span>
                 }
               </div>
               @if (canAddOidc()) {
@@ -472,7 +476,7 @@ import { UserService } from './user.service';
                 <button
                   data-testid="unlink-oidc-btn"
                   (click)="unlinkOidc()"
-                  class="text-sm text-danger hover:underline dark:text-danger-light"
+                  class="text-sm text-danger hover:underline dark:text-danger-dark"
                 >
                   Remove
                 </button>
@@ -483,7 +487,7 @@ import { UserService } from './user.service';
       </div>
 
       <div class="mt-12 border-t border-border pt-8 dark:border-border-dark">
-        <h2 class="text-lg font-semibold text-danger dark:text-danger-light">Delete Account</h2>
+        <h2 class="text-lg font-semibold text-danger dark:text-danger-dark">Delete Account</h2>
         <p class="mt-2 text-sm text-text-secondary dark:text-text-secondary-dark">
           This will permanently delete your rooms, messages, and friends list. Your game history
           will be preserved anonymously.
@@ -510,7 +514,7 @@ import { UserService } from './user.service';
               </p>
             }
             @if (deleteError()) {
-              <p class="text-sm text-danger dark:text-danger-light">{{ deleteError() }}</p>
+              <p class="text-sm text-danger dark:text-danger-dark">{{ deleteError() }}</p>
             }
             <div class="flex gap-3">
               <button
@@ -541,7 +545,7 @@ import { UserService } from './user.service';
             data-testid="delete-account-btn"
             (click)="startDelete()"
             class="mt-4 rounded-default border border-danger-border px-4 py-2 text-sm font-medium
-                     text-danger hover:bg-danger-surface dark:border-danger-hover dark:text-danger-light
+                     text-danger hover:bg-danger-surface dark:border-danger-hover dark:text-danger-dark
                      dark:hover:bg-danger-surface-dark"
           >
             Delete Account

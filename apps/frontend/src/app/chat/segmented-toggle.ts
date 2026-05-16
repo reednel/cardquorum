@@ -54,7 +54,7 @@ export class SegmentedToggle {
     const base =
       'rounded-default px-3 py-1 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary';
     if (this.value() === optionValue) {
-      return `${base} bg-primary text-white dark:bg-primary-light`;
+      return `${base} bg-primary text-white dark:bg-primary-dark`;
     }
     return `${base} text-text-body hover:bg-surface dark:text-text-body-dark dark:hover:bg-surface-dark`;
   }

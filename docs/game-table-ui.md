@@ -318,7 +318,7 @@ Cards have three visual modes depending on the stack's configuration:
 
 Additionally, when a stack is highlighted as a valid target:
 
-4. **Highlighted** — `box-shadow: 0 0 8px 2px var(--color-primary-light)` and `border: 2px solid var(--color-primary-light)` on the `.card-stack-container`, with a 0.2s ease transition. The stack becomes focusable (`tabindex="0"`) and its ARIA label updates.
+4. **Highlighted** — `box-shadow: 0 0 8px 2px var(--color-primary-dark)` and `border: 2px solid var(--color-primary-dark)` on the `.card-stack-container`, with a 0.2s ease transition. The stack becomes focusable (`tabindex="0"`) and its ARIA label updates.
 
 ### Card Sizing
 
@@ -333,7 +333,7 @@ Card borders are rendered via CSS on the rotation wrapper div inside each card-i
 Two border modes:
 
 - **Default** — `1px solid var(--color-card-border)`. The color is defined in `theme.css` (`#d4d4d4` light, `#525252` dark). Provides visual separation when cards overlap.
-- **Selected** — `2px solid var(--color-primary-light)`. Applied when a card is in the selection set. Takes priority over the player halo.
+- **Selected** — `2px solid var(--color-primary-dark)`. Applied when a card is in the selection set. Takes priority over the player halo.
 - **Player halo** — `2px solid hsl(hue, 75%, L%)` using the player's color from `colorMap`. The thicker border replaces the default, so there's no doubling. Lightness is resolved via the shared `hueToHsl()` utility (L=66% dark, L=33% light for contrast).
 
 Border priority: selected > player halo > default. The `cardBorderValue(card, index)` method resolves this.

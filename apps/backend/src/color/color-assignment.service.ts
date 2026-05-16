@@ -19,8 +19,9 @@ export class ColorAssignmentService {
     }
 
     // Search 0–359 for the candidate closest to the anchor hue that satisfies the threshold.
+    // When no preference exists, pick a random anchor to avoid always clustering near red.
     // On ties, lower hue wins.
-    const anchor = preferredHue ?? 0;
+    const anchor = preferredHue ?? Math.floor(Math.random() * 360);
     let bestHue = -1;
     let bestDistance = Infinity;
 

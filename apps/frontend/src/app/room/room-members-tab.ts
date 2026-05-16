@@ -101,7 +101,7 @@ const ROTATION_MODES: { icon: typeof faBan; tooltip: string; value: RotationMode
                 [class]="
                   'px-2 py-0.5 text-xs transition-colors ' +
                   (rosterService.rotationMode() === opt.value
-                    ? 'bg-primary text-white dark:bg-primary-light-text dark:text-bg-dark'
+                    ? 'bg-primary text-white dark:bg-primary-dark-text dark:text-bg-dark'
                     : 'text-text-secondary hover:text-text-body dark:text-text-secondary-dark dark:hover:text-text-body-dark')
                 "
               >
@@ -407,7 +407,7 @@ const ROTATION_MODES: { icon: typeof faBan; tooltip: string; value: RotationMode
               <button
                 (click)="onUnban(ban.userId)"
                 class="rounded px-1.5 py-0.5 text-xs text-success hover:bg-success-surface
-                       dark:text-success-light dark:hover:bg-success-surface-dark"
+                       dark:text-success-dark dark:hover:bg-success-surface-dark"
               >
                 Unban
               </button>
@@ -423,7 +423,7 @@ const ROTATION_MODES: { icon: typeof faBan; tooltip: string; value: RotationMode
           type="button"
           class="w-full rounded-default border border-danger px-3 py-2 text-sm font-medium
                  text-danger hover:bg-danger-surface
-                 dark:border-danger-light dark:text-danger-light dark:hover:bg-danger-surface-dark"
+                 dark:border-danger-dark dark:text-danger-dark dark:hover:bg-danger-surface-dark"
           (click)="confirmingAbandon.set(true)"
           data-testid="abandon-game-btn"
         >

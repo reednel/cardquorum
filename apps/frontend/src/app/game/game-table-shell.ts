@@ -11,12 +11,15 @@ import { GameStatusBar } from './game-status-bar';
 import { PlayerSeat } from './player-seat';
 
 const SEAT_BADGE_CLASSES: Record<string, string> = {
-  red: 'bg-badge-red text-white dark:bg-badge-red-light dark:text-gray-900',
-  yellow: 'bg-badge-yellow text-white dark:bg-badge-yellow-light dark:text-gray-900',
-  green: 'bg-badge-green text-white dark:bg-badge-green-light dark:text-gray-900',
-  blue: 'bg-badge-blue text-white dark:bg-badge-blue-light dark:text-gray-900',
-  purple: 'bg-badge-purple text-white dark:bg-badge-purple-light dark:text-gray-900',
-  pink: 'bg-badge-pink text-white dark:bg-badge-pink-light dark:text-gray-900',
+  red: 'bg-badge-red-surface text-badge-red dark:bg-badge-red-surface-dark dark:text-badge-red-dark',
+  yellow:
+    'bg-badge-yellow-surface text-badge-yellow dark:bg-badge-yellow-surface-dark dark:text-badge-yellow-dark',
+  green:
+    'bg-badge-green-surface text-badge-green dark:bg-badge-green-surface-dark dark:text-badge-green-dark',
+  blue: 'bg-badge-blue-surface text-badge-blue dark:bg-badge-blue-surface-dark dark:text-badge-blue-dark',
+  purple:
+    'bg-badge-purple-surface text-badge-purple dark:bg-badge-purple-surface-dark dark:text-badge-purple-dark',
+  pink: 'bg-badge-pink-surface text-badge-pink dark:bg-badge-pink-surface-dark dark:text-badge-pink-dark',
   dark: 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900',
 };
 

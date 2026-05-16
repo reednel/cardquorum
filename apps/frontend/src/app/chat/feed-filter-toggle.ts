@@ -75,7 +75,7 @@ export class FeedFilterToggle {
     const base =
       'cursor-pointer border-none bg-transparent p-0 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary';
     if (active) {
-      return `${base} text-primary dark:text-primary-light-text`;
+      return `${base} text-primary dark:text-primary-dark-text`;
     }
     return `${base} text-text-secondary hover:text-text-body dark:text-text-secondary-dark dark:hover:text-text-heading-dark`;
   }

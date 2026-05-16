@@ -51,8 +51,8 @@ interface DragState {
   },
   styles: `
     :host(.stack-highlighted) .card-stack-container {
-      filter: drop-shadow(0 0 4px var(--color-primary-light))
-        drop-shadow(0 0 8px var(--color-primary-light));
+      filter: drop-shadow(0 0 4px var(--color-primary-dark))
+        drop-shadow(0 0 8px var(--color-primary-dark));
       animation: target-glow 1.6s ease-in-out infinite;
       cursor: pointer;
     }
@@ -62,19 +62,19 @@ interface DragState {
     @keyframes target-glow {
       0%,
       100% {
-        filter: drop-shadow(0 0 4px var(--color-primary-light))
-          drop-shadow(0 0 8px var(--color-primary-light));
+        filter: drop-shadow(0 0 4px var(--color-primary-dark))
+          drop-shadow(0 0 8px var(--color-primary-dark));
       }
       50% {
-        filter: drop-shadow(0 0 6px var(--color-primary-light))
-          drop-shadow(0 0 14px var(--color-primary-light));
+        filter: drop-shadow(0 0 6px var(--color-primary-dark))
+          drop-shadow(0 0 14px var(--color-primary-dark));
       }
     }
     @media (prefers-reduced-motion: reduce) {
       :host(.stack-highlighted) .card-stack-container {
         animation: none;
-        filter: drop-shadow(0 0 5px var(--color-primary-light))
-          drop-shadow(0 0 10px var(--color-primary-light));
+        filter: drop-shadow(0 0 5px var(--color-primary-dark))
+          drop-shadow(0 0 10px var(--color-primary-dark));
       }
     }
     /* Hide CDK's placeholder for the dragged card during multi-drag */
@@ -186,7 +186,7 @@ interface DragState {
                       [style.width.px]="resolvedWidth()"
                       [style.height.px]="resolvedHeight()"
                       [style.border-radius.px]="cardBorderRadius()"
-                      [style.border]="'2px solid var(--color-primary-light)'"
+                      [style.border]="'2px solid var(--color-primary-dark)'"
                       style="box-sizing:border-box;background-color:var(--color-card-bg)"
                     >
                       <app-card-renderer
@@ -587,7 +587,7 @@ export class CardStack {
   /** Returns the CSS border shorthand: selected (primary) > player halo > default. */
   protected cardBorderValue(card: string | null, index: number): string {
     if (this.isSelected(card)) {
-      return '2px solid var(--color-primary-light)';
+      return '2px solid var(--color-primary-dark)';
     }
     const halo = this.cardHaloColor(index);
     if (halo) {

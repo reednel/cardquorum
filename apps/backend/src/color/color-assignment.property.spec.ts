@@ -23,11 +23,12 @@ describe('ColorAssignmentService', () => {
       );
     });
 
-    it('returned hue is the closest valid hue to the anchor', () => {
+    it('returned hue is the closest valid hue to the anchor when preference is provided', () => {
+      const preferredHueArb = fc.integer({ min: 0, max: 359 });
       fc.assert(
         fc.property(preferredHueArb, occupiedHuesArb, (preferredHue, occupiedHues) => {
           const result = service.assignHue(preferredHue, occupiedHues);
-          const anchor = preferredHue ?? 0;
+          const anchor = preferredHue;
           const threshold = minimumDistanceThreshold(occupiedHues.length + 1);
           const resultDistance = circularHueDistance(result, anchor);
 
@@ -45,10 +46,11 @@ describe('ColorAssignmentService', () => {
     });
 
     it('lower hue wins when two candidates are equidistant from the anchor', () => {
+      const preferredHueArb = fc.integer({ min: 0, max: 359 });
       fc.assert(
         fc.property(preferredHueArb, occupiedHuesArb, (preferredHue, occupiedHues) => {
           const result = service.assignHue(preferredHue, occupiedHues);
-          const anchor = preferredHue ?? 0;
+          const anchor = preferredHue;
           const threshold = minimumDistanceThreshold(occupiedHues.length + 1);
           const resultDistance = circularHueDistance(result, anchor);
 

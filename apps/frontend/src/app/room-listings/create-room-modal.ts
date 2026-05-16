@@ -40,7 +40,7 @@ import { RoomService } from '../room/room.service';
             id="create-room-error"
             data-testid="error-message"
             class="mb-4 rounded-default bg-danger-surface p-3 text-sm text-danger
-                   dark:bg-danger-surface-dark dark:text-danger-light"
+                   dark:bg-danger-surface-dark dark:text-danger-dark"
             role="alert"
           >
             {{ errorMessage() }}
@@ -191,7 +191,7 @@ import { RoomService } from '../room/room.service';
                       <button
                         type="button"
                         (click)="removeInvitee(user.userId)"
-                        class="ml-0.5 hover:text-primary dark:hover:text-primary-light-text"
+                        class="ml-0.5 hover:text-primary dark:hover:text-primary-dark-text"
                         [attr.aria-label]="'Remove ' + (user.displayName ?? user.username)"
                       >
                         ×

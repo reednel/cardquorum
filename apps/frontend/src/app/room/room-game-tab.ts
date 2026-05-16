@@ -284,7 +284,7 @@ export function buildFieldEntries(
               @for (msg of validationErrors(); track msg) {
                 <li
                   data-testid="validation-message"
-                  class="text-xs text-danger dark:text-danger-light"
+                  class="text-xs text-danger dark:text-danger-dark"
                 >
                   {{ msg }}
                 </li>
@@ -296,9 +296,9 @@ export function buildFieldEntries(
               <button
                 data-testid="abort-game-btn"
                 (click)="confirmingAbort.set(true)"
-                class="min-w-0 flex-1 rounded-default bg-danger px-4 py-2 text-sm font-medium text-white
-                       transition-colors hover:bg-danger-hover
-                       dark:bg-danger-dark dark:hover:bg-danger-dark-hover"
+                class="min-w-0 flex-1 rounded-default border border-danger px-4 py-2 text-sm font-medium
+                       text-danger hover:bg-danger-surface
+                       dark:border-danger-dark dark:text-danger-dark dark:hover:bg-danger-surface-dark"
               >
                 Abort Game
               </button>
@@ -310,7 +310,7 @@ export function buildFieldEntries(
                 class="min-w-0 flex-1 rounded-default bg-primary px-4 py-2 text-sm font-medium text-white
                        transition-colors hover:bg-primary-hover
                         disabled:opacity-disabled
-                       dark:bg-primary-light dark:hover:bg-primary-light-hover"
+                       dark:bg-primary-dark dark:hover:bg-primary-dark-hover"
               >
                 Start Game
               </button>
@@ -325,7 +325,7 @@ export function buildFieldEntries(
               [class]="
                 'flex aspect-square items-center justify-center rounded-default px-2 py-2 transition-colors ' +
                 (autostart()
-                  ? 'bg-primary text-white hover:bg-primary-hover dark:bg-primary-light dark:hover:bg-primary-light-hover'
+                  ? 'bg-primary text-white hover:bg-primary-hover dark:bg-primary-dark dark:hover:bg-primary-dark-hover'
                   : 'bg-surface-raised text-text-secondary hover:text-text-body dark:bg-surface-raised-dark dark:text-text-secondary-dark dark:hover:text-text-body-dark')
               "
             >

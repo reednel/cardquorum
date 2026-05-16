@@ -13,7 +13,7 @@ import { FormatTimePipe } from './format-time.pipe';
         <div class="text-sm">
           <p class="wrap-break-word text-text-body dark:text-text-body-dark">{{ msg.content }}</p>
           <div class="flex items-center gap-2 text-xs">
-            <span class="font-semibold text-primary dark:text-primary-light-text">
+            <span class="font-semibold text-primary dark:text-primary-dark-text">
               {{ msg.senderDisplayName }}
             </span>
             <span class="text-text-secondary">{{ msg.sentAt | formatTime }}</span>

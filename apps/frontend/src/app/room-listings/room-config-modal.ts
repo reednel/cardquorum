@@ -42,7 +42,7 @@ import { RoomService } from '../room/room.service';
             id="config-room-error"
             data-testid="error-message"
             class="mb-4 rounded-default bg-danger-surface p-3 text-sm text-danger
-                   dark:bg-danger-surface-dark dark:text-danger-light"
+                   dark:bg-danger-surface-dark dark:text-danger-dark"
             role="alert"
           >
             {{ errorMessage() }}
@@ -96,7 +96,7 @@ import { RoomService } from '../room/room.service';
           <div class="flex items-center justify-between">
             <div>
               @if (confirmDelete()) {
-                <span class="mr-2 text-sm text-danger dark:text-danger-light">
+                <span class="mr-2 text-sm text-danger dark:text-danger-dark">
                   Are you sure? This cannot be undone.
                 </span>
                 <button
@@ -123,7 +123,7 @@ import { RoomService } from '../room/room.service';
                   data-testid="delete-room-btn"
                   (click)="confirmDelete.set(true)"
                   class="rounded-default px-3 py-1 text-sm text-danger hover:bg-danger-surface
-                         dark:text-danger-light dark:hover:bg-danger-surface-dark"
+                         dark:text-danger-dark dark:hover:bg-danger-surface-dark"
                 >
                   Delete Room
                 </button>

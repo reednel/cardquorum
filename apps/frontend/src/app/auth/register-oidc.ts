@@ -22,7 +22,7 @@ import { AuthService } from './auth.service';
         @if (errorMessage()) {
           <div
             id="register-error"
-            class="mb-4 rounded-default bg-danger-surface p-3 text-sm text-danger dark:bg-danger-surface-dark dark:text-danger-light"
+            class="mb-4 rounded-default bg-danger-surface p-3 text-sm text-danger dark:bg-danger-surface-dark dark:text-danger-dark"
             role="alert"
           >
             {{ errorMessage() }}

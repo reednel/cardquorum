@@ -39,11 +39,11 @@ import { RoomTableComponent } from './room-table';
         </p>
       } @else if (error()) {
         <div data-testid="error-state" class="py-8 text-center">
-          <p class="text-sm text-danger dark:text-danger-light">{{ error() }}</p>
+          <p class="text-sm text-danger dark:text-danger-dark">{{ error() }}</p>
           <button
             data-testid="retry-btn"
             (click)="loadMemberships()"
-            class="mt-2 text-sm text-primary hover:underline dark:text-primary-light-text"
+            class="mt-2 text-sm text-primary hover:underline dark:text-primary-dark-text"
           >
             Try again
           </button>

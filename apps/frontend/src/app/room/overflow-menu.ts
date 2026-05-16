@@ -56,7 +56,7 @@ export interface OverflowAction {
                 [class]="
                   'w-full px-3 py-1.5 text-left text-sm ' +
                   (action.variant === 'danger'
-                    ? 'text-danger hover:bg-danger-surface dark:text-danger-light dark:hover:bg-danger-surface-dark'
+                    ? 'text-danger hover:bg-danger-surface dark:text-danger-dark dark:hover:bg-danger-surface-dark'
                     : 'text-text-body hover:bg-surface-raised dark:text-text-body-dark dark:hover:bg-surface-raised-dark')
                 "
               >

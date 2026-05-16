@@ -39,8 +39,8 @@ import { RoomTableComponent } from './room-table';
                  text-text-heading placeholder-text-secondary
                  focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary
                  dark:border-border-dark dark:bg-surface-dark dark:text-text-heading-dark
-                 dark:placeholder-text-secondary-dark dark:focus:border-primary-light-text
-                 dark:focus:ring-primary-light-text"
+                 dark:placeholder-text-secondary-dark dark:focus:border-primary-dark-text
+                 dark:focus:ring-primary-dark-text"
         />
       </div>
 
@@ -52,7 +52,7 @@ import { RoomTableComponent } from './room-table';
             </p>
           } @else if (searchError()) {
             <div class="py-8 text-center">
-              <p class="text-sm text-danger dark:text-danger-light">{{ searchError() }}</p>
+              <p class="text-sm text-danger dark:text-danger-dark">{{ searchError() }}</p>
             </div>
           } @else if (searchResults().length === 0) {
             <p class="py-8 text-center text-sm text-text-secondary dark:text-text-secondary-dark">
@@ -82,10 +82,10 @@ import { RoomTableComponent } from './room-table';
             </p>
           } @else if (privateError()) {
             <div class="py-4 text-center">
-              <p class="text-sm text-danger dark:text-danger-light">{{ privateError() }}</p>
+              <p class="text-sm text-danger dark:text-danger-dark">{{ privateError() }}</p>
               <button
                 (click)="loadPrivateRooms()"
-                class="mt-2 text-sm text-primary hover:underline dark:text-primary-light-text"
+                class="mt-2 text-sm text-primary hover:underline dark:text-primary-dark-text"
               >
                 Try again
               </button>
@@ -121,10 +121,10 @@ import { RoomTableComponent } from './room-table';
             </p>
           } @else if (publicError()) {
             <div class="py-4 text-center">
-              <p class="text-sm text-danger dark:text-danger-light">{{ publicError() }}</p>
+              <p class="text-sm text-danger dark:text-danger-dark">{{ publicError() }}</p>
               <button
                 (click)="loadPublicRooms()"
-                class="mt-2 text-sm text-primary hover:underline dark:text-primary-light-text"
+                class="mt-2 text-sm text-primary hover:underline dark:text-primary-dark-text"
               >
                 Try again
               </button>

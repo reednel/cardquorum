@@ -20,7 +20,7 @@ import { GameLogBroadcast } from '@cardquorum/shared';
           [routerLink]="['/replay']"
           [queryParams]="{ session: entry().sessionId }"
           aria-label="Watch replay for this game session"
-          class="text-sm text-primary hover:text-primary-hover dark:text-primary-light-text"
+          class="text-sm text-primary hover:text-primary-hover dark:text-primary-dark-text"
         >
           Replay
         </a>

@@ -69,7 +69,7 @@ import { SessionBoundaryMarker } from '../chat/session-boundary-marker';
                   {{ $any(item.data).content }}
                 </p>
                 <div class="flex items-center text-xs">
-                  <span class="font-semibold text-primary dark:text-primary-light-text">
+                  <span class="font-semibold text-primary dark:text-primary-dark-text">
                     {{ $any(item.data).senderDisplayName }}
                   </span>
                   <span class="ml-auto text-text-secondary dark:text-text-secondary-dark">{{

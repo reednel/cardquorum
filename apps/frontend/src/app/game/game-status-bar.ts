@@ -5,23 +5,23 @@ const BAR_CLASSES: Record<string, string> = {
   default:
     'border-border bg-surface text-text-secondary dark:border-border-dark dark:bg-surface-dark dark:text-text-secondary-dark',
   'active-turn':
-    'border-primary bg-primary-surface text-primary dark:border-primary-light dark:bg-primary-surface-dark dark:text-primary-light-text',
+    'border-primary bg-primary-surface text-primary dark:border-primary-dark dark:bg-primary-surface-dark dark:text-primary-dark-text',
   'active-turn-pulse':
-    'status-bar-pulse border-primary text-primary dark:border-primary-light dark:text-primary-light-text [--status-pulse-bg:var(--color-primary-surface)] dark:[--status-pulse-bg:var(--color-primary-surface-dark)]',
+    'status-bar-pulse border-primary text-primary dark:border-primary-dark dark:text-primary-dark-text [--status-pulse-bg:var(--color-primary-surface)] dark:[--status-pulse-bg:var(--color-primary-surface-dark)]',
   urgent:
-    'border-danger bg-danger-surface text-danger dark:border-danger-light dark:bg-danger-surface-dark dark:text-danger-light',
+    'border-danger bg-danger-surface text-danger dark:border-danger-dark dark:bg-danger-surface-dark dark:text-danger-dark',
 };
 
 const BADGE_CLASSES: Record<string, string> = {
-  red: 'bg-[var(--color-badge-red-surface)] text-[var(--color-badge-red)] dark:bg-[var(--color-badge-red-surface-dark)] dark:text-[var(--color-badge-red-light)]',
+  red: 'bg-badge-red-surface text-badge-red dark:bg-badge-red-surface-dark dark:text-badge-red-dark',
   yellow:
-    'bg-[var(--color-badge-yellow-surface)] text-[var(--color-badge-yellow)] dark:bg-[var(--color-badge-yellow-surface-dark)] dark:text-[var(--color-badge-yellow-light)]',
+    'bg-badge-yellow-surface text-badge-yellow dark:bg-badge-yellow-surface-dark dark:text-badge-yellow-dark',
   green:
-    'bg-[var(--color-badge-green-surface)] text-[var(--color-badge-green)] dark:bg-[var(--color-badge-green-surface-dark)] dark:text-[var(--color-badge-green-light)]',
-  blue: 'bg-[var(--color-badge-blue-surface)] text-[var(--color-badge-blue)] dark:bg-[var(--color-badge-blue-surface-dark)] dark:text-[var(--color-badge-blue-light)]',
+    'bg-badge-green-surface text-badge-green dark:bg-badge-green-surface-dark dark:text-badge-green-dark',
+  blue: 'bg-badge-blue-surface text-badge-blue dark:bg-badge-blue-surface-dark dark:text-badge-blue-dark',
   purple:
-    'bg-[var(--color-badge-purple-surface)] text-[var(--color-badge-purple)] dark:bg-[var(--color-badge-purple-surface-dark)] dark:text-[var(--color-badge-purple-light)]',
-  pink: 'bg-[var(--color-badge-pink-surface)] text-[var(--color-badge-pink)] dark:bg-[var(--color-badge-pink-surface-dark)] dark:text-[var(--color-badge-pink-light)]',
+    'bg-badge-purple-surface text-badge-purple dark:bg-badge-purple-surface-dark dark:text-badge-purple-dark',
+  pink: 'bg-badge-pink-surface text-badge-pink dark:bg-badge-pink-surface-dark dark:text-badge-pink-dark',
   dark: 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900',
 };
 
