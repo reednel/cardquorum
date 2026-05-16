@@ -678,8 +678,8 @@ describe('SheepsheadPlugin', () => {
 
       const view = SheepsheadPlugin.getPlayerView(config, inPlay, 1);
       expect(view.players![0].role).toBe('opposition'); // own role visible
-      expect(view.players![1].role).toBeNull(); // other role hidden
-      expect(view.players![2].role).toBeNull(); // other role hidden
+      expect(view.players![1].role).toBe('picker'); // picker role is public
+      expect(view.players![2].role).toBeNull(); // non-picker roles hidden
     });
   });
 

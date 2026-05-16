@@ -6,6 +6,8 @@ const BAR_CLASSES: Record<string, string> = {
     'border-border bg-surface text-text-secondary dark:border-border-dark dark:bg-surface-dark dark:text-text-secondary-dark',
   'active-turn':
     'border-primary bg-primary-surface text-primary dark:border-primary-light dark:bg-primary-surface-dark dark:text-primary-light-text',
+  'active-turn-pulse':
+    'status-bar-pulse border-primary text-primary dark:border-primary-light dark:text-primary-light-text [--status-pulse-bg:var(--color-primary-surface)] dark:[--status-pulse-bg:var(--color-primary-surface-dark)]',
   urgent:
     'border-danger bg-danger-surface text-danger dark:border-danger-light dark:bg-danger-surface-dark dark:text-danger-light',
 };
@@ -26,10 +28,29 @@ const BADGE_CLASSES: Record<string, string> = {
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-game-status-bar',
+  styles: `
+    .status-bar-pulse {
+      animation: status-pulse 1.8s ease-in-out infinite;
+    }
+    @keyframes status-pulse {
+      0%,
+      100% {
+        background-color: var(--status-pulse-bg);
+      }
+      50% {
+        background-color: transparent;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .status-bar-pulse {
+        animation: none;
+      }
+    }
+  `,
   template: `
     <div
       [class]="
-        'flex h-(--height-panel-header) items-center justify-center gap-3 border-b px-4 text-xs ' +
+        'flex h-(--height-panel-header) select-none items-center justify-center gap-3 border-b px-4 text-xs ' +
         barClass()
       "
       role="status"

@@ -1,11 +1,13 @@
 import type {
   CardAsset,
   GameTablePlugin,
+  SeatBadge,
   SeatInfo,
   StatusBarConfig,
   StatusItem,
   TrickPlayView,
 } from '@cardquorum/shared';
+import { DECK, formatCard, isTrump, SUIT_SYMBOLS } from '@cardquorum/sheepshead';
 
 const SUIT_NAMES: Record<string, string> = {
   c: 'Clubs',
@@ -123,6 +125,44 @@ function getCurrentTrick(state: SheepsheadPlayerView): TrickPlayView[] | null {
   }));
 }
 
+function getSeatBadges(state: SheepsheadPlayerView, userID: number): SeatBadge[] {
+  const badges: SeatBadge[] = [];
+  const player = state.players.find((p) => p.userID === userID);
+  if (!player) return badges;
+
+  // Dealer badge — visible all phases
+  if (state.dealerUserID === userID) {
+    badges.push({ label: 'D', color: 'blue', position: 'left', description: 'Dealer' });
+  }
+
+  // Picker badge — visible once a player has picked
+  if (player.role === 'picker') {
+    badges.push({ label: 'P', color: 'purple', position: 'left', description: 'Picker' });
+  }
+
+  // Leader badge — only during play phase
+  if (state.phase === 'play' && state.tricks.length > 0) {
+    const currentTrick = state.tricks[state.tricks.length - 1];
+    const leaderUserID =
+      currentTrick.plays.length > 0 ? currentTrick.plays[0].player : state.activePlayer;
+    if (leaderUserID === userID) {
+      badges.push({ label: 'L', color: 'yellow', position: 'right', description: 'Leader' });
+    }
+  }
+
+  // Tricks won badge — only during play phase, only if > 0
+  if (state.phase === 'play' && player.tricksWon > 0) {
+    badges.push({
+      label: String(player.tricksWon),
+      color: 'green',
+      position: 'right',
+      description: `${player.tricksWon} trick${player.tricksWon > 1 ? 's' : ''} won`,
+    });
+  }
+
+  return badges;
+}
+
 function getPlayerSeats(state: SheepsheadPlayerView, myUserID: number): SeatInfo[] {
   return state.players
     .filter((p) => p.userID !== myUserID)
@@ -131,6 +171,7 @@ function getPlayerSeats(state: SheepsheadPlayerView, myUserID: number): SeatInfo
       handSize: p.hand.length,
       isDealer: state.dealerUserID === p.userID,
       isActive: state.activePlayer === p.userID,
+      badges: getSeatBadges(state, p.userID),
     }));
 }
 
@@ -160,6 +201,19 @@ function getStatusInfo(
       key: 'trick',
       label: `Trick ${state.trickNumber} / ${totalTricks}`,
     });
+
+    // Lead suit badge — show what suit was led in the current trick
+    if (state.tricks?.length > 0) {
+      const currentTrick = state.tricks[state.tricks.length - 1];
+      if (currentTrick.plays.length > 0) {
+        const leadCardName = currentTrick.plays[0].card.name;
+        const leadCard = DECK.find((c) => c.name === leadCardName);
+        if (leadCard) {
+          const label = isTrump(leadCard) ? 'Trump lead' : `${SUIT_SYMBOLS[leadCard.suit]} lead`;
+          items.push({ type: 'badge', key: 'lead', label, color: 'yellow' });
+        }
+      }
+    }
   }
 
   if (state.crack) {
@@ -177,11 +231,17 @@ function getStatusInfo(
     });
   }
 
+  if (state.calledCard) {
+    const card = DECK.find((c) => c.name === state.calledCard);
+    const label = `${card ? formatCard(card) : state.calledCard} called`;
+    items.push({ type: 'badge', key: 'called', label, color: 'purple' });
+  }
+
   const isMyTurn = state.activePlayer === myUserID;
 
   return {
     items,
-    barVariant: isMyTurn ? 'active-turn' : 'default',
+    barVariant: isMyTurn ? 'active-turn-pulse' : 'default',
   };
 }
 
@@ -222,4 +282,5 @@ export const SheepsheadTablePlugin: GameTablePlugin<SheepsheadPlayerView, Sheeps
   getBuryCount,
   buildMoveEvent,
   getDefaultTarget,
+  getSeatBadges,
 };

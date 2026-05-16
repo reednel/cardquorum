@@ -90,7 +90,7 @@ export function computeBiasedPosition(params: BiasedPlacementParams): CardPositi
   // Random offset magnitude, biased toward the player's direction
   const w = cardWidth > 0 ? cardWidth : DEFAULT_CARD_WIDTH;
   const h = cardHeight > 0 ? cardHeight : DEFAULT_CARD_HEIGHT;
-  const maxOffset = Math.min(w, h) * 0.6;
+  const maxOffset = Math.min(w, h) * 0.75;
   const magnitude = rand() * maxOffset;
 
   // Add some angular spread around the seat angle

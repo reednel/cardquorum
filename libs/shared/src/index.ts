@@ -88,6 +88,9 @@ export type {
   StatusItem,
   StatusBarConfig,
   GameTablePlugin,
+  SeatBadge,
+  BadgeColor,
+  BadgePosition,
 } from './lib/game-table-types';
 export {
   USERNAME_MIN,

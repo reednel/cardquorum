@@ -6,6 +6,24 @@
  * types — it works entirely through this interface.
  */
 
+/** Color options for seat badges — same union as status bar badge colors. */
+export type BadgeColor = 'red' | 'yellow' | 'green' | 'blue' | 'purple' | 'pink' | 'dark';
+
+/** Position of a badge relative to the player name pill. */
+export type BadgePosition = 'left' | 'right';
+
+/** A single circular badge rendered beside a player name. */
+export interface SeatBadge {
+  /** Single character displayed inside the badge circle. */
+  label: string;
+  /** Background color from the badge palette. */
+  color: BadgeColor;
+  /** Which side of the name pill to render on. */
+  position: BadgePosition;
+  /** Human-readable description used as both tooltip and aria-label (e.g., "Dealer", "3 tricks won"). */
+  description: string;
+}
+
 /** Asset path + alt text for rendering a single card. */
 export interface CardAsset {
   src: string;
@@ -18,6 +36,7 @@ export interface SeatInfo {
   handSize: number;
   isDealer: boolean;
   isActive: boolean;
+  badges: SeatBadge[];
 }
 
 /** A single card play within a trick (for center-area rendering). */
@@ -40,7 +59,7 @@ export type StatusItem =
 /** Configuration returned by a plugin to drive the status bar. */
 export interface StatusBarConfig {
   items: StatusItem[];
-  barVariant?: 'default' | 'active-turn' | 'urgent';
+  barVariant?: 'default' | 'active-turn' | 'active-turn-pulse' | 'urgent';
 }
 
 /**
@@ -88,4 +107,7 @@ export interface GameTablePlugin<TState = unknown, TEvent = unknown> {
 
   /** Return the default target stack ID for simple interactions, or null if a query is needed. */
   getDefaultTarget(state: TState, validActions: string[]): string | null;
+
+  /** Return badges for a specific player seat. Optional — defaults to empty array. */
+  getSeatBadges?(state: TState, userID: number): SeatBadge[];
 }

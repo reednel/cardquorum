@@ -2,12 +2,23 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import type {
   ColorAssignmentMap,
   GameTablePlugin,
+  SeatBadge,
   SeatInfo,
   StatusBarConfig,
   UserIdentity,
 } from '@cardquorum/shared';
 import { GameStatusBar } from './game-status-bar';
 import { PlayerSeat } from './player-seat';
+
+const SEAT_BADGE_CLASSES: Record<string, string> = {
+  red: 'bg-badge-red text-white dark:bg-badge-red-light dark:text-gray-900',
+  yellow: 'bg-badge-yellow text-white dark:bg-badge-yellow-light dark:text-gray-900',
+  green: 'bg-badge-green text-white dark:bg-badge-green-light dark:text-gray-900',
+  blue: 'bg-badge-blue text-white dark:bg-badge-blue-light dark:text-gray-900',
+  purple: 'bg-badge-purple text-white dark:bg-badge-purple-light dark:text-gray-900',
+  pink: 'bg-badge-pink text-white dark:bg-badge-pink-light dark:text-gray-900',
+  dark: 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900',
+};
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -27,6 +38,7 @@ import { PlayerSeat } from './player-seat';
             [isDealer]="seat.isDealer"
             [isActive]="seat.isActive"
             [hue]="colorMap()?.[seat.userID] ?? null"
+            [badges]="seat.badges"
             [style.left.%]="seat.x"
             [style.top.%]="seat.y"
             class="-translate-x-1/2 -translate-y-1/2"
@@ -38,9 +50,24 @@ import { PlayerSeat } from './player-seat';
           <ng-content select="[playArea]" />
         </div>
 
-        <!-- Local player hand -->
-        <div class="absolute bottom-3 left-0 flex w-full justify-center">
+        <!-- Local player hand + badges -->
+        <div class="absolute bottom-2 left-0 flex w-full flex-col items-center gap-1">
           <ng-content select="[hand]" />
+          @if (localPlayerBadges().length > 0) {
+            <div role="group" aria-label="Player badges" class="flex items-center gap-0.5">
+              @for (badge of localPlayerBadges(); track badge.label) {
+                <span
+                  [class]="
+                    'flex h-5 w-5 select-none items-center justify-center rounded-full text-[10px] font-bold ' +
+                    badgeClass(badge.color)
+                  "
+                  [attr.aria-label]="badge.description"
+                  [title]="badge.description"
+                  >{{ badge.label }}</span
+                >
+              }
+            </div>
+          }
         </div>
 
         <!-- Corner actions -->
@@ -102,5 +129,15 @@ export class GameTableShell {
   protected userDisplayName(userID: number): string {
     const member = this.knownMembers().get(userID);
     return member?.displayName ?? member?.username ?? `Player ${userID}`;
+  }
+
+  protected readonly localPlayerBadges = computed<SeatBadge[]>(() => {
+    const plugin = this.plugin();
+    if (!plugin.getSeatBadges) return [];
+    return plugin.getSeatBadges(this.state(), this.myUserID());
+  });
+
+  protected badgeClass(color: string): string {
+    return SEAT_BADGE_CLASSES[color] ?? '';
   }
 }

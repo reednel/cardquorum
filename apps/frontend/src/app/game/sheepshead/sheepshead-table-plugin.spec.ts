@@ -119,8 +119,8 @@ describe('SheepsheadTablePlugin', () => {
       };
       const seats = SheepsheadTablePlugin.getPlayerSeats(state, 1);
       expect(seats).toEqual([
-        { userID: 2, handSize: 1, isDealer: false, isActive: true },
-        { userID: 3, handSize: 2, isDealer: false, isActive: false },
+        { userID: 2, handSize: 1, isDealer: false, isActive: true, badges: [] },
+        { userID: 3, handSize: 2, isDealer: false, isActive: false, badges: [] },
       ]);
     });
 
@@ -227,7 +227,7 @@ describe('SheepsheadTablePlugin', () => {
         players: [{ hand: [{ name: 'a' }] }],
       };
       const result = SheepsheadTablePlugin.getStatusInfo(state, 5, gameConfig);
-      expect(result.barVariant).toBe('active-turn');
+      expect(result.barVariant).toBe('active-turn-pulse');
     });
 
     it('sets default variant when it is not my turn', () => {
