@@ -422,7 +422,12 @@ describe('GameService integration (full Sheepshead game)', () => {
       for (const other of others) {
         expect(other.hand.length).toBeGreaterThan(0);
         expect(other.hand.every((c: unknown) => c === null)).toBe(true);
-        expect(other.role).toBeNull();
+        // Picker role is public; other roles are hidden
+        if (other.userID === picker) {
+          expect(other.role).toBe('picker');
+        } else {
+          expect(other.role).toBeNull();
+        }
       }
     }
 
