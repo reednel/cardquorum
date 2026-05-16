@@ -15,13 +15,15 @@ describe('computeCardPositions', () => {
           fc.integer({ min: 0, max: 52 }),
           fc.double({ min: 0, max: 1, noNaN: true, noDefaultInfinity: true }),
           fc.double({ min: 0, max: 360, noNaN: true, noDefaultInfinity: true }),
+          fc.double({ min: 0, max: 360, noNaN: true, noDefaultInfinity: true }),
           fc.double({ min: 20, max: 200, noNaN: true, noDefaultInfinity: true }),
           fc.double({ min: 20, max: 200, noNaN: true, noDefaultInfinity: true }),
-          (count, spread, spreadAngle, cardWidth, cardHeight) => {
+          (count, spread, spreadAngle, spreadDirection, cardWidth, cardHeight) => {
             const positions = computeCardPositions({
               count,
               spread,
               spreadAngle,
+              spreadDirection,
               cardWidth,
               cardHeight,
             });
@@ -46,6 +48,7 @@ describe('computeCardPositions', () => {
               count,
               spread,
               spreadAngle,
+              spreadDirection: 90,
               cardWidth,
               cardHeight: 100,
             });
@@ -74,6 +77,7 @@ describe('computeCardPositions', () => {
               count,
               spread,
               spreadAngle: 0,
+              spreadDirection: 90,
               cardWidth,
               cardHeight: 100,
             });

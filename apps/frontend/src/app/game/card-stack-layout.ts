@@ -11,6 +11,7 @@ export interface LayoutParams {
   count: number;
   spread: number;
   spreadAngle: number;
+  spreadDirection: number;
   cardWidth: number;
   cardHeight: number;
 }
@@ -109,13 +110,21 @@ export function computeBiasedPosition(params: BiasedPlacementParams): CardPositi
 /**
  * Compute card positions for a linear or arc layout.
  * Pure function — no DOM access, no side effects.
+ *
+ * spreadAngle and spreadDirection are mutually exclusive:
+ * - spreadAngle > 0: arc/fan layout (cards rotate about a point below)
+ * - spreadDirection !== 90 (or spreadAngle === 0): directional linear spread
+ *   where 0 = 12:00, 90 = 3:00 (default horizontal), 180 = 6:00, 270 = 9:00
+ *
+ * When spreadAngle > 0, it takes precedence (arc layout).
  */
 export function computeCardPositions(params: LayoutParams): CardPosition[] {
   const count = params.count;
   if (count <= 0) return [];
 
-  const spread = Math.max(0, Math.min(1, params.spread));
+  const spread = Math.max(0, Math.min(2, params.spread));
   const spreadAngle = Math.max(0, params.spreadAngle);
+  const spreadDirection = params.spreadDirection;
   const cardWidth = params.cardWidth > 0 ? params.cardWidth : DEFAULT_CARD_WIDTH;
 
   const step = spread * cardWidth;
@@ -124,22 +133,33 @@ export function computeCardPositions(params: LayoutParams): CardPosition[] {
     return [{ x: 0, y: 0, rotation: 0, zIndex: 0 }];
   }
 
-  if (spreadAngle === 0) {
-    return computeStraightLine(count, step);
+  if (spreadAngle > 0) {
+    return computeArc(count, step, spreadAngle, cardWidth);
   }
 
-  return computeArc(count, step, spreadAngle, cardWidth);
+  return computeDirectionalLine(count, step, spreadDirection);
 }
 
-function computeStraightLine(count: number, step: number): CardPosition[] {
-  const totalWidth = (count - 1) * step;
-  const startX = -totalWidth / 2;
+/**
+ * Compute positions along a directional line.
+ * spreadDirection is a compass bearing: 0 = 12:00, 90 = 3:00, etc.
+ */
+function computeDirectionalLine(count: number, step: number, directionDeg: number): CardPosition[] {
+  // Convert compass bearing to math angle (0° = up → -90° in standard coords)
+  const angleRad = ((directionDeg - 90) * Math.PI) / 180;
+  const dx = Math.cos(angleRad) * step;
+  const dy = Math.sin(angleRad) * step;
+
+  const totalSteps = count - 1;
+  // Center the line around origin
+  const startX = -(totalSteps * dx) / 2;
+  const startY = -(totalSteps * dy) / 2;
 
   const positions: CardPosition[] = [];
   for (let i = 0; i < count; i++) {
     positions.push({
-      x: startX + i * step,
-      y: 0,
+      x: startX + i * dx,
+      y: startY + i * dy,
       rotation: 0,
       zIndex: i,
     });

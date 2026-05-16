@@ -45,7 +45,12 @@ const CALL_OPTIONS: { value: string; label: string }[] = [
       <div playArea class="flex w-64 flex-col items-center gap-3">
         @switch (currentPhase()) {
           @case ('deal') {
-            <app-card-stack [cards]="blindCards()" [cardWidth]="100" [spread]="0.05" />
+            <app-card-stack
+              [cards]="blindCards()"
+              [cardWidth]="100"
+              [spreadDirection]="0"
+              [spread]="0.03"
+            />
             <div role="group" aria-label="Deal actions">
               @if (canDeal()) {
                 <button

@@ -254,6 +254,7 @@ export class CardStack {
   readonly cards = input<CardEntry[]>([]);
   readonly spread = input(0.5);
   readonly spreadAngle = input(0);
+  readonly spreadDirection = input(90);
   readonly cardWidth = input(0);
   readonly cardHeight = input(0);
   readonly cardAspectRatio = input(7 / 5);
@@ -485,6 +486,7 @@ export class CardStack {
       count: cardsArr.length,
       spread: this.spread(),
       spreadAngle: this.spreadAngle(),
+      spreadDirection: this.spreadDirection(),
       cardWidth: this.resolvedWidth(),
       cardHeight: this.resolvedHeight(),
     });
