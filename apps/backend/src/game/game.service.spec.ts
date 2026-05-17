@@ -3,6 +3,7 @@ import { GameSessionRepository } from '@cardquorum/db';
 import { RoomManager } from '@cardquorum/engine';
 import { RosterState } from '@cardquorum/shared';
 import { RoomService } from '../room/room.service';
+import { StatsService } from '../stats/stats.service';
 import { EventLogService } from './event-log.service';
 import { GameService } from './game.service';
 
@@ -95,10 +96,15 @@ describe('GameService', () => {
       getCatchUpEntries: jest.fn().mockReturnValue([]),
     } as unknown as EventLogService;
 
+    const mockStatsService = {
+      writeStats: jest.fn().mockResolvedValue(undefined),
+    } as unknown as StatsService;
+
     service = new GameService(
       mockSessionRepo as unknown as GameSessionRepository,
       roomService as unknown as RoomService,
       mockEventLogService,
+      mockStatsService,
     );
   });
 
@@ -1029,6 +1035,9 @@ describe('GameService', () => {
                 getRoomLog: jest.fn().mockResolvedValue([]),
                 getCatchUpEntries: jest.fn().mockReturnValue([]),
               } as unknown as EventLogService,
+              {
+                writeStats: jest.fn().mockResolvedValue(undefined),
+              } as unknown as StatsService,
             );
 
             const roomId = 1;
@@ -1090,6 +1099,9 @@ describe('GameService', () => {
               getRoomLog: jest.fn().mockResolvedValue([]),
               getCatchUpEntries: jest.fn().mockReturnValue([]),
             } as unknown as EventLogService,
+            {
+              writeStats: jest.fn().mockResolvedValue(undefined),
+            } as unknown as StatsService,
           );
 
           const roomId = 1;

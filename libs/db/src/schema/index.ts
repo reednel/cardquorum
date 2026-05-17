@@ -7,6 +7,8 @@ export { gameParticipants } from './game-participants';
 export type { GameParticipant, NewGameParticipant } from './game-participants';
 export { gameSessions } from './game-sessions';
 export { messages } from './messages';
+export { playerStats } from './player-stats';
+export type { PlayerStat, NewPlayerStat } from './player-stats';
 export { roomBans } from './room-bans';
 export { roomGameSettings } from './room-game-settings';
 export { roomInvites } from './room-invites';

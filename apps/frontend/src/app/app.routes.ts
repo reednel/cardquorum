@@ -62,6 +62,11 @@ export const appRoutes: Route[] = [
             loadComponent: () => import('./account/account-page').then((m) => m.AccountPage),
           },
           {
+            path: 'stats',
+            title: 'Stats — CardQuorum',
+            loadComponent: () => import('./stats/player-stats-page').then((m) => m.PlayerStatsPage),
+          },
+          {
             path: 'friends',
             title: 'Friends — CardQuorum',
             loadComponent: () => import('./account/friends-page').then((m) => m.FriendsPage),

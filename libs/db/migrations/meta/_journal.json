@@ -57,6 +57,13 @@
       "when": 1778114970645,
       "tag": "0007_round_stardust",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1779028792752,
+      "tag": "0008_vengeful_mongu",
+      "breakpoints": true
     }
   ]
 }

@@ -20,6 +20,7 @@ import {
   faChevronRight,
   faSliders,
   faStream,
+  faTrophy,
   faUsers,
 } from '@fortawesome/free-solid-svg-icons';
 import { RoomResponse, WS_EVENT } from '@cardquorum/shared';
@@ -35,15 +36,24 @@ import { RoomContextService } from './room-context.service';
 import { RoomFeedTab } from './room-feed-tab';
 import { RoomGameTab } from './room-game-tab';
 import { RoomMembersTab } from './room-members-tab';
+import { RoomStatsTab } from './room-stats-tab';
 import { RoomService } from './room.service';
 import { RosterService } from './roster.service';
 
-type RoomTab = 'feed' | 'members' | 'game';
+type RoomTab = 'feed' | 'members' | 'game' | 'stats';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-room-view',
-  imports: [FaIconComponent, FeedFilterToggle, RoomFeedTab, RoomMembersTab, RoomGameTab, GameTable],
+  imports: [
+    FaIconComponent,
+    FeedFilterToggle,
+    RoomFeedTab,
+    RoomMembersTab,
+    RoomGameTab,
+    RoomStatsTab,
+    GameTable,
+  ],
   animations: [
     trigger('slidePanel', [
       transition(':enter', [
@@ -184,7 +194,7 @@ type RoomTab = 'feed' | 'members' | 'game';
               <app-feed-filter-toggle
                 [mode]="feedMode()"
                 (modeChange)="onFeedModeChange($event)"
-                class="absolute inset-y-0 left-0 flex w-1/3 items-center justify-center"
+                class="absolute inset-y-0 left-0 flex w-1/4 items-center justify-center"
               />
             }
           </div>
@@ -209,6 +219,11 @@ type RoomTab = 'feed' | 'members' | 'game';
               [hidden]="activeTab() !== 'game'"
               class="flex min-h-0 flex-1 flex-col"
             />
+            <app-room-stats-tab
+              [roomId]="roomId"
+              [hidden]="activeTab() !== 'stats'"
+              class="flex min-h-0 flex-1 flex-col"
+            />
           </div>
         </aside>
       }
@@ -225,17 +240,20 @@ export class RoomView implements OnInit, OnDestroy {
   protected readonly faStream = faStream;
   protected readonly faUsers = faUsers;
   protected readonly faSliders = faSliders;
+  protected readonly faTrophy = faTrophy;
 
   protected readonly tabIcons: Record<RoomTab, typeof faStream> = {
     feed: faStream,
     members: faUsers,
     game: faSliders,
+    stats: faTrophy,
   };
 
   protected readonly tabTooltips: Record<RoomTab, string> = {
     feed: 'Feed',
     members: 'Members',
     game: 'Game settings',
+    stats: 'Game Stats',
   };
 
   protected readonly chatService = inject(ChatService);
@@ -263,15 +281,15 @@ export class RoomView implements OnInit, OnDestroy {
     if (userId == null) return false;
     return this.rosterService.players().some((m) => m.userId === userId);
   });
-  protected readonly tabs: RoomTab[] = ['feed', 'members', 'game'];
-  protected readonly secondaryTabs: RoomTab[] = ['members', 'game'];
+  protected readonly tabs: RoomTab[] = ['feed', 'members', 'game', 'stats'];
+  protected readonly secondaryTabs: RoomTab[] = ['members', 'game', 'stats'];
   protected readonly activeTab = signal<RoomTab>(this.loadActiveTab());
   protected readonly panelOpen = signal(this.loadPanelOpen());
   protected readonly feedMode = signal<FeedMode>(this.loadFeedMode());
   protected readonly roomName = signal('');
   protected readonly room = signal<RoomResponse | null>(null);
   protected readonly isOwner = signal(false);
-  private roomId = 0;
+  protected roomId = 0;
 
   constructor() {
     effect(() => {
@@ -372,7 +390,8 @@ export class RoomView implements OnInit, OnDestroy {
 
   private loadActiveTab(): RoomTab {
     const stored = localStorage.getItem('cq_panel_tab');
-    if (stored === 'feed' || stored === 'members' || stored === 'game') return stored;
+    if (stored === 'feed' || stored === 'members' || stored === 'game' || stored === 'stats')
+      return stored;
     return 'feed';
   }
 

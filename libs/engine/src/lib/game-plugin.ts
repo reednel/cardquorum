@@ -1,3 +1,9 @@
+export interface PlayerStatRow {
+  userId: number;
+  won: boolean | null;
+  scoreDelta: number | null;
+}
+
 export interface ScheduledEvent {
   event: { type: string; payload?: unknown };
   delayMs: number;
@@ -92,4 +98,10 @@ export interface GamePlugin<
    * @returns A spectator-safe description string, or null
    */
   describeEvent?(event: TEvent, state: TState, playerNames: Map<number, string>): string | null;
+
+  /**
+   * Derive per-player stats from a terminal game state.
+   * Called when the game finishes (including plugin-handled abandonment).
+   */
+  buildStats(config: TConfig, state: TState): PlayerStatRow[];
 }

@@ -9,7 +9,10 @@
 ## Major Features
 
 1. Game Reporting
-2. Admin view
+2. Spectator view
+3. Replay and Summary access permissions
+4. Replay omnicient view
+5. Admin view
    1. Flag(?) col on Users table
    2. Additional page in menu, control other users (mainly reset basic auth password)
-3. Notifications - on friend request/accept, room invite...
+6. Notifications - on friend request/accept, room invite...

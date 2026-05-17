@@ -14,6 +14,7 @@ import { FriendModule } from '../friend/friend.module';
 import { GameModule } from '../game/game.module';
 import { HealthModule } from '../health/health.module';
 import { ReplayModule } from '../replay/replay.module';
+import { StatsModule } from '../stats/stats.module';
 import { SummaryModule } from '../summary/summary.module';
 import { UserModule } from '../user/user.module';
 import { WsModule } from '../ws/ws.module';
@@ -112,6 +113,7 @@ function getServeStaticImports() {
     ChatModule,
     GameModule,
     ReplayModule,
+    StatsModule,
     SummaryModule,
   ],
   controllers: [AppController],

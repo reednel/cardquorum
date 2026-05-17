@@ -4,6 +4,7 @@ import { GamePlugin, WithScheduledEvents } from '@cardquorum/engine';
 import { ColorAssignmentMap, WS_EMIT } from '@cardquorum/shared';
 import { SheepsheadPlugin } from '@cardquorum/sheepshead';
 import { RoomService } from '../room/room.service';
+import { StatsService } from '../stats/stats.service';
 import { EventBufferEntry, EventLogService } from './event-log.service';
 import { resolveCancellationStatus } from './game-status';
 
@@ -55,6 +56,7 @@ export class GameService implements OnModuleDestroy {
     @Inject(forwardRef(() => RoomService))
     private readonly roomService: RoomService,
     private readonly eventLogService: EventLogService,
+    private readonly statsService: StatsService,
   ) {
     this.sweepTimer = setInterval(() => this.sweepAbandoned(), SWEEP_INTERVAL_MS);
   }
@@ -295,6 +297,14 @@ export class GameService implements OnModuleDestroy {
       await this.sessionRepo.updateStore(sessionId, store);
       await this.sessionRepo.updateStatusAndTimestamp(sessionId, 'finished', 'finishedAt');
 
+      // Write stats for the finished game
+      try {
+        const statRows = plugin.buildStats(game.config as any, newState);
+        await this.statsService.writeStats(sessionId, game.roomId, game.gameType, statRows);
+      } catch (err) {
+        this.logger.error(`Failed to write stats for session ${sessionId}: ${err}`);
+      }
+
       this.activeGames.delete(sessionId);
 
       this.logger.log(`Game session ${sessionId} finished`);
@@ -386,6 +396,14 @@ export class GameService implements OnModuleDestroy {
       store = plugin.buildStore(game.config as any, newState);
       await this.sessionRepo.updateStore(sessionId, store);
       await this.sessionRepo.updateStatusAndTimestamp(sessionId, 'finished', 'finishedAt');
+
+      // Write stats for the finished game (plugin-handled abandonment)
+      try {
+        const statRows = plugin.buildStats(game.config as any, newState);
+        await this.statsService.writeStats(sessionId, game.roomId, game.gameType, statRows);
+      } catch (err) {
+        this.logger.error(`Failed to write stats for session ${sessionId}: ${err}`);
+      }
     } else {
       await this.sessionRepo.updateStatusAndTimestamp(sessionId, 'abandoned', 'finishedAt');
     }
@@ -629,7 +647,16 @@ export class GameService implements OnModuleDestroy {
         .flushBuffer(game.eventBuffer)
         .then(() => this.sessionRepo.updateStore(sessionId, store))
         .then(() => this.sessionRepo.updateStatusAndTimestamp(sessionId, 'finished', 'finishedAt'))
-        .catch((err) => this.logger.warn(`Scheduled game-over flush failed: ${err}`));
+        .then(() => {
+          // Write stats for the finished game (scheduled event path)
+          const statRows = plugin.buildStats(game.config as any, newState);
+          return this.statsService.writeStats(sessionId, game.roomId, game.gameType, statRows);
+        })
+        .catch((err) =>
+          this.logger.error(
+            `Scheduled game-over flush/stats failed for session ${sessionId}: ${err}`,
+          ),
+        );
 
       this.activeGames.delete(sessionId);
       this.pendingTimers.delete(sessionId);

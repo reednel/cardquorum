@@ -1,4 +1,4 @@
-import { ApplyEventResult, GamePlugin } from '@cardquorum/engine';
+import { ApplyEventResult, GamePlugin, PlayerStatRow } from '@cardquorum/engine';
 import { formatCard } from './cards';
 import { SheepsheadConfigSchema } from './config';
 import { DECK } from './constants';
@@ -453,6 +453,14 @@ function describeEvent(
   }
 }
 
+function buildStats(_config: SheepsheadConfig, state: SheepsheadState): PlayerStatRow[] {
+  return state.players.map((p) => ({
+    userId: p.userID,
+    won: p.scoreDelta !== null ? p.scoreDelta > 0 : null,
+    scoreDelta: p.scoreDelta,
+  }));
+}
+
 /**
  * Sheepshead game plugin. Implements the generic GamePlugin interface
  * so the engine can orchestrate Sheepshead games without knowing the rules.
@@ -474,4 +482,5 @@ export const SheepsheadPlugin: GamePlugin<
   getValidTargets,
   onPlayerAbandon,
   describeEvent,
+  buildStats,
 };

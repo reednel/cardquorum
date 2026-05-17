@@ -19,7 +19,11 @@ describe('UserDropdown', () => {
     await TestBed.configureTestingModule({
       imports: [UserDropdown],
       providers: [
-        provideRouter([{ path: 'user/account', component: UserDropdown }]),
+        provideRouter([
+          { path: 'user/account', component: UserDropdown },
+          { path: 'user/stats', component: UserDropdown },
+          { path: 'user/friends', component: UserDropdown },
+        ]),
         { provide: AuthService, useValue: mockAuthService },
       ],
     }).compileComponents();
@@ -57,7 +61,7 @@ describe('UserDropdown', () => {
     expect(el.querySelector('[data-testid="user-menu"]')).toBeFalsy();
   });
 
-  it('navigates to /user on Account click', () => {
+  it('navigates to /user/account on Account click', () => {
     jest.spyOn(router, 'navigate');
     const btn = el.querySelector('[data-testid="user-menu-trigger"]') as HTMLButtonElement;
     btn.click();
@@ -68,6 +72,19 @@ describe('UserDropdown', () => {
     fixture.detectChanges();
 
     expect(router.navigate).toHaveBeenCalledWith(['/user/account']);
+  });
+
+  it('navigates to /user/stats on Stats click', () => {
+    jest.spyOn(router, 'navigate');
+    const btn = el.querySelector('[data-testid="user-menu-trigger"]') as HTMLButtonElement;
+    btn.click();
+    fixture.detectChanges();
+
+    const statsLink = el.querySelector('[data-testid="menu-stats"]') as HTMLElement;
+    statsLink.click();
+    fixture.detectChanges();
+
+    expect(router.navigate).toHaveBeenCalledWith(['/user/stats']);
   });
 
   it('calls logout on Logout click', () => {

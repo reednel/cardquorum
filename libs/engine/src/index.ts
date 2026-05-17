@@ -18,6 +18,7 @@ export type {
   ScheduledEvent,
   WithScheduledEvents,
   ApplyEventResult,
+  PlayerStatRow,
 } from './lib/game-plugin';
 export type {
   FieldMode,

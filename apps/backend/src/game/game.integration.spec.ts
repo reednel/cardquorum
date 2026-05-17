@@ -8,6 +8,7 @@ import { GameSessionRepository } from '@cardquorum/db';
 import { RoomManager } from '@cardquorum/engine';
 import { RosterState } from '@cardquorum/shared';
 import { RoomService } from '../room/room.service';
+import { StatsService } from '../stats/stats.service';
 import { EventLogService } from './event-log.service';
 import { GameService } from './game.service';
 
@@ -102,6 +103,9 @@ describe('GameService integration (full Sheepshead game)', () => {
         getRoomLog: jest.fn().mockResolvedValue([]),
         getCatchUpEntries: jest.fn().mockReturnValue([]),
       } as unknown as EventLogService,
+      {
+        writeStats: jest.fn().mockResolvedValue(undefined),
+      } as unknown as StatsService,
     );
   });
 

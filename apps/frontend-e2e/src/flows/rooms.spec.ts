@@ -426,7 +426,7 @@ test.describe('Room Flows', () => {
       // Wait for room view to fully render
       await page.locator(`p[title="${roomName}"]`).waitFor({ state: 'visible', timeout: 10000 });
 
-      await page.getByRole('tab', { name: 'Game' }).click();
+      await page.getByRole('tab', { name: 'Game settings' }).click();
 
       await expect(page.locator('[data-testid="start-game-btn"]')).toBeVisible();
     } finally {

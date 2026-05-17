@@ -120,3 +120,11 @@ export type {
 } from './lib/replay-types';
 
 export type { SummaryParticipantDto, SummaryDataResponse } from './lib/summary-types';
+
+export type {
+  PlayerStatRow,
+  RoomStatsPlayerDto,
+  RoomStatsResponse,
+  PlayerStatsResponse,
+  StatsQueryParams,
+} from './lib/stats-types';

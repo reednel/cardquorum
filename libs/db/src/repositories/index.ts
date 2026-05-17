@@ -14,3 +14,5 @@ export { FriendshipRepository } from './friendship.repository';
 export { FriendshipRequestRepository } from './friendship-request.repository';
 export { RoomRosterRepository } from './room-roster.repository';
 export type { RosterMember, RosterSection } from './room-roster.repository';
+export { PlayerStatsRepository } from './player-stats.repository';
+export type { AggregatedPlayerStats } from './player-stats.repository';
