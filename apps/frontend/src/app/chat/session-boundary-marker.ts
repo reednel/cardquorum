@@ -8,6 +8,8 @@ import {
   Type,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { FaIconComponent } from '@fortawesome/angular-fontawesome';
+import { faClapperboard, faTableList } from '@fortawesome/free-solid-svg-icons';
 import { GameLogBroadcast, UserIdentity } from '@cardquorum/shared';
 import { GAME_TABLE_PLUGINS } from '../game/game-registry';
 import { GameSummaryShell } from '../game/game-summary-shell';
@@ -17,7 +19,7 @@ import { SummaryApiService } from '../game/summary-api.service';
 @Component({
   selector: 'app-session-boundary-marker',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, GameSummaryShell],
+  imports: [RouterLink, FaIconComponent, GameSummaryShell],
   host: { role: 'separator' },
   template: `
     <div class="flex items-center justify-center gap-2 py-2">
@@ -32,9 +34,10 @@ import { SummaryApiService } from '../game/summary-api.service';
           [routerLink]="['/replay']"
           [queryParams]="{ session: entry().sessionId }"
           aria-label="Watch replay for this game session"
-          class="text-sm text-primary hover:text-primary-hover dark:text-primary-dark-text"
+          title="Replay"
+          class="text-primary hover:text-primary-hover dark:text-primary-dark-text"
         >
-          Replay
+          <fa-icon [icon]="faClapperboard" aria-hidden="true" />
         </a>
       }
       @if (showSummaryLink()) {
@@ -42,9 +45,10 @@ import { SummaryApiService } from '../game/summary-api.service';
           data-testid="summary-link"
           (click)="openSummary()"
           aria-label="View game summary for this session"
-          class="text-sm text-primary hover:text-primary-hover dark:text-primary-dark-text"
+          title="Summary"
+          class="text-primary hover:text-primary-hover dark:text-primary-dark-text"
         >
-          Summary
+          <fa-icon [icon]="faTableList" aria-hidden="true" />
         </button>
       }
     </div>
@@ -83,6 +87,9 @@ import { SummaryApiService } from '../game/summary-api.service';
 })
 export class SessionBoundaryMarker {
   entry = input.required<GameLogBroadcast>();
+
+  protected readonly faClapperboard = faClapperboard;
+  protected readonly faTableList = faTableList;
 
   private readonly gameService = inject(GameService);
   private readonly summaryApiService = inject(SummaryApiService);
