@@ -6,14 +6,14 @@ import {
   inject,
   input,
   signal,
+  Type,
   type OutputEmitterRef,
 } from '@angular/core';
 import type { ColorAssignmentMap, GameTablePlugin, UserIdentity } from '@cardquorum/shared';
 import { CardStack } from '../card-stack';
+import { GameSummaryShell } from '../game-summary-shell';
 import { GameTableShell } from '../game-table-shell';
 import { InteractionController } from '../interaction-controller';
-import { PhaseOverlay } from '../phase-overlay';
-import { ScoreOverlay } from './score-overlay';
 import { SheepsheadTablePlugin } from './sheepshead-table-plugin';
 
 const CALL_OPTIONS: { value: string; label: string }[] = [
@@ -29,7 +29,7 @@ const CALL_OPTIONS: { value: string; label: string }[] = [
 @Component({
   selector: 'app-sheepshead-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CardStack, PhaseOverlay, ScoreOverlay, GameTableShell],
+  imports: [CardStack, GameSummaryShell, GameTableShell],
   host: { class: 'block h-full' },
   template: `
     <app-game-table-shell
@@ -218,20 +218,19 @@ const CALL_OPTIONS: { value: string; label: string }[] = [
         }
       </div>
 
-      <!-- Score overlay -->
-      @if (activeOverlay() === 'score' && !autostart() && !scoreDismissed()) {
+      <!-- Game summary overlay -->
+      @if (activeOverlay() === 'score' && !autostart() && !scoreDismissed() && summaryComponent()) {
         <div overlay>
-          <app-phase-overlay label="Game results">
-            <app-score-overlay
-              [players]="scorePlayers()"
-              [members]="members()"
-              [isOwner]="isOwner()"
-              [canStartNext]="canStartNext()"
-              [hideStartNext]="actionDispatcher() === null"
-              (dismissed)="onScoreDismissed()"
-              (startNextGame)="onStartNextGame()"
-            />
-          </app-phase-overlay>
+          <app-game-summary-shell
+            mode="end-of-game"
+            [summaryComponent]="summaryComponent()!"
+            [store]="gameStore()"
+            [participants]="members()"
+            [isOwner]="isOwner()"
+            [canStartNext]="canStartNext() && actionDispatcher() !== null"
+            (dismissed)="onScoreDismissed()"
+            (startNextGame)="onStartNextGame()"
+          />
         </div>
       }
     </app-game-table-shell>
@@ -248,6 +247,7 @@ export class SheepsheadTable {
   readonly actionDispatcher = input<((event: { type: string; payload?: unknown }) => void) | null>(
     null,
   );
+  readonly store = input<unknown>(null);
 
   // ── Inputs from GameTable via NgComponentOutlet ──
   readonly myUserID = input.required<number>();
@@ -363,6 +363,16 @@ export class SheepsheadTable {
       players?: Array<{ userID: number; role: string | null; scoreDelta: number | null }>;
     } | null;
     return state?.players ?? [];
+  });
+
+  // ── Summary component from plugin ──
+  protected readonly summaryComponent = computed((): Type<unknown> | null => {
+    return this.plugin.getSummaryComponent?.() ?? null;
+  });
+
+  // ── Game store for summary (from GAME_OVER event) ──
+  protected readonly gameStore = computed(() => {
+    return this.store() ?? this.state();
   });
 
   constructor() {

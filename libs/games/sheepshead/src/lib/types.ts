@@ -88,6 +88,8 @@ export type PlayerStore = {
   role: PlayerRole | null;
   won: boolean | null;
   scoreDelta: number | null;
+  /** Final card-points taken by this player (including buried/blind attribution). Null for schwanzer. */
+  points: number | null;
 };
 
 export interface RedealRecord {

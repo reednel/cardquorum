@@ -306,8 +306,11 @@ export function handleBury(
   // Remove buried cards from player's hand
   const newHand = playerHand.filter((c) => !buriedCards.some((b) => cardsEqual(b, c)));
 
+  // Attribute buried card points to the burying player's pointsWon
+  const buriedPoints = sumPoints(buriedCards);
+
   const players = state.players.map((p, i) => {
-    if (i === playerIdx) return { ...p, hand: newHand };
+    if (i === playerIdx) return { ...p, hand: newHand, pointsWon: p.pointsWon + buriedPoints };
     return p;
   });
 

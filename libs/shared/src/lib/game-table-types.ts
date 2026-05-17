@@ -1,3 +1,5 @@
+import { Type } from '@angular/core';
+
 /**
  * Types for the game table UI layer.
  *
@@ -110,4 +112,7 @@ export interface GameTablePlugin<TState = unknown, TEvent = unknown> {
 
   /** Return badges for a specific player seat. Optional — defaults to empty array. */
   getSeatBadges?(state: TState, userID: number): SeatBadge[];
+
+  /** Return the standalone component type for rendering game summary content, or undefined. */
+  getSummaryComponent?(): Type<unknown>;
 }

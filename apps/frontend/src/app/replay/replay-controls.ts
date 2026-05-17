@@ -4,6 +4,8 @@ import {
   computed,
   DestroyRef,
   inject,
+  input,
+  output,
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -16,6 +18,7 @@ import {
   faPause,
   faPlay,
   faRepeat,
+  faTableList,
 } from '@fortawesome/free-solid-svg-icons';
 import { ReplayEngineService } from './replay-engine.service';
 
@@ -152,6 +155,23 @@ import { ReplayEngineService } from './replay-engine.service';
         <span>Loop</span>
       </div>
     </div>
+
+    @if (summaryButtonVisible()) {
+      <div class="mt-3 border-t border-border pt-3 dark:border-border-dark">
+        <button
+          type="button"
+          aria-label="Summary"
+          (click)="onSummaryClick()"
+          class="flex w-full items-center justify-center gap-2 rounded-default bg-surface-raised
+                 px-3 py-2 text-sm text-text-body transition-colors
+                 hover:bg-primary/10 dark:bg-surface-raised-dark
+                 dark:text-text-heading-dark dark:hover:bg-primary/20"
+        >
+          <fa-icon [icon]="faTableList" class="text-xs" aria-hidden="true" />
+          <span>Summary</span>
+        </button>
+      </div>
+    }
   `,
   host: {
     class: 'block',
@@ -166,9 +186,16 @@ export class ReplayControls {
   protected readonly faPlay = faPlay;
   protected readonly faPause = faPause;
   protected readonly faRepeat = faRepeat;
+  protected readonly faTableList = faTableList;
 
   private readonly engine = inject(ReplayEngineService);
   private readonly destroyRef = inject(DestroyRef);
+
+  /** Whether the "Summary" button should be visible. */
+  readonly summaryButtonVisible = input(false);
+
+  /** Emitted when the user clicks the "Summary" button. */
+  readonly summaryRequested = output<void>();
 
   private static readonly SPEED_KEY = 'cq_replay_speed';
   private static readonly LOOP_KEY = 'cq_replay_loop';
@@ -357,5 +384,25 @@ export class ReplayControls {
 
   private loadLoop(): boolean {
     return localStorage.getItem(ReplayControls.LOOP_KEY) === 'true';
+  }
+
+  // ── Summary ──
+
+  protected onSummaryClick(): void {
+    this.summaryRequested.emit();
+  }
+
+  /** Pause autoplay externally (e.g., when summary overlay is shown). Returns true if autoplay was running. */
+  pauseAutoplay(): boolean {
+    if (this.autoplayRunning()) {
+      this.stopAutoplay();
+      return true;
+    }
+    return false;
+  }
+
+  /** Resume autoplay externally (e.g., when summary overlay is dismissed). */
+  resumeAutoplay(): void {
+    this.startAutoplay();
   }
 }

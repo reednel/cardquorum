@@ -118,3 +118,5 @@ export type {
   ReplaySessionSummary,
   ReplaySessionListResponse,
 } from './lib/replay-types';
+
+export type { SummaryParticipantDto, SummaryDataResponse } from './lib/summary-types';

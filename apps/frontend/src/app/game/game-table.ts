@@ -64,6 +64,7 @@ export class GameTable {
     config: this.gameService.config(),
     colorMap: this.gameService.colorMap(),
     actionDispatcher: this.actionDispatcherFn,
+    store: this.gameService.store(),
   }));
 
   /** Track the game phase for reset logic. */

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output, viewChild } from '@angular/core';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faGamepad, faList } from '@fortawesome/free-solid-svg-icons';
 import { GameSelectionPanel } from './game-selection-panel';
@@ -67,7 +67,10 @@ export type ReplaySidebarTab = 'games' | 'controls';
             aria-labelledby="controls-tab"
             class="flex min-h-0 flex-1 flex-col p-3"
           >
-            <app-replay-controls />
+            <app-replay-controls
+              [summaryButtonVisible]="summaryButtonVisible()"
+              (summaryRequested)="summaryRequested.emit()"
+            />
           </div>
         }
       }
@@ -80,12 +83,30 @@ export type ReplaySidebarTab = 'games' | 'controls';
 export class ReplaySidebar {
   readonly tab = input<ReplaySidebarTab>('games');
 
+  /** Whether the "Summary" button should be visible in the controls. */
+  readonly summaryButtonVisible = input(false);
+
   readonly tabChange = output<ReplaySidebarTab>();
+
+  /** Emitted when the user clicks the "Summary" button in the controls. */
+  readonly summaryRequested = output<void>();
+
+  private readonly replayControls = viewChild(ReplayControls);
 
   protected readonly faList = faList;
   protected readonly faGamepad = faGamepad;
 
   protected onTabClick(tab: ReplaySidebarTab): void {
     this.tabChange.emit(tab);
+  }
+
+  /** Pause autoplay in the controls. Returns true if autoplay was running. */
+  pauseAutoplay(): boolean {
+    return this.replayControls()?.pauseAutoplay() ?? false;
+  }
+
+  /** Resume autoplay in the controls. */
+  resumeAutoplay(): void {
+    this.replayControls()?.resumeAutoplay();
   }
 }

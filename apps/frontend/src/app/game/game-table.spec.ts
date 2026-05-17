@@ -13,6 +13,7 @@ function createMockGameService(overrides: Partial<Record<string, unknown>> = {})
     gameType: signal(overrides['gameType'] ?? null),
     config: signal(overrides['config'] ?? null),
     colorMap: signal(overrides['colorMap'] ?? undefined),
+    store: signal(overrides['store'] ?? null),
     validTargetsResponse: signal(overrides['validTargetsResponse'] ?? null),
     queryTargets: jest.fn(),
     sendAction: jest.fn(),
@@ -98,6 +99,7 @@ async function setup(gameServiceOverrides: Partial<Record<string, unknown>> = {}
           'config',
           'colorMap',
           'actionDispatcher',
+          'store',
         ],
       },
     })

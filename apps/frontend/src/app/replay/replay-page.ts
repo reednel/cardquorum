@@ -5,15 +5,21 @@ import {
   Component,
   computed,
   DestroyRef,
+  effect,
   inject,
   signal,
+  Type,
+  viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
-import type { ReplayDataResponse } from '@cardquorum/shared';
+import type { ReplayDataResponse, SummaryDataResponse, UserIdentity } from '@cardquorum/shared';
 import { AuthService } from '../auth/auth.service';
+import { GAME_TABLE_PLUGINS } from '../game/game-registry';
+import { GameSummaryShell } from '../game/game-summary-shell';
+import { SummaryApiService } from '../game/summary-api.service';
 import { ReplayApiService } from './replay-api.service';
 import { ReplayEngineService } from './replay-engine.service';
 import { ReplaySidebar, type ReplaySidebarTab } from './replay-sidebar';
@@ -29,7 +35,7 @@ type LoadingState =
   selector: 'app-replay-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [ReplayEngineService],
-  imports: [FaIconComponent, ReplaySidebar, ReplayTable],
+  imports: [FaIconComponent, GameSummaryShell, ReplaySidebar, ReplayTable],
   animations: [
     trigger('slidePanel', [
       transition(':enter', [
@@ -86,6 +92,16 @@ type LoadingState =
         }
       </main>
 
+      @if (showSummaryOverlay()) {
+        <app-game-summary-shell
+          [mode]="'standalone'"
+          [summaryComponent]="summaryComponent()!"
+          [store]="summaryData()!.store"
+          [participants]="summaryParticipants()"
+          (dismissed)="dismissSummary()"
+        />
+      }
+
       @if (!panelOpen()) {
         <button
           (click)="togglePanel(true)"
@@ -129,7 +145,9 @@ type LoadingState =
 
           <app-replay-sidebar
             [tab]="sidebarTab()"
+            [summaryButtonVisible]="summaryComponent() !== null"
             (tabChange)="sidebarTab.set($event)"
+            (summaryRequested)="onSummaryButtonClick()"
             class="flex min-h-0 flex-1 flex-col"
           />
         </aside>
@@ -147,6 +165,7 @@ export class ReplayPage {
 
   private readonly route = inject(ActivatedRoute);
   private readonly replayApi = inject(ReplayApiService);
+  private readonly summaryApi = inject(SummaryApiService);
   private readonly replayEngine = inject(ReplayEngineService);
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
@@ -161,6 +180,52 @@ export class ReplayPage {
 
   /** Parsed session ID from query params (null if absent or invalid). */
   protected readonly sessionId = signal<number | null>(null);
+
+  /** Fetched summary data (persisted store + participants). */
+  protected readonly summaryData = signal<SummaryDataResponse | null>(null);
+
+  /** Whether the summary overlay is currently visible. */
+  protected readonly summaryOverlayVisible = signal(false);
+
+  /** Timer handle for the 500ms delay before showing the summary. */
+  private summaryDelayTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Whether the replay is at the final position with score phase. */
+  protected readonly isAtFinalScorePosition = computed(() => {
+    const position = this.replayEngine.currentPosition();
+    const total = this.replayEngine.totalEvents();
+    if (total === 0 || position < total) return false;
+
+    const view = this.replayEngine.playerView() as { phase?: string } | null;
+    return view?.phase === 'score';
+  });
+
+  /** The summary component type from the plugin (if available). */
+  protected readonly summaryComponent = computed<Type<unknown> | null>(() => {
+    const data = this.replayData();
+    if (!data) return null;
+    const plugin = GAME_TABLE_PLUGINS[data.gameType];
+    return plugin?.getSummaryComponent?.() ?? null;
+  });
+
+  /** Participants mapped for the summary shell (UserIdentity format). */
+  protected readonly summaryParticipants = computed<UserIdentity[]>(() => {
+    const data = this.summaryData();
+    if (!data) return [];
+    return data.participants.map((p) => ({
+      userId: p.userId,
+      username: p.username,
+      displayName: p.displayName,
+    }));
+  });
+
+  /** Whether to show the summary overlay (all conditions met). */
+  protected readonly showSummaryOverlay = computed(
+    () =>
+      this.summaryOverlayVisible() &&
+      this.summaryData() !== null &&
+      this.summaryComponent() !== null,
+  );
 
   /** Determines which view to show based on session param and load state. */
   protected readonly viewMode = computed<'selection' | 'loading' | 'error' | 'replay'>(() => {
@@ -214,6 +279,12 @@ export class ReplayPage {
 
   protected readonly sidebarTab = signal<ReplaySidebarTab>('games');
 
+  /** Reference to the sidebar for autoplay pause/resume. */
+  private readonly sidebar = viewChild(ReplaySidebar);
+
+  /** Whether autoplay was paused by the summary overlay (to resume on dismiss). */
+  private autoplayPausedByOverlay = false;
+
   constructor() {
     // React to query param changes and load replay data
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
@@ -228,6 +299,20 @@ export class ReplayPage {
         this.loadState.set({ status: 'idle' });
       }
     });
+
+    // Watch for final position with score phase to auto-display summary
+    effect(() => {
+      const atFinal = this.isAtFinalScorePosition();
+      const hasComponent = this.summaryComponent() !== null;
+
+      if (atFinal && hasComponent) {
+        this.scheduleSummaryDisplay();
+      } else {
+        this.hideSummaryOverlay();
+      }
+    });
+
+    this.destroyRef.onDestroy(() => this.clearSummaryTimer());
   }
 
   /** Parse the session query parameter. Returns a valid positive integer or null. */
@@ -241,6 +326,9 @@ export class ReplayPage {
   /** Load replay data for the given session ID. */
   private loadReplayData(sessionId: number): void {
     this.loadState.set({ status: 'loading' });
+    this.summaryData.set(null);
+    this.summaryOverlayVisible.set(false);
+    this.clearSummaryTimer();
 
     this.replayApi
       .getReplayData(sessionId)
@@ -249,6 +337,7 @@ export class ReplayPage {
         next: (data) => {
           this.loadState.set({ status: 'success', data });
           this.initializeEngine(data);
+          this.fetchSummaryData(sessionId);
         },
         error: (err: HttpErrorResponse) => {
           const code = err.status ?? 500;
@@ -291,5 +380,67 @@ export class ReplayPage {
   protected togglePanel(open: boolean): void {
     this.panelOpen.set(open);
     localStorage.setItem(ReplayPage.PANEL_KEY, open ? 'open' : 'closed');
+  }
+
+  /** Dismiss the summary overlay. Resumes autoplay if it was paused by the overlay. */
+  protected dismissSummary(): void {
+    this.summaryOverlayVisible.set(false);
+    this.clearSummaryTimer();
+
+    if (this.autoplayPausedByOverlay) {
+      this.autoplayPausedByOverlay = false;
+      this.sidebar()?.resumeAutoplay();
+    }
+  }
+
+  /** Handle the "Summary" button click from replay controls. */
+  protected onSummaryButtonClick(): void {
+    // Pause autoplay if running
+    this.autoplayPausedByOverlay = this.sidebar()?.pauseAutoplay() ?? false;
+    this.summaryOverlayVisible.set(true);
+  }
+
+  /** Schedule showing the summary overlay after 500ms. */
+  private scheduleSummaryDisplay(): void {
+    // If already visible or timer already running, no-op
+    if (this.summaryOverlayVisible() || this.summaryDelayTimer !== null) return;
+
+    this.summaryDelayTimer = setTimeout(() => {
+      this.summaryDelayTimer = null;
+      this.summaryOverlayVisible.set(true);
+    }, 500);
+  }
+
+  /** Hide the summary overlay and cancel any pending timer. */
+  private hideSummaryOverlay(): void {
+    this.clearSummaryTimer();
+    this.summaryOverlayVisible.set(false);
+
+    if (this.autoplayPausedByOverlay) {
+      this.autoplayPausedByOverlay = false;
+      this.sidebar()?.resumeAutoplay();
+    }
+  }
+
+  /** Cancel the pending summary display timer. */
+  private clearSummaryTimer(): void {
+    if (this.summaryDelayTimer !== null) {
+      clearTimeout(this.summaryDelayTimer);
+      this.summaryDelayTimer = null;
+    }
+  }
+
+  /** Fetch summary data (persisted store) for the session. */
+  private fetchSummaryData(sessionId: number): void {
+    this.summaryApi
+      .getSummaryData(sessionId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => this.summaryData.set(data),
+        error: () => {
+          // Silently fail — summary is a non-critical enhancement
+          this.summaryData.set(null);
+        },
+      });
   }
 }

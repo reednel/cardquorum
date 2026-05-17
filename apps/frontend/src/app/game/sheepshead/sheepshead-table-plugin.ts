@@ -1,3 +1,4 @@
+import type { Type } from '@angular/core';
 import type {
   CardAsset,
   GameTablePlugin,
@@ -8,6 +9,7 @@ import type {
   TrickPlayView,
 } from '@cardquorum/shared';
 import { DECK, formatCard, isTrump, SUIT_SYMBOLS } from '@cardquorum/sheepshead';
+import { SheepsheadSummary } from './sheepshead-summary';
 
 const SUIT_NAMES: Record<string, string> = {
   c: 'Clubs',
@@ -283,4 +285,7 @@ export const SheepsheadTablePlugin: GameTablePlugin<SheepsheadPlayerView, Sheeps
   buildMoveEvent,
   getDefaultTarget,
   getSeatBadges,
+  getSummaryComponent(): Type<unknown> {
+    return SheepsheadSummary;
+  },
 };

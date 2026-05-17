@@ -324,12 +324,15 @@ function isGameOver(state: SheepsheadState): boolean {
 }
 
 function buildStore(config: SheepsheadConfig, state: SheepsheadState): SheepsheadStore {
+  const isSchwanzer = state.noPick === 'schwanzer';
+
   return {
     players: state.players.map((p) => ({
       userID: p.userID,
       role: p.role,
       won: p.scoreDelta !== null ? p.scoreDelta > 0 : null,
       scoreDelta: p.scoreDelta,
+      points: isSchwanzer ? null : p.pointsWon,
     })),
     blind: state.blind,
     buried: state.buried,

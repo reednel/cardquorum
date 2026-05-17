@@ -14,6 +14,7 @@ import { FriendModule } from '../friend/friend.module';
 import { GameModule } from '../game/game.module';
 import { HealthModule } from '../health/health.module';
 import { ReplayModule } from '../replay/replay.module';
+import { SummaryModule } from '../summary/summary.module';
 import { UserModule } from '../user/user.module';
 import { WsModule } from '../ws/ws.module';
 import { AppController } from './app.controller';
@@ -111,6 +112,7 @@ function getServeStaticImports() {
     ChatModule,
     GameModule,
     ReplayModule,
+    SummaryModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ConditionalThrottlerGuard }],

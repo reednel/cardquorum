@@ -1,9 +1,7 @@
-import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CardStack } from '../card-stack';
+import { GameSummaryShell } from '../game-summary-shell';
 import { InteractionController } from '../interaction-controller';
-import { PhaseOverlay } from '../phase-overlay';
-import { ScoreOverlay } from './score-overlay';
 import { SheepsheadTable } from './sheepshead-table';
 
 // ── Mock factories ──
@@ -109,11 +107,11 @@ async function setup(
         outputs: ['cardsReordered', 'cardSelected', 'cardConfirmed', 'selectedCards'],
       },
     })
-    .overrideComponent(ScoreOverlay, {
+    .overrideComponent(GameSummaryShell, {
       set: {
-        selector: 'app-score-overlay',
-        template: '<div data-testid="stub-score-overlay"></div>',
-        inputs: ['players', 'members', 'isOwner', 'canStartNext', 'hideStartNext'],
+        selector: 'app-game-summary-shell',
+        template: '<div #dialogEl data-testid="stub-game-summary-shell"></div>',
+        inputs: ['mode', 'summaryComponent', 'store', 'participants', 'isOwner', 'canStartNext'],
         outputs: ['dismissed', 'startNextGame'],
       },
     })
@@ -322,3 +320,129 @@ describe('SheepsheadTable – action dispatching', () => {
     expect(() => dealBtn.click()).not.toThrow();
   });
 });
+
+// ── Score state factory ──
+
+const SCORE_STATE = makeState('score', {
+  players: [
+    {
+      userID: 1,
+      role: 'picker',
+      hand: [],
+      tricksWon: 3,
+      pointsWon: 60,
+      scoreDelta: 2,
+      cardsWon: [],
+    },
+  ],
+});
+
+describe('SheepsheadTable – end-of-game summary overlay', () => {
+  it('renders GameSummaryShell when game enters score phase with plugin component', async () => {
+    const { fixture } = await setup({ state: SCORE_STATE, validActions: [] });
+    fixture.detectChanges();
+
+    const shell = fixture.nativeElement.querySelector('app-game-summary-shell');
+    expect(shell).toBeTruthy();
+  });
+
+  it('does not render GameSummaryShell when autostart is enabled', async () => {
+    const fixture = await setupWithAutostart(SCORE_STATE, true);
+    fixture.detectChanges();
+
+    const shell = fixture.nativeElement.querySelector('app-game-summary-shell');
+    expect(shell).toBeNull();
+  });
+
+  it('resets dismissed state when phase changes away from score and back', async () => {
+    const { fixture } = await setup({ state: SCORE_STATE, validActions: [] });
+    fixture.detectChanges();
+
+    // Overlay should be visible
+    expect(fixture.nativeElement.querySelector('app-game-summary-shell')).toBeTruthy();
+
+    // Dismiss the overlay
+    const component = fixture.componentInstance;
+    (component as any).onScoreDismissed();
+    fixture.detectChanges();
+
+    // Overlay should be hidden after dismiss
+    expect(fixture.nativeElement.querySelector('app-game-summary-shell')).toBeNull();
+
+    // Phase changes away from score (new game starts)
+    fixture.componentRef.setInput('state', DEAL_STATE);
+    fixture.detectChanges();
+
+    // Phase returns to score (next game ends)
+    fixture.componentRef.setInput('state', SCORE_STATE);
+    fixture.detectChanges();
+
+    // Overlay should be visible again (dismissed state was reset)
+    expect(fixture.nativeElement.querySelector('app-game-summary-shell')).toBeTruthy();
+  });
+});
+
+// ── Helper for autostart tests ──
+
+async function setupWithAutostart(
+  state: unknown,
+  autostart: boolean,
+): Promise<ComponentFixture<SheepsheadTable>> {
+  const ic = new InteractionController();
+
+  await TestBed.configureTestingModule({
+    imports: [SheepsheadTable],
+  })
+    .overrideComponent(CardStack, {
+      set: {
+        selector: 'app-card-stack',
+        template: '<div data-testid="stub-card-stack"></div>',
+        inputs: [
+          'stackId',
+          'cards',
+          'spread',
+          'spreadAngle',
+          'cardWidth',
+          'cardHeight',
+          'selectable',
+          'maxSelections',
+          'legalCards',
+          'reorderable',
+          'draggable',
+          'droppable',
+          'autoScale',
+          'biasedPlacement',
+          'colorMap',
+          'playerIds',
+          'topOnly',
+        ],
+        outputs: ['cardsReordered', 'cardSelected', 'cardConfirmed', 'selectedCards'],
+      },
+    })
+    .overrideComponent(GameSummaryShell, {
+      set: {
+        selector: 'app-game-summary-shell',
+        template: '<div #dialogEl data-testid="stub-game-summary-shell"></div>',
+        inputs: ['mode', 'summaryComponent', 'store', 'participants', 'isOwner', 'canStartNext'],
+        outputs: ['dismissed', 'startNextGame'],
+      },
+    })
+    .overrideProvider(InteractionController, { useValue: ic })
+    .compileComponents();
+
+  const fixture = TestBed.createComponent(SheepsheadTable);
+  fixture.componentRef.setInput('state', state);
+  fixture.componentRef.setInput('validActions', []);
+  fixture.componentRef.setInput('config', null);
+  fixture.componentRef.setInput('colorMap', undefined);
+  fixture.componentRef.setInput('actionDispatcher', null);
+  fixture.componentRef.setInput('myUserID', 1);
+  fixture.componentRef.setInput('members', []);
+  fixture.componentRef.setInput('isOwner', false);
+  fixture.componentRef.setInput('autostart', autostart);
+  fixture.componentRef.setInput('canStartNext', false);
+  fixture.componentRef.setInput('startNextGame', createMockStartNextGame());
+  fixture.detectChanges();
+
+  return fixture;
+}
