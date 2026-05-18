@@ -197,7 +197,7 @@ export class GameGateway implements OnModuleInit {
     if (!tracked) return;
 
     try {
-      const { roomId, playerViews, store } = await this.gameService.abandonGame(
+      const { playerViews, store, finalize } = await this.gameService.abandonGame(
         payload.sessionId,
         tracked.identity.userId,
       );
@@ -209,6 +209,9 @@ export class GameGateway implements OnModuleInit {
         WS_EMIT.GAME_OVER,
         { sessionId: payload.sessionId, store },
       );
+
+      // Free the room slot and notify spectators after players have received game-over
+      finalize();
     } catch (err) {
       this.logger.warn(`game:abandon failed for session ${payload.sessionId}: ${err}`);
       this.send(client, WS_EMIT.GAME_ERROR, {

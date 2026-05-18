@@ -6,12 +6,12 @@ import { ReplayEngineService } from './replay-engine.service';
  * Synthetic event filtering property test.
  *
  * For any event sequence containing a mix of game events and synthetic boundary
- * events (game_started, game_finished, game_abandoned, game_cancelled), the replay
+ * events (game_started, game_finished, game_cancelled), the replay
  * engine's filtered event list SHALL contain none of the synthetic event types, and
  * the relative order of non-synthetic events SHALL be preserved.
  */
 
-const SYNTHETIC_EVENT_TYPES = ['game_started', 'game_finished', 'game_abandoned', 'game_cancelled'];
+const SYNTHETIC_EVENT_TYPES = ['game_started', 'game_finished', 'game_cancelled'];
 
 const NON_SYNTHETIC_EVENT_TYPES = ['deal', 'pick', 'pass', 'bury', 'play_card', 'call_ace'];
 

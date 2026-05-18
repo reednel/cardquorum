@@ -367,6 +367,7 @@ export class GameService implements OnModuleDestroy {
     roomId: number;
     playerViews: Array<[number, { state: unknown; validActions: string[] }]>;
     store?: unknown;
+    finalize: () => void;
   }> {
     const game = this.activeGames.get(sessionId);
     if (!game) {
@@ -384,7 +385,9 @@ export class GameService implements OnModuleDestroy {
 
     // Append synthetic "game_abandoned" event and flush buffer
     const abandonerName = game.playerNames.get(userId) ?? `User ${userId}`;
-    this.bufferSyntheticEvent(game, 'game_abandoned', `Game abandoned by ${abandonerName}`);
+    this.bufferSyntheticEvent(game, 'game_abandoned', `Game abandoned by ${abandonerName}`, {
+      userId,
+    });
     this.broadcastLogEntry(game, userId, 'game_abandoned', `Game abandoned by ${abandonerName}`);
     await this.eventLogService.flushBuffer(game.eventBuffer);
 
@@ -423,10 +426,12 @@ export class GameService implements OnModuleDestroy {
     // Build player views from the (now-finished) game state
     const playerViews = this.buildPlayerViews(game, plugin);
 
-    // Free the room slot and notify spectators
-    this.finalizeGameEnd(game.roomId, sessionId);
-
-    return { roomId: game.roomId, playerViews, store };
+    return {
+      roomId: game.roomId,
+      playerViews,
+      store,
+      finalize: () => this.finalizeGameEnd(game.roomId, sessionId),
+    };
   }
 
   /**

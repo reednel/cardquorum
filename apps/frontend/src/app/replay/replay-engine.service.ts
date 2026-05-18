@@ -9,12 +9,7 @@ const GAME_ENGINE_PLUGINS: Record<string, GamePlugin> = {
 };
 
 /** Synthetic event types that are not processed by applyEvent. */
-const SYNTHETIC_EVENT_TYPES = new Set([
-  'game_started',
-  'game_finished',
-  'game_abandoned',
-  'game_cancelled',
-]);
+const SYNTHETIC_EVENT_TYPES = new Set(['game_started', 'game_finished', 'game_cancelled']);
 
 @Injectable()
 export class ReplayEngineService {
@@ -91,12 +86,21 @@ export class ReplayEngineService {
     for (let i = 0; i < clamped; i++) {
       const event = this.events[i];
       try {
-        const result = this.plugin.applyEvent(this.config, state, {
-          type: event.eventType,
-          userID: event.userId ?? undefined,
-          payload: event.payload,
-        });
-        state = result.state;
+        if (event.eventType === 'game_abandoned') {
+          // Apply plugin's onPlayerAbandon instead of applyEvent
+          const payload = event.payload as { userId?: number } | null;
+          const abandonUserId = payload?.userId ?? event.userId ?? 0;
+          if (this.plugin.onPlayerAbandon) {
+            state = this.plugin.onPlayerAbandon(this.config, state, abandonUserId);
+          }
+        } else {
+          const result = this.plugin.applyEvent(this.config, state, {
+            type: event.eventType,
+            userID: event.userId ?? undefined,
+            payload: event.payload,
+          });
+          state = result.state;
+        }
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         this.error.set({ eventIndex: i, message });
