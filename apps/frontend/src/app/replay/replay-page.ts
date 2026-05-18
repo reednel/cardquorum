@@ -187,6 +187,9 @@ export class ReplayPage {
   /** Whether the summary overlay is currently visible. */
   protected readonly summaryOverlayVisible = signal(false);
 
+  /** Position at which the user manually dismissed the summary (prevents re-trigger). */
+  private summaryDismissedAtPosition: number | null = null;
+
   /** Timer handle for the 500ms delay before showing the summary. */
   private summaryDelayTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -386,6 +389,7 @@ export class ReplayPage {
   protected dismissSummary(): void {
     this.summaryOverlayVisible.set(false);
     this.clearSummaryTimer();
+    this.summaryDismissedAtPosition = this.replayEngine.currentPosition();
 
     if (this.autoplayPausedByOverlay) {
       this.autoplayPausedByOverlay = false;
@@ -405,6 +409,10 @@ export class ReplayPage {
     // If already visible or timer already running, no-op
     if (this.summaryOverlayVisible() || this.summaryDelayTimer !== null) return;
 
+    // Don't re-show if user already dismissed at this position
+    const currentPos = this.replayEngine.currentPosition();
+    if (this.summaryDismissedAtPosition === currentPos) return;
+
     this.summaryDelayTimer = setTimeout(() => {
       this.summaryDelayTimer = null;
       this.summaryOverlayVisible.set(true);
@@ -415,6 +423,7 @@ export class ReplayPage {
   private hideSummaryOverlay(): void {
     this.clearSummaryTimer();
     this.summaryOverlayVisible.set(false);
+    this.summaryDismissedAtPosition = null;
 
     if (this.autoplayPausedByOverlay) {
       this.autoplayPausedByOverlay = false;

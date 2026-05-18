@@ -219,7 +219,13 @@ const CALL_OPTIONS: { value: string; label: string }[] = [
       </div>
 
       <!-- Game summary overlay -->
-      @if (activeOverlay() === 'score' && !autostart() && !scoreDismissed() && summaryComponent()) {
+      @if (
+        activeOverlay() === 'score' &&
+        !autostart() &&
+        !scoreDismissed() &&
+        summaryComponent() &&
+        actionDispatcher()
+      ) {
         <div overlay>
           <app-game-summary-shell
             mode="end-of-game"

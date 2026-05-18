@@ -339,7 +339,11 @@ const SCORE_STATE = makeState('score', {
 
 describe('SheepsheadTable – end-of-game summary overlay', () => {
   it('renders GameSummaryShell when game enters score phase with plugin component', async () => {
-    const { fixture } = await setup({ state: SCORE_STATE, validActions: [] });
+    const { fixture } = await setup({
+      state: SCORE_STATE,
+      validActions: [],
+      actionDispatcher: jest.fn(),
+    });
     fixture.detectChanges();
 
     const shell = fixture.nativeElement.querySelector('app-game-summary-shell');
@@ -355,7 +359,11 @@ describe('SheepsheadTable – end-of-game summary overlay', () => {
   });
 
   it('resets dismissed state when phase changes away from score and back', async () => {
-    const { fixture } = await setup({ state: SCORE_STATE, validActions: [] });
+    const { fixture } = await setup({
+      state: SCORE_STATE,
+      validActions: [],
+      actionDispatcher: jest.fn(),
+    });
     fixture.detectChanges();
 
     // Overlay should be visible
