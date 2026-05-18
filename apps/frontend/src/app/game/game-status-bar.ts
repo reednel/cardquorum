@@ -5,9 +5,9 @@ const BAR_CLASSES: Record<string, string> = {
   default:
     'border-border bg-surface text-text-secondary dark:border-border-dark dark:bg-surface-dark dark:text-text-secondary-dark',
   'active-turn':
-    'border-primary bg-primary-surface text-primary dark:border-primary-dark dark:bg-primary-surface-dark dark:text-primary-dark-text',
+    'border-primary bg-primary-surface text-primary dark:border-primary-dark dark:bg-primary-surface-dark dark:text-primary-dark',
   'active-turn-pulse':
-    'status-bar-pulse border-primary text-primary dark:border-primary-dark dark:text-primary-dark-text [--status-pulse-bg:var(--color-primary-surface)] dark:[--status-pulse-bg:var(--color-primary-surface-dark)]',
+    'status-bar-pulse border-primary text-primary dark:border-primary-dark dark:text-primary-dark [--status-pulse-bg:var(--color-primary-surface)] dark:[--status-pulse-bg:var(--color-primary-surface-dark)]',
   urgent:
     'border-danger bg-danger-surface text-danger dark:border-danger-dark dark:bg-danger-surface-dark dark:text-danger-dark',
 };

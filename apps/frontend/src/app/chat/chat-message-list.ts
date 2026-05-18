@@ -11,9 +11,11 @@ import { FormatTimePipe } from './format-time.pipe';
     <div class="flex h-full flex-col gap-2 overflow-y-auto p-4">
       @for (msg of messages(); track msg.id) {
         <div class="text-sm">
-          <p class="wrap-break-word text-text-body dark:text-text-body-dark">{{ msg.content }}</p>
+          <p class="wrap-break-word whitespace-pre-wrap text-text-body dark:text-text-body-dark">
+            {{ msg.content }}
+          </p>
           <div class="flex items-center gap-2 text-xs">
-            <span class="font-semibold text-primary dark:text-primary-dark-text">
+            <span class="font-semibold text-primary dark:text-primary-dark">
               {{ msg.senderDisplayName }}
             </span>
             <span class="text-text-secondary">{{ msg.sentAt | formatTime }}</span>

@@ -24,6 +24,8 @@ body {
   [role='button']:not([aria-disabled='true']),
   a[href],
   select:not(:disabled),
+  input[type='checkbox']:not(:disabled),
+  input[type='radio']:not(:disabled),
   summary {
     cursor: pointer;
   }

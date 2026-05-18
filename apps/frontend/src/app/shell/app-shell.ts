@@ -17,31 +17,31 @@ import { UserDropdown } from './user-dropdown';
       <nav class="flex items-center gap-6" aria-label="Main navigation">
         <a
           routerLink="/memberships"
-          class="text-lg font-semibold text-text-heading hover:text-primary dark:text-text-heading-dark dark:hover:text-primary-dark-text"
+          class="text-lg font-semibold text-text-heading hover:text-primary dark:text-text-heading-dark dark:hover:text-primary-dark"
         >
           CardQuorum
         </a>
         <a
           data-testid="nav-memberships"
           routerLink="/memberships"
-          routerLinkActive="text-primary dark:text-primary-dark-text font-semibold"
-          class="text-sm text-text-secondary hover:text-primary dark:text-text-secondary-dark dark:hover:text-primary-dark-text"
+          routerLinkActive="text-primary dark:text-primary-dark font-semibold"
+          class="text-sm text-text-secondary hover:text-primary dark:text-text-secondary-dark dark:hover:text-primary-dark"
         >
           Memberships
         </a>
         <a
           data-testid="nav-discover"
           routerLink="/discover"
-          routerLinkActive="text-primary dark:text-primary-dark-text font-semibold"
-          class="text-sm text-text-secondary hover:text-primary dark:text-text-secondary-dark dark:hover:text-primary-dark-text"
+          routerLinkActive="text-primary dark:text-primary-dark font-semibold"
+          class="text-sm text-text-secondary hover:text-primary dark:text-text-secondary-dark dark:hover:text-primary-dark"
         >
           Discover
         </a>
         <a
           data-testid="nav-replay"
           routerLink="/replay"
-          routerLinkActive="text-primary dark:text-primary-dark-text font-semibold"
-          class="text-sm text-text-secondary hover:text-primary dark:text-text-secondary-dark dark:hover:text-primary-dark-text"
+          routerLinkActive="text-primary dark:text-primary-dark font-semibold"
+          class="text-sm text-text-secondary hover:text-primary dark:text-text-secondary-dark dark:hover:text-primary-dark"
         >
           Replay
         </a>
@@ -50,7 +50,7 @@ import { UserDropdown } from './user-dropdown';
       <div class="flex items-center gap-4">
         <button
           (click)="theme.toggle()"
-          class="rounded-default p-2 text-text-secondary hover:bg-surface-raised dark:text-text-body-dark dark:hover:bg-surface-dark"
+          class="rounded-default p-2 text-text-secondary hover:bg-hover-overlay dark:text-text-body-dark dark:hover:bg-hover-overlay-dark"
           [attr.aria-label]="theme.darkMode() ? 'Switch to light mode' : 'Switch to dark mode'"
         >
           @if (theme.darkMode()) {

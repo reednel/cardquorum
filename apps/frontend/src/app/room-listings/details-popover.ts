@@ -17,8 +17,8 @@ import { RoomResponse } from '@cardquorum/shared';
         type="button"
         data-testid="details-icon"
         class="inline-flex items-center rounded-default p-1 text-text-secondary
-               hover:bg-surface-raised dark:text-text-secondary-dark
-               dark:hover:bg-surface-dark"
+               hover:bg-hover-overlay dark:text-text-secondary-dark
+               dark:hover:bg-hover-overlay-dark"
         aria-label="Room details"
       >
         <fa-icon [icon]="faCircleInfo" class="text-lg" aria-hidden="true" />

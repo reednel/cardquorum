@@ -95,7 +95,7 @@ import { AuthService } from './auth.service';
             <button
               type="submit"
               [disabled]="form.invalid || passwordMismatch() || submitting()"
-              class="w-full rounded-default bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover disabled:bg-disabled disabled:text-disabled-text"
+              class="w-full rounded-default bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover disabled:bg-disabled disabled:text-text-secondary"
             >
               {{ submitting() ? 'Registering...' : 'Register' }}
             </button>
@@ -121,9 +121,7 @@ import { AuthService } from './auth.service';
 
         <p class="mt-4 text-center text-sm text-text-secondary dark:text-text-secondary-dark">
           Already have an account?
-          <a routerLink="/login" class="text-primary underline dark:text-primary-dark-text">
-            Log in
-          </a>
+          <a routerLink="/login" class="text-primary underline dark:text-primary-dark"> Log in </a>
         </p>
       </div>
     </div>

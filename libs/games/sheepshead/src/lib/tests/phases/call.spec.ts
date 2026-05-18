@@ -8,13 +8,6 @@ describe('handleCall', () => {
     const { state: dealt } = handleDeal(makeState(), config);
     const picked = pickContinue(handlePick(dealt, { type: 'pick', userID: 2 }, config));
 
-    // Find a fail ace the picker does NOT hold so the call is valid
-    const pickerHand = picked.players[1].hand;
-    const failAces: ('ac' | 'as' | 'ah')[] = ['ac', 'as', 'ah'];
-    const callableAce = failAces.find((a) => !pickerHand.some((c) => c.name === a));
-    // If picker holds all 3 fail aces, call a 10 instead
-    const calledCard = callableAce ?? 'xc';
-
     const toBury = picked.players[1].hand.slice(0, 2);
     const buried = handleBury(
       picked,
@@ -25,6 +18,17 @@ describe('handleCall', () => {
       },
       config,
     );
+
+    // Find a fail ace the picker does NOT hold (post-bury) so the call is valid
+    const pickerHand = buried.players[1].hand;
+    const buriedCards = buried.buried ?? [];
+    const failAces: ('ac' | 'as' | 'ah')[] = ['ac', 'as', 'ah'];
+    const callableAce = failAces.find(
+      (a) => !pickerHand.some((c) => c.name === a) && !buriedCards.some((c) => c.name === a),
+    );
+    // If picker holds or buried all 3 fail aces, they can call a 10
+    const hasAllFailAces = failAces.every((a) => pickerHand.some((c) => c.name === a));
+    const calledCard = callableAce ?? (hasAllFailAces ? 'xc' : 'alone');
 
     const state = handleCall(
       buried,

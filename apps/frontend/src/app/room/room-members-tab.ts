@@ -101,8 +101,8 @@ const ROTATION_MODES: { icon: typeof faBan; tooltip: string; value: RotationMode
                 [class]="
                   'px-2 py-0.5 text-xs transition-colors ' +
                   (rosterService.rotationMode() === opt.value
-                    ? 'bg-primary text-white dark:bg-primary-dark-text dark:text-bg-dark'
-                    : 'text-text-secondary hover:text-text-body dark:text-text-secondary-dark dark:hover:text-text-body-dark')
+                    ? 'bg-primary text-white dark:bg-primary-dark dark:text-bg-dark'
+                    : 'text-text-secondary hover:bg-hover-overlay hover:text-text-body dark:text-text-secondary-dark dark:hover:bg-hover-overlay-dark dark:hover:text-text-body-dark')
                 "
               >
                 <fa-icon [icon]="opt.icon" aria-hidden="true" />
@@ -128,7 +128,7 @@ const ROTATION_MODES: { icon: typeof faBan; tooltip: string; value: RotationMode
             [class]="
               'group flex items-center justify-between rounded px-1 py-1 text-sm text-text-body dark:text-text-body-dark' +
               (dragEnabled()
-                ? ' cursor-grab hover:bg-surface-raised dark:hover:bg-surface-raised-dark'
+                ? ' cursor-grab hover:bg-hover-overlay dark:hover:bg-hover-overlay-dark'
                 : '')
             "
           >
@@ -221,7 +221,7 @@ const ROTATION_MODES: { icon: typeof faBan; tooltip: string; value: RotationMode
             [class]="
               'group flex items-center justify-between rounded px-1 py-1 text-sm text-text-body dark:text-text-body-dark' +
               (dragEnabled() && member.readyToPlay
-                ? ' cursor-grab hover:bg-surface-raised dark:hover:bg-surface-raised-dark'
+                ? ' cursor-grab hover:bg-hover-overlay dark:hover:bg-hover-overlay-dark'
                 : '')
             "
             [attr.data-testid]="!member.readyToPlay ? 'drag-disabled-' + member.userId : null"
@@ -374,8 +374,8 @@ const ROTATION_MODES: { icon: typeof faBan; tooltip: string; value: RotationMode
                     role="option"
                     [attr.aria-selected]="false"
                     class="w-full px-3 py-1.5 text-left text-sm text-text-body
-                           hover:bg-surface-raised dark:text-text-body-dark
-                           dark:hover:bg-surface-raised-dark"
+                           hover:bg-hover-overlay dark:text-text-body-dark
+                           dark:hover:bg-hover-overlay-dark"
                     (click)="onInviteFromSearch(user)"
                   >
                     {{ user.displayName ?? user.username }}

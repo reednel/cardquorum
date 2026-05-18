@@ -18,8 +18,8 @@ import { AuthService } from '../auth/auth.service';
       <button
         data-testid="user-menu-trigger"
         (click)="toggleMenu()"
-        class="rounded-default px-3 py-1.5 text-sm text-text-body hover:bg-surface-raised
-               dark:text-text-body-dark dark:hover:bg-surface-dark"
+        class="rounded-default px-3 py-1.5 text-sm text-text-body hover:bg-hover-overlay
+               dark:text-text-body-dark dark:hover:bg-hover-overlay-dark"
         [attr.aria-expanded]="showMenu()"
         aria-haspopup="true"
         aria-label="User menu"
@@ -38,8 +38,8 @@ import { AuthService } from '../auth/auth.service';
             data-testid="menu-account"
             role="menuitem"
             (click)="goToAccount()"
-            class="w-full px-4 py-2 text-left text-sm text-text-body hover:bg-surface-raised
-                   dark:text-text-body-dark dark:hover:bg-surface-dark"
+            class="w-full px-4 py-2 text-left text-sm text-text-body hover:bg-hover-overlay
+                   dark:text-text-body-dark dark:hover:bg-hover-overlay-dark"
           >
             Account
           </button>
@@ -47,8 +47,8 @@ import { AuthService } from '../auth/auth.service';
             data-testid="menu-friends"
             role="menuitem"
             (click)="goToFriends()"
-            class="w-full px-4 py-2 text-left text-sm text-text-body hover:bg-surface-raised
-                   dark:text-text-body-dark dark:hover:bg-surface-dark"
+            class="w-full px-4 py-2 text-left text-sm text-text-body hover:bg-hover-overlay
+                   dark:text-text-body-dark dark:hover:bg-hover-overlay-dark"
           >
             Friends
           </button>
@@ -56,8 +56,8 @@ import { AuthService } from '../auth/auth.service';
             data-testid="menu-stats"
             role="menuitem"
             (click)="goToStats()"
-            class="w-full px-4 py-2 text-left text-sm text-text-body hover:bg-surface-raised
-                   dark:text-text-body-dark dark:hover:bg-surface-dark"
+            class="w-full px-4 py-2 text-left text-sm text-text-body hover:bg-hover-overlay
+                   dark:text-text-body-dark dark:hover:bg-hover-overlay-dark"
           >
             Stats
           </button>
@@ -65,8 +65,8 @@ import { AuthService } from '../auth/auth.service';
             data-testid="menu-logout"
             role="menuitem"
             (click)="doLogout()"
-            class="w-full px-4 py-2 text-left text-sm text-text-body hover:bg-surface-raised
-                   dark:text-text-body-dark dark:hover:bg-surface-dark"
+            class="w-full px-4 py-2 text-left text-sm text-text-body hover:bg-hover-overlay
+                   dark:text-text-body-dark dark:hover:bg-hover-overlay-dark"
           >
             Log out
           </button>

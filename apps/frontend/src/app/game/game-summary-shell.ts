@@ -42,7 +42,7 @@ const FOCUSABLE_SELECTOR =
             data-testid="summary-close-btn"
             (click)="dismiss()"
             aria-label="Close summary"
-            class="rounded-lg p-1.5 text-text-secondary hover:bg-surface-raised dark:text-text-secondary-dark dark:hover:bg-border-input-dark"
+            class="rounded-lg p-1.5 text-text-secondary hover:bg-hover-overlay dark:text-text-secondary-dark dark:hover:bg-hover-overlay-dark"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

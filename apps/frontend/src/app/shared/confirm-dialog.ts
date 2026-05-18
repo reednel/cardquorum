@@ -35,8 +35,8 @@ import {
           <button
             type="button"
             class="rounded-default px-4 py-2 text-sm font-medium text-text-secondary
-                   transition-colors hover:bg-surface-raised
-                   dark:text-text-secondary-dark dark:hover:bg-surface-raised-dark"
+                   transition-colors hover:bg-hover-overlay
+                   dark:text-text-secondary-dark dark:hover:bg-hover-overlay-dark"
             (click)="close()"
             data-testid="confirm-dialog-cancel"
           >

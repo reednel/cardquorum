@@ -70,7 +70,7 @@ import { FriendService } from './friend.service';
                     (click)="blockUser(user.userId)"
                     [disabled]="actionInFlight()"
                     class="rounded-default px-3 py-1 text-xs font-medium text-text-secondary
-                             hover:bg-surface-raised dark:text-text-secondary-dark dark:hover:bg-surface-dark
+                             hover:bg-hover-overlay dark:text-text-secondary-dark dark:hover:bg-hover-overlay-dark
                              disabled:opacity-disabled"
                   >
                     Block
@@ -132,7 +132,7 @@ import { FriendService } from './friend.service';
                   (click)="deny(req.requestId)"
                   [disabled]="actionInFlight()"
                   class="rounded-default px-3 py-1 text-xs font-medium text-text-secondary
-                           hover:bg-surface-raised dark:text-text-secondary-dark dark:hover:bg-surface-dark
+                           hover:bg-hover-overlay dark:text-text-secondary-dark dark:hover:bg-hover-overlay-dark
                            disabled:opacity-disabled"
                 >
                   Deny
@@ -179,7 +179,7 @@ import { FriendService } from './friend.service';
                 (click)="cancel(req.requestId)"
                 [disabled]="actionInFlight()"
                 class="rounded-default px-3 py-1 text-xs font-medium text-text-secondary
-                         hover:bg-surface-raised dark:text-text-secondary-dark dark:hover:bg-surface-dark
+                         hover:bg-hover-overlay dark:text-text-secondary-dark dark:hover:bg-hover-overlay-dark
                          disabled:opacity-disabled"
               >
                 Cancel
@@ -236,7 +236,7 @@ import { FriendService } from './friend.service';
                     [attr.data-testid]="'remove-btn-' + friend.friendshipId"
                     (click)="startRemove(friend.friendshipId)"
                     class="rounded-default px-3 py-1 text-xs font-medium text-text-secondary
-                             hover:bg-surface-raised dark:text-text-secondary-dark dark:hover:bg-surface-dark"
+                             hover:bg-hover-overlay dark:text-text-secondary-dark dark:hover:bg-hover-overlay-dark"
                   >
                     Remove
                   </button>
@@ -245,7 +245,7 @@ import { FriendService } from './friend.service';
                     (click)="blockUser(friend.user.userId)"
                     [disabled]="actionInFlight()"
                     class="rounded-default px-3 py-1 text-xs font-medium text-text-secondary
-                             hover:bg-surface-raised dark:text-text-secondary-dark dark:hover:bg-surface-dark
+                             hover:bg-hover-overlay dark:text-text-secondary-dark dark:hover:bg-hover-overlay-dark
                              disabled:opacity-disabled"
                   >
                     Block
@@ -301,7 +301,7 @@ import { FriendService } from './friend.service';
                     [attr.data-testid]="'unblock-btn-' + blocked.userId"
                     (click)="startUnblock(blocked.userId)"
                     class="rounded-default px-3 py-1 text-xs font-medium text-text-secondary
-                             hover:bg-surface-raised dark:text-text-secondary-dark dark:hover:bg-surface-dark"
+                             hover:bg-hover-overlay dark:text-text-secondary-dark dark:hover:bg-hover-overlay-dark"
                   >
                     Unblock
                   </button>

@@ -165,8 +165,8 @@ import { RoomService } from '../room/room.service';
                         type="button"
                         role="option"
                         [attr.aria-selected]="false"
-                        class="w-full px-3 py-1.5 text-left text-sm text-text-body hover:bg-surface-raised
-                               dark:text-text-body-dark dark:hover:bg-surface-raised-dark"
+                        class="w-full px-3 py-1.5 text-left text-sm text-text-body hover:bg-hover-overlay
+                               dark:text-text-body-dark dark:hover:bg-hover-overlay-dark"
                         (click)="addInvitee(user)"
                       >
                         {{ user.displayName ?? user.username }}
@@ -184,14 +184,14 @@ import { RoomService } from '../room/room.service';
                   @for (user of invitedUsers(); track user.userId) {
                     <span
                       class="inline-flex items-center gap-1 rounded-full bg-primary-surface px-2 py-0.5
-                             text-xs font-medium text-primary-on-surface dark:bg-primary-surface-dark
-                             dark:text-primary-on-surface-dark"
+                             text-xs font-medium text-primary dark:bg-primary-surface-dark
+                             dark:text-primary"
                     >
                       {{ user.displayName ?? user.username }}
                       <button
                         type="button"
                         (click)="removeInvitee(user.userId)"
-                        class="ml-0.5 hover:text-primary dark:hover:text-primary-dark-text"
+                        class="ml-0.5 hover:text-primary dark:hover:text-primary-dark"
                         [attr.aria-label]="'Remove ' + (user.displayName ?? user.username)"
                       >
                         ×
@@ -208,8 +208,8 @@ import { RoomService } from '../room/room.service';
               type="button"
               data-testid="cancel-btn"
               (click)="close()"
-              class="rounded-default px-4 py-2 text-sm text-text-body hover:bg-surface-raised
-                     dark:text-text-body-dark dark:hover:bg-surface-dark"
+              class="rounded-default px-4 py-2 text-sm text-text-body hover:bg-hover-overlay
+                     dark:text-text-body-dark dark:hover:bg-hover-overlay-dark"
             >
               Cancel
             </button>
@@ -217,7 +217,7 @@ import { RoomService } from '../room/room.service';
               type="submit"
               [disabled]="form.invalid || submitting()"
               class="rounded-default bg-primary px-4 py-2 text-sm font-semibold text-white
-                     hover:bg-primary-hover disabled:bg-disabled disabled:text-disabled-text"
+                     hover:bg-primary-hover disabled:bg-disabled disabled:text-text-secondary"
             >
               {{ submitting() ? 'Creating...' : 'Create' }}
             </button>

@@ -87,9 +87,9 @@ type RoomTab = 'feed' | 'members' | 'game' | 'stats';
           aria-label="Open side panel"
           class="absolute right-0 top-0 z-10 flex h-(--height-panel-header) items-center border-b border-l
                  border-border bg-surface px-1.5 text-text-secondary
-                 transition-colors hover:bg-surface-raised hover:text-text-body
+                 transition-colors hover:bg-hover-overlay hover:text-text-body
                  dark:border-border-dark dark:bg-surface-dark
-                 dark:text-text-secondary-dark dark:hover:bg-surface-raised-dark
+                 dark:text-text-secondary-dark dark:hover:bg-hover-overlay-dark
                  dark:hover:text-text-heading-dark"
         >
           <fa-icon [icon]="faChevronLeft" class="text-xs" aria-hidden="true" />
@@ -115,9 +115,9 @@ type RoomTab = 'feed' | 'members' | 'game' | 'stats';
                 aria-label="Collapse side panel"
                 class="flex h-(--height-panel-header) shrink-0 items-center border-r border-border
                        px-2 text-text-secondary transition-colors
-                       hover:bg-surface-raised hover:text-text-body
+                       hover:bg-hover-overlay hover:text-text-body
                        dark:border-border-dark dark:text-text-secondary-dark
-                       dark:hover:bg-surface-raised-dark dark:hover:text-text-heading-dark"
+                       dark:hover:bg-hover-overlay-dark dark:hover:text-text-heading-dark"
               >
                 <fa-icon [icon]="faChevronRight" class="text-xs" aria-hidden="true" />
               </button>
@@ -142,7 +142,7 @@ type RoomTab = 'feed' | 'members' | 'game' | 'stats';
                   'shrink-0 rounded-default px-2 py-1 text-xs transition-colors ' +
                   (isActivePlayer()
                     ? 'cursor-not-allowed text-disabled'
-                    : 'text-text-secondary hover:bg-surface-raised hover:text-text-body dark:text-text-secondary-dark dark:hover:bg-surface-raised-dark dark:hover:text-text-heading-dark')
+                    : 'text-text-secondary hover:bg-hover-overlay hover:text-text-body dark:text-text-secondary-dark dark:hover:bg-hover-overlay-dark dark:hover:text-text-heading-dark')
                 "
               >
                 Leave
@@ -161,7 +161,7 @@ type RoomTab = 'feed' | 'members' | 'game' | 'stats';
                 [class]="
                   'flex-1 flex items-center justify-center px-3 py-2 text-sm transition-colors ' +
                   (activeTab() === 'feed'
-                    ? 'border-b-2 border-primary-dark text-primary dark:text-primary-dark-text'
+                    ? 'border-b-2 border-primary-dark text-primary dark:text-primary-dark'
                     : 'text-text-secondary hover:text-text-body dark:text-text-secondary-dark dark:hover:text-text-heading-dark')
                 "
                 (click)="onTabClick('feed')"
@@ -180,7 +180,7 @@ type RoomTab = 'feed' | 'members' | 'game' | 'stats';
                   [class]="
                     'flex-1 flex items-center justify-center px-3 py-2 text-sm transition-colors ' +
                     (activeTab() === tab
-                      ? 'border-b-2 border-primary-dark text-primary dark:text-primary-dark-text'
+                      ? 'border-b-2 border-primary-dark text-primary dark:text-primary-dark'
                       : 'text-text-secondary hover:text-text-body dark:text-text-secondary-dark dark:hover:text-text-heading-dark')
                   "
                   (click)="onTabClick(tab)"

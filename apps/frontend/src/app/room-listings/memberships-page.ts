@@ -43,7 +43,7 @@ import { RoomTableComponent } from './room-table';
           <button
             data-testid="retry-btn"
             (click)="loadMemberships()"
-            class="mt-2 text-sm text-primary hover:underline dark:text-primary-dark-text"
+            class="mt-2 text-sm text-primary hover:text-primary-hover dark:text-primary-dark dark:hover:text-primary-dark-hover"
           >
             Try again
           </button>

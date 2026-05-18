@@ -323,10 +323,10 @@ export function buildFieldEntries(
               [attr.aria-pressed]="autostart()"
               (click)="onAutostartChange(!autostart())"
               [class]="
-                'flex aspect-square items-center justify-center rounded-default px-2 py-2 transition-colors ' +
+                'flex aspect-square items-center justify-center rounded-default border px-2 py-2 transition-colors ' +
                 (autostart()
-                  ? 'bg-primary text-white hover:bg-primary-hover dark:bg-primary-dark dark:hover:bg-primary-dark-hover'
-                  : 'bg-surface-raised text-text-secondary hover:text-text-body dark:bg-surface-raised-dark dark:text-text-secondary-dark dark:hover:text-text-body-dark')
+                  ? 'border-primary bg-primary text-white hover:bg-primary-hover dark:border-primary-dark dark:bg-primary-dark dark:hover:bg-primary-dark-hover'
+                  : 'border-border text-text-secondary hover:bg-surface-raised dark:border-border-dark dark:text-text-secondary-dark dark:hover:bg-surface-raised-dark')
               "
             >
               <fa-icon [icon]="faRepeat" class="text-sm" />

@@ -1,99 +1,103 @@
 /*
- * CardQuorum Theme — Centralized Design Tokens
  * Change values here to re-theme the entire application.
  */
 
 @theme {
   /* --- Primary Palette --- */
   --color-primary: #527a2e; /* buttons, links, active tabs */
-  --color-primary-hover: #436524;
+  --color-primary-hover: color-mix(in oklch, #527a2e, black 15%);
+  --color-primary-surface: color-mix(in oklch, #527a2e 20%, transparent); /* chip / tag bg */
   --color-primary-dark: #6a9b3e; /* dark-mode buttons, focus rings */
-  --color-primary-dark-hover: #5a8534; /* dark-mode button hover */
-  --color-primary-dark-text: #8dbe5e; /* dark-mode links / text */
-  --color-primary-surface: #527a2e2f; /* chip / tag bg */
-  --color-primary-surface-dark: #527a2e4f; /* dark chip bg */
-  --color-primary-on-surface: #365220; /* chip text */
-  --color-primary-on-surface-dark: #a4d174; /* dark chip text */
+  --color-primary-dark-hover: color-mix(in oklch, #6a9b3e, black 15%);
+  --color-primary-surface-dark: color-mix(in oklch, #6a9b3e 20%, transparent); /* dark chip bg */
 
   /* --- Neutral Palette --- */
   --color-bg: #eeeeee; /* page / card backgrounds */
-  --color-bg-dark: #222222; /* dark page bg */
   --color-surface: #f5f5f5; /* panels, sidebars */
-  --color-surface-dark: #262626; /* dark panels */
-  --color-surface-raised: #e5e5e5; /* hover states, subtle fills */
-  --color-surface-raised-dark: #404040; /* dark hover states */
+  --color-surface-raised: #e5e5e5; /* elevated surfaces, subtle fills */
+  --color-hover-overlay: color-mix(in oklch, black 5%, transparent); /* ghost button hover */
   --color-border: #e5e5e5; /* default borders, dividers */
-  --color-border-dark: #404040; /* dark borders */
-  --color-border-input: #d4d4d4; /* input borders, disabled bg */
-  --color-border-input-dark: #525252; /* dark input borders */
+  --color-border-input: #d4d4d4; /* input borders */
   --color-text-heading: #171717; /* headings */
-  --color-text-heading-dark: #f5f5f5; /* dark headings */
   --color-text-body: #404040; /* body text */
-  --color-text-body-dark: #d4d4d4; /* dark body text */
   --color-text-secondary: #737373; /* secondary / muted text */
+  --color-disabled: color-mix(in oklch, #f5f5f5, black 25%); /* disabled button bg */
+  --color-bg-dark: #222222; /* dark page bg */
+  --color-surface-dark: #262626; /* dark panels */
+  --color-surface-raised-dark: #404040; /* dark elevated surfaces */
+  --color-hover-overlay-dark: color-mix(
+    in oklch,
+    white 8%,
+    transparent
+  ); /* dark ghost button hover */
+  --color-border-dark: #404040; /* dark borders */
+  --color-border-input-dark: #525252; /* dark input borders */
+  --color-text-heading-dark: #f5f5f5; /* dark headings */
+  --color-text-body-dark: #d4d4d4; /* dark body text */
   --color-text-secondary-dark: #a3a3a3; /* dark secondary text */
-  --color-disabled: #a3a3a3; /* disabled button bg */
-  --color-disabled-text: #737373; /* disabled button text */
 
   /* --- Info Palette --- */
-  --color-info: #2563eb; /* informational states */
-  --color-info-dark: #60a5fa; /* dark-mode info text */
-  --color-info-surface: #2563eb2f; /* info bg */
-  --color-info-surface-dark: #2563eb4f; /* dark info bg */
+  --color-info: #2563eb;
+  --color-info-hover: color-mix(in oklch, #2563eb, black 15%);
+  --color-info-surface: color-mix(in oklch, #2563eb 20%, transparent);
+  --color-info-dark: #60a5fa;
+  --color-info-dark-hover: color-mix(in oklch, #60a5fa, black 15%);
+  --color-info-surface-dark: color-mix(in oklch, #60a5fa 20%, transparent);
 
   /* --- Success Palette --- */
   --color-success: #16a34a;
-  --color-success-hover: #15803d;
-  --color-success-dark: #4ade80; /* dark-mode success text */
-  --color-success-surface: #16a34a2f; /* ghost-button hover */
-  --color-success-surface-dark: #16a34a4f; /* dark ghost hover */
+  --color-success-hover: color-mix(in oklch, #16a34a, black 15%);
+  --color-success-surface: color-mix(in oklch, #16a34a 20%, transparent);
+  --color-success-dark: #4ade80;
+  --color-success-dark-hover: color-mix(in oklch, #4ade80, black 15%);
+  --color-success-surface-dark: color-mix(in oklch, #4ade80 20%, transparent);
 
   /* --- Warning Palette --- */
-  --color-warning: #d97706; /* crack, caution states */
-  --color-warning-dark: #fbbf24; /* dark-mode warning text */
-  --color-warning-surface: #d977062f; /* warning bg */
-  --color-warning-surface-dark: #d977064f; /* dark warning bg */
+  --color-warning: #d97706;
+  --color-warning-hover: color-mix(in oklch, #d97706, black 15%);
+  --color-warning-surface: color-mix(in oklch, #d97706 20%, transparent);
+  --color-warning-dark: #fbbf24;
+  --color-warning-dark-hover: color-mix(in oklch, #fbbf24, black 15%);
+  --color-warning-surface-dark: color-mix(in oklch, #fbbf24 20%, transparent);
 
   /* --- Danger Palette --- */
-  --color-danger: #dc2626; /* destructive buttons, error text */
-  --color-danger-hover: #b91c1c; /* hover, dark-mode base, intense actions */
-  --color-danger-dark-hover: #991b1b; /* dark-mode hover, intense hover */
-  --color-danger-dark: #f87171; /* dark-mode error text */
-  --color-danger-ring: #ef4444; /* focus ring, selection ring */
-  --color-danger-surface: #dc26262f; /* error bg, ghost-button hover */
-  --color-danger-surface-dark: #dc26264f; /* dark error bg */
-  --color-danger-border: #fca5a5; /* danger outline border */
+  --color-danger: #dc2626;
+  --color-danger-hover: color-mix(in oklch, #dc2626, black 15%);
+  --color-danger-surface: color-mix(in oklch, #dc2626 20%, transparent);
+  --color-danger-dark: #f87171;
+  --color-danger-dark-hover: color-mix(in oklch, #f87171, black 15%);
+  --color-danger-surface-dark: color-mix(in oklch, #f87171 20%, transparent);
 
-  /* --- Badge Color Palette (game status bar) --- */
+  /* --- Badge Color Palette --- */
   --color-badge-red: #dc2626;
+  --color-badge-red-surface: color-mix(in oklch, #dc2626 20%, transparent);
   --color-badge-red-dark: #f87171;
-  --color-badge-red-surface: #dc26262f;
-  --color-badge-red-surface-dark: #dc26264f;
+  --color-badge-red-surface-dark: color-mix(in oklch, #f87171 20%, transparent);
 
   --color-badge-yellow: #d97706;
+  --color-badge-yellow-surface: color-mix(in oklch, #d97706 20%, transparent);
   --color-badge-yellow-dark: #fbbf24;
-  --color-badge-yellow-surface: #d977062f;
-  --color-badge-yellow-surface-dark: #d977064f;
+  --color-badge-yellow-surface-dark: color-mix(in oklch, #fbbf24 20%, transparent);
 
   --color-badge-green: #16a34a;
+  --color-badge-green-surface: color-mix(in oklch, #16a34a 20%, transparent);
   --color-badge-green-dark: #4ade80;
-  --color-badge-green-surface: #16a34a2f;
-  --color-badge-green-surface-dark: #16a34a4f;
+  --color-badge-green-surface-dark: color-mix(in oklch, #4ade80 20%, transparent);
 
   --color-badge-blue: #2563eb;
+  --color-badge-blue-surface: color-mix(in oklch, #2563eb 20%, transparent);
   --color-badge-blue-dark: #60a5fa;
-  --color-badge-blue-surface: #2563eb2f;
-  --color-badge-blue-surface-dark: #2563eb4f;
+  --color-badge-blue-surface-dark: color-mix(in oklch, #60a5fa 20%, transparent);
 
   --color-badge-purple: #7c3aed;
+  --color-badge-purple-surface: color-mix(in oklch, #7c3aed 20%, transparent);
   --color-badge-purple-dark: #a78bfa;
-  --color-badge-purple-surface: #7c3aed2f;
-  --color-badge-purple-surface-dark: #7c3aed4f;
+  --color-badge-purple-surface-dark: color-mix(in oklch, #a78bfa 20%, transparent);
 
   --color-badge-pink: #db2777;
+  --color-badge-pink-surface: color-mix(in oklch, #db2777 20%, transparent);
   --color-badge-pink-dark: #f472b6;
-  --color-badge-pink-surface: #db27772f;
-  --color-badge-pink-surface-dark: #db27774f;
+  --color-badge-pink-surface-dark: color-mix(in oklch, #f472b6 20%, transparent);
 
   /* --- Border Radius --- */
   --radius-default: 0.375rem;

@@ -89,7 +89,7 @@ type PanelState =
                 <button
                   (click)="selectSession(session.sessionId)"
                   class="w-full rounded-default px-2 py-2 text-left transition-colors
-                         hover:bg-surface-raised dark:hover:bg-surface-raised-dark"
+                         hover:bg-hover-overlay dark:hover:bg-hover-overlay-dark"
                   [attr.aria-label]="
                     'View replay for ' + formatGameType(session.gameType) + ' game'
                   "
@@ -124,9 +124,9 @@ type PanelState =
               (click)="loadMore()"
               [disabled]="isLoadingMore()"
               class="mt-2 w-full rounded-default border border-border px-3 py-1.5 text-xs
-                     text-text-secondary transition-colors hover:bg-surface-raised
+                     text-text-secondary transition-colors hover:bg-hover-overlay
                      disabled:opacity-50 dark:border-border-dark dark:text-text-secondary-dark
-                     dark:hover:bg-surface-raised-dark"
+                     dark:hover:bg-hover-overlay-dark"
             >
               {{ isLoadingMore() ? 'Loading…' : 'Load more' }}
             </button>

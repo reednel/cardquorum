@@ -28,7 +28,7 @@ import { DetailsPopoverComponent } from './details-popover';
             <td class="py-3 font-medium text-text-heading dark:text-text-heading-dark">
               <button
                 type="button"
-                class="text-primary hover:underline dark:text-primary-dark-text"
+                class="text-primary hover:text-primary-hover dark:text-primary-dark dark:hover:text-primary-dark-hover"
                 (click)="navigateToRoom.emit(room.id)"
               >
                 {{ room.name }}
@@ -53,8 +53,8 @@ import { DetailsPopoverComponent } from './details-popover';
                     type="button"
                     data-testid="config-btn"
                     (click)="configRoom.emit(room)"
-                    class="rounded-default p-1.5 text-text-secondary hover:bg-surface-raised
-                           dark:text-text-secondary-dark dark:hover:bg-surface-dark"
+                    class="rounded-default p-1.5 text-text-secondary hover:bg-hover-overlay
+                           dark:text-text-secondary-dark dark:hover:bg-hover-overlay-dark"
                     aria-label="Configure room"
                   >
                     <fa-icon [icon]="faGear" class="text-lg" aria-hidden="true" />
@@ -80,7 +80,7 @@ import { DetailsPopoverComponent } from './details-popover';
                   [class]="
                     'rounded-default px-3 py-1 text-xs font-medium ' +
                     (isRoomFull(room)
-                      ? 'bg-disabled text-disabled-text dark:bg-surface-raised-dark dark:text-text-secondary'
+                      ? 'bg-disabled text-text-secondary dark:bg-surface-raised-dark dark:text-text-secondary'
                       : 'bg-primary text-white hover:bg-primary-hover')
                   "
                 >

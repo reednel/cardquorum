@@ -54,7 +54,7 @@ import { AuthService } from './auth.service';
           <button
             type="submit"
             [disabled]="form.invalid || submitting()"
-            class="w-full rounded-default bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover disabled:bg-disabled disabled:text-disabled-text"
+            class="w-full rounded-default bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover disabled:bg-disabled disabled:text-text-secondary"
           >
             {{ submitting() ? 'Registering...' : 'Continue' }}
           </button>

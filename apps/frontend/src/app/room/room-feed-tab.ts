@@ -65,11 +65,13 @@ import { SessionBoundaryMarker } from '../chat/session-boundary-marker';
               <app-game-log-entry [entry]="$any(item.data)" />
             } @else {
               <div class="text-sm">
-                <p class="wrap-break-word text-text-body dark:text-text-body-dark">
+                <p
+                  class="wrap-break-word whitespace-pre-wrap text-text-body dark:text-text-body-dark"
+                >
                   {{ $any(item.data).content }}
                 </p>
                 <div class="flex items-center text-xs">
-                  <span class="font-semibold text-primary dark:text-primary-dark-text">
+                  <span class="font-semibold text-primary dark:text-primary-dark">
                     {{ $any(item.data).senderDisplayName }}
                   </span>
                   <span class="ml-auto text-text-secondary dark:text-text-secondary-dark">{{
@@ -91,22 +93,26 @@ import { SessionBoundaryMarker } from '../chat/session-boundary-marker';
         >
           <label class="sr-only" for="message-input">Message</label>
           <div class="relative">
-            <input
+            <textarea
+              #messageInput
               id="message-input"
-              type="text"
               [(ngModel)]="messageText"
               name="message"
               autocomplete="off"
               placeholder="Type a message..."
-              class="w-full rounded-default border border-border-input bg-bg py-2 pl-3 pr-9 text-sm
+              rows="1"
+              (keydown.enter)="onEnterKey($event)"
+              (input)="autoResize($event)"
+              class="w-full resize-none rounded-default border border-border-input bg-bg py-2 pl-3 pr-9 text-sm
                      dark:border-border-input-dark dark:bg-surface-dark
                      dark:text-white"
-            />
+              style="max-height: 7.5rem; overflow-y: auto;"
+            ></textarea>
             <button
               type="submit"
               [disabled]="!messageText()"
               title="Send"
-              class="absolute inset-y-0 right-0 flex items-center pr-3 text-text-secondary
+              class="absolute bottom-0 right-0 flex items-center pb-2 pr-3 text-text-secondary
                      transition-colors hover:text-text-body disabled:opacity-30
                      disabled:hover:text-text-secondary dark:text-text-secondary-dark
                      dark:hover:text-text-heading-dark dark:disabled:hover:text-text-secondary-dark"
@@ -126,6 +132,7 @@ export class RoomFeedTab {
 
   protected readonly faPaperPlane = faPaperPlane;
   protected readonly feedContainer = viewChild<ElementRef<HTMLElement>>('feedContainer');
+  private readonly messageInput = viewChild<ElementRef<HTMLTextAreaElement>>('messageInput');
 
   readonly feedMode = input<FeedMode>('all');
   protected readonly messageText = signal('');
@@ -204,5 +211,23 @@ export class RoomFeedTab {
     if (!text) return;
     this.chatService.sendMessage(text);
     this.messageText.set('');
+    const textarea = this.messageInput()?.nativeElement;
+    if (textarea) {
+      textarea.style.height = 'auto';
+    }
+  }
+
+  protected onEnterKey(event: Event): void {
+    const keyEvent = event as KeyboardEvent;
+    if (!keyEvent.shiftKey) {
+      keyEvent.preventDefault();
+      this.send();
+    }
+  }
+
+  protected autoResize(event: Event): void {
+    const textarea = event.target as HTMLTextAreaElement;
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
   }
 }

@@ -105,7 +105,7 @@ import { ReplayEngineService } from './replay-engine.service';
               ? 'cursor-not-allowed text-text-secondary/40 dark:text-text-secondary-dark/40'
               : autoplayRunning()
                 ? 'bg-primary text-white hover:bg-primary-hover'
-                : 'bg-surface-raised text-text-body hover:bg-primary/10 dark:bg-surface-raised-dark dark:text-text-heading-dark dark:hover:bg-primary/20')
+                : 'text-text-secondary hover:bg-hover-overlay hover:text-text-body dark:text-text-secondary-dark dark:hover:bg-hover-overlay-dark dark:hover:text-text-heading-dark')
           "
         >
           <fa-icon [icon]="autoplayRunning() ? faPause : faPlay" aria-hidden="true" />
@@ -146,8 +146,8 @@ import { ReplayEngineService } from './replay-engine.service';
             (allDisabled()
               ? 'cursor-not-allowed text-text-secondary/40 dark:text-text-secondary-dark/40'
               : loopEnabled()
-                ? 'bg-primary text-white'
-                : 'bg-surface-raised text-text-body dark:bg-surface-raised-dark dark:text-text-heading-dark')
+                ? 'bg-primary text-white hover:bg-primary-hover'
+                : 'text-text-secondary hover:bg-hover-overlay hover:text-text-body dark:text-text-secondary-dark dark:hover:bg-hover-overlay-dark dark:hover:text-text-heading-dark')
           "
         >
           <fa-icon [icon]="faRepeat" class="text-xs" aria-hidden="true" />
@@ -162,10 +162,10 @@ import { ReplayEngineService } from './replay-engine.service';
           type="button"
           aria-label="Summary"
           (click)="onSummaryClick()"
-          class="flex w-full items-center justify-center gap-2 rounded-default bg-surface-raised
+          class="flex w-full items-center justify-center gap-2 rounded-default border border-border
                  px-3 py-2 text-sm text-text-body transition-colors
-                 hover:bg-primary/10 dark:bg-surface-raised-dark
-                 dark:text-text-heading-dark dark:hover:bg-primary/20"
+                 hover:bg-surface-raised dark:border-border-dark
+                 dark:text-text-heading-dark dark:hover:bg-surface-raised-dark"
         >
           <fa-icon [icon]="faTableList" class="text-xs" aria-hidden="true" />
           <span>Summary</span>
@@ -243,7 +243,7 @@ export class ReplayControls {
       'flex h-9 w-9 items-center justify-center rounded-default text-sm transition-colors ' +
       (disabled
         ? 'cursor-not-allowed text-text-secondary/40 dark:text-text-secondary-dark/40'
-        : 'bg-surface-raised text-text-body hover:bg-primary/10 dark:bg-surface-raised-dark dark:text-text-heading-dark dark:hover:bg-primary/20')
+        : 'text-text-secondary hover:bg-hover-overlay hover:text-text-body dark:text-text-secondary-dark dark:hover:bg-hover-overlay-dark dark:hover:text-text-heading-dark')
     );
   }
 

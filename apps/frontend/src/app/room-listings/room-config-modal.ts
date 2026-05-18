@@ -105,15 +105,15 @@ import { RoomService } from '../room/room.service';
                   (click)="onConfirmDelete()"
                   [disabled]="submitting()"
                   class="mr-1 rounded-default bg-danger px-3 py-1 text-xs font-medium text-white
-                         hover:bg-danger-hover disabled:bg-disabled disabled:text-disabled-text"
+                         hover:bg-danger-hover disabled:bg-disabled disabled:text-text-secondary"
                 >
                   Confirm
                 </button>
                 <button
                   type="button"
                   (click)="confirmDelete.set(false)"
-                  class="rounded-default px-3 py-1 text-xs text-text-secondary hover:bg-surface-raised
-                         dark:text-text-secondary-dark dark:hover:bg-surface-dark"
+                  class="rounded-default px-3 py-1 text-xs text-text-secondary hover:bg-hover-overlay
+                         dark:text-text-secondary-dark dark:hover:bg-hover-overlay-dark"
                 >
                   Cancel
                 </button>
@@ -134,8 +134,8 @@ import { RoomService } from '../room/room.service';
               <button
                 type="button"
                 (click)="close()"
-                class="rounded-default px-4 py-2 text-sm text-text-body hover:bg-surface-raised
-                       dark:text-text-body-dark dark:hover:bg-surface-dark"
+                class="rounded-default px-4 py-2 text-sm text-text-body hover:bg-hover-overlay
+                       dark:text-text-body-dark dark:hover:bg-hover-overlay-dark"
               >
                 Cancel
               </button>
@@ -143,7 +143,7 @@ import { RoomService } from '../room/room.service';
                 type="submit"
                 [disabled]="form.invalid || form.pristine || submitting()"
                 class="rounded-default bg-primary px-4 py-2 text-sm font-semibold text-white
-                       hover:bg-primary-hover disabled:bg-disabled disabled:text-disabled-text"
+                       hover:bg-primary-hover disabled:bg-disabled disabled:text-text-secondary"
               >
                 {{ submitting() ? 'Saving...' : 'Save' }}
               </button>

@@ -64,8 +64,8 @@ import { UserService } from './user.service';
                 <button
                   data-testid="cancel-edit-btn"
                   (click)="cancelUsernameEdit()"
-                  class="rounded-default px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-raised
-                           dark:text-text-secondary-dark dark:hover:bg-surface-dark"
+                  class="rounded-default px-3 py-1.5 text-sm text-text-secondary hover:bg-hover-overlay
+                           dark:text-text-secondary-dark dark:hover:bg-hover-overlay-dark"
                 >
                   Cancel
                 </button>
@@ -82,7 +82,7 @@ import { UserService } from './user.service';
               <button
                 data-testid="edit-username-btn"
                 (click)="startUsernameEdit()"
-                class="ml-2 text-sm text-primary hover:underline dark:text-primary-dark-text"
+                class="ml-2 text-sm text-primary hover:text-primary-hover dark:text-primary-dark dark:hover:text-primary-dark-hover"
               >
                 Edit
               </button>
@@ -119,8 +119,8 @@ import { UserService } from './user.service';
                 <button
                   data-testid="cancel-edit-btn"
                   (click)="cancelDisplayNameEdit()"
-                  class="rounded-default px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-raised
-                           dark:text-text-secondary-dark dark:hover:bg-surface-dark"
+                  class="rounded-default px-3 py-1.5 text-sm text-text-secondary hover:bg-hover-overlay
+                           dark:text-text-secondary-dark dark:hover:bg-hover-overlay-dark"
                 >
                   Cancel
                 </button>
@@ -141,7 +141,7 @@ import { UserService } from './user.service';
               <button
                 data-testid="edit-display-name-btn"
                 (click)="startDisplayNameEdit()"
-                class="ml-2 text-sm text-primary hover:underline dark:text-primary-dark-text"
+                class="ml-2 text-sm text-primary hover:text-primary-hover dark:text-primary-dark dark:hover:text-primary-dark-hover"
               >
                 Edit
               </button>
@@ -203,8 +203,8 @@ import { UserService } from './user.service';
             data-testid="clear-color-btn"
             (click)="clearColorPreference()"
             [disabled]="colorSaving()"
-            class="rounded-default px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-raised
-                     dark:text-text-secondary-dark dark:hover:bg-surface-dark"
+            class="rounded-default px-3 py-1.5 text-sm text-text-secondary hover:bg-hover-overlay
+                     dark:text-text-secondary-dark dark:hover:bg-hover-overlay-dark"
           >
             Clear
           </button>
@@ -290,7 +290,7 @@ import { UserService } from './user.service';
                   <button
                     data-testid="unlink-basic-btn"
                     (click)="startUnlinkBasic()"
-                    class="text-sm text-danger hover:underline dark:text-danger-dark"
+                    class="text-sm text-danger hover:text-danger-hover dark:text-danger-dark dark:hover:text-danger-dark-hover"
                   >
                     Remove
                   </button>
@@ -354,8 +354,8 @@ import { UserService } from './user.service';
                     <button
                       data-testid="change-pw-cancel"
                       (click)="cancelChangePassword()"
-                      class="rounded-default px-4 py-2 text-sm text-text-secondary hover:bg-surface-raised
-                               dark:text-text-secondary-dark dark:hover:bg-surface-dark"
+                      class="rounded-default px-4 py-2 text-sm text-text-secondary hover:bg-hover-overlay
+                               dark:text-text-secondary-dark dark:hover:bg-hover-overlay-dark"
                     >
                       Cancel
                     </button>
@@ -371,7 +371,7 @@ import { UserService } from './user.service';
               <button
                 data-testid="change-pw-btn"
                 (click)="startChangePassword()"
-                class="text-sm text-primary hover:underline dark:text-primary-dark-text"
+                class="text-sm text-primary hover:text-primary-hover dark:text-primary-dark dark:hover:text-primary-dark-hover"
               >
                 Change Password
               </button>
@@ -432,8 +432,8 @@ import { UserService } from './user.service';
                     <button
                       data-testid="cancel-link-basic-btn"
                       (click)="cancelLinkBasic()"
-                      class="rounded-default px-4 py-2 text-sm text-text-secondary hover:bg-surface-raised
-                               dark:text-text-secondary-dark dark:hover:bg-surface-dark"
+                      class="rounded-default px-4 py-2 text-sm text-text-secondary hover:bg-hover-overlay
+                               dark:text-text-secondary-dark dark:hover:bg-hover-overlay-dark"
                     >
                       Cancel
                     </button>
@@ -476,7 +476,7 @@ import { UserService } from './user.service';
                 <button
                   data-testid="unlink-oidc-btn"
                   (click)="unlinkOidc()"
-                  class="text-sm text-danger hover:underline dark:text-danger-dark"
+                  class="text-sm text-danger hover:text-danger-hover dark:text-danger-dark dark:hover:text-danger-dark-hover"
                 >
                   Remove
                 </button>
@@ -533,8 +533,8 @@ import { UserService } from './user.service';
               <button
                 data-testid="cancel-delete-btn"
                 (click)="cancelDelete()"
-                class="rounded-default px-4 py-2 text-sm text-text-secondary hover:bg-surface-raised
-                         dark:text-text-secondary-dark dark:hover:bg-surface-dark"
+                class="rounded-default px-4 py-2 text-sm text-text-secondary hover:bg-hover-overlay
+                         dark:text-text-secondary-dark dark:hover:bg-hover-overlay-dark"
               >
                 Cancel
               </button>
@@ -544,8 +544,8 @@ import { UserService } from './user.service';
           <button
             data-testid="delete-account-btn"
             (click)="startDelete()"
-            class="mt-4 rounded-default border border-danger-border px-4 py-2 text-sm font-medium
-                     text-danger hover:bg-danger-surface dark:border-danger-hover dark:text-danger-dark
+            class="mt-4 rounded-default border border-danger px-4 py-2 text-sm font-medium
+                     text-danger hover:bg-danger-surface dark:border-danger-dark dark:text-danger-dark
                      dark:hover:bg-danger-surface-dark"
           >
             Delete Account

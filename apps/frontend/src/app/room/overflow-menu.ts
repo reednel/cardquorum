@@ -32,8 +32,8 @@ export interface OverflowAction {
         aria-label="More actions"
         [attr.aria-expanded]="open()"
         (click)="toggle($event)"
-        class="flex items-center justify-center rounded p-1 text-text-secondary hover:bg-surface-raised
-               dark:text-text-secondary-dark dark:hover:bg-surface-raised-dark"
+        class="flex items-center justify-center rounded p-1 text-text-secondary hover:bg-hover-overlay
+               dark:text-text-secondary-dark dark:hover:bg-hover-overlay-dark"
       >
         <fa-icon [icon]="faEllipsisVertical" class="text-sm" />
       </button>
@@ -57,7 +57,7 @@ export interface OverflowAction {
                   'w-full px-3 py-1.5 text-left text-sm ' +
                   (action.variant === 'danger'
                     ? 'text-danger hover:bg-danger-surface dark:text-danger-dark dark:hover:bg-danger-surface-dark'
-                    : 'text-text-body hover:bg-surface-raised dark:text-text-body-dark dark:hover:bg-surface-raised-dark')
+                    : 'text-text-body hover:bg-hover-overlay dark:text-text-body-dark dark:hover:bg-hover-overlay-dark')
                 "
               >
                 {{ action.label }}

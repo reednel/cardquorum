@@ -14,7 +14,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
         <a
           routerLink="/user/account"
           [routerLinkActiveOptions]="{ exact: true }"
-          routerLinkActive="!border-primary !text-primary dark:!border-primary-dark-text dark:!text-primary-dark-text"
+          routerLinkActive="!border-primary !text-primary dark:!border-primary-dark dark:!text-primary-dark"
           class="flex-1 border-b-2 border-transparent px-4 py-2 text-center text-sm font-medium text-text-secondary
                  hover:text-text-body dark:text-text-secondary-dark dark:hover:text-text-heading-dark"
         >
@@ -22,7 +22,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
         </a>
         <a
           routerLink="/user/friends"
-          routerLinkActive="!border-primary !text-primary dark:!border-primary-dark-text dark:!text-primary-dark-text"
+          routerLinkActive="!border-primary !text-primary dark:!border-primary-dark dark:!text-primary-dark"
           class="flex-1 border-b-2 border-transparent px-4 py-2 text-center text-sm font-medium text-text-secondary
                  hover:text-text-body dark:text-text-secondary-dark dark:hover:text-text-heading-dark"
         >
@@ -30,7 +30,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
         </a>
         <a
           routerLink="/user/stats"
-          routerLinkActive="!border-primary !text-primary dark:!border-primary-dark-text dark:!text-primary-dark-text"
+          routerLinkActive="!border-primary !text-primary dark:!border-primary-dark dark:!text-primary-dark"
           class="flex-1 border-b-2 border-transparent px-4 py-2 text-center text-sm font-medium text-text-secondary
                  hover:text-text-body dark:text-text-secondary-dark dark:hover:text-text-heading-dark"
         >

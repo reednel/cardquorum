@@ -35,7 +35,7 @@ import { SummaryApiService } from '../game/summary-api.service';
           [queryParams]="{ session: entry().sessionId }"
           aria-label="Watch replay for this game session"
           title="Replay"
-          class="text-primary hover:text-primary-hover dark:text-primary-dark-text"
+          class="text-primary hover:text-primary-hover dark:text-primary-dark"
         >
           <fa-icon [icon]="faClapperboard" aria-hidden="true" />
         </a>
@@ -46,7 +46,7 @@ import { SummaryApiService } from '../game/summary-api.service';
           (click)="openSummary()"
           aria-label="View game summary for this session"
           title="Summary"
-          class="text-primary hover:text-primary-hover dark:text-primary-dark-text"
+          class="text-primary hover:text-primary-hover dark:text-primary-dark"
         >
           <fa-icon [icon]="faTableList" aria-hidden="true" />
         </button>
