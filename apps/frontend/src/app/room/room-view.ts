@@ -32,6 +32,7 @@ import { GameLogService } from '../chat/game-log.service';
 import { GameTable } from '../game/game-table';
 import { GameService } from '../game/game.service';
 import { WebSocketService } from '../websocket.service';
+import { BouncingCard } from './bouncing-card';
 import { RoomContextService } from './room-context.service';
 import { RoomFeedTab } from './room-feed-tab';
 import { RoomGameTab } from './room-game-tab';
@@ -53,6 +54,7 @@ type RoomTab = 'feed' | 'members' | 'game' | 'stats';
     RoomGameTab,
     RoomStatsTab,
     GameTable,
+    BouncingCard,
   ],
   animations: [
     trigger('slidePanel', [
@@ -76,6 +78,8 @@ type RoomTab = 'feed' | 'members' | 'game' | 'stats';
             [canStartNext]="roomGameTab()?.canStart() ?? false"
             (startNextGame)="onStartNextGame()"
           />
+        } @else {
+          <app-bouncing-card />
         }
       </main>
 
