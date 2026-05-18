@@ -52,17 +52,31 @@ export function gotSchwarzed(state: SheepsheadState): boolean {
  * Compute the score multiplier for a hand.
  * Multipliers stack multiplicatively:
  *   base (1) × schneider/schwarz (×2/×3) × crack/re-crack (×2/×4) × blitz (×2) × doubleOnTheBump (×2)
+ *
+ * When `gameCompleted` is false (e.g. forfeit/abandonment), only factors committed
+ * before play ends are included: crack/re-crack and blitz. Schneider, schwarz, and
+ * doubleOnTheBump depend on trick outcomes and are excluded.
  */
-export function scoreMultiplier(state: SheepsheadState, config: SheepsheadConfig): number {
-  const pickerPts = pickingTeamPoints(state);
-  const pickerWon = pickerPts >= 61;
-
+export function scoreMultiplier(
+  state: SheepsheadState,
+  config: SheepsheadConfig,
+  gameCompleted = true,
+): number {
   let multiplier = 1;
 
-  if (gotSchwarzed(state)) {
-    multiplier *= 3;
-  } else if (gotSchneidered(pickerPts, pickerWon)) {
-    multiplier *= 2;
+  if (gameCompleted) {
+    const pickerPts = pickingTeamPoints(state);
+    const pickerWon = pickerPts >= 61;
+
+    if (gotSchwarzed(state)) {
+      multiplier *= 3;
+    } else if (gotSchneidered(pickerPts, pickerWon)) {
+      multiplier *= 2;
+    }
+
+    if (config.doubleOnTheBump && !pickerWon) {
+      multiplier *= 2;
+    }
   }
 
   if (config.cracking && state.crack) {
@@ -74,10 +88,6 @@ export function scoreMultiplier(state: SheepsheadState, config: SheepsheadConfig
   }
 
   if (config.blitzing && state.blitz) {
-    multiplier *= 2;
-  }
-
-  if (config.doubleOnTheBump && !pickerWon) {
     multiplier *= 2;
   }
 

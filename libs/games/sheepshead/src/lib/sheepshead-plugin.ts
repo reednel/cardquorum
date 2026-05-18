@@ -11,6 +11,7 @@ import {
   handleScore,
   handleTrickAdvance,
 } from './phases';
+import { scoreMultiplier } from './scoring';
 import { legalPlays } from './tricks';
 import {
   BlitzState,
@@ -348,17 +349,20 @@ function buildStore(config: SheepsheadConfig, state: SheepsheadState): Sheepshea
 }
 
 function onPlayerAbandon(
-  _config: SheepsheadConfig,
+  config: SheepsheadConfig,
   state: SheepsheadState,
-  _userId: number,
+  userId: number,
 ): SheepsheadState {
+  const multiplier = scoreMultiplier(state, config, false);
+  const otherCount = state.players.length - 1;
+
   return {
     ...state,
     phase: 'score',
     activePlayer: null,
     players: state.players.map((p) => ({
       ...p,
-      scoreDelta: 0,
+      scoreDelta: p.userID === userId ? -(otherCount * multiplier) : multiplier,
     })),
   };
 }
