@@ -220,16 +220,17 @@ function getStatusInfo(
 
   if (state.crack) {
     const label = state.crack.reCrackedBy != null ? 'Re-cracked!' : 'Cracked!';
-    items.push({ type: 'badge', key: 'crack', label, color: 'yellow' });
+    items.push({ type: 'badge', key: 'crack', label, color: 'pink' });
   }
 
   if (state.blitz) {
-    const color = state.blitz.type === 'black' ? 'dark' : 'red';
+    const blitzColor = state.blitz.type.startsWith('black') ? 'dark' : 'red';
+    const blitzLabel = state.blitz.type.startsWith('black') ? 'Black Blitz' : 'Red Blitz';
     items.push({
       type: 'badge',
       key: 'blitz',
-      label: `${state.blitz.type.charAt(0).toUpperCase() + state.blitz.type.slice(1)} Blitz`,
-      color,
+      label: blitzLabel,
+      color: blitzColor,
     });
   }
 

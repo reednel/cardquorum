@@ -208,7 +208,7 @@ describe('SheepsheadTablePlugin', () => {
         trickNumber: 1,
         activePlayer: 2,
         crack: null,
-        blitz: { type: 'black', blitzedBy: 3 },
+        blitz: { type: 'black-blitz', blitzedBy: 3 },
         players: [{ hand: [{ name: 'a' }] }],
       };
       const result = SheepsheadTablePlugin.getStatusInfo(state, 1, gameConfig);
