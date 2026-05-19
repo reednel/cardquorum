@@ -55,6 +55,7 @@ interface SheepsheadPlayerView {
   noPick: string | null;
   redeals: unknown[] | null;
   legalCardNames: string[] | null;
+  legalCallableCards: string[] | null;
   dealerUserID: number | null;
 }
 

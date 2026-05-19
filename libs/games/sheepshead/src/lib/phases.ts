@@ -368,6 +368,41 @@ export function handleBury(
 }
 
 /**
+ * Compute which cards the picker is allowed to call, given their hand, buried cards, and config.
+ * Returns the subset of CalledCard values that are legal.
+ */
+export function legalCallOptions(
+  pickerHand: Card[],
+  buriedCards: Card[],
+  config: SheepsheadConfig,
+): string[] {
+  const options: string[] = ['alone'];
+
+  // Fail aces: can call unless picker holds or buried it (unless callOwnAce)
+  for (const ace of FAIL_ACES) {
+    if (config.callOwnAce) {
+      options.push(ace);
+    } else {
+      const pickerHasCard =
+        pickerHand.some((c) => c.name === ace) || buriedCards.some((c) => c.name === ace);
+      if (!pickerHasCard) {
+        options.push(ace);
+      }
+    }
+  }
+
+  // Fail tens: only callable if picker holds all 3 fail aces
+  const hasAllFailAces = FAIL_ACES.every((a) => pickerHand.some((c) => c.name === a));
+  if (hasAllFailAces) {
+    for (const ten of FAIL_TENS) {
+      options.push(ten);
+    }
+  }
+
+  return options;
+}
+
+/**
  * Call phase: picker calls a card (ace, 10, or alone), partner determined (hidden).
  * Validates the call based on the picker's hand and buried cards.
  */

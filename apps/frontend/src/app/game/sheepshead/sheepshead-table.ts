@@ -120,7 +120,7 @@ const CALL_OPTIONS: { value: string; label: string }[] = [
             <div role="group" aria-label="Call options">
               @if (canCall()) {
                 <div data-testid="call-options" class="grid grid-cols-2 gap-2">
-                  @for (opt of callOptions; track opt.value) {
+                  @for (opt of callOptions(); track opt.value) {
                     <button
                       [attr.data-testid]="'call-btn-' + opt.value"
                       (click)="onAction({ type: 'call_ace', payload: { card: opt.value } })"
@@ -270,7 +270,12 @@ export class SheepsheadTable {
   protected readonly crackDismissed = signal(false);
   protected readonly scoreDismissed = signal(false);
   private readonly handOrder = signal<string[] | null>(null);
-  protected readonly callOptions = CALL_OPTIONS;
+  protected readonly callOptions = computed(() => {
+    const state = this.state() as { legalCallableCards?: string[] | null } | null;
+    const legal = state?.legalCallableCards;
+    if (!legal) return CALL_OPTIONS;
+    return CALL_OPTIONS.filter((opt) => legal.includes(opt.value));
+  });
 
   // ── Current game phase ──
   protected readonly currentPhase = computed(() => {

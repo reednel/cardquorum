@@ -43,5 +43,6 @@ export {
   handleCall,
   handlePlayCard,
   handleScore,
+  legalCallOptions,
 } from './lib/phases';
 export { SheepsheadPlugin } from './lib/sheepshead-plugin';

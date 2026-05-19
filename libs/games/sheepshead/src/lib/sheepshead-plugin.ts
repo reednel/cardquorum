@@ -10,6 +10,7 @@ import {
   handlePlayCard,
   handleScore,
   handleTrickAdvance,
+  legalCallOptions,
 } from './phases';
 import { scoreMultiplier } from './scoring';
 import { legalPlays } from './tricks';
@@ -308,6 +309,13 @@ function getPlayerView(
     legalCardNames = cards.map((c) => c.name);
   }
 
+  // Include legal callable cards so the client only shows valid call options.
+  let legalCallableCards: string[] | null = null;
+  if (state.phase === 'call' && state.activePlayer === userID && isPicker) {
+    const pickerPlayer = state.players.find((p) => p.role === 'picker')!;
+    legalCallableCards = legalCallOptions(pickerPlayer.hand, state.buried ?? [], config);
+  }
+
   return {
     ...state,
     players,
@@ -316,8 +324,13 @@ function getPlayerView(
     hole,
     tricks,
     legalCardNames,
+    legalCallableCards,
     dealerUserID: state.players[0]?.userID ?? null,
-  } as Partial<SheepsheadState> & { legalCardNames: string[] | null; dealerUserID: number | null };
+  } as Partial<SheepsheadState> & {
+    legalCardNames: string[] | null;
+    legalCallableCards: string[] | null;
+    dealerUserID: number | null;
+  };
 }
 
 function isGameOver(state: SheepsheadState): boolean {
