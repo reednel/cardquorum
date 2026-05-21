@@ -207,6 +207,7 @@ type RoomTab = 'feed' | 'members' | 'game' | 'stats';
           <div class="flex min-h-0 flex-1 flex-col">
             <app-room-feed-tab
               [feedMode]="feedMode()"
+              [isActive]="activeTab() === 'feed'"
               [class.hidden]="activeTab() !== 'feed'"
               class="flex min-h-0 flex-1 flex-col"
             />

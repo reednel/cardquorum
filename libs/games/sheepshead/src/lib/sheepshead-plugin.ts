@@ -465,8 +465,13 @@ function describeEvent(
     }
     case 'game_scored':
       return null;
-    case 'trick_advance':
-      return null;
+    case 'trick_advance': {
+      // Find the last completed trick (the one that was just won)
+      const completedTrick = [..._state.tricks].reverse().find((t) => t.winner !== null);
+      if (!completedTrick || completedTrick.winner === null) return null;
+      const winnerName = playerNames.get(completedTrick.winner) ?? 'Unknown';
+      return `${winnerName} took`;
+    }
   }
 }
 

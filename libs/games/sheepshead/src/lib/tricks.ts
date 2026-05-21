@@ -146,8 +146,26 @@ export function legalPlays(
     }
   }
 
+  // Partner cannot play the called ace unless the called suit is led or they're leading
+  if (
+    playerRole === 'partner' &&
+    currentTrick.plays.length > 0 &&
+    !currentTrickLeadsCalledSuit(state, currentTrick)
+  ) {
+    const calledCardObj = baseLegal.find((c) => c.name === state.calledCard);
+    if (calledCardObj && baseLegal.length > 1) {
+      return { cards: baseLegal.filter((c) => c.name !== state.calledCard), playHoleCard: false };
+    }
+  }
+
   // Picker can't slough their last card of the called suit before it's been led
-  if (playerRole === 'picker' && !calledSuitHasBeenLed(state) && !isFirstLead && !state.hole) {
+  if (
+    playerRole === 'picker' &&
+    !calledSuitHasBeenLed(state) &&
+    !isFirstLead &&
+    !state.hole &&
+    currentTrick.plays.length > 0
+  ) {
     const calledSuitCards = hand.filter((c) => !isTrump(c) && c.suit === suit);
     if (calledSuitCards.length === 1) {
       const lastCard = calledSuitCards[0];

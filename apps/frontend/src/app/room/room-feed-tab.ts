@@ -135,6 +135,7 @@ export class RoomFeedTab {
   private readonly messageInput = viewChild<ElementRef<HTMLTextAreaElement>>('messageInput');
 
   readonly feedMode = input<FeedMode>('all');
+  readonly isActive = input(true);
   protected readonly messageText = signal('');
 
   private isAtBottom = true;
@@ -149,6 +150,19 @@ export class RoomFeedTab {
   protected readonly isBoundaryEntry = (entry: GameLogBroadcast): boolean => isBoundaryEntry(entry);
 
   constructor() {
+    // When the tab becomes visible again, scroll to bottom if user was at bottom when they left
+    effect(() => {
+      const active = this.isActive();
+      const container = this.feedContainer()?.nativeElement;
+      if (!active || !container) return;
+
+      if (this.isAtBottom) {
+        setTimeout(() => {
+          container.scrollTop = container.scrollHeight;
+        }, 0);
+      }
+    });
+
     effect(() => {
       const items = this.feedItems();
       const container = this.feedContainer()?.nativeElement;
