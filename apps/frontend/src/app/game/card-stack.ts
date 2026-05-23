@@ -140,20 +140,20 @@ interface DragState {
           @for (card of cards(); track card ?? $index; let i = $index) {
             <div
               [attr.data-testid]="'card-item-' + i"
-              [class]="'absolute ' + cardItemClass(card)"
+              [class]="'absolute ' + cardItemClass(card, i)"
               role="option"
               [attr.aria-label]="card ?? 'Face-down card'"
-              [attr.aria-disabled]="!isLegal(card) || undefined"
-              [attr.aria-selected]="isSelected(card) || undefined"
+              [attr.aria-disabled]="!isLegalAt(i) || undefined"
+              [attr.aria-selected]="isSelectedAt(i) || undefined"
               [attr.aria-hidden]="isTopOnlyRestricted(i) || undefined"
               cdkDrag
               [cdkDragDisabled]="!reorderable() && !draggable()"
-              [cdkDragData]="{ cardName: card, index: i }"
-              (cdkDragStarted)="onDragStarted($event, card, i)"
-              (cdkDragEnded)="onDragEnded($event, card, i)"
+              [cdkDragData]="{ cardName: cardId(i), index: i }"
+              (cdkDragStarted)="onDragStarted($event, i)"
+              (cdkDragEnded)="onDragEnded($event, i)"
               [style.transform]="cardTranslate(i)"
               [style.z-index]="cardPositions()[i]?.zIndex ?? i"
-              [style.visibility]="isCardHiddenDuringDrag(card) ? 'hidden' : null"
+              [style.visibility]="isCardHiddenDuringDrag(i) ? 'hidden' : null"
             >
               <ng-template cdkDragPreview [matchSize]="true">
                 <div style="overflow:visible;position:relative">
@@ -161,9 +161,9 @@ interface DragState {
                     class="overflow-hidden"
                     [style.width.px]="resolvedWidth()"
                     [style.height.px]="resolvedHeight()"
-                    [style.border]="cardBorderValue(card, i)"
+                    [style.border]="cardBorderValue(i)"
                     [style.border-radius.px]="cardBorderRadius()"
-                    [style.filter]="cardFilterStyle(card)"
+                    [style.filter]="cardFilterStyle(i)"
                     style="box-sizing:border-box;background-color:var(--color-card-bg)"
                   >
                     <app-card-renderer
@@ -174,7 +174,7 @@ interface DragState {
                     />
                   </div>
                   @for (
-                    magnetized of getDragPreviewCompanions(card);
+                    magnetized of getDragPreviewCompanions(i);
                     track magnetized;
                     let j = $index
                   ) {
@@ -202,20 +202,20 @@ interface DragState {
               <div
                 class="overflow-hidden bg-card-bg"
                 [style.transform]="cardRotation(i)"
-                [style.border]="cardBorderValue(card, i)"
+                [style.border]="cardBorderValue(i)"
                 [style.border-radius.px]="cardBorderRadius()"
-                [style.filter]="cardFilterStyle(card)"
+                [style.filter]="cardFilterStyle(i)"
               >
                 <button
                   type="button"
                   [attr.data-testid]="'card-button-' + i"
-                  [class]="cardButtonClass(card, i)"
-                  [attr.aria-disabled]="!isLegal(card) || undefined"
+                  [class]="cardButtonClass(i)"
+                  [attr.aria-disabled]="!isLegalAt(i) || undefined"
                   [attr.aria-label]="card ?? 'Face-down card'"
                   [disabled]="isTopOnlyRestricted(i)"
                   [attr.tabindex]="cardTabindex(i)"
-                  (click)="onCardClick(card, i)"
-                  (dblclick)="onCardDblClick(card, i)"
+                  (click)="onCardClick(i)"
+                  (dblclick)="onCardDblClick(i)"
                 >
                   <app-card-renderer
                     [cardName]="card"
@@ -271,6 +271,19 @@ export class CardStack {
   readonly biasedPlacement = input(false);
 
   /**
+   * Optional explicit identities for each card position.
+   * When provided, these IDs are used for all interaction purposes (selection, drag, IC communication)
+   * instead of the card name. This enables face-down cards (null entries in `cards`) to participate
+   * in interactions by giving them an explicit identity.
+   *
+   * Rules:
+   * - Must be the same length as `cards` (dev-mode warning if not)
+   * - A `null` entry means "not interactive" at that position
+   * - When not provided, card names are used as IDs (current default behavior)
+   */
+  readonly cardIds = input<(string | null)[] | null>(null);
+
+  /**
    * Opt-in to CDK's native cross-container transfer behavior.
    *
    * WARNING: Enabling this re-introduces the DOM-corruption-on-rejected-drop problem.
@@ -299,21 +312,35 @@ export class CardStack {
 
   /**
    * Returns the other selected cards (companions) for a multi-drag preview.
-   * Called from the preview template with the card being dragged.
+   * Called from the preview template with the index of the card being dragged.
    * Only returns companions if the dragged card is part of the selection.
    */
-  protected getDragPreviewCompanions(primaryCard: string | null): string[] {
-    if (!primaryCard) return [];
+  protected getDragPreviewCompanions(index: number): string[] {
+    const id = this.cardId(index);
+    if (!id) return [];
     const ic = this.interactionController;
     if (!ic) return [];
     const selected = ic.selectedCards();
     // Only show magnetized cards if the dragged card is part of the selection
-    if (!selected.includes(primaryCard)) return [];
-    return selected.filter((c) => c !== primaryCard);
+    if (!selected.includes(id)) return [];
+    // Return the card names (for rendering) of the other selected cards
+    const cards = this.cards();
+    return selected
+      .filter((s) => s !== id)
+      .map((s) => {
+        // Find the card name for this ID
+        const ids = this.cardIds();
+        if (ids) {
+          const idx = ids.indexOf(s);
+          return idx >= 0 ? cards[idx] : s;
+        }
+        return s;
+      })
+      .filter((c): c is string => c !== null);
   }
 
   /**
-   * Set of card names that should be hidden from their original positions during drag.
+   * Set of card IDs that should be hidden from their original positions during drag.
    * Hides ALL selected cards (including the dragged one) so the preview
    * is the only visual representation during the drag.
    */
@@ -363,6 +390,25 @@ export class CardStack {
     const ms = this.maxSelections();
     return ms <= 0 ? 1 : ms;
   });
+
+  // ── Card ID resolution ──
+  /**
+   * Returns the interaction identity for a card at the given index.
+   * Uses cardIds if provided, otherwise falls back to the card name.
+   * Returns null if the card is not interactive at that position.
+   */
+  protected cardId(index: number): string | null {
+    const ids = this.cardIds();
+    if (ids) {
+      if (isDevMode() && ids.length !== this.cards().length) {
+        console.warn(
+          `CardStack: cardIds length (${ids.length}) does not match cards length (${this.cards().length}).`,
+        );
+      }
+      return ids[index] ?? null;
+    }
+    return this.cards()[index] ?? null;
+  }
 
   // ── Resolved card dimensions ──
   /** Effective card width: uses cardWidth if set, otherwise derives from cardHeight / aspectRatio, fallback 72. */
@@ -585,8 +631,9 @@ export class CardStack {
   });
 
   /** Returns the CSS border shorthand: selected (primary) > player halo > default. */
-  protected cardBorderValue(card: string | null, index: number): string {
-    if (this.isSelected(card)) {
+  protected cardBorderValue(index: number): string {
+    const id = this.cardId(index);
+    if (this.isSelectedById(id)) {
       return '2px solid var(--color-primary-dark)';
     }
     const halo = this.cardHaloColor(index);
@@ -625,6 +672,13 @@ export class CardStack {
     return set === null || set.has(card);
   }
 
+  /** Check legality by card ID (for interaction gating). */
+  private isLegalById(id: string | null): boolean {
+    if (id === null) return false;
+    const set = this.legalSet();
+    return set === null || set.has(id);
+  }
+
   protected isSelected(card: string | null): boolean {
     if (card === null) return false;
     const ic = this.interactionController;
@@ -634,13 +688,34 @@ export class CardStack {
     return this.selection().includes(card);
   }
 
+  /** Check selection by card ID. */
+  private isSelectedById(id: string | null): boolean {
+    if (id === null) return false;
+    const ic = this.interactionController;
+    if (ic && this.stackId()) {
+      return ic.selectedCards().includes(id);
+    }
+    return this.selection().includes(id);
+  }
+
+  /** Template helper: is the card at this index legal? */
+  protected isLegalAt(index: number): boolean {
+    return this.isLegalById(this.cardId(index));
+  }
+
+  /** Template helper: is the card at this index selected? */
+  protected isSelectedAt(index: number): boolean {
+    return this.isSelectedById(this.cardId(index));
+  }
+
   // ── Card item class (on the card-item div — handles hover lift) ──
-  protected cardItemClass(card: string | null): string {
+  protected cardItemClass(card: string | null, index: number): string {
     const interactive = this.selectable() || this.reorderable();
     if (!interactive) return '';
 
-    const legal = this.isLegal(card);
-    const selected = this.isSelected(card);
+    const id = this.cardId(index);
+    const legal = this.isLegalById(id);
+    const selected = this.isSelectedById(id);
 
     if (legal) {
       const selectedClass = selected ? ' -translate-y-2' : '';
@@ -651,22 +726,24 @@ export class CardStack {
   }
 
   // ── Card button class (on the button — handles cursor only) ──
-  protected cardButtonClass(card: string | null, _index: number): string {
+  protected cardButtonClass(index: number): string {
     const interactive = this.selectable() || this.reorderable();
     const base = 'block focus:outline-none';
 
     if (!interactive) return `${base} cursor-default`;
 
-    if (this.isLegal(card)) return `${base} cursor-pointer`;
+    const id = this.cardId(index);
+    if (this.isLegalById(id)) return `${base} cursor-pointer`;
 
     return `${base} ${this.reorderable() ? 'cursor-grab' : 'cursor-default'}`;
   }
 
   // ── Card filter style (muting non-playable cards without transparency) ──
-  protected cardFilterStyle(card: string | null): string {
+  protected cardFilterStyle(index: number): string {
     const interactive = this.selectable() || this.reorderable();
     if (!interactive) return '';
-    if (this.isLegal(card)) return '';
+    const id = this.cardId(index);
+    if (this.isLegalById(id)) return '';
     return 'brightness(0.6) saturate(0.3)';
   }
 
@@ -677,10 +754,11 @@ export class CardStack {
 
   // ── Multi-drag visibility helper ──
   /** Returns true if the card should be hidden during a multi-drag. */
-  protected isCardHiddenDuringDrag(card: string | null): boolean {
-    if (card === null) return false;
+  protected isCardHiddenDuringDrag(index: number): boolean {
+    const id = this.cardId(index);
+    if (id === null) return false;
     const hidden = this.cardsHiddenDuringDrag();
-    return hidden.has(card);
+    return hidden.has(id);
   }
 
   // ── Drop enter predicate ──
@@ -758,7 +836,7 @@ export class CardStack {
         }
         const card = cardsArr[current];
         if (this.isLegal(card) && !this.isTopOnlyRestricted(current)) {
-          this.onCardClick(card, current);
+          this.onCardClick(current);
         }
         break;
       }
@@ -837,40 +915,42 @@ export class CardStack {
     }
   }
 
-  protected onCardClick(card: string | null, index: number): void {
+  protected onCardClick(index: number): void {
     // Clear dragState if pointerdown set it but no drag started
     this.dragState.set(null);
 
     if (!this.selectable()) return;
     if (this.isTopOnlyRestricted(index)) return;
-    if (!this.isLegal(card)) return;
-    if (card === null) return;
+
+    const id = this.cardId(index);
+    if (!this.isLegalById(id)) return;
+    if (id === null) return;
 
     const ic = this.interactionController;
-    const id = this.stackId();
-    if (ic && id) {
-      ic.selectCard(id, card, this.effectiveMaxSelections());
+    const stackId = this.stackId();
+    if (ic && stackId) {
+      ic.selectCard(stackId, id, this.effectiveMaxSelections());
       return;
     }
 
-    this.cardSelected.emit({ cardName: card, index });
+    this.cardSelected.emit({ cardName: id, index });
 
     const max = this.effectiveMaxSelections();
     const current = this.selection();
 
     if (max === 1) {
       // Single-select: toggle or replace
-      if (current.includes(card)) {
+      if (current.includes(id)) {
         this.selection.set([]);
       } else {
-        this.selection.set([card]);
+        this.selection.set([id]);
       }
     } else {
       // Multi-select: toggle
-      if (current.includes(card)) {
-        this.selection.set(current.filter((c) => c !== card));
+      if (current.includes(id)) {
+        this.selection.set(current.filter((c) => c !== id));
       } else if (current.length < max) {
-        this.selection.set([...current, card]);
+        this.selection.set([...current, id]);
       } else {
         // At max, ignore click on unselected card
         return;
@@ -880,58 +960,62 @@ export class CardStack {
     this.selectedCards.emit(this.selection());
   }
 
-  protected onCardDblClick(card: string | null, index: number): void {
+  protected onCardDblClick(index: number): void {
     this.dragState.set(null);
 
     if (!this.selectable()) return;
     if (this.isTopOnlyRestricted(index)) return;
-    if (!this.isLegal(card)) return;
-    if (card === null) return;
+
+    const id = this.cardId(index);
+    if (!this.isLegalById(id)) return;
+    if (id === null) return;
 
     const ic = this.interactionController;
-    const id = this.stackId();
-    if (ic && id) {
-      ic.confirmCard(id, card);
+    const stackId = this.stackId();
+    if (ic && stackId) {
+      ic.confirmCard(stackId, id);
       return;
     }
 
-    this.cardConfirmed.emit({ cardName: card, index });
+    this.cardConfirmed.emit({ cardName: id, index });
   }
 
   // ── Drag-and-drop ──
 
-  protected onDragStarted(_event: CdkDragStart, card: string | null, index: number): void {
-    if (this.draggable() && card !== null) {
-      this.dragState.set({ cardName: card, index, dropped: false });
+  protected onDragStarted(_event: CdkDragStart, index: number): void {
+    const id = this.cardId(index);
+    if (this.draggable() && id !== null) {
+      this.dragState.set({ cardName: id, index, dropped: false });
       this.interactionController?.dragStarted();
-      this.cardDragStarted.emit({ cardName: card, index });
+      this.cardDragStarted.emit({ cardName: id, index });
     }
   }
 
-  protected onDragEnded(event: CdkDragEnd, card: string | null, index: number): void {
+  protected onDragEnded(event: CdkDragEnd, index: number): void {
     const ic = this.interactionController;
     const sourceId = this.stackId();
+    const id = this.cardId(index);
 
-    if (ic && sourceId && this.draggable() && card !== null) {
+    if (ic && sourceId && this.draggable() && id !== null) {
       const dropPoint = event.dropPoint;
-      const result = dropPoint ? ic.resolveDropTarget(sourceId, card, dropPoint) : null;
+      const result = dropPoint ? ic.resolveDropTarget(sourceId, id, dropPoint) : null;
 
       if (result) {
         if (result.mode === 'commit') {
           ic.commitToTarget(result.targetId);
         } else {
-          ic.confirmCard(sourceId, card);
+          ic.confirmCard(sourceId, id);
         }
       } else {
         // No valid target — restore positions
         if (!this.dragState()?.dropped) {
-          this.cardDragCancelled.emit({ cardName: card, index });
+          this.cardDragCancelled.emit({ cardName: id, index });
         }
         this.hideCardPositions();
         requestAnimationFrame(() => this.restoreCardPositions());
       }
-    } else if (!this.dragState()?.dropped && this.dragState() && card !== null) {
-      this.cardDragCancelled.emit({ cardName: card, index });
+    } else if (!this.dragState()?.dropped && this.dragState() && id !== null) {
+      this.cardDragCancelled.emit({ cardName: id, index });
     }
 
     this.dragState.set(null);

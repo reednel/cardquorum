@@ -1,4 +1,4 @@
-import { handleBury, handleCall, handleDeal, handlePick } from '../../phases';
+import { handleBury, handleCall, handleDeal, handlePick, legalCallOptions } from '../../phases';
 import { SheepsheadState } from '../../types';
 import { card, makeConfig, makeState, pickContinue } from '../test-helpers';
 
@@ -265,5 +265,79 @@ describe('handleCall', () => {
     expect(state.calledCard).toBe('alone');
     expect(state.players.filter((p) => p.role === 'partner')).toHaveLength(0);
     expect(state.phase).toBe('play');
+  });
+
+  it('allows calling a 10 when picker buried a fail ace but held all 3', () => {
+    const config = makeConfig({ partnerRule: 'called-ace', callOwnAce: false });
+    const state: SheepsheadState = {
+      players: [
+        {
+          userID: 1,
+          role: 'opposition',
+          hand: [card('xc'), card('ks'), card('7s'), card('8s'), card('9s')],
+          tricksWon: 0,
+          pointsWon: 0,
+          cardsWon: [],
+          scoreDelta: null,
+        },
+        {
+          userID: 2,
+          role: 'picker',
+          hand: [
+            card('ac'),
+            card('as'),
+            card('qc'),
+            card('jc'),
+            card('qd'),
+            card('jd'),
+            card('7d'),
+            card('8d'),
+          ],
+          tricksWon: 0,
+          pointsWon: 0,
+          cardsWon: [],
+          scoreDelta: null,
+        },
+        {
+          userID: 3,
+          role: 'opposition',
+          hand: [card('xs'), card('kh'), card('7h'), card('8h'), card('9h')],
+          tricksWon: 0,
+          pointsWon: 0,
+          cardsWon: [],
+          scoreDelta: null,
+        },
+      ],
+      phase: 'call',
+      trickNumber: 0,
+      activePlayer: 2,
+      blind: [],
+      buried: [card('ah'), card('9d')],
+      calledCard: null,
+      hole: null,
+      tricks: [],
+      crack: null,
+      blitz: null,
+      previousGameDouble: null,
+      noPick: null,
+      redeals: null,
+    };
+
+    // legalCallOptions should include 10s only for suits whose ace is in hand
+    // Picker has ac and as in hand, but buried ah — so xc and xs are callable, xh is not
+    const pickerHand = state.players[1].hand;
+    const options = legalCallOptions(pickerHand, state.buried!, config);
+    expect(options).toContain('xc');
+    expect(options).toContain('xs');
+    expect(options).not.toContain('xh');
+
+    // Should be able to call a 10 successfully
+    const result = handleCall(
+      state,
+      { type: 'call_ace', userID: 2, payload: { card: 'xc' } },
+      config,
+    );
+    expect(result.calledCard).toBe('xc');
+    expect(result.phase).toBe('play');
   });
 });

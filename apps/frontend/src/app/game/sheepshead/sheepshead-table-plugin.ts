@@ -9,6 +9,7 @@ import type {
   TrickPlayView,
 } from '@cardquorum/shared';
 import { DECK, formatCard, isTrump, SUIT_SYMBOLS } from '@cardquorum/sheepshead';
+import { getPendingCall } from './pending-call-state';
 import { SheepsheadSummary } from './sheepshead-summary';
 
 const SUIT_NAMES: Record<string, string> = {
@@ -45,6 +46,7 @@ interface SheepsheadPlayerView {
   buried: Array<{ name: string }> | null;
   calledCard: string | null;
   hole: { name: string } | null;
+  hasHoleCard: boolean;
   tricks: Array<{
     plays: Array<{ player: number; card: { name: string } }>;
     winner: number | null;
@@ -56,6 +58,7 @@ interface SheepsheadPlayerView {
   redeals: unknown[] | null;
   legalCardNames: string[] | null;
   legalCallableCards: string[] | null;
+  holeCardRequired: string[] | null;
   dealerUserID: number | null;
 }
 
@@ -262,12 +265,33 @@ function buildMoveEvent(
   if (targetStackId === 'buried') {
     return buildBuryEvent(state, selectedCards);
   }
+  if (targetStackId === 'hole-card') {
+    // Dropping a card into the hole-card stack — build the call_ace action with holeCard
+    const pendingCall = getPendingCall();
+    if (!pendingCall) return { type: 'noop' };
+    const allCards = state.players.flatMap((p) => p.hand).filter((c) => c !== null);
+    const holeCard = allCards.find((c) => c.name === selectedCards[0]) ?? {
+      name: selectedCards[0],
+    };
+    return { type: 'call_ace', payload: { card: pendingCall, holeCard } };
+  }
+  if (targetStackId === 'trick-pile' && selectedCards.length === 1 && selectedCards[0] === 'hole') {
+    // Playing the hole card from the hole-card stack to trick-pile
+    return { type: 'play_hole' };
+  }
   return buildPlayCardEvent(state, selectedCards[0]);
 }
 
 function getDefaultTarget(state: SheepsheadPlayerView, validActions: string[]): string | null {
-  if (state.phase === 'play' && validActions.includes('play_card')) {
+  if (
+    state.phase === 'play' &&
+    (validActions.includes('play_card') || validActions.includes('play_hole'))
+  ) {
     return 'trick-pile';
+  }
+  // During call phase with a pending unknown ace call, hand cards target the hole-card stack
+  if (state.phase === 'call' && getPendingCall()) {
+    return 'hole-card';
   }
   return null;
 }

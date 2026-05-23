@@ -276,8 +276,8 @@ describe('getValidTargets returns correct targets per game phase', () => {
     );
   });
 
-  it('returns [] for non-play, non-bury phases', () => {
-    const nonTargetPhases: GamePhase[] = ['deal', 'pick', 'call', 'score'];
+  it('returns [] for non-play, non-bury, non-call phases', () => {
+    const nonTargetPhases: GamePhase[] = ['deal', 'pick', 'score'];
     fc.assert(
       fc.property(
         arbRandomState().filter(({ state }) => nonTargetPhases.includes(state.phase)),
@@ -293,6 +293,32 @@ describe('getValidTargets returns correct targets per game phase', () => {
         },
       ),
       { numRuns: 100 },
+    );
+  });
+
+  it('returns hole-card for picker during call phase with single card selected', () => {
+    fc.assert(
+      fc.property(
+        arbRandomState().filter(
+          ({ state, userID }) =>
+            state.phase === 'call' &&
+            state.activePlayer === userID &&
+            state.players.some((p) => p.userID === userID && p.role === 'picker'),
+        ),
+        ({ config, state, userID }) => {
+          const player = state.players.find((p) => p.userID === userID)!;
+          const singleCard = player.hand.length > 0 ? [player.hand[0].name] : ['ac'];
+          const result = SheepsheadPlugin.getValidTargets!(
+            config,
+            state,
+            userID,
+            'hand',
+            singleCard,
+          );
+          expect(result).toEqual(['hole-card']);
+        },
+      ),
+      { numRuns: 50 },
     );
   });
 

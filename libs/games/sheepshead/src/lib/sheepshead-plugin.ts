@@ -8,9 +8,11 @@ import {
   handleDeal,
   handlePick,
   handlePlayCard,
+  handlePlayHole,
   handleScore,
   handleTrickAdvance,
   legalCallOptions,
+  requiresHoleCard,
 } from './phases';
 import { scoreMultiplier } from './scoring';
 import { legalPlays } from './tricks';
@@ -105,7 +107,13 @@ function getValidActions(
       }
 
       if (state.activePlayer === userID) {
-        actions.push('play_card');
+        // Check if the picker must play the hole card
+        const { playHoleCard } = legalPlays(state, config, userID);
+        if (playHoleCard) {
+          actions.push('play_hole');
+        } else {
+          actions.push('play_card');
+        }
       }
 
       // Before first card: crack, re-crack, and blitz are available
@@ -190,6 +198,8 @@ function applyEvent(
       return { state: handleCall(state, event, config) };
     case 'play_card':
       return { state: handlePlayCard(state, event, config) };
+    case 'play_hole':
+      return { state: handlePlayHole(state, event, config) };
     case 'game_scored':
       return { state: handleScore(state, config) };
     case 'crack':
@@ -276,7 +286,8 @@ function getPlayerView(
     }
   }
   const buried = state.buried ? [] : null;
-  const hole = null;
+  // Hole card: all players see whether it exists (face-down), but not what it is
+  const hasHoleCard = state.hole !== null;
 
   // Include only the current (in-progress) trick so the client can render
   // played cards on the table. Completed tricks are hidden.
@@ -311,9 +322,14 @@ function getPlayerView(
 
   // Include legal callable cards so the client only shows valid call options.
   let legalCallableCards: string[] | null = null;
+  let holeCardRequired: string[] | null = null;
   if (state.phase === 'call' && state.activePlayer === userID && isPicker) {
     const pickerPlayer = state.players.find((p) => p.role === 'picker')!;
     legalCallableCards = legalCallOptions(pickerPlayer.hand, state.buried ?? [], config);
+    // Identify which callable cards trigger the unknown ace condition
+    holeCardRequired = legalCallableCards.filter(
+      (card) => card !== 'alone' && requiresHoleCard(pickerPlayer.hand, card),
+    );
   }
 
   return {
@@ -321,14 +337,18 @@ function getPlayerView(
     players,
     blind,
     buried,
-    hole,
+    hole: null,
+    hasHoleCard,
     tricks,
     legalCardNames,
     legalCallableCards,
+    holeCardRequired,
     dealerUserID: state.players[0]?.userID ?? null,
   } as Partial<SheepsheadState> & {
+    hasHoleCard: boolean;
     legalCardNames: string[] | null;
     legalCallableCards: string[] | null;
+    holeCardRequired: string[] | null;
     dealerUserID: number | null;
   };
 }
@@ -387,10 +407,18 @@ function getValidTargets(
   sourceStackId: string,
   selectedCards: string[],
 ): string[] {
-  if (sourceStackId !== 'hand') return [];
-
   const player = state.players.find((p) => p.userID === userID);
   if (!player) return [];
+
+  // Dragging from the hole-card stack to trick-pile
+  if (sourceStackId === 'hole-card') {
+    if (state.phase !== 'play') return [];
+    if (state.activePlayer !== userID) return [];
+    const { playHoleCard } = legalPlays(state, config, userID);
+    return playHoleCard ? ['trick-pile'] : [];
+  }
+
+  if (sourceStackId !== 'hand') return [];
 
   switch (state.phase) {
     case 'play': {
@@ -409,6 +437,15 @@ function getValidTargets(
       const buryCount = config.name === 'partner-draft' ? Math.floor(blindSize / 2) : blindSize;
       if (selectedCards.length === buryCount) {
         return ['buried'];
+      }
+      return [];
+    }
+    case 'call': {
+      // During call phase, picker can drop a card into the hole-card stack (unknown ace)
+      if (state.activePlayer !== userID) return [];
+      if (player.role !== 'picker') return [];
+      if (selectedCards.length === 1) {
+        return ['hole-card'];
       }
       return [];
     }
@@ -462,6 +499,10 @@ function describeEvent(
     case 'play_card': {
       const name = playerNames.get(event.userID) ?? 'Unknown';
       return `${name} played the ${formatCard(event.payload.card)}`;
+    }
+    case 'play_hole': {
+      const name = playerNames.get(event.userID) ?? 'Unknown';
+      return `${name} played the unknown`;
     }
     case 'game_scored':
       return null;

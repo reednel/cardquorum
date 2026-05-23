@@ -787,11 +787,11 @@ describe('CardStack – drag-and-drop integration', () => {
 
     // Start a drag
     const mockDragStartEvent = {} as any;
-    comp.onDragStarted(mockDragStartEvent, 'ad', 1);
+    comp.onDragStarted(mockDragStartEvent, 1);
 
     // End the drag without a preceding drop
     const mockDragEndEvent = {} as any;
-    comp.onDragEnded(mockDragEndEvent, 'ad', 1);
+    comp.onDragEnded(mockDragEndEvent, 1);
 
     expect(cancelled.length).toBe(1);
     expect(cancelled[0]).toEqual({ cardName: 'ad', index: 1 });

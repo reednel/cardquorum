@@ -165,6 +165,7 @@ export type SheepsheadEvent =
   | ReCrackEvent
   | BlitzEvent
   | PlayCardEvent
+  | PlayHoleEvent
   | GameScoredEvent
   | TrickAdvanceEvent;
 
@@ -221,6 +222,11 @@ export interface PlayCardEvent {
   type: 'play_card';
   userID: UserID;
   payload: { card: Card };
+}
+
+export interface PlayHoleEvent {
+  type: 'play_hole';
+  userID: UserID;
 }
 
 export interface GameScoredEvent {

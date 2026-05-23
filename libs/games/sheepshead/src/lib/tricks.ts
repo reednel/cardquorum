@@ -1,5 +1,5 @@
 import { cardPower, cardsEqual, isTrump } from './cards';
-import { DECK, FAIL_TENS } from './constants';
+import { DECK, FAIL_TENS, TRUMP_ORDER } from './constants';
 import {
   CalledCard,
   Card,
@@ -19,8 +19,14 @@ export interface LegalPlaysResult {
 /**
  * Determine the winner of a completed trick.
  * The lead card establishes the suit to follow; trump always beats fail.
+ *
+ * When a 10 is called and the called suit is led for the first time,
+ * the called 10 ranks above the ace of that suit (unless trumped).
  */
-export function evaluateTrick(trick: TrickState): number {
+export function evaluateTrick(
+  trick: TrickState,
+  options?: { calledCard?: CalledCard | null; isFirstCalledSuitLead?: boolean },
+): number {
   if (trick.plays.length === 0) {
     throw new Error('Cannot evaluate an empty trick');
   }
@@ -28,14 +34,30 @@ export function evaluateTrick(trick: TrickState): number {
   const leadCard = trick.plays[0].card;
   const leadSuit = leadCard.suit;
 
+  // Determine if the called-10 override applies
+  const calledCard = options?.calledCard ?? null;
+  const isFirstCalledSuitLead = options?.isFirstCalledSuitLead ?? false;
+  const calledTenOverride =
+    calledCard &&
+    calledCard !== 'alone' &&
+    FAIL_TENS.includes(calledCard) &&
+    isFirstCalledSuitLead &&
+    !isTrump(leadCard);
+
   // Find the first non-hole-card play as initial best
   let bestIndex = 0;
-  let bestPower = trick.plays[0].isHoleCard ? Infinity : cardPower(leadCard, leadSuit);
+  let bestPower = trick.plays[0].isHoleCard
+    ? Infinity
+    : cardPowerWithOverride(trick.plays[0].card, leadSuit, calledTenOverride ? calledCard : null);
 
   for (let i = 1; i < trick.plays.length; i++) {
     // Hole cards have no trick-taking power
     if (trick.plays[i].isHoleCard) continue;
-    const power = cardPower(trick.plays[i].card, leadSuit);
+    const power = cardPowerWithOverride(
+      trick.plays[i].card,
+      leadSuit,
+      calledTenOverride ? calledCard : null,
+    );
     /* -1 means the card doesn't compete (wrong fail suit, not trump) */
     if (power === -1) continue;
     if (power < bestPower) {
@@ -45,6 +67,32 @@ export function evaluateTrick(trick: TrickState): number {
   }
 
   return trick.plays[bestIndex].player;
+}
+
+/**
+ * Card power with optional called-10 override.
+ * When calledTen is provided, the called 10 ranks above the ace of its suit.
+ */
+function cardPowerWithOverride(card: Card, leadSuit: Suit, calledTen: CalledCard | null): number {
+  const basePower = cardPower(card, leadSuit);
+  if (!calledTen || basePower === -1) return basePower;
+
+  // Only applies to fail-suit cards (not trump)
+  if (isTrump(card)) return basePower;
+
+  const calledTenCard = DECK.find((d) => d.name === calledTen);
+  if (!calledTenCard) return basePower;
+  if (card.suit !== calledTenCard.suit) return basePower;
+
+  // The called 10 gets power just below trump (better than ace)
+  // Ace normally has fail index 0 → power TRUMP_ORDER.length + 0
+  // 10 normally has fail index 1 → power TRUMP_ORDER.length + 1
+  // Override: give the 10 power TRUMP_ORDER.length - 0.5 (better than ace)
+  if (card.name === calledTen) {
+    return TRUMP_ORDER.length - 0.5;
+  }
+
+  return basePower;
 }
 
 /** Get the suit of a called card. */
@@ -158,7 +206,7 @@ export function legalPlays(
     }
   }
 
-  // Picker can't slough their last card of the called suit before it's been led
+  // Picker constraints before the called suit has been led
   if (
     playerRole === 'picker' &&
     !calledSuitHasBeenLed(state) &&
@@ -166,15 +214,23 @@ export function legalPlays(
     !state.hole &&
     currentTrick.plays.length > 0
   ) {
-    const calledSuitCards = hand.filter((c) => !isTrump(c) && c.suit === suit);
-    if (calledSuitCards.length === 1) {
-      const lastCard = calledSuitCards[0];
-      const isFollowingSuit =
-        currentTrick.plays.length > 0 &&
-        !isTrump(currentTrick.plays[0].card) &&
-        currentTrick.plays[0].card.suit === suit;
-      if (!isFollowingSuit && baseLegal.length > 1) {
-        return { cards: baseLegal.filter((c) => !cardsEqual(c, lastCard)), playHoleCard: false };
+    if (FAIL_TENS.includes(state.calledCard)) {
+      // Called a 10: picker can't slough the ace of the called suit when following
+      const aceOfSuit = ('a' + suit[0]) as CardName;
+      const aceInHand = baseLegal.find((c) => c.name === aceOfSuit);
+      if (aceInHand && baseLegal.length > 1) {
+        return { cards: baseLegal.filter((c) => c.name !== aceOfSuit), playHoleCard: false };
+      }
+    } else {
+      // Called an ace: picker can't slough their last card of the called suit
+      const calledSuitCards = hand.filter((c) => !isTrump(c) && c.suit === suit);
+      if (calledSuitCards.length === 1) {
+        const lastCard = calledSuitCards[0];
+        const isFollowingSuit =
+          !isTrump(currentTrick.plays[0].card) && currentTrick.plays[0].card.suit === suit;
+        if (!isFollowingSuit && baseLegal.length > 1) {
+          return { cards: baseLegal.filter((c) => !cardsEqual(c, lastCard)), playHoleCard: false };
+        }
       }
     }
   }

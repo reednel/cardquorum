@@ -14,6 +14,7 @@ import { CardStack } from '../card-stack';
 import { GameSummaryShell } from '../game-summary-shell';
 import { GameTableShell } from '../game-table-shell';
 import { InteractionController } from '../interaction-controller';
+import { setPendingCall } from './pending-call-state';
 import { SheepsheadTablePlugin } from './sheepshead-table-plugin';
 
 const CALL_OPTIONS: { value: string; label: string }[] = [
@@ -118,12 +119,25 @@ const CALL_OPTIONS: { value: string; label: string }[] = [
           }
           @case ('call') {
             <div role="group" aria-label="Call options">
-              @if (canCall()) {
+              @if (pendingCall()) {
+                <div data-testid="hole-card-selection" class="flex flex-col items-center gap-2">
+                  <p class="text-sm text-text-secondary dark:text-text-secondary-dark">
+                    Calling unknown ace
+                  </p>
+                  <button
+                    data-testid="cancel-call-btn"
+                    (click)="cancelPendingCall()"
+                    class="rounded-lg bg-surface-raised px-5 py-2 text-sm font-medium text-text-body hover:bg-border-input dark:bg-border-input-dark dark:text-text-heading-dark dark:hover:bg-surface-raised-dark"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              } @else if (canCall()) {
                 <div data-testid="call-options" class="grid grid-cols-2 gap-2">
                   @for (opt of callOptions(); track opt.value) {
                     <button
                       [attr.data-testid]="'call-btn-' + opt.value"
-                      (click)="onAction({ type: 'call_ace', payload: { card: opt.value } })"
+                      (click)="onCallSelected(opt.value)"
                       class="rounded-lg border border-border-input bg-bg px-4 py-2 text-sm font-medium text-text-body hover:bg-surface-raised dark:border-border-input-dark dark:bg-surface-raised-dark dark:text-text-heading-dark dark:hover:bg-surface-raised-dark"
                     >
                       {{ opt.label }}
@@ -156,19 +170,53 @@ const CALL_OPTIONS: { value: string; label: string }[] = [
 
       <!-- Player hand with bury support via interaction system -->
       <div hand class="flex w-full flex-col items-center gap-2">
-        <app-card-stack
-          stackId="hand"
-          [cards]="myHand()"
-          [spread]="0.5"
-          [spreadAngle]="25"
-          [autoScale]="true"
-          [selectable]="true"
-          [reorderable]="true"
-          [draggable]="currentPhase() === 'play' || isBuryPhase()"
-          [maxSelections]="isBuryPhase() ? buryCount() : 1"
-          [legalCards]="legalCards()"
-          (cardsReordered)="onHandReordered($event)"
-        />
+        @if (pendingCall()) {
+          <p
+            data-testid="hole-card-prompt"
+            class="text-sm font-medium text-text-body dark:text-text-body-dark"
+          >
+            Drop a card to lay face-down as the unknown
+          </p>
+        }
+        <div class="relative flex w-full justify-center">
+          <app-card-stack
+            stackId="hand"
+            [cards]="myHand()"
+            [spread]="0.5"
+            [spreadAngle]="25"
+            [autoScale]="true"
+            [selectable]="true"
+            [reorderable]="true"
+            [draggable]="currentPhase() === 'play' || isBuryPhase() || !!pendingCall()"
+            [maxSelections]="isBuryPhase() ? buryCount() : 1"
+            [legalCards]="legalCards()"
+            (cardsReordered)="onHandReordered($event)"
+          />
+          @if (pendingCall()) {
+            <div class="absolute right-2 top-1/2 -translate-y-1/2">
+              <app-card-stack
+                stackId="hole-card"
+                data-testid="hole-card-stack"
+                [cards]="[]"
+                [cardWidth]="72"
+                [droppable]="true"
+              />
+            </div>
+          }
+          @if (showHoleCard()) {
+            <div class="absolute right-2 top-1/2 -translate-y-1/2" data-testid="hole-card-play">
+              <app-card-stack
+                stackId="hole-card"
+                [cards]="[null]"
+                [cardIds]="['hole']"
+                [cardWidth]="72"
+                [draggable]="canPlayHole()"
+                [selectable]="true"
+                [legalCards]="canPlayHole() ? ['hole'] : []"
+              />
+            </div>
+          }
+        </div>
       </div>
 
       <!-- Corner actions -->
@@ -269,12 +317,19 @@ export class SheepsheadTable {
   // ── Local state ──
   protected readonly crackDismissed = signal(false);
   protected readonly scoreDismissed = signal(false);
+  protected readonly pendingCall = signal<string | null>(null);
   private readonly handOrder = signal<string[] | null>(null);
   protected readonly callOptions = computed(() => {
     const state = this.state() as { legalCallableCards?: string[] | null } | null;
     const legal = state?.legalCallableCards;
     if (!legal) return CALL_OPTIONS;
     return CALL_OPTIONS.filter((opt) => legal.includes(opt.value));
+  });
+
+  // ── Cards that require a hole card (unknown ace condition) ──
+  private readonly holeCardRequired = computed(() => {
+    const state = this.state() as { holeCardRequired?: string[] | null } | null;
+    return state?.holeCardRequired ?? [];
   });
 
   // ── Current game phase ──
@@ -315,6 +370,13 @@ export class SheepsheadTable {
   protected readonly canCrack = computed(() => this.validActions().includes('crack'));
   protected readonly canReCrack = computed(() => this.validActions().includes('re_crack'));
   protected readonly canBlitz = computed(() => this.validActions().includes('blitz'));
+  protected readonly canPlayHole = computed(() => this.validActions().includes('play_hole'));
+
+  // ── Hole card visibility (face-down card next to hand during play) ──
+  protected readonly showHoleCard = computed(() => {
+    const state = this.state() as { hasHoleCard?: boolean } | null;
+    return state?.hasHoleCard ?? false;
+  });
 
   // ── Player hand with local reorder support ──
   protected readonly myHand = computed(() => {
@@ -412,6 +474,14 @@ export class SheepsheadTable {
         this.scoreDismissed.set(false);
       }
     });
+
+    // Reset pendingCall when phase changes away from call
+    effect(() => {
+      if (this.currentPhase() !== 'call') {
+        this.pendingCall.set(null);
+        setPendingCall(null);
+      }
+    });
   }
 
   protected dismissCornerActions(): void {
@@ -428,6 +498,23 @@ export class SheepsheadTable {
 
   protected onHandReordered(newOrder: (string | null)[]): void {
     this.handOrder.set(newOrder.filter((c): c is string => c !== null));
+  }
+
+  protected onCallSelected(cardValue: string): void {
+    if (this.holeCardRequired().includes(cardValue)) {
+      // Unknown ace condition — need to drop a hole card
+      this.pendingCall.set(cardValue);
+      setPendingCall(cardValue);
+    } else {
+      // Normal call — dispatch immediately
+      this.onAction({ type: 'call_ace', payload: { card: cardValue } });
+    }
+  }
+
+  protected cancelPendingCall(): void {
+    this.pendingCall.set(null);
+    setPendingCall(null);
+    this.interactionController?.reset();
   }
 
   protected onAction(event: { type: string; payload?: unknown }): void {

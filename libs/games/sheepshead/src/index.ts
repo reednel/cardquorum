@@ -42,7 +42,9 @@ export {
   handleBury,
   handleCall,
   handlePlayCard,
+  handlePlayHole,
   handleScore,
   legalCallOptions,
+  requiresHoleCard,
 } from './lib/phases';
 export { SheepsheadPlugin } from './lib/sheepshead-plugin';

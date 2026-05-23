@@ -1,5 +1,5 @@
 import { cardsEqual, isTrump, sumPoints } from './cards';
-import { FAIL_ACES, FAIL_TENS, TRUMP_ORDER } from './constants';
+import { DECK, FAIL_ACES, FAIL_TENS, TRUMP_ORDER } from './constants';
 import { createShuffledDeck, deal, hasNoAceFaceTrump } from './dealing';
 import { assignPartnerByRule, determinePartnerCalledAce } from './partners';
 import { gotSchwarzed, pickingTeamPoints, scoreMultiplier } from './scoring';
@@ -14,6 +14,7 @@ import {
   PickEvent,
   PickPhaseResult,
   PlayCardEvent,
+  PlayHoleEvent,
   SheepsheadConfig,
   SheepsheadState,
   TrickState,
@@ -391,15 +392,42 @@ export function legalCallOptions(
     }
   }
 
-  // Fail tens: only callable if picker holds all 3 fail aces
-  const hasAllFailAces = FAIL_ACES.every((a) => pickerHand.some((c) => c.name === a));
+  // Fail tens: only callable if picker holds all 3 fail aces (in hand or buried)
+  // AND the ace of the specific suit is still in the picker's hand (not buried)
+  const hasAllFailAces = FAIL_ACES.every(
+    (a) => pickerHand.some((c) => c.name === a) || buriedCards.some((c) => c.name === a),
+  );
   if (hasAllFailAces) {
     for (const ten of FAIL_TENS) {
-      options.push(ten);
+      // Can only call a 10 if the ace of that suit is in hand
+      const aceOfSuit = ('a' + ten.slice(1)) as CardName;
+      if (pickerHand.some((c) => c.name === aceOfSuit)) {
+        options.push(ten);
+      }
     }
   }
 
   return options;
+}
+
+/**
+ * Determine whether calling a given card requires a hole card (unknown ace condition).
+ * This is true when the picker has zero fail-suit cards of the called card's suit.
+ * In that case, the picker must designate a card from their hand to lay face-down.
+ */
+export function requiresHoleCard(pickerHand: Card[], calledCard: string): boolean {
+  if (calledCard === 'alone') return false;
+
+  // Determine the suit of the called card
+  const suitChar = calledCard.slice(-1);
+  const suitMap: Record<string, string> = { c: 'clubs', s: 'spades', h: 'hearts' };
+  const suit = suitMap[suitChar];
+  if (!suit) return false;
+
+  // Check if the picker has any fail-suit cards of that suit
+  // (fail-suit cards = non-trump cards of that suit)
+  const failSuitCards = pickerHand.filter((c) => !isTrump(c) && c.suit === suit);
+  return failSuitCards.length === 0;
 }
 
 /**
@@ -433,11 +461,18 @@ export function handleCall(
     };
   }
 
-  // Validate calling a 10: picker must hold all 3 fail aces
+  // Validate calling a 10: picker must hold all 3 fail aces (in hand or buried)
+  // AND the ace of the called suit must be in the picker's hand (not buried)
   if (FAIL_TENS.includes(calledCard)) {
-    const hasAllFailAces = FAIL_ACES.every((a) => pickerHand.some((c) => c.name === a));
+    const hasAllFailAces = FAIL_ACES.every(
+      (a) => pickerHand.some((c) => c.name === a) || buriedCards.some((c) => c.name === a),
+    );
     if (!hasAllFailAces) {
       throw new Error('Cannot call a 10 without holding all 3 fail aces');
+    }
+    const aceOfSuit = ('a' + calledCard.slice(1)) as CardName;
+    if (!pickerHand.some((c) => c.name === aceOfSuit)) {
+      throw new Error(`Cannot call ${calledCard} — ace of that suit is not in hand`);
     }
   }
 
@@ -454,8 +489,19 @@ export function handleCall(
   // Handle hole card (unknown ace condition)
   let hole: Card | null = null;
   let updatedPlayers = state.players;
-  if (event.payload.holeCard) {
+  const needsHoleCard = requiresHoleCard(pickerHand, calledCard);
+
+  if (needsHoleCard) {
+    if (!event.payload.holeCard) {
+      throw new Error(
+        `Unknown ace condition: picker has no cards of the called suit and must provide a hole card`,
+      );
+    }
     hole = event.payload.holeCard;
+    // Validate hole card is in picker's hand
+    if (!pickerHand.some((c) => cardsEqual(c, hole!))) {
+      throw new Error(`Hole card ${hole.name} is not in picker's hand`);
+    }
     // Remove hole card from picker's hand
     updatedPlayers = state.players.map((p, i) => {
       if (i === pickerIdx) {
@@ -463,6 +509,9 @@ export function handleCall(
       }
       return p;
     });
+  } else if (event.payload.holeCard) {
+    // Hole card provided but not required — ignore it
+    hole = null;
   }
 
   // Determine partner — holder of the called card
@@ -491,6 +540,51 @@ export function handleCall(
     trickNumber: 1,
     tricks: [{ plays: [], winner: null }],
   };
+}
+
+/**
+ * Play phase: picker plays the hole card (unknown ace) to the current trick.
+ * No card payload needed — the hole card is taken from state.hole.
+ */
+export function handlePlayHole(
+  state: SheepsheadState,
+  event: PlayHoleEvent,
+  config: SheepsheadConfig,
+): SheepsheadState {
+  if (!state.hole) {
+    throw new Error('No hole card to play');
+  }
+
+  const playerIdx = state.players.findIndex((p) => p.userID === event.userID);
+  if (playerIdx === -1) throw new Error(`Player ${event.userID} not found`);
+
+  const { playHoleCard } = legalPlays(state, config, event.userID);
+  if (!playHoleCard) {
+    throw new Error('Cannot play hole card at this time');
+  }
+
+  const currentTrickIdx = state.tricks.length - 1;
+  const currentTrick = state.tricks[currentTrickIdx];
+  const holeCard = state.hole;
+
+  // Add hole card play to trick (face-down, no trick-taking power)
+  const updatedTrick: TrickState = {
+    ...currentTrick,
+    plays: [...currentTrick.plays, { player: event.userID, card: holeCard, isHoleCard: true }],
+  };
+
+  const tricks = state.tricks.map((t, i) => (i === currentTrickIdx ? updatedTrick : t));
+
+  // Clear hole from state
+  const newState = { ...state, tricks, hole: null };
+
+  // Check if trick is complete
+  if (updatedTrick.plays.length === state.players.length) {
+    return completeTrick(newState, updatedTrick, currentTrickIdx, tricks, state.players, config);
+  }
+
+  const nextIdx = nextPlayerIndex(playerIdx, state.players.length);
+  return { ...newState, activePlayer: state.players[nextIdx].userID };
 }
 
 /**
@@ -566,6 +660,33 @@ export function handlePlayCard(
 }
 
 /**
+ * Whether the given trick is the first time the called suit has been led.
+ * Checks that no previously completed trick led the called suit.
+ */
+function isFirstCalledSuitLeadForTrick(state: SheepsheadState, trick: TrickState): boolean {
+  if (!state.calledCard || state.calledCard === 'alone') return false;
+  if (trick.plays.length === 0) return false;
+
+  const calledCardObj = DECK.find((d) => d.name === state.calledCard);
+  if (!calledCardObj) return false;
+  // For called 10s, the suit is the 10's suit; for aces, same
+  const suit = calledCardObj.suit;
+
+  const leadCard = trick.plays[0].card;
+  if (isTrump(leadCard) || leadCard.suit !== suit) return false;
+
+  // Check no previous completed trick led this suit
+  for (const t of state.tricks) {
+    if (t === trick) continue; // skip the current trick being evaluated
+    if (t.winner === null) continue; // skip incomplete tricks
+    if (t.plays.length === 0) continue;
+    const tLead = t.plays[0].card;
+    if (!isTrump(tLead) && tLead.suit === suit) return false;
+  }
+  return true;
+}
+
+/**
  * Complete a trick: evaluate winner, update stats, set scheduledEvents for trick_advance.
  * Does NOT start a new trick or transition to score — that is handled by handleTrickAdvance.
  */
@@ -577,7 +698,10 @@ function completeTrick(
   currentPlayers: SheepsheadState['players'],
   config: SheepsheadConfig,
 ): SheepsheadState {
-  const winnerID = evaluateTrick(updatedTrick);
+  const winnerID = evaluateTrick(updatedTrick, {
+    calledCard: state.calledCard,
+    isFirstCalledSuitLead: isFirstCalledSuitLeadForTrick(state, updatedTrick),
+  });
   const completedTrick: TrickState = { ...updatedTrick, winner: winnerID };
 
   const trickCards = completedTrick.plays.map((p) => p.card);
