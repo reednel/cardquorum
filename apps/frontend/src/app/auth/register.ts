@@ -12,7 +12,7 @@ import { AuthService } from './auth.service';
   selector: 'app-register',
   template: `
     <div class="flex min-h-screen items-center justify-center bg-surface px-4 dark:bg-bg-dark">
-      <div class="w-full max-w-sm rounded-lg bg-bg p-8 shadow dark:bg-bg-dark">
+      <div class="w-full max-w-sm rounded-lg bg-surface p-8 shadow dark:bg-surface-dark">
         <h1
           class="mb-6 text-center text-2xl font-semibold text-text-heading dark:text-text-heading-dark"
         >

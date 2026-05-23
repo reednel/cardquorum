@@ -34,6 +34,12 @@ function getServeStaticImports() {
     ServeStaticModule.forRoot({
       rootPath: staticPath,
       exclude: ['/api/(.*)'],
+      serveStaticOptions: {
+        // With Fastify, fallthrough must be true so that non-file routes
+        // fall back to serving index.html (SPA client-side routing support).
+        // Without this, reloading a page like /rooms/5 returns 404.
+        fallthrough: true,
+      },
     }),
   ];
 }

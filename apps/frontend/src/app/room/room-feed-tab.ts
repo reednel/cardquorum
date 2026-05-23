@@ -19,6 +19,7 @@ import { GameLogEntryComponent } from '../chat/game-log-entry';
 import { deriveFeedItems, FeedItem, FeedMode, isBoundaryEntry } from '../chat/game-log-utils';
 import { GameLogService } from '../chat/game-log.service';
 import { SessionBoundaryMarker } from '../chat/session-boundary-marker';
+import { WebSocketService } from '../websocket.service';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -81,7 +82,11 @@ import { SessionBoundaryMarker } from '../chat/session-boundary-marker';
               </div>
             }
           } @empty {
-            <p class="py-8 text-center text-sm text-text-secondary">No messages yet. Say hello!</p>
+            @if (!gameLogService.loading() && wsConnected()) {
+              <p class="py-8 text-center text-sm text-text-secondary">
+                No messages yet. Say hello!
+              </p>
+            }
           }
         </div>
       </div>
@@ -129,6 +134,8 @@ import { SessionBoundaryMarker } from '../chat/session-boundary-marker';
 export class RoomFeedTab {
   readonly chatService = inject(ChatService);
   readonly gameLogService = inject(GameLogService);
+  private readonly ws = inject(WebSocketService);
+  protected readonly wsConnected = this.ws.connected;
 
   protected readonly faPaperPlane = faPaperPlane;
   protected readonly feedContainer = viewChild<ElementRef<HTMLElement>>('feedContainer');

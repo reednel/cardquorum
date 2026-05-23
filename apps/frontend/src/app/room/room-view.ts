@@ -72,7 +72,7 @@ type RoomTab = 'feed' | 'members' | 'game' | 'stats';
         @if (gameService.state()) {
           <app-game-table
             [myUserID]="myUserID()"
-            [members]="roomContext.members()"
+            [members]="roomContext.allKnownMembers()"
             [isOwner]="isOwner()"
             [autostart]="roomGameTab()?.autostart() ?? false"
             [canStartNext]="roomGameTab()?.canStart() ?? false"
