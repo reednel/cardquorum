@@ -187,6 +187,7 @@ export class RoomService {
       presetName: string | null;
       config: Record<string, unknown>;
       autostart: boolean;
+      turnTimeLimit: number | null;
     },
   ) {
     return this.roomGameSettings.upsert(roomId, settings);

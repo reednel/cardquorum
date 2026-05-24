@@ -4,6 +4,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { RoomResponse, RosterMember } from '@cardquorum/shared';
 import { AuthService } from '../auth/auth.service';
+import { ForceAbandonService } from '../game/force-abandon.service';
 import { GameService } from '../game/game.service';
 import { ThemeService } from '../shell/theme.service';
 import { WebSocketService } from '../websocket.service';
@@ -86,6 +87,15 @@ describe('RoomMembersTab', () => {
     sessionId: sessionIdSignal,
   };
 
+  const showButtonSignal = signal(false);
+  const activePlayerUserIdSignal = signal<number | null>(null);
+  const mockForceAbandonService = {
+    showButton: showButtonSignal,
+    activePlayerUserId: activePlayerUserIdSignal,
+    confirmForceAbandon: jest.fn(),
+    dismissModal: jest.fn(),
+  };
+
   const userSignal = signal<{
     userId: number;
     username: string;
@@ -137,6 +147,8 @@ describe('RoomMembersTab', () => {
     membersSignal.set([]);
     sessionIdSignal.set(null);
     userSignal.set(null);
+    showButtonSignal.set(false);
+    activePlayerUserIdSignal.set(null);
 
     await TestBed.configureTestingModule({
       imports: [RoomMembersTab],
@@ -144,6 +156,7 @@ describe('RoomMembersTab', () => {
         { provide: RosterService, useValue: mockRosterService },
         { provide: RoomContextService, useValue: mockRoomContext },
         { provide: GameService, useValue: mockGameService },
+        { provide: ForceAbandonService, useValue: mockForceAbandonService },
         { provide: AuthService, useValue: mockAuthService },
         { provide: RoomService, useValue: mockRoomService },
         { provide: HttpClient, useValue: mockHttpClient },
@@ -284,5 +297,126 @@ describe('RoomMembersTab', () => {
 
     const group = el.querySelector('[data-testid="rotation-mode-group"]');
     expect(group).toBeFalsy();
+  });
+
+  // --- Force-abandon button ---
+
+  it('shows force-abandon button next to tardy player when owner and showButton is true', () => {
+    const tardyUserId = 2;
+    playersSignal.set([
+      makeMember(OWNER_ID, 'players', 0, 'alice'),
+      makeMember(tardyUserId, 'players', 1, 'bob'),
+    ]);
+    sessionIdSignal.set(99);
+    showButtonSignal.set(true);
+    activePlayerUserIdSignal.set(tardyUserId);
+    setup({ userId: OWNER_ID });
+
+    const btn = el.querySelector(`[data-testid="force-abandon-btn-${tardyUserId}"]`);
+    expect(btn).toBeTruthy();
+  });
+
+  it('hides force-abandon button when showButton is false', () => {
+    const tardyUserId = 2;
+    playersSignal.set([
+      makeMember(OWNER_ID, 'players', 0, 'alice'),
+      makeMember(tardyUserId, 'players', 1, 'bob'),
+    ]);
+    sessionIdSignal.set(99);
+    showButtonSignal.set(false);
+    activePlayerUserIdSignal.set(tardyUserId);
+    setup({ userId: OWNER_ID });
+
+    const btn = el.querySelector(`[data-testid="force-abandon-btn-${tardyUserId}"]`);
+    expect(btn).toBeFalsy();
+  });
+
+  it('hides force-abandon button for non-owner users', () => {
+    const tardyUserId = 2;
+    playersSignal.set([
+      makeMember(OWNER_ID, 'players', 0, 'alice'),
+      makeMember(tardyUserId, 'players', 1, 'bob'),
+    ]);
+    sessionIdSignal.set(99);
+    showButtonSignal.set(true);
+    activePlayerUserIdSignal.set(tardyUserId);
+    setup({ userId: tardyUserId }); // non-owner
+
+    const btn = el.querySelector(`[data-testid="force-abandon-btn-${tardyUserId}"]`);
+    expect(btn).toBeFalsy();
+  });
+
+  it('does not show force-abandon button for non-active players', () => {
+    playersSignal.set([
+      makeMember(OWNER_ID, 'players', 0, 'alice'),
+      makeMember(2, 'players', 1, 'bob'),
+      makeMember(3, 'players', 2, 'charlie'),
+    ]);
+    sessionIdSignal.set(99);
+    showButtonSignal.set(true);
+    activePlayerUserIdSignal.set(2); // bob is active
+    setup({ userId: OWNER_ID });
+
+    // Button should appear for bob (active player) but not charlie
+    expect(el.querySelector('[data-testid="force-abandon-btn-2"]')).toBeTruthy();
+    expect(el.querySelector('[data-testid="force-abandon-btn-3"]')).toBeFalsy();
+  });
+
+  it('calls confirmForceAbandon on confirm dialog confirmation', () => {
+    const tardyUserId = 2;
+    playersSignal.set([
+      makeMember(OWNER_ID, 'players', 0, 'alice'),
+      makeMember(tardyUserId, 'players', 1, 'bob'),
+    ]);
+    sessionIdSignal.set(99);
+    showButtonSignal.set(true);
+    activePlayerUserIdSignal.set(tardyUserId);
+    setup({ userId: OWNER_ID });
+
+    // Click the force-abandon button to open confirmation dialog
+    const btn = el.querySelector(
+      `[data-testid="force-abandon-btn-${tardyUserId}"]`,
+    ) as HTMLButtonElement;
+    btn.click();
+    fixture.detectChanges();
+
+    // Confirm the dialog
+    const confirmBtn = el.querySelector(
+      '[data-testid="confirm-dialog-confirm"]',
+    ) as HTMLButtonElement;
+    expect(confirmBtn).toBeTruthy();
+    confirmBtn.click();
+    fixture.detectChanges();
+
+    expect(mockForceAbandonService.confirmForceAbandon).toHaveBeenCalledWith(99, tardyUserId);
+  });
+
+  it('does not call confirmForceAbandon when dialog is cancelled', () => {
+    const tardyUserId = 2;
+    playersSignal.set([
+      makeMember(OWNER_ID, 'players', 0, 'alice'),
+      makeMember(tardyUserId, 'players', 1, 'bob'),
+    ]);
+    sessionIdSignal.set(99);
+    showButtonSignal.set(true);
+    activePlayerUserIdSignal.set(tardyUserId);
+    setup({ userId: OWNER_ID });
+
+    // Click the force-abandon button to open confirmation dialog
+    const btn = el.querySelector(
+      `[data-testid="force-abandon-btn-${tardyUserId}"]`,
+    ) as HTMLButtonElement;
+    btn.click();
+    fixture.detectChanges();
+
+    // Cancel the dialog
+    const cancelBtn = el.querySelector(
+      '[data-testid="confirm-dialog-cancel"]',
+    ) as HTMLButtonElement;
+    expect(cancelBtn).toBeTruthy();
+    cancelBtn.click();
+    fixture.detectChanges();
+
+    expect(mockForceAbandonService.confirmForceAbandon).not.toHaveBeenCalled();
   });
 });

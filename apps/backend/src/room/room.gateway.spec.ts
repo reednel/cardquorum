@@ -489,6 +489,7 @@ describe('RoomGateway', () => {
       presetName: 'classic',
       config: { someField: 'value' },
       autostart: false,
+      turnTimeLimit: null,
     };
 
     it('should upsert settings and broadcast to room when sender is owner', async () => {
@@ -560,6 +561,134 @@ describe('RoomGateway', () => {
       expect(messages[0].event).toBe(WS_EMIT.GAME_ERROR);
       expect(messages[0].data.message).toContain('Failed to save game settings');
     });
+
+    it('should reject turnTimeLimit change while a game is active', async () => {
+      gameService.isGameActive.mockReturnValue(true);
+      (roomService.loadGameSettings as jest.Mock).mockResolvedValue({
+        ...testSettings,
+        turnTimeLimit: 60,
+      });
+
+      const ownerClient = createMockClient();
+      connectionService.trackClient(ownerClient, aliceIdentity);
+
+      await gateway.handleJoinRoom(ownerClient, { roomId: 1 });
+      (ownerClient.send as jest.Mock).mockClear();
+
+      await gateway.handleGameSettingsUpdate(ownerClient, {
+        roomId: 1,
+        settings: { ...testSettings, turnTimeLimit: 120 },
+      });
+
+      expect(roomService.upsertGameSettings).not.toHaveBeenCalled();
+
+      const messages = parseSentMessages(ownerClient);
+      expect(messages).toHaveLength(1);
+      expect(messages[0].event).toBe(WS_EMIT.GAME_ERROR);
+      expect(messages[0].data.message).toBe('Only autostart can be changed during a live game');
+    });
+
+    it('should allow settings update with same turnTimeLimit while game is active', async () => {
+      gameService.isGameActive.mockReturnValue(true);
+      (roomService.loadGameSettings as jest.Mock).mockResolvedValue({
+        ...testSettings,
+        turnTimeLimit: 60,
+      });
+
+      const ownerClient = createMockClient();
+      connectionService.trackClient(ownerClient, aliceIdentity);
+
+      await gateway.handleJoinRoom(ownerClient, { roomId: 1 });
+      (ownerClient.send as jest.Mock).mockClear();
+
+      await gateway.handleGameSettingsUpdate(ownerClient, {
+        roomId: 1,
+        settings: { ...testSettings, turnTimeLimit: 60 },
+      });
+
+      expect(roomService.upsertGameSettings).toHaveBeenCalled();
+    });
+
+    it('should reject turnTimeLimit below minimum (0)', async () => {
+      const ownerClient = createMockClient();
+      connectionService.trackClient(ownerClient, aliceIdentity);
+
+      await gateway.handleJoinRoom(ownerClient, { roomId: 1 });
+      (ownerClient.send as jest.Mock).mockClear();
+
+      await gateway.handleGameSettingsUpdate(ownerClient, {
+        roomId: 1,
+        settings: { ...testSettings, turnTimeLimit: 0 },
+      });
+
+      expect(roomService.upsertGameSettings).not.toHaveBeenCalled();
+
+      const messages = parseSentMessages(ownerClient);
+      expect(messages).toHaveLength(1);
+      expect(messages[0].event).toBe(WS_EMIT.GAME_ERROR);
+      expect(messages[0].data.message).toBe(
+        'Turn time limit must be null or between 1 and 3596400 seconds',
+      );
+    });
+
+    it('should reject turnTimeLimit above maximum (3596401)', async () => {
+      const ownerClient = createMockClient();
+      connectionService.trackClient(ownerClient, aliceIdentity);
+
+      await gateway.handleJoinRoom(ownerClient, { roomId: 1 });
+      (ownerClient.send as jest.Mock).mockClear();
+
+      await gateway.handleGameSettingsUpdate(ownerClient, {
+        roomId: 1,
+        settings: { ...testSettings, turnTimeLimit: 3596401 },
+      });
+
+      expect(roomService.upsertGameSettings).not.toHaveBeenCalled();
+
+      const messages = parseSentMessages(ownerClient);
+      expect(messages).toHaveLength(1);
+      expect(messages[0].event).toBe(WS_EMIT.GAME_ERROR);
+      expect(messages[0].data.message).toBe(
+        'Turn time limit must be null or between 1 and 3596400 seconds',
+      );
+    });
+
+    it('should reject non-integer turnTimeLimit', async () => {
+      const ownerClient = createMockClient();
+      connectionService.trackClient(ownerClient, aliceIdentity);
+
+      await gateway.handleJoinRoom(ownerClient, { roomId: 1 });
+      (ownerClient.send as jest.Mock).mockClear();
+
+      await gateway.handleGameSettingsUpdate(ownerClient, {
+        roomId: 1,
+        settings: { ...testSettings, turnTimeLimit: 30.5 },
+      });
+
+      expect(roomService.upsertGameSettings).not.toHaveBeenCalled();
+
+      const messages = parseSentMessages(ownerClient);
+      expect(messages).toHaveLength(1);
+      expect(messages[0].event).toBe(WS_EMIT.GAME_ERROR);
+      expect(messages[0].data.message).toBe(
+        'Turn time limit must be null or between 1 and 3596400 seconds',
+      );
+    });
+
+    it('should accept null turnTimeLimit', async () => {
+      const ownerClient = createMockClient();
+      connectionService.trackClient(ownerClient, aliceIdentity);
+
+      await gateway.handleJoinRoom(ownerClient, { roomId: 1 });
+      (ownerClient.send as jest.Mock).mockClear();
+
+      await gateway.handleGameSettingsUpdate(ownerClient, {
+        roomId: 1,
+        settings: { ...testSettings, turnTimeLimit: null },
+      });
+
+      expect(roomService.upsertGameSettings).toHaveBeenCalled();
+    });
   });
 
   describe('handleGameSettingsLoad', () => {
@@ -588,6 +717,7 @@ describe('RoomGateway', () => {
         presetName: 'classic',
         config: { someField: 'value' },
         autostart: true,
+        turnTimeLimit: null,
       });
     });
 

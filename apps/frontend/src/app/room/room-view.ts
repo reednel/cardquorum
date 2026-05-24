@@ -29,6 +29,8 @@ import { ChatService } from '../chat/chat.service';
 import { FeedFilterToggle } from '../chat/feed-filter-toggle';
 import { FeedMode } from '../chat/game-log-utils';
 import { GameLogService } from '../chat/game-log.service';
+import { ForceAbandonModal } from '../game/force-abandon-modal';
+import { ForceAbandonService } from '../game/force-abandon.service';
 import { GameTable } from '../game/game-table';
 import { GameService } from '../game/game.service';
 import { WebSocketService } from '../websocket.service';
@@ -49,6 +51,7 @@ type RoomTab = 'feed' | 'members' | 'game' | 'stats';
   imports: [
     FaIconComponent,
     FeedFilterToggle,
+    ForceAbandonModal,
     RoomFeedTab,
     RoomMembersTab,
     RoomGameTab,
@@ -82,6 +85,30 @@ type RoomTab = 'feed' | 'members' | 'game' | 'stats';
           <app-bouncing-card />
         }
       </main>
+
+      <!-- Force-abandon modal -->
+      @if (
+        isOwner() &&
+        forceAbandonService.showModal() &&
+        forceAbandonService.activePlayerUserId() !== myUserID()
+      ) {
+        <app-force-abandon-modal
+          [playerName]="activePlayerName()"
+          [sessionId]="gameService.sessionId()!"
+          [targetUserId]="forceAbandonService.activePlayerUserId()!"
+        />
+      }
+
+      <!-- Force-abandon error message -->
+      @if (forceAbandonError()) {
+        <div
+          role="alert"
+          class="absolute bottom-4 left-4 z-50 rounded-default bg-danger px-4 py-2 text-sm
+                 text-white shadow-lg"
+        >
+          {{ forceAbandonError() }}
+        </div>
+      }
 
       <!-- Expand button (visible when panel is collapsed) -->
       @if (!panelOpen()) {
@@ -265,6 +292,7 @@ export class RoomView implements OnInit, OnDestroy {
   private readonly gameLogService = inject(GameLogService);
   protected readonly roomContext = inject(RoomContextService);
   protected readonly gameService = inject(GameService);
+  protected readonly forceAbandonService = inject(ForceAbandonService);
   protected readonly rosterService = inject(RosterService);
   private readonly roomService = inject(RoomService);
   private readonly auth = inject(AuthService);
@@ -278,6 +306,18 @@ export class RoomView implements OnInit, OnDestroy {
   protected readonly roomGameTab = viewChild(RoomGameTab);
 
   protected readonly myUserID = computed(() => this.auth.user()?.userId ?? 0);
+
+  /** Display name of the current active player (for the force-abandon modal). */
+  protected readonly activePlayerName = computed(() => {
+    const userId = this.forceAbandonService.activePlayerUserId();
+    if (userId === null) return '';
+    const member = this.roomContext.allKnownMembers().find((m) => m.userId === userId);
+    return member?.displayName ?? member?.username ?? 'Unknown';
+  });
+
+  /** Error message from a failed force-abandon attempt, auto-clears after 5 seconds. */
+  protected readonly forceAbandonError = signal<string | null>(null);
+  private _errorTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   /** True when the current user is playing in an active game and cannot leave. */
   protected readonly isActivePlayer = computed(() => {
@@ -318,6 +358,26 @@ export class RoomView implements OnInit, OnDestroy {
         this.gameService.startGame(sessionId);
       }
     });
+
+    // Auto-dismiss force-abandon modal when game ends (sessionId becomes null)
+    effect(() => {
+      const sessionId = this.gameService.sessionId();
+      if (sessionId === null) {
+        this.forceAbandonService.reset();
+      }
+    });
+
+    // Display force-abandon error from server GAME_ERROR responses
+    effect(() => {
+      const error = this.gameService.error();
+      if (
+        error &&
+        this.forceAbandonService.showModal() === false &&
+        this.forceAbandonService.showButton()
+      ) {
+        this.showForceAbandonError(error);
+      }
+    });
   }
 
   ngOnInit(): void {
@@ -350,6 +410,7 @@ export class RoomView implements OnInit, OnDestroy {
     this.roomContext.leaveRoom();
     this.chatService.clearMessages();
     this.gameLogService.clearEntries();
+    this.forceAbandonService.reset();
     this.gameService.leaveRoom();
   }
 
@@ -409,5 +470,16 @@ export class RoomView implements OnInit, OnDestroy {
     const stored = localStorage.getItem('cq_feed_mode');
     if (stored === 'chat' || stored === 'game-log' || stored === 'all') return stored;
     return 'all';
+  }
+
+  private showForceAbandonError(message: string): void {
+    if (this._errorTimeoutId !== null) {
+      clearTimeout(this._errorTimeoutId);
+    }
+    this.forceAbandonError.set(message);
+    this._errorTimeoutId = setTimeout(() => {
+      this.forceAbandonError.set(null);
+      this._errorTimeoutId = null;
+    }, 5000);
   }
 }

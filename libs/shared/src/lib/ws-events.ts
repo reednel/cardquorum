@@ -19,6 +19,7 @@ export const WS_EVENT = {
   GAME_QUERY_TARGETS: 'game:query-targets',
   ROSTER_TOGGLE_READY: 'roster:toggle-ready',
   GAME_ABANDON: 'game:abandon',
+  GAME_FORCE_ABANDON: 'game:force-abandon',
   ROSTER_SET_ROTATION_MODE: 'roster:set-rotation-mode',
   GAME_LOG_HISTORY: 'game-log:history',
 } as const;

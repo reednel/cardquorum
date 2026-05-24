@@ -1,0 +1,1 @@
+ALTER TABLE "room_game_settings" ADD COLUMN "turn_time_limit" integer;

@@ -92,6 +92,16 @@ export class GameLogHistoryDto {
   pageSize?: number;
 }
 
+export class GameForceAbandonDto {
+  @IsInt()
+  @Min(1)
+  sessionId: number;
+
+  @IsInt()
+  @Min(1)
+  targetUserId: number;
+}
+
 export class GameQueryTargetsDto {
   @IsInt()
   @Min(1)

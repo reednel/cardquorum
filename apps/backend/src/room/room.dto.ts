@@ -147,6 +147,10 @@ export class RoomGameSettingsDto implements RoomGameSettings {
 
   @IsBoolean()
   autostart!: boolean;
+
+  @IsOptional()
+  @IsInt()
+  turnTimeLimit!: number | null;
 }
 
 export class GameSettingsUpdateDto implements GameSettingsUpdatePayload {

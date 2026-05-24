@@ -21,6 +21,7 @@ export class RoomGameSettingsRepository {
       presetName: string | null;
       config: Record<string, unknown>;
       autostart: boolean;
+      turnTimeLimit: number | null;
     },
   ) {
     const [row] = await this.db
@@ -31,6 +32,7 @@ export class RoomGameSettingsRepository {
         presetName: settings.presetName,
         config: settings.config,
         autostart: settings.autostart,
+        turnTimeLimit: settings.turnTimeLimit,
       })
       .onConflictDoUpdate({
         target: roomGameSettings.roomId,
@@ -39,6 +41,7 @@ export class RoomGameSettingsRepository {
           presetName: settings.presetName,
           config: settings.config,
           autostart: settings.autostart,
+          turnTimeLimit: settings.turnTimeLimit,
           updatedAt: new Date(),
         },
       })

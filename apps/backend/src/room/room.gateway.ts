@@ -283,6 +283,44 @@ export class RoomGateway implements OnModuleInit {
       return;
     }
 
+    // Validate turnTimeLimit value range
+    const { turnTimeLimit } = payload.settings;
+    if (turnTimeLimit !== null && turnTimeLimit !== undefined) {
+      if (!Number.isInteger(turnTimeLimit) || turnTimeLimit < 1 || turnTimeLimit > 3596400) {
+        this.send(client, WS_EMIT.GAME_ERROR, {
+          message: 'Turn time limit must be null or between 1 and 3596400 seconds',
+        });
+        return;
+      }
+    }
+
+    // Reject any settings change (other than autostart) while a game is active
+    const gameActive = this.gameService.isGameActive(roomId);
+    if (gameActive) {
+      const currentSettings = await this.roomService.loadGameSettings(roomId);
+      const current = currentSettings ?? {
+        gameType: null,
+        presetName: null,
+        config: {},
+        turnTimeLimit: null,
+      };
+      const incoming = payload.settings;
+
+      const gameTypeChanged = incoming.gameType !== (current.gameType ?? null);
+      const presetChanged = incoming.presetName !== (current.presetName ?? null);
+      const configChanged =
+        JSON.stringify(incoming.config) !== JSON.stringify(current.config ?? {});
+      const turnTimeLimitChanged =
+        (incoming.turnTimeLimit ?? null) !== (current.turnTimeLimit ?? null);
+
+      if (gameTypeChanged || presetChanged || configChanged || turnTimeLimitChanged) {
+        this.send(client, WS_EMIT.GAME_ERROR, {
+          message: 'Only autostart can be changed during a live game',
+        });
+        return;
+      }
+    }
+
     try {
       await this.roomService.upsertGameSettings(roomId, payload.settings);
     } catch (err) {
@@ -315,6 +353,7 @@ export class RoomGateway implements OnModuleInit {
           presetName: row.presetName,
           config: row.config as Record<string, unknown>,
           autostart: row.autostart,
+          turnTimeLimit: row.turnTimeLimit ?? null,
         }
       : null;
 

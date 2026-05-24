@@ -122,6 +122,7 @@ export interface RoomGameSettings {
   presetName: string | null;
   config: Record<string, unknown>;
   autostart: boolean;
+  turnTimeLimit: number | null;
 }
 
 /** Payload for game-settings:update (client → server). */

@@ -40,6 +40,7 @@ import {
   WS_EVENT,
 } from '@cardquorum/shared';
 import { AuthService } from '../auth/auth.service';
+import { ForceAbandonService } from '../game/force-abandon.service';
 import { GameService } from '../game/game.service';
 import { ConfirmDialog } from '../shared/confirm-dialog';
 import { ThemeService } from '../shell/theme.service';
@@ -191,6 +192,17 @@ const ROTATION_MODES: { icon: typeof faBan; tooltip: string; value: RotationMode
             </span>
             @if (isOwner() && member.userId !== room().ownerId && !gameService.sessionId()) {
               <app-overflow-menu [actions]="rosterMemberActions(member.userId)" />
+            }
+            @if (showForceAbandonButton(member)) {
+              <button
+                type="button"
+                class="rounded-default px-2 py-0.5 text-xs font-medium text-danger
+                       hover:bg-danger-surface dark:text-danger-dark dark:hover:bg-danger-surface-dark"
+                (click)="confirmingForceAbandon.set(true)"
+                [attr.data-testid]="'force-abandon-btn-' + member.userId"
+              >
+                Force Abandon
+              </button>
             }
           </li>
         }
@@ -442,6 +454,17 @@ const ROTATION_MODES: { icon: typeof faBan; tooltip: string; value: RotationMode
         (closed)="confirmingAbandon.set(false)"
       />
     }
+
+    @if (confirmingForceAbandon()) {
+      <app-confirm-dialog
+        title="Force Abandon"
+        [message]="forceAbandonMessage()"
+        confirmLabel="Force Abandon"
+        titleId="force-abandon-dialog-title"
+        (confirmed)="onConfirmForceAbandon()"
+        (closed)="confirmingForceAbandon.set(false)"
+      />
+    }
   `,
 })
 export class RoomMembersTab {
@@ -450,6 +473,7 @@ export class RoomMembersTab {
   protected readonly rosterService = inject(RosterService);
   private readonly roomContext = inject(RoomContextService);
   protected readonly gameService = inject(GameService);
+  protected readonly forceAbandonService = inject(ForceAbandonService);
   private readonly http = inject(HttpClient);
   protected readonly auth = inject(AuthService);
   private readonly roomService = inject(RoomService);
@@ -462,6 +486,7 @@ export class RoomMembersTab {
   protected readonly inviteSearchResults = signal<UserSearchResult[]>([]);
   protected readonly showReadyPrompt = signal(false);
   protected readonly confirmingAbandon = signal(false);
+  protected readonly confirmingForceAbandon = signal(false);
   private readyPromptDismissed = false;
 
   protected readonly isOwner = computed(() => this.room().ownerId === this.auth.user()?.userId);
@@ -486,6 +511,27 @@ export class RoomMembersTab {
   );
 
   protected readonly dragEnabled = computed(() => this.isOwner() && !this.gameService.sessionId());
+
+  /** Show force-abandon button for a specific member */
+  protected showForceAbandonButton(member: RosterMember): boolean {
+    return (
+      this.isOwner() &&
+      this.forceAbandonService.showButton() &&
+      member.userId === this.forceAbandonService.activePlayerUserId()
+    );
+  }
+
+  /** Get the tardy player's display name for the confirmation dialog */
+  protected readonly tardyPlayerName = computed(() => {
+    const activeUserId = this.forceAbandonService.activePlayerUserId();
+    if (activeUserId === null) return '';
+    const player = this.rosterService.players().find((m) => m.userId === activeUserId);
+    return player ? (player.displayName ?? player.username) : '';
+  });
+
+  protected readonly forceAbandonMessage = computed(() => {
+    return 'Force-abandon ' + this.tardyPlayerName() + '\u2019s game?';
+  });
 
   /** Show abandon button when there's an active game and the current user is a player */
   protected readonly showAbandonButton = computed(() => {
@@ -597,6 +643,15 @@ export class RoomMembersTab {
     const sessionId = this.gameService.sessionId();
     if (sessionId !== null) {
       this.ws.send(WS_EVENT.GAME_ABANDON, { sessionId });
+    }
+  }
+
+  protected onConfirmForceAbandon(): void {
+    this.confirmingForceAbandon.set(false);
+    const sessionId = this.gameService.sessionId();
+    const targetUserId = this.forceAbandonService.activePlayerUserId();
+    if (sessionId !== null && targetUserId !== null) {
+      this.forceAbandonService.confirmForceAbandon(sessionId, targetUserId);
     }
   }
 

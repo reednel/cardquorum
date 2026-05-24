@@ -52,6 +52,7 @@ describe('GameGateway', () => {
       getPlayerViewByRoom: jest.fn(),
       getSessionInfoByRoom: jest.fn(),
       getEventBufferByRoom: jest.fn().mockReturnValue(null),
+      getTurnTimingInfo: jest.fn().mockReturnValue(null),
     } as any;
 
     gateway = new GameGateway(

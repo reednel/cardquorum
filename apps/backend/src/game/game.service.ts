@@ -1,5 +1,5 @@
 import { forwardRef, Inject, Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
-import { GameSessionRepository } from '@cardquorum/db';
+import { GameSessionRepository, RoomGameSettingsRepository } from '@cardquorum/db';
 import { GamePlugin, WithScheduledEvents } from '@cardquorum/engine';
 import { ColorAssignmentMap, WS_EMIT } from '@cardquorum/shared';
 import { SheepsheadPlugin } from '@cardquorum/sheepshead';
@@ -26,6 +26,9 @@ interface ActiveGame {
   status: 'waiting' | 'active';
   createdAt: number;
   eventBuffer: EventBufferEntry[];
+  turnStartTimestamp: Date | null;
+  activePlayerUserId: number | null;
+  turnTimeLimit: number | null;
 }
 
 /** How long a waiting session can sit before being auto-cancelled (30 minutes). */
@@ -57,6 +60,7 @@ export class GameService implements OnModuleDestroy {
     private readonly roomService: RoomService,
     private readonly eventLogService: EventLogService,
     private readonly statsService: StatsService,
+    private readonly roomGameSettingsRepo: RoomGameSettingsRepository,
   ) {
     this.sweepTimer = setInterval(() => this.sweepAbandoned(), SWEEP_INTERVAL_MS);
   }
@@ -122,6 +126,9 @@ export class GameService implements OnModuleDestroy {
       status: 'waiting',
       createdAt: Date.now(),
       eventBuffer: [],
+      turnStartTimestamp: null,
+      activePlayerUserId: null,
+      turnTimeLimit: null,
     };
 
     this.activeGames.set(row.id, game);
@@ -195,6 +202,15 @@ export class GameService implements OnModuleDestroy {
     this.bufferSyntheticEvent(game, 'game_started', gameStartedMessage, { colorMap });
     this.broadcastLogEntry(game, null, 'game_started', gameStartedMessage);
 
+    // Set initial turn tracking from the game_started event and plugin state
+    const gameStartedEntry = game.eventBuffer[game.eventBuffer.length - 1];
+    game.turnStartTimestamp = gameStartedEntry.createdAt;
+    game.activePlayerUserId = (game.state as { activePlayer: number | null })?.activePlayer ?? null;
+
+    // Cache the room's turnTimeLimit for this session
+    const roomSettings = await this.roomGameSettingsRepo.findByRoomId(game.roomId);
+    game.turnTimeLimit = roomSettings?.turnTimeLimit ?? null;
+
     const playerViews = this.buildPlayerViews(game, plugin);
 
     this.logger.log(`Game session ${sessionId} started with ${playerIDs.length} players`);
@@ -259,6 +275,14 @@ export class GameService implements OnModuleDestroy {
       }
     }
     this.eventLogService.bufferEvent(game.eventBuffer, event, message, game.roomId, game.sessionId);
+
+    // Track turn timing: update turnStartTimestamp if active player changed
+    const newActivePlayer = (newState as { activePlayer: number | null })?.activePlayer ?? null;
+    if (newActivePlayer !== game.activePlayerUserId) {
+      const latestEntry = game.eventBuffer[game.eventBuffer.length - 1];
+      game.turnStartTimestamp = latestEntry.createdAt;
+      game.activePlayerUserId = newActivePlayer;
+    }
 
     // Broadcast log entry in real time if message is non-null
     if (message !== null) {
@@ -435,6 +459,70 @@ export class GameService implements OnModuleDestroy {
   }
 
   /**
+   * Force-abandon a game on behalf of a tardy player.
+   * Called by the room owner when the target player's turn has exceeded the turn time limit.
+   */
+  async forceAbandonGame(
+    sessionId: number,
+    requestedBy: number,
+    targetUserId: number,
+  ): Promise<{
+    roomId: number;
+    playerViews: Array<[number, { state: unknown; validActions: string[] }]>;
+    store?: unknown;
+    finalize: () => void;
+  }> {
+    const game = this.activeGames.get(sessionId);
+    if (!game) {
+      throw new Error('Game session not found');
+    }
+    if (game.status !== 'active') {
+      throw new Error('Game session is not active');
+    }
+
+    // Validate: requester must be the room owner
+    const room = await this.roomService.findById(game.roomId);
+    if (!room || room.ownerId !== requestedBy) {
+      throw new Error('Only the room owner can force-abandon');
+    }
+
+    // Validate: target must be the current active player
+    if (game.activePlayerUserId !== targetUserId) {
+      throw new Error('Target player is not the current active player');
+    }
+
+    // Validate: turn time limit must be enabled
+    if (game.turnTimeLimit == null) {
+      throw new Error('Force-abandon is not enabled for this room');
+    }
+
+    // Validate: elapsed time must exceed the turn time limit
+    if (!game.turnStartTimestamp) {
+      throw new Error('Turn time limit has not yet elapsed');
+    }
+    const elapsedSeconds = (Date.now() - game.turnStartTimestamp.getTime()) / 1000;
+    if (elapsedSeconds <= game.turnTimeLimit) {
+      throw new Error('Turn time limit has not yet elapsed');
+    }
+
+    // Buffer synthetic game_force_abandoned event
+    const tardyPlayerName = game.playerNames.get(targetUserId) ?? `User ${targetUserId}`;
+    const ownerName = game.playerNames.get(requestedBy) ?? `User ${requestedBy}`;
+    const message = `${ownerName} forced ${tardyPlayerName} to abandon the game`;
+
+    this.bufferSyntheticEvent(game, 'game_force_abandoned', message, {
+      userId: targetUserId,
+      requestedBy,
+    });
+
+    // Broadcast the game log entry
+    this.broadcastLogEntry(game, targetUserId, 'game_force_abandoned', message);
+
+    // Delegate to the existing abandonGame flow for the target player
+    return this.abandonGame(sessionId, targetUserId);
+  }
+
+  /**
    * Clean up any waiting sessions created by a disconnecting user.
    * Returns the roomIds of cancelled sessions (for broadcasting).
    */
@@ -543,6 +631,22 @@ export class GameService implements OnModuleDestroy {
     if (!game || game.status !== 'active') return null;
 
     return game.eventBuffer;
+  }
+
+  /** Return turn timing info for a given session (used by gateway broadcasts). */
+  getTurnTimingInfo(sessionId: number): {
+    turnStartTimestamp: string | null;
+    activePlayerUserId: number | null;
+    turnTimeLimit: number | null;
+  } | null {
+    const game = this.activeGames.get(sessionId);
+    if (!game || game.status !== 'active') return null;
+
+    return {
+      turnStartTimestamp: game.turnStartTimestamp?.toISOString() ?? null,
+      activePlayerUserId: game.activePlayerUserId,
+      turnTimeLimit: game.turnTimeLimit,
+    };
   }
 
   /** Return session info for rejoin, covering both waiting and active games. */

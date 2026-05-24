@@ -33,6 +33,12 @@ export class GameService {
   private readonly _colorMap = signal<ColorAssignmentMap | undefined>(undefined);
   /** Valid targets response from the server (for target query flow). */
   private readonly _validTargets = signal<{ generation: number; targets: string[] } | null>(null);
+  /** ISO 8601 timestamp of when the current active player's turn started. */
+  private readonly _turnStartTimestamp = signal<string | null>(null);
+  /** userId of the current active player. */
+  private readonly _activePlayerUserId = signal<number | null>(null);
+  /** Turn time limit in seconds (null means unlimited). */
+  private readonly _turnTimeLimit = signal<number | null>(null);
   /** Room ID for reconnect-based rejoin. */
   private _activeRoomId: number | null = null;
 
@@ -45,6 +51,9 @@ export class GameService {
   readonly error = this._error.asReadonly();
   readonly colorMap = this._colorMap.asReadonly();
   readonly validTargetsResponse = this._validTargets.asReadonly();
+  readonly turnStartTimestamp = this._turnStartTimestamp.asReadonly();
+  readonly activePlayerUserId = this._activePlayerUserId.asReadonly();
+  readonly turnTimeLimit = this._turnTimeLimit.asReadonly();
 
   constructor() {
     this.ws.on<GameCreatedPayload>(WS_EMIT.GAME_CREATED, (data) => {
@@ -69,12 +78,18 @@ export class GameService {
       this._validActions.set(data.validActions);
       this._colorMap.set(data.colorMap);
       this._store.set(null);
+      this._turnStartTimestamp.set(data.turnStartTimestamp ?? null);
+      this._activePlayerUserId.set(data.activePlayerUserId ?? null);
+      this._turnTimeLimit.set(data.turnTimeLimit ?? null);
     });
 
     this.ws.on<GameStateUpdatePayload>(WS_EMIT.GAME_STATE_UPDATE, (data) => {
       if (data.sessionId === this._sessionId()) {
         this._state.set(data.state);
         this._validActions.set(data.validActions);
+        this._turnStartTimestamp.set(data.turnStartTimestamp ?? null);
+        this._activePlayerUserId.set(data.activePlayerUserId ?? null);
+        this._turnTimeLimit.set(data.turnTimeLimit ?? null);
       }
     });
 
@@ -162,6 +177,9 @@ export class GameService {
     this._store.set(null);
     this._error.set(null);
     this._colorMap.set(undefined);
+    this._turnStartTimestamp.set(null);
+    this._activePlayerUserId.set(null);
+    this._turnTimeLimit.set(null);
     // Don't clear _activeRoomId — it's needed for future reconnects
     // while the user is still in the room
   }

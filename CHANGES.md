@@ -2,7 +2,7 @@
 
 ## Minor Features
 
-1. Allow the room owner to force `GAME_ABANDON` on behalf of a player after a determined timeout (e.g. 5 minutes).
+1. Player Ready/Unready should be more obvious.
 
 ## Major Features
 

@@ -89,7 +89,18 @@ describe('GameService', () => {
     };
 
     const mockEventLogService = {
-      bufferEvent: jest.fn(),
+      bufferEvent: jest.fn().mockImplementation((buffer, event, message, roomId, sessionId) => {
+        buffer.push({
+          roomId,
+          sessionId,
+          userId: event.userID ?? null,
+          eventType: event.type,
+          payload: event.payload ?? {},
+          message,
+          seq: buffer.length + 1,
+          createdAt: new Date(),
+        });
+      }),
       flushBuffer: jest.fn().mockResolvedValue(undefined),
       recordParticipants: jest.fn().mockResolvedValue(undefined),
       getRoomLog: jest.fn().mockResolvedValue([]),
@@ -105,6 +116,7 @@ describe('GameService', () => {
       roomService as unknown as RoomService,
       mockEventLogService,
       mockStatsService,
+      { findByRoomId: jest.fn().mockResolvedValue(null) } as any,
     );
   });
 
@@ -1029,7 +1041,20 @@ describe('GameService', () => {
               mockSessionRepo as unknown as GameSessionRepository,
               roomService as unknown as RoomService,
               {
-                bufferEvent: jest.fn(),
+                bufferEvent: jest
+                  .fn()
+                  .mockImplementation((buffer, event, message, roomId, sessionId) => {
+                    buffer.push({
+                      roomId,
+                      sessionId,
+                      userId: event.userID ?? null,
+                      eventType: event.type,
+                      payload: event.payload ?? {},
+                      message,
+                      seq: buffer.length + 1,
+                      createdAt: new Date(),
+                    });
+                  }),
                 flushBuffer: jest.fn().mockResolvedValue(undefined),
                 recordParticipants: jest.fn().mockResolvedValue(undefined),
                 getRoomLog: jest.fn().mockResolvedValue([]),
@@ -1038,6 +1063,7 @@ describe('GameService', () => {
               {
                 writeStats: jest.fn().mockResolvedValue(undefined),
               } as unknown as StatsService,
+              { findByRoomId: jest.fn().mockResolvedValue(null) } as any,
             );
 
             const roomId = 1;
@@ -1093,7 +1119,20 @@ describe('GameService', () => {
             mockSessionRepo as unknown as GameSessionRepository,
             roomService as unknown as RoomService,
             {
-              bufferEvent: jest.fn(),
+              bufferEvent: jest
+                .fn()
+                .mockImplementation((buffer, event, message, roomId, sessionId) => {
+                  buffer.push({
+                    roomId,
+                    sessionId,
+                    userId: event.userID ?? null,
+                    eventType: event.type,
+                    payload: event.payload ?? {},
+                    message,
+                    seq: buffer.length + 1,
+                    createdAt: new Date(),
+                  });
+                }),
               flushBuffer: jest.fn().mockResolvedValue(undefined),
               recordParticipants: jest.fn().mockResolvedValue(undefined),
               getRoomLog: jest.fn().mockResolvedValue([]),
@@ -1102,6 +1141,7 @@ describe('GameService', () => {
             {
               writeStats: jest.fn().mockResolvedValue(undefined),
             } as unknown as StatsService,
+            { findByRoomId: jest.fn().mockResolvedValue(null) } as any,
           );
 
           const roomId = 1;

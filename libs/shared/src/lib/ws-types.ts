@@ -105,12 +105,23 @@ export interface GameStartedPayload {
   colorMap?: ColorAssignmentMap;
   gameType?: string;
   config?: unknown;
+  turnStartTimestamp?: string | null;
+  activePlayerUserId?: number | null;
+  turnTimeLimit?: number | null;
 }
 
 export interface GameStateUpdatePayload {
   sessionId: number;
   state: unknown;
   validActions: string[];
+  turnStartTimestamp?: string | null;
+  activePlayerUserId?: number | null;
+  turnTimeLimit?: number | null;
+}
+
+export interface GameForceAbandonPayload {
+  sessionId: number;
+  targetUserId: number;
 }
 
 export interface GameOverPayload {

@@ -11,7 +11,7 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
-import { faRepeat } from '@fortawesome/free-solid-svg-icons';
+import { faCircleInfo, faRepeat } from '@fortawesome/free-solid-svg-icons';
 import {
   ConfigFieldDef,
   FieldRegistry,
@@ -37,6 +37,20 @@ import { RoomContextService } from './room-context.service';
 const GAMES: GameRegistry = {
   sheepshead: SheepsheadConfigPlugin,
 };
+
+type TimeUnit = 'seconds' | 'minutes' | 'hours';
+
+const UNIT_FACTORS: Record<TimeUnit, number> = {
+  seconds: 1,
+  minutes: 60,
+  hours: 3600,
+};
+
+const TIME_UNITS: { value: TimeUnit; label: string }[] = [
+  { value: 'seconds', label: 'seconds' },
+  { value: 'minutes', label: 'minutes' },
+  { value: 'hours', label: 'hours' },
+];
 
 type FieldEntry = {
   key: string;
@@ -274,6 +288,84 @@ export function buildFieldEntries(
             }
           </div>
         }
+
+        <!-- Turn Time Limit -->
+        <div class="mt-4 border-t border-border pt-4 dark:border-border-dark">
+          <div class="mb-2 flex items-center gap-1.5">
+            <span
+              class="text-xs font-semibold uppercase tracking-wide text-text-secondary
+                     dark:text-text-heading-dark"
+            >
+              Turn Time Limit
+            </span>
+            <fa-icon
+              [icon]="faCircleInfo"
+              class="text-xs text-text-secondary dark:text-text-secondary-dark"
+              [title]="turnTimeLimitTooltip"
+              [attr.aria-label]="turnTimeLimitTooltip"
+            />
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label
+              class="flex items-center gap-1.5 text-sm text-text-body dark:text-text-body-dark"
+            >
+              <input
+                type="checkbox"
+                data-testid="turn-time-unlimited"
+                [ngModel]="turnTimeUnlimited()"
+                (ngModelChange)="onTurnTimeUnlimitedChange($event)"
+                [disabled]="!isOwner() || formLocked()"
+                class="h-4 w-4 rounded border-border-input text-primary
+                     disabled:opacity-disabled
+                     dark:border-border-input-dark"
+              />
+              Unlimited
+            </label>
+
+            <div class="flex items-center gap-2">
+              <input
+                id="turn-time-value"
+                type="number"
+                data-testid="turn-time-value"
+                min="1"
+                max="999"
+                step="1"
+                [ngModel]="turnTimeValue()"
+                (ngModelChange)="onTurnTimeValueChange($event)"
+                [disabled]="!isOwner() || formLocked() || turnTimeUnlimited()"
+                placeholder="—"
+                class="w-20 rounded-default border border-border-input bg-bg px-3 py-1.5 text-sm
+                      disabled:opacity-disabled
+                     dark:border-border-input-dark dark:bg-surface-dark dark:text-white"
+              />
+              <select
+                id="turn-time-unit"
+                data-testid="turn-time-unit"
+                [ngModel]="turnTimeUnit()"
+                (ngModelChange)="onTurnTimeUnitChange($event)"
+                [disabled]="!isOwner() || formLocked() || turnTimeUnlimited()"
+                class="rounded-default border border-border-input bg-bg px-3 py-1.5 text-sm
+                      disabled:opacity-disabled
+                     dark:border-border-input-dark dark:bg-surface-dark dark:text-white"
+              >
+                @for (unit of timeUnits; track unit.value) {
+                  <option [value]="unit.value">{{ unit.label }}</option>
+                }
+              </select>
+            </div>
+
+            @if (turnTimeLimitError()) {
+              <p
+                data-testid="turn-time-error"
+                class="text-xs text-danger dark:text-danger-dark"
+                role="alert"
+              >
+                {{ turnTimeLimitError() }}
+              </p>
+            }
+          </div>
+        </div>
       </div>
 
       <!-- Bottom actions (owner only) -->
@@ -354,6 +446,7 @@ export class RoomGameTab implements OnInit {
 
   protected readonly gameService = inject(GameService);
   protected readonly faRepeat = faRepeat;
+  protected readonly faCircleInfo = faCircleInfo;
   private readonly roomContext = inject(RoomContextService);
   private readonly ws = inject(WebSocketService);
   private readonly destroyRef = inject(DestroyRef);
@@ -366,6 +459,32 @@ export class RoomGameTab implements OnInit {
 
   /** Autostart next game when current one ends. */
   readonly autostart = signal(false);
+
+  /** Turn time limit UI state */
+  protected readonly turnTimeUnlimited = signal(true);
+  protected readonly turnTimeValue = signal<number | null>(null);
+  protected readonly turnTimeUnit = signal<TimeUnit>('minutes');
+  protected readonly timeUnits = TIME_UNITS;
+  protected readonly turnTimeLimitTooltip =
+    "Controls how long each player has per turn before the room owner can force-abandon on their behalf. 'Unlimited' disables this feature.";
+
+  /** Computed turn time limit in seconds, or null if unlimited */
+  protected readonly computedTurnTimeLimit = computed<number | null>(() => {
+    if (this.turnTimeUnlimited()) return null;
+    const value = this.turnTimeValue();
+    if (value === null) return null;
+    return value * UNIT_FACTORS[this.turnTimeUnit()];
+  });
+
+  /** Validation error for the turn time limit input */
+  protected readonly turnTimeLimitError = computed<string | null>(() => {
+    if (this.turnTimeUnlimited()) return null;
+    const value = this.turnTimeValue();
+    if (value === null || value === undefined) return 'Enter a value between 1 and 999.';
+    if (!Number.isInteger(value)) return 'Value must be a whole number.';
+    if (value < 1 || value > 999) return 'Value must be between 1 and 999.';
+    return null;
+  });
 
   /** Guard flag to prevent WS receive → form update → WS send loops. */
   private syncing = false;
@@ -535,6 +654,7 @@ export class RoomGameTab implements OnInit {
           presetName: this.activePreset()?.name ?? null,
           config: this.configValues(),
           autostart: value,
+          turnTimeLimit: this.computedTurnTimeLimit(),
         },
       });
     }
@@ -560,6 +680,33 @@ export class RoomGameTab implements OnInit {
   protected onFieldChange(key: string, value: unknown): void {
     this.configValues.update((v) => ({ ...v, [key]: value }));
     this.sendSettings();
+  }
+
+  protected onTurnTimeUnlimitedChange(unlimited: boolean): void {
+    this.turnTimeUnlimited.set(unlimited);
+    if (unlimited) {
+      // Clear validation errors when switching to unlimited
+      this.turnTimeValue.set(null);
+    } else if (this.turnTimeValue() === null) {
+      // Set a default value when switching from unlimited
+      this.turnTimeValue.set(60);
+      this.turnTimeUnit.set('seconds');
+    }
+    this.sendSettings();
+  }
+
+  protected onTurnTimeValueChange(value: number | null): void {
+    this.turnTimeValue.set(value);
+    if (this.turnTimeLimitError() === null) {
+      this.sendSettings();
+    }
+  }
+
+  protected onTurnTimeUnitChange(unit: TimeUnit): void {
+    this.turnTimeUnit.set(unit);
+    if (this.turnTimeLimitError() === null) {
+      this.sendSettings();
+    }
   }
 
   protected coerce(value: unknown): unknown {
@@ -590,6 +737,7 @@ export class RoomGameTab implements OnInit {
         presetName: this.activePreset()?.name ?? null,
         config: this.configValues(),
         autostart: this.autostart(),
+        turnTimeLimit: this.computedTurnTimeLimit(),
       },
     });
   }
@@ -606,6 +754,34 @@ export class RoomGameTab implements OnInit {
     this.syncing = true;
     try {
       this.autostart.set(settings.autostart);
+
+      // Apply turn time limit
+      if (settings.turnTimeLimit === null || settings.turnTimeLimit === undefined) {
+        this.turnTimeUnlimited.set(true);
+        this.turnTimeValue.set(null);
+      } else {
+        this.turnTimeUnlimited.set(false);
+        // Only update the UI if the current controls don't already represent the same total.
+        const currentTotal = this.computedTurnTimeLimit();
+        if (currentTotal !== settings.turnTimeLimit) {
+          // Use seconds directly if it fits in the input range (1–999).
+          // Only convert to a larger unit when the seconds value exceeds 999.
+          const totalSeconds = settings.turnTimeLimit;
+          if (totalSeconds <= 999) {
+            this.turnTimeValue.set(totalSeconds);
+            this.turnTimeUnit.set('seconds');
+          } else if (totalSeconds % 3600 === 0 && totalSeconds / 3600 <= 999) {
+            this.turnTimeValue.set(totalSeconds / 3600);
+            this.turnTimeUnit.set('hours');
+          } else if (totalSeconds % 60 === 0 && totalSeconds / 60 <= 999) {
+            this.turnTimeValue.set(totalSeconds / 60);
+            this.turnTimeUnit.set('minutes');
+          } else {
+            this.turnTimeValue.set(totalSeconds);
+            this.turnTimeUnit.set('seconds');
+          }
+        }
+      }
 
       const gameType = settings.gameType ?? '';
       this.selectedGame.set(gameType);

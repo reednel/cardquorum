@@ -16,6 +16,7 @@ import {
   GameActionDto,
   GameCancelDto,
   GameCreateDto,
+  GameForceAbandonDto,
   GameLogHistoryDto,
   GameQueryTargetsDto,
   GameRejoinDto,
@@ -107,6 +108,7 @@ export class GameGateway implements OnModuleInit {
         payload.sessionId,
         WS_EMIT.GAME_STARTED,
         result.colorMap,
+        this.gameService.getTurnTimingInfo(payload.sessionId),
       );
     } catch (err) {
       this.logger.warn(`game:start failed for session ${payload.sessionId}: ${err}`);
@@ -140,7 +142,13 @@ export class GameGateway implements OnModuleInit {
           { sessionId: payload.sessionId, store: result.store },
         );
       } else {
-        this.sendPlayerViews(result.playerViews, payload.sessionId, WS_EMIT.GAME_STATE_UPDATE);
+        this.sendPlayerViews(
+          result.playerViews,
+          payload.sessionId,
+          WS_EMIT.GAME_STATE_UPDATE,
+          undefined,
+          this.gameService.getTurnTimingInfo(payload.sessionId),
+        );
       }
     };
 
@@ -221,6 +229,40 @@ export class GameGateway implements OnModuleInit {
     }
   }
 
+  @SubscribeMessage(WS_EVENT.GAME_FORCE_ABANDON)
+  async handleForceAbandon(
+    @ConnectedSocket() client: WebSocket,
+    @MessageBody() payload: GameForceAbandonDto,
+  ) {
+    const tracked = this.connectionService.getTracked(client);
+    if (!tracked) return;
+
+    try {
+      const { playerViews, store, finalize } = await this.gameService.forceAbandonGame(
+        payload.sessionId,
+        tracked.identity.userId,
+        payload.targetUserId,
+      );
+
+      // Send final state + game-over to players (same pattern as handleGameAbandon)
+      this.sendPlayerViews(playerViews, payload.sessionId, WS_EMIT.GAME_STATE_UPDATE);
+      this.sendToPlayers(
+        playerViews.map(([id]) => id),
+        WS_EMIT.GAME_OVER,
+        { sessionId: payload.sessionId, store },
+      );
+
+      // Free the room slot and notify spectators after players have received game-over
+      finalize();
+    } catch (err) {
+      this.logger.warn(`game:force-abandon failed for session ${payload.sessionId}: ${err}`);
+      this.send(client, WS_EMIT.GAME_ERROR, {
+        sessionId: payload.sessionId,
+        message: err instanceof Error ? err.message : 'Failed to force-abandon game',
+      });
+    }
+  }
+
   @SubscribeMessage(WS_EVENT.GAME_REJOIN)
   async handleGameRejoin(
     @ConnectedSocket() client: WebSocket,
@@ -247,6 +289,7 @@ export class GameGateway implements OnModuleInit {
         config: result.config,
       });
     } else {
+      const turnTiming = this.gameService.getTurnTimingInfo(result.sessionId);
       this.send(client, WS_EMIT.GAME_STARTED, {
         sessionId: result.sessionId,
         state: result.state,
@@ -254,6 +297,11 @@ export class GameGateway implements OnModuleInit {
         colorMap: result.colorMap,
         gameType: result.gameType,
         config: result.config,
+        ...(turnTiming && {
+          turnStartTimestamp: turnTiming.turnStartTimestamp,
+          activePlayerUserId: turnTiming.activePlayerUserId,
+          turnTimeLimit: turnTiming.turnTimeLimit,
+        }),
       });
 
       // Send catch-up log entries for the active session
@@ -348,11 +396,21 @@ export class GameGateway implements OnModuleInit {
     sessionId: number,
     event: string,
     colorMap?: ColorAssignmentMap,
+    turnTiming?: {
+      turnStartTimestamp: string | null;
+      activePlayerUserId: number | null;
+      turnTimeLimit: number | null;
+    } | null,
   ) {
     for (const [userID, { state, validActions }] of playerViews) {
       const data: Record<string, unknown> = { sessionId, state, validActions };
       if (colorMap) {
         data.colorMap = colorMap;
+      }
+      if (turnTiming) {
+        data.turnStartTimestamp = turnTiming.turnStartTimestamp;
+        data.activePlayerUserId = turnTiming.activePlayerUserId;
+        data.turnTimeLimit = turnTiming.turnTimeLimit;
       }
       const message = JSON.stringify({ event, data });
       for (const client of this.connectionService.getClientsByUserId(userID)) {
