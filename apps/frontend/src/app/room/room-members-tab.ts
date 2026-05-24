@@ -142,33 +142,13 @@ const ROTATION_MODES: { icon: typeof faBan; tooltip: string; value: RotationMode
                 />
               }
               <span class="relative shrink-0">
-                @if (member.userId === auth.user()?.userId) {
-                  <button
-                    type="button"
-                    [attr.aria-label]="
-                      member.readyToPlay ? 'Set not ready to play' : 'Set ready to play'
-                    "
-                    class="hover:opacity-80"
-                    (click)="onToggleReady()"
-                    data-testid="toggle-ready-btn"
-                  >
-                    <fa-icon
-                      [icon]="member.readyToPlay ? faUserCheck : faUserXmark"
-                      class="text-sm"
-                      [style.color]="memberIconColor(member)"
-                      [attr.data-testid]="'ready-icon-' + member.userId"
-                    />
-                  </button>
-                } @else {
-                  <span>
-                    <fa-icon
-                      [icon]="member.readyToPlay ? faUserCheck : faUserXmark"
-                      class="text-sm"
-                      [style.color]="memberIconColor(member)"
-                      [attr.data-testid]="'ready-icon-' + member.userId"
-                    />
-                  </span>
-                }
+                <fa-icon
+                  [icon]="member.readyToPlay ? faUserCheck : faUserXmark"
+                  class="text-sm"
+                  [style.color]="memberIconColor(member)"
+                  aria-hidden="true"
+                  [attr.data-testid]="'ready-icon-' + member.userId"
+                />
                 <span
                   [class]="
                     'absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border border-white dark:border-bg-dark ' +
@@ -190,20 +170,41 @@ const ROTATION_MODES: { icon: typeof faBan; tooltip: string; value: RotationMode
                 />
               }
             </span>
-            @if (isOwner() && member.userId !== room().ownerId && !gameService.sessionId()) {
-              <app-overflow-menu [actions]="rosterMemberActions(member.userId)" />
-            }
-            @if (showForceAbandonButton(member)) {
-              <button
-                type="button"
-                class="rounded-default px-2 py-0.5 text-xs font-medium text-danger
-                       hover:bg-danger-surface dark:text-danger-dark dark:hover:bg-danger-surface-dark"
-                (click)="confirmingForceAbandon.set(true)"
-                [attr.data-testid]="'force-abandon-btn-' + member.userId"
-              >
-                Force Abandon
-              </button>
-            }
+            <span class="flex items-center gap-1">
+              @if (member.userId === auth.user()?.userId) {
+                <button
+                  type="button"
+                  [attr.aria-label]="
+                    member.readyToPlay ? 'Set not ready to play' : 'Set ready to play'
+                  "
+                  [attr.aria-pressed]="member.readyToPlay"
+                  (click)="onToggleReady()"
+                  data-testid="toggle-ready-btn"
+                  [class]="
+                    'rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors ' +
+                    (member.readyToPlay
+                      ? 'bg-success-surface text-success hover:bg-success-surface/70 dark:bg-success-surface-dark dark:text-success-dark dark:hover:bg-success-surface-dark/70'
+                      : 'bg-hover-overlay text-text-secondary hover:bg-border dark:bg-hover-overlay-dark dark:text-text-secondary-dark dark:hover:bg-border-dark')
+                  "
+                >
+                  {{ member.readyToPlay ? 'Ready ✓' : 'Ready up' }}
+                </button>
+              }
+              @if (isOwner() && member.userId !== room().ownerId && !gameService.sessionId()) {
+                <app-overflow-menu [actions]="rosterMemberActions(member.userId)" />
+              }
+              @if (showForceAbandonButton(member)) {
+                <button
+                  type="button"
+                  class="rounded-default px-2 py-0.5 text-xs font-medium text-danger
+                         hover:bg-danger-surface dark:text-danger-dark dark:hover:bg-danger-surface-dark"
+                  (click)="confirmingForceAbandon.set(true)"
+                  [attr.data-testid]="'force-abandon-btn-' + member.userId"
+                >
+                  Force Abandon
+                </button>
+              }
+            </span>
           </li>
         }
       </ul>
@@ -247,33 +248,13 @@ const ROTATION_MODES: { icon: typeof faBan; tooltip: string; value: RotationMode
                 />
               }
               <span class="relative shrink-0">
-                @if (member.userId === auth.user()?.userId) {
-                  <button
-                    type="button"
-                    [attr.aria-label]="
-                      member.readyToPlay ? 'Set not ready to play' : 'Set ready to play'
-                    "
-                    class="hover:opacity-80"
-                    (click)="onToggleReady()"
-                    data-testid="toggle-ready-btn"
-                  >
-                    <fa-icon
-                      [icon]="member.readyToPlay ? faUserCheck : faUserXmark"
-                      class="text-sm"
-                      [style.color]="memberIconColor(member)"
-                      [attr.data-testid]="'ready-icon-' + member.userId"
-                    />
-                  </button>
-                } @else {
-                  <span>
-                    <fa-icon
-                      [icon]="member.readyToPlay ? faUserCheck : faUserXmark"
-                      class="text-sm"
-                      [style.color]="memberIconColor(member)"
-                      [attr.data-testid]="'ready-icon-' + member.userId"
-                    />
-                  </span>
-                }
+                <fa-icon
+                  [icon]="member.readyToPlay ? faUserCheck : faUserXmark"
+                  class="text-sm"
+                  [style.color]="memberIconColor(member)"
+                  aria-hidden="true"
+                  [attr.data-testid]="'ready-icon-' + member.userId"
+                />
                 <span
                   [class]="
                     'absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border border-white dark:border-bg-dark ' +
@@ -295,9 +276,30 @@ const ROTATION_MODES: { icon: typeof faBan; tooltip: string; value: RotationMode
                 />
               }
             </span>
-            @if (isOwner() && member.userId !== room().ownerId) {
-              <app-overflow-menu [actions]="rosterMemberActions(member.userId)" />
-            }
+            <span class="flex items-center gap-1">
+              @if (member.userId === auth.user()?.userId) {
+                <button
+                  type="button"
+                  [attr.aria-label]="
+                    member.readyToPlay ? 'Set not ready to play' : 'Set ready to play'
+                  "
+                  [attr.aria-pressed]="member.readyToPlay"
+                  (click)="onToggleReady()"
+                  data-testid="toggle-ready-btn"
+                  [class]="
+                    'rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors ' +
+                    (member.readyToPlay
+                      ? 'bg-success-surface text-success hover:bg-success-surface/70 dark:bg-success-surface-dark dark:text-success-dark dark:hover:bg-success-surface-dark/70'
+                      : 'bg-hover-overlay text-text-secondary hover:bg-border dark:bg-hover-overlay-dark dark:text-text-secondary-dark dark:hover:bg-border-dark')
+                  "
+                >
+                  {{ member.readyToPlay ? 'Ready ✓' : 'Ready up' }}
+                </button>
+              }
+              @if (isOwner() && member.userId !== room().ownerId) {
+                <app-overflow-menu [actions]="rosterMemberActions(member.userId)" />
+              }
+            </span>
           </li>
           @if (member.userId === auth.user()?.userId && showReadyPrompt()) {
             <div
@@ -488,6 +490,8 @@ export class RoomMembersTab {
   protected readonly confirmingAbandon = signal(false);
   protected readonly confirmingForceAbandon = signal(false);
   private readyPromptDismissed = false;
+  private readyPromptShown = false;
+  private static readonly READY_PROMPT_KEY = 'cq_ready_prompt_dismissed';
 
   protected readonly isOwner = computed(() => this.room().ownerId === this.auth.user()?.userId);
 
@@ -554,7 +558,10 @@ export class RoomMembersTab {
   protected readonly faXmark = faXmark;
 
   constructor() {
-    // Watch for ready prompt: show when current user is a non-ready spectator
+    this.readyPromptDismissed = localStorage.getItem(RoomMembersTab.READY_PROMPT_KEY) === 'true';
+
+    // Show ready prompt once on first join if user is a non-ready spectator.
+    // Once dismissed or user toggles ready, it never reappears.
     effect(() => {
       if (this.readyPromptDismissed) return;
       const userId = this.auth.user()?.userId;
@@ -563,10 +570,13 @@ export class RoomMembersTab {
         return;
       }
       const spectator = this.rosterService.spectators().find((m) => m.userId === userId);
-      if (spectator && !spectator.readyToPlay) {
+      if (spectator && !spectator.readyToPlay && !this.readyPromptShown) {
+        this.readyPromptShown = true;
         this.showReadyPrompt.set(true);
-      } else {
-        // Auto-dismiss when user toggles ready or is no longer a non-ready spectator
+      } else if (this.readyPromptShown && (spectator?.readyToPlay || !spectator)) {
+        // User toggled ready or left spectators — permanently dismiss
+        this.readyPromptDismissed = true;
+        localStorage.setItem(RoomMembersTab.READY_PROMPT_KEY, 'true');
         this.showReadyPrompt.set(false);
       }
     });
@@ -657,6 +667,7 @@ export class RoomMembersTab {
 
   protected dismissReadyPrompt(): void {
     this.readyPromptDismissed = true;
+    localStorage.setItem(RoomMembersTab.READY_PROMPT_KEY, 'true');
     this.showReadyPrompt.set(false);
   }
 
