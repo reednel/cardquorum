@@ -18,12 +18,14 @@ import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import {
   faChevronLeft,
   faChevronRight,
+  faGear,
+  faPersonWalkingArrowRight,
   faSliders,
   faStream,
   faTrophy,
   faUsers,
 } from '@fortawesome/free-solid-svg-icons';
-import { RoomResponse, WS_EVENT } from '@cardquorum/shared';
+import { RoomResponse, UserIdentity, WS_EVENT } from '@cardquorum/shared';
 import { AuthService } from '../auth/auth.service';
 import { ChatService } from '../chat/chat.service';
 import { FeedFilterToggle } from '../chat/feed-filter-toggle';
@@ -33,6 +35,7 @@ import { ForceAbandonModal } from '../game/force-abandon-modal';
 import { ForceAbandonService } from '../game/force-abandon.service';
 import { GameTable } from '../game/game-table';
 import { GameService } from '../game/game.service';
+import { RoomConfigModal } from '../room-listings/room-config-modal';
 import { WebSocketService } from '../websocket.service';
 import { BouncingCard } from './bouncing-card';
 import { RoomContextService } from './room-context.service';
@@ -52,6 +55,7 @@ type RoomTab = 'feed' | 'members' | 'game' | 'stats';
     FaIconComponent,
     FeedFilterToggle,
     ForceAbandonModal,
+    RoomConfigModal,
     RoomFeedTab,
     RoomMembersTab,
     RoomGameTab,
@@ -75,7 +79,7 @@ type RoomTab = 'feed' | 'members' | 'game' | 'stats';
         @if (gameService.state()) {
           <app-game-table
             [myUserID]="myUserID()"
-            [members]="roomContext.allKnownMembers()"
+            [members]="rosterMembers()"
             [isOwner]="isOwner()"
             [autostart]="roomGameTab()?.autostart() ?? false"
             [canStartNext]="roomGameTab()?.canStart() ?? false"
@@ -108,6 +112,18 @@ type RoomTab = 'feed' | 'members' | 'game' | 'stats';
         >
           {{ forceAbandonError() }}
         </div>
+      }
+
+      <!-- Room config modal (owner only) -->
+      @if (showConfigModal()) {
+        @if (room(); as r) {
+          <app-room-config-modal
+            [room]="r"
+            (updated)="onRoomUpdated($event)"
+            (deleted)="onRoomDeleted()"
+            (closed)="showConfigModal.set(false)"
+          />
+        }
       }
 
       <!-- Expand button (visible when panel is collapsed) -->
@@ -169,14 +185,31 @@ type RoomTab = 'feed' | 'members' | 'game' | 'stats';
                     : 'Leave room'
                 "
                 (click)="leave()"
+                [attr.aria-label]="
+                  isActivePlayer()
+                    ? 'Finish or abandon the current game before leaving'
+                    : 'Leave room'
+                "
                 [class]="
-                  'shrink-0 rounded-default px-2 py-1 text-xs transition-colors ' +
+                  'shrink-0 rounded-default px-2 py-1 mr-2 text-sm transition-colors ' +
                   (isActivePlayer()
                     ? 'cursor-not-allowed text-disabled'
-                    : 'text-text-secondary hover:bg-hover-overlay hover:text-text-body dark:text-text-secondary-dark dark:hover:bg-hover-overlay-dark dark:hover:text-text-heading-dark')
+                    : 'text-danger hover:bg-danger-surface dark:text-danger-dark dark:hover:bg-danger-surface-dark')
                 "
               >
-                Leave
+                <fa-icon [icon]="faPersonWalkingArrowRight" aria-hidden="true" />
+              </button>
+            } @else {
+              <button
+                data-testid="room-settings-btn"
+                (click)="showConfigModal.set(true)"
+                aria-label="Room settings"
+                title="Room settings"
+                class="shrink-0 rounded-default px-2 py-1 mr-2 text-sm text-text-secondary transition-colors
+                       hover:bg-hover-overlay hover:text-text-body
+                       dark:text-text-secondary-dark dark:hover:bg-hover-overlay-dark dark:hover:text-text-heading-dark"
+              >
+                <fa-icon [icon]="faGear" aria-hidden="true" />
               </button>
             }
           </div>
@@ -269,6 +302,8 @@ type RoomTab = 'feed' | 'members' | 'game' | 'stats';
 export class RoomView implements OnInit, OnDestroy {
   protected readonly faChevronLeft = faChevronLeft;
   protected readonly faChevronRight = faChevronRight;
+  protected readonly faGear = faGear;
+  protected readonly faPersonWalkingArrowRight = faPersonWalkingArrowRight;
   protected readonly faStream = faStream;
   protected readonly faUsers = faUsers;
   protected readonly faSliders = faSliders;
@@ -307,17 +342,33 @@ export class RoomView implements OnInit, OnDestroy {
 
   protected readonly myUserID = computed(() => this.auth.user()?.userId ?? 0);
 
+  /**
+   * All room members as UserIdentity, derived from the persisted roster.
+   */
+  protected readonly rosterMembers = computed<UserIdentity[]>(() => {
+    const players = this.rosterService.players();
+    const spectators = this.rosterService.spectators();
+    return [...players, ...spectators].map((m) => ({
+      userId: m.userId,
+      username: m.username,
+      displayName: m.displayName,
+    }));
+  });
+
   /** Display name of the current active player (for the force-abandon modal). */
   protected readonly activePlayerName = computed(() => {
     const userId = this.forceAbandonService.activePlayerUserId();
     if (userId === null) return '';
-    const member = this.roomContext.allKnownMembers().find((m) => m.userId === userId);
+    const member = this.rosterMembers().find((m) => m.userId === userId);
     return member?.displayName ?? member?.username ?? 'Unknown';
   });
 
   /** Error message from a failed force-abandon attempt, auto-clears after 5 seconds. */
   protected readonly forceAbandonError = signal<string | null>(null);
   private _errorTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  /** Whether the room config modal is open (owner only). */
+  protected readonly showConfigModal = signal(false);
 
   /** True when the current user is playing in an active game and cannot leave. */
   protected readonly isActivePlayer = computed(() => {
@@ -424,6 +475,18 @@ export class RoomView implements OnInit, OnDestroy {
 
   protected leave(): void {
     this.ws.send(WS_EVENT.ROOM_LEAVE_ROSTER, { roomId: this.roomId });
+    this.router.navigate(['/rooms']);
+  }
+
+  protected onRoomUpdated(updated: RoomResponse): void {
+    this.showConfigModal.set(false);
+    this.room.set(updated);
+    this.roomName.set(updated.name);
+    this.title.setTitle(`${updated.name} — CardQuorum`);
+  }
+
+  protected onRoomDeleted(): void {
+    this.showConfigModal.set(false);
     this.router.navigate(['/rooms']);
   }
 

@@ -35,9 +35,10 @@ export class SheepsheadReportRepository implements GameReportRepository {
     const baseConditions = this.buildBaseConditions(userId, filters);
 
     try {
-      const [storeMetrics, pickWhenAble, scoreTrajectory] = await Promise.all([
+      const [storeMetrics, pickWhenAble, leadFailAceSuccess, scoreTrajectory] = await Promise.all([
         this.computeStoreMetrics(userId, baseConditions),
         this.computePickWhenAble(userId, baseConditions),
+        this.computeLeadFailAceSuccess(userId, baseConditions),
         this.computeScoreTrajectory(userId, baseConditions),
       ]);
 
@@ -51,7 +52,7 @@ export class SheepsheadReportRepository implements GameReportRepository {
           winRateAsOpposition: storeMetrics.winRateAsOpposition,
           avgPointsAsPicker: storeMetrics.avgPointsAsPicker,
           avgScoreDelta: storeMetrics.avgScoreDelta,
-          crackBlitzRate: storeMetrics.crackBlitzRate,
+          leadFailAceSuccessRate: leadFailAceSuccess,
         },
         scoreTrajectory,
       };
@@ -99,7 +100,6 @@ export class SheepsheadReportRepository implements GameReportRepository {
       picker_points_count: string;
       score_delta_sum: string | null;
       score_delta_count: string;
-      crack_blitz_sessions: string;
     }>(
       sql`
         SELECT
@@ -113,8 +113,7 @@ export class SheepsheadReportRepository implements GameReportRepository {
           sum(CASE WHEN (player_entry.elem->>'role') = 'picker' AND player_entry.elem->>'points' IS NOT NULL THEN (player_entry.elem->>'points')::numeric ELSE NULL END) AS picker_points_sum,
           count(*) FILTER (WHERE (player_entry.elem->>'role') = 'picker' AND player_entry.elem->>'points' IS NOT NULL)::int AS picker_points_count,
           sum(CASE WHEN player_entry.elem->>'scoreDelta' IS NOT NULL THEN (player_entry.elem->>'scoreDelta')::numeric ELSE NULL END) AS score_delta_sum,
-          count(*) FILTER (WHERE player_entry.elem->>'scoreDelta' IS NOT NULL)::int AS score_delta_count,
-          count(*) FILTER (WHERE ${gameSessions.store}->'crack' IS NOT NULL AND ${gameSessions.store}->>'crack' != 'null' OR ${gameSessions.store}->'blitz' IS NOT NULL AND ${gameSessions.store}->>'blitz' != 'null')::int AS crack_blitz_sessions
+          count(*) FILTER (WHERE player_entry.elem->>'scoreDelta' IS NOT NULL)::int AS score_delta_count
         FROM ${gameSessions}
         INNER JOIN ${gameParticipants} ON ${gameParticipants.sessionId} = ${gameSessions.id}
         CROSS JOIN LATERAL (
@@ -138,7 +137,6 @@ export class SheepsheadReportRepository implements GameReportRepository {
     const pickerPointsCount = Number(row?.picker_points_count ?? 0);
     const scoreDeltaSum = row?.score_delta_sum != null ? Number(row.score_delta_sum) : 0;
     const scoreDeltaCount = Number(row?.score_delta_count ?? 0);
-    const crackBlitzSessions = Number(row?.crack_blitz_sessions ?? 0);
 
     return {
       totalSessions,
@@ -148,7 +146,6 @@ export class SheepsheadReportRepository implements GameReportRepository {
       winRateAsOpposition: this.buildRatioStat(oppositionWins, oppositionSessions),
       avgPointsAsPicker: this.buildAverageStat(pickerPointsSum, pickerPointsCount),
       avgScoreDelta: this.buildAverageStat(scoreDeltaSum, scoreDeltaCount),
-      crackBlitzRate: this.buildRatioStat(crackBlitzSessions, totalSessions),
     };
   }
 
@@ -175,6 +172,38 @@ export class SheepsheadReportRepository implements GameReportRepository {
     const pickOrPassSessions = Number(row?.pick_or_pass_sessions ?? 0);
 
     return this.buildRatioStat(pickSessions, pickOrPassSessions);
+  }
+
+  private async computeLeadFailAceSuccess(
+    userId: number,
+    baseConditions: SQL[],
+  ): Promise<RatioStat> {
+    // For each session's tricks, count how many times this user led with a fail ace
+    // and how many of those they won.
+    // Fail aces are: ac (ace of clubs), as (ace of spades), ah (ace of hearts).
+    const rows = await this.db.execute<{
+      lead_fail_ace_total: string;
+      lead_fail_ace_won: string;
+    }>(
+      sql`
+        SELECT
+          count(*)::int AS lead_fail_ace_total,
+          count(*) FILTER (WHERE (trick.elem->>'winner')::int = ${userId})::int AS lead_fail_ace_won
+        FROM ${gameSessions}
+        INNER JOIN ${gameParticipants} ON ${gameParticipants.sessionId} = ${gameSessions.id}
+        CROSS JOIN LATERAL jsonb_array_elements(${gameSessions.store}->'tricks') AS trick(elem)
+        WHERE ${and(...baseConditions)}
+          AND ${gameSessions.store}->'tricks' IS NOT NULL
+          AND (trick.elem->'plays'->0->'player')::int = ${userId}
+          AND (trick.elem->'plays'->0->'card'->>'name') IN ('ac', 'as', 'ah')
+      `,
+    );
+
+    const row = rows[0];
+    const total = Number(row?.lead_fail_ace_total ?? 0);
+    const won = Number(row?.lead_fail_ace_won ?? 0);
+
+    return this.buildRatioStat(won, total);
   }
 
   private async computeScoreTrajectory(

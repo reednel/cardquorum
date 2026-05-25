@@ -59,7 +59,7 @@ export interface SheepsheadReportPayload {
     winRateAsOpposition: RatioStat;
     avgPointsAsPicker: AverageStat;
     avgScoreDelta: AverageStat;
-    crackBlitzRate: RatioStat;
+    leadFailAceSuccessRate: RatioStat;
   };
   scoreTrajectory: ScoreTrajectoryPoint[];
 }

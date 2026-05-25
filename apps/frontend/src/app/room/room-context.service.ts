@@ -18,39 +18,20 @@ export class RoomContextService {
   private readonly _roomDeleted = signal<number | null>(null);
   private readonly _joinError = signal<string | null>(null);
 
-  /**
-   * Accumulated member identities for the current room session.
-   * Members who leave mid-game are retained so their display names
-   * can still be resolved on the game table and summary.
-   */
-  private readonly _memberCache = new Map<number, UserIdentity>();
-  private readonly _allKnownMembers = signal<UserIdentity[]>([]);
-
   readonly members = this._members.asReadonly();
-  /** All members ever seen in this room session (survives leaves/reconnects). */
-  readonly allKnownMembers = this._allKnownMembers.asReadonly();
   readonly currentRoomId = this._currentRoomId.asReadonly();
   readonly roomDeleted = this._roomDeleted.asReadonly();
   readonly joinError = this._joinError.asReadonly();
 
   private readonly ws = inject(WebSocketService);
 
-  private updateCache(members: UserIdentity[]): void {
-    for (const m of members) {
-      this._memberCache.set(m.userId, m);
-    }
-    this._allKnownMembers.set([...this._memberCache.values()]);
-  }
-
   constructor() {
     this.ws.on<RoomJoinedPayload>(WS_EMIT.ROOM_JOINED, (data) => {
       this._joinError.set(null);
       this._members.set(data.members);
-      this.updateCache(data.members);
     });
     this.ws.on<MemberChangePayload>(WS_EMIT.MEMBER_JOINED, (data) => {
       this._members.update((m) => [...m, data.member]);
-      this.updateCache([data.member]);
     });
     this.ws.on<MemberChangePayload>(WS_EMIT.MEMBER_LEFT, (data) => {
       this._members.update((m) => m.filter((u) => u.userId !== data.member.userId));
@@ -82,8 +63,6 @@ export class RoomContextService {
     this._joinError.set(null);
     this._currentRoomId.set(roomId);
     this._members.set([]);
-    this._memberCache.clear();
-    this._allKnownMembers.set([]);
     this.ws.send(WS_EVENT.ROOM_JOIN, { roomId });
   }
 
@@ -93,8 +72,6 @@ export class RoomContextService {
       this.ws.send(WS_EVENT.ROOM_LEAVE, { roomId });
       this._currentRoomId.set(null);
       this._members.set([]);
-      this._memberCache.clear();
-      this._allKnownMembers.set([]);
     }
   }
 }

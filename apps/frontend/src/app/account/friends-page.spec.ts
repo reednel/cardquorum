@@ -263,12 +263,17 @@ describe('FriendsPage', () => {
     expect(el.querySelector('[data-testid="block-friend-btn-2"]')).toBeTruthy();
   });
 
-  it('blockUser calls blockService', () => {
+  it('blockUser calls blockService after confirmation', () => {
     mockBlockService.blockUser.mockReturnValue(of({}));
     searchSignal.set([SEARCH_RESULT]);
     fixture.detectChanges();
 
     (el.querySelector('[data-testid="block-search-btn-7"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(mockBlockService.blockUser).not.toHaveBeenCalled();
+
+    (el.querySelector('[data-testid="confirm-block-search-btn-7"]') as HTMLButtonElement).click();
     expect(mockBlockService.blockUser).toHaveBeenCalledWith(7);
   });
 });

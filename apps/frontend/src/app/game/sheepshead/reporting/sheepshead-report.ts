@@ -126,15 +126,25 @@ export class SheepsheadReportComponent {
         'stat-avg-points-picker',
       ),
       this.formatAverageCard('Avg Score Delta', cards.avgScoreDelta, 'stat-avg-score-delta'),
-      this.formatRatioCard('Crack/Blitz Rate', cards.crackBlitzRate, 'stat-crack-blitz-rate'),
+      this.formatRatioCard(
+        'Lead Fail Ace Win Rate',
+        cards.leadFailAceSuccessRate,
+        'stat-lead-fail-ace-success',
+        'tricks',
+      ),
     ];
   });
 
-  private formatRatioCard(label: string, stat: RatioStat, testId: string): StatCardDisplay {
+  private formatRatioCard(
+    label: string,
+    stat: RatioStat,
+    testId: string,
+    unit = 'games',
+  ): StatCardDisplay {
     return {
       label,
       value: stat.value === null ? '—' : `${(stat.value * 100).toFixed(1)}%`,
-      context: stat.denominator > 0 ? `${stat.numerator} / ${stat.denominator} games` : null,
+      context: stat.denominator > 0 ? `${stat.numerator} / ${stat.denominator} ${unit}` : null,
       testId,
     };
   }

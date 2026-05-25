@@ -65,16 +65,28 @@ import { FriendService } from './friend.service';
                   >
                     Add Friend
                   </button>
-                  <button
-                    [attr.data-testid]="'block-search-btn-' + user.userId"
-                    (click)="blockUser(user.userId)"
-                    [disabled]="actionInFlight()"
-                    class="rounded-default px-3 py-1 text-xs font-medium text-text-secondary
-                             hover:bg-hover-overlay dark:text-text-secondary-dark dark:hover:bg-hover-overlay-dark
-                             disabled:opacity-disabled"
-                  >
-                    Block
-                  </button>
+                  @if (confirmingBlock() === user.userId) {
+                    <button
+                      [attr.data-testid]="'confirm-block-search-btn-' + user.userId"
+                      (click)="confirmBlock(user.userId)"
+                      [disabled]="actionInFlight()"
+                      class="rounded-default bg-danger px-3 py-1 text-xs font-medium text-white
+                               hover:bg-danger-hover disabled:opacity-disabled"
+                    >
+                      Confirm?
+                    </button>
+                  } @else {
+                    <button
+                      [attr.data-testid]="'block-search-btn-' + user.userId"
+                      (click)="startBlock(user.userId)"
+                      [disabled]="actionInFlight()"
+                      class="rounded-default px-3 py-1 text-xs font-medium text-danger
+                               hover:bg-danger-surface dark:text-danger-dark dark:hover:bg-danger-surface-dark
+                               disabled:opacity-disabled"
+                    >
+                      Block
+                    </button>
+                  }
                 </div>
               }
             </li>
@@ -230,22 +242,32 @@ import { FriendService } from './friend.service';
                 >
                   Confirm?
                 </button>
+              } @else if (confirmingBlock() === friend.user.userId) {
+                <button
+                  [attr.data-testid]="'confirm-block-friend-btn-' + friend.user.userId"
+                  (click)="confirmBlock(friend.user.userId)"
+                  [disabled]="actionInFlight()"
+                  class="rounded-default bg-danger px-3 py-1 text-xs font-medium text-white
+                           hover:bg-danger-hover disabled:opacity-disabled"
+                >
+                  Confirm?
+                </button>
               } @else {
                 <div class="flex gap-2">
                   <button
                     [attr.data-testid]="'remove-btn-' + friend.friendshipId"
                     (click)="startRemove(friend.friendshipId)"
-                    class="rounded-default px-3 py-1 text-xs font-medium text-text-secondary
-                             hover:bg-hover-overlay dark:text-text-secondary-dark dark:hover:bg-hover-overlay-dark"
+                    class="rounded-default px-3 py-1 text-xs font-medium text-danger
+                             hover:bg-danger-surface dark:text-danger-dark dark:hover:bg-danger-surface-dark"
                   >
                     Remove
                   </button>
                   <button
                     [attr.data-testid]="'block-friend-btn-' + friend.user.userId"
-                    (click)="blockUser(friend.user.userId)"
+                    (click)="startBlock(friend.user.userId)"
                     [disabled]="actionInFlight()"
-                    class="rounded-default px-3 py-1 text-xs font-medium text-text-secondary
-                             hover:bg-hover-overlay dark:text-text-secondary-dark dark:hover:bg-hover-overlay-dark
+                    class="rounded-default px-3 py-1 text-xs font-medium text-danger
+                             hover:bg-danger-surface dark:text-danger-dark dark:hover:bg-danger-surface-dark
                              disabled:opacity-disabled"
                   >
                     Block
@@ -322,11 +344,13 @@ export class FriendsPage implements OnInit {
   protected readonly actionInFlight = signal(false);
   protected readonly searchError = signal<string | null>(null);
   protected readonly confirmingRemove = signal<number | null>(null);
+  protected readonly confirmingBlock = signal<number | null>(null);
   protected readonly blockListExpanded = signal(false);
   protected readonly confirmingUnblock = signal<number | null>(null);
 
   private readonly searchSubject = new Subject<string>();
   private removeTimeout: ReturnType<typeof setTimeout> | null = null;
+  private blockTimeout: ReturnType<typeof setTimeout> | null = null;
   private unblockTimeout: ReturnType<typeof setTimeout> | null = null;
 
   ngOnInit(): void {
@@ -419,7 +443,19 @@ export class FriendsPage implements OnInit {
     return this.blockService.blockedUsers().some((b) => b.userId === userId);
   }
 
-  protected blockUser(userId: number): void {
+  protected startBlock(userId: number): void {
+    if (this.blockTimeout) clearTimeout(this.blockTimeout);
+    this.confirmingBlock.set(userId);
+    this.blockTimeout = setTimeout(() => this.confirmingBlock.set(null), 3000);
+  }
+
+  protected confirmBlock(userId: number): void {
+    if (this.blockTimeout) clearTimeout(this.blockTimeout);
+    this.confirmingBlock.set(null);
+    this.blockUser(userId);
+  }
+
+  private blockUser(userId: number): void {
     this.actionInFlight.set(true);
     this.blockService.blockUser(userId).subscribe({
       next: () => {

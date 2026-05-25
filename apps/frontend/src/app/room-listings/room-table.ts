@@ -26,13 +26,17 @@ import { DetailsPopoverComponent } from './details-popover';
         @for (room of rooms(); track room.id) {
           <tr data-testid="room-row" class="border-b border-border dark:border-border-dark">
             <td class="py-3 font-medium text-text-heading dark:text-text-heading-dark">
-              <button
-                type="button"
-                class="text-primary hover:text-primary-hover dark:text-primary-dark dark:hover:text-primary-dark-hover"
-                (click)="navigateToRoom.emit(room.id)"
-              >
+              @if (mode() === 'memberships') {
+                <button
+                  type="button"
+                  class="text-primary hover:text-primary-hover dark:text-primary-dark dark:hover:text-primary-dark-hover"
+                  (click)="navigateToRoom.emit(room.id)"
+                >
+                  {{ room.name }}
+                </button>
+              } @else {
                 {{ room.name }}
-              </button>
+              }
             </td>
             <td class="py-3 text-text-secondary dark:text-text-secondary-dark">
               {{ room.gameType ?? '—' }}

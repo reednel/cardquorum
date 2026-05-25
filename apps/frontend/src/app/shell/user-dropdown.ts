@@ -8,11 +8,20 @@ import {
   signal,
 } from '@angular/core';
 import { Router } from '@angular/router';
+import { FaIconComponent } from '@fortawesome/angular-fontawesome';
+import {
+  faChartBar,
+  faFileLines,
+  faRightFromBracket,
+  faUserGear,
+  faUserGroup,
+} from '@fortawesome/free-solid-svg-icons';
 import { AuthService } from '../auth/auth.service';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-user-dropdown',
+  imports: [FaIconComponent],
   template: `
     <div class="relative">
       <button
@@ -38,45 +47,51 @@ import { AuthService } from '../auth/auth.service';
             data-testid="menu-account"
             role="menuitem"
             (click)="goToAccount()"
-            class="w-full px-4 py-2 text-left text-sm text-text-body hover:bg-hover-overlay
+            class="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-text-body hover:bg-hover-overlay
                    dark:text-text-body-dark dark:hover:bg-hover-overlay-dark"
           >
+            <fa-icon [icon]="faUserGear" class="text-xs" aria-hidden="true" />
             Account
           </button>
           <button
             data-testid="menu-friends"
             role="menuitem"
             (click)="goToFriends()"
-            class="w-full px-4 py-2 text-left text-sm text-text-body hover:bg-hover-overlay
+            class="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-text-body hover:bg-hover-overlay
                    dark:text-text-body-dark dark:hover:bg-hover-overlay-dark"
           >
+            <fa-icon [icon]="faUserGroup" class="text-xs" aria-hidden="true" />
             Friends
           </button>
           <button
             data-testid="menu-stats"
             role="menuitem"
             (click)="goToStats()"
-            class="w-full px-4 py-2 text-left text-sm text-text-body hover:bg-hover-overlay
+            class="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-text-body hover:bg-hover-overlay
                    dark:text-text-body-dark dark:hover:bg-hover-overlay-dark"
           >
+            <fa-icon [icon]="faChartBar" class="text-xs" aria-hidden="true" />
             Stats
           </button>
           <button
             data-testid="menu-reports"
             role="menuitem"
             (click)="goToReports()"
-            class="w-full px-4 py-2 text-left text-sm text-text-body hover:bg-hover-overlay
+            class="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-text-body hover:bg-hover-overlay
                    dark:text-text-body-dark dark:hover:bg-hover-overlay-dark"
           >
+            <fa-icon [icon]="faFileLines" class="text-xs" aria-hidden="true" />
             Reports
           </button>
+          <div class="border-t border-border dark:border-border-dark my-1"></div>
           <button
             data-testid="menu-logout"
             role="menuitem"
             (click)="doLogout()"
-            class="w-full px-4 py-2 text-left text-sm text-text-body hover:bg-hover-overlay
-                   dark:text-text-body-dark dark:hover:bg-hover-overlay-dark"
+            class="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-danger hover:bg-danger-surface
+                   dark:text-danger-dark dark:hover:bg-danger-surface-dark"
           >
+            <fa-icon [icon]="faRightFromBracket" class="text-xs" aria-hidden="true" />
             Log out
           </button>
         </div>
@@ -89,6 +104,12 @@ export class UserDropdown implements OnInit {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly elRef = inject(ElementRef);
+
+  protected readonly faUserGear = faUserGear;
+  protected readonly faUserGroup = faUserGroup;
+  protected readonly faChartBar = faChartBar;
+  protected readonly faFileLines = faFileLines;
+  protected readonly faRightFromBracket = faRightFromBracket;
 
   protected readonly showMenu = signal(false);
 

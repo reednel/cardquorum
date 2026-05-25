@@ -14,7 +14,7 @@ function buildPayload(overrides: Partial<SheepsheadReportPayload> = {}): Sheepsh
       winRateAsOpposition: { numerator: 10, denominator: 23, value: 10 / 23 },
       avgPointsAsPicker: { sum: 738, count: 12, value: 738 / 12 },
       avgScoreDelta: { sum: 15, count: 45, value: 15 / 45 },
-      crackBlitzRate: { numerator: 3, denominator: 45, value: 3 / 45 },
+      leadFailAceSuccessRate: { numerator: 5, denominator: 14, value: 5 / 14 },
     },
     scoreTrajectory: [
       { sessionIndex: 1, scoreDelta: 2, cumulativeScore: 2 },
@@ -55,7 +55,7 @@ describe('SheepsheadReportComponent', () => {
         'stat-win-rate-opposition',
         'stat-avg-points-picker',
         'stat-avg-score-delta',
-        'stat-crack-blitz-rate',
+        'stat-lead-fail-ace-success',
       ];
 
       for (const testId of expectedTestIds) {

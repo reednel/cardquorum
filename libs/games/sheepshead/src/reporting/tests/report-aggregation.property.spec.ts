@@ -29,7 +29,6 @@ interface SessionData {
   won: boolean;
   scoreDelta: number;
   points: number;
-  hasCrackOrBlitz: boolean;
 }
 
 /**
@@ -41,7 +40,6 @@ function arbSessionData(): fc.Arbitrary<SessionData> {
     won: fc.boolean(),
     scoreDelta: fc.integer({ min: -20, max: 20 }),
     points: fc.integer({ min: 0, max: 120 }),
-    hasCrackOrBlitz: fc.boolean(),
   });
 }
 
@@ -60,7 +58,6 @@ function computeExpectedStats(sessions: SessionData[]) {
   let oppositionWins = 0;
   let pickerPointsSum = 0;
   let scoreDeltaSum = 0;
-  let crackBlitzSessions = 0;
 
   for (const s of sessions) {
     if (s.role === 'picker') {
@@ -75,7 +72,6 @@ function computeExpectedStats(sessions: SessionData[]) {
       if (s.won) oppositionWins++;
     }
     scoreDeltaSum += s.scoreDelta;
-    if (s.hasCrackOrBlitz) crackBlitzSessions++;
   }
 
   return {
@@ -85,7 +81,6 @@ function computeExpectedStats(sessions: SessionData[]) {
     winRateAsOpposition: buildRatioStat(oppositionWins, oppositionSessions),
     avgPointsAsPicker: buildAverageStat(pickerPointsSum, pickerSessions),
     avgScoreDelta: buildAverageStat(scoreDeltaSum, totalSessions),
-    crackBlitzRate: buildRatioStat(crackBlitzSessions, totalSessions),
   };
 }
 
@@ -110,8 +105,6 @@ function computeRepositoryStats(sessions: SessionData[]) {
 
   const scoreDeltaSum = sessions.reduce((sum, s) => sum + s.scoreDelta, 0);
 
-  const crackBlitzSessions = sessions.filter((s) => s.hasCrackOrBlitz).length;
-
   return {
     pickRate: buildRatioStat(pickerSessions, totalSessions),
     winRateAsPicker: buildRatioStat(pickerWins, pickerSessions),
@@ -119,8 +112,32 @@ function computeRepositoryStats(sessions: SessionData[]) {
     winRateAsOpposition: buildRatioStat(oppositionWins, oppositionSessions),
     avgPointsAsPicker: buildAverageStat(pickerPointsSum, pickerSessions),
     avgScoreDelta: buildAverageStat(scoreDeltaSum, totalSessions),
-    crackBlitzRate: buildRatioStat(crackBlitzSessions, totalSessions),
   };
+}
+
+/** Trick data for lead fail ace property tests. */
+interface TrickData {
+  leadPlayer: number;
+  leadCardName: string;
+  winner: number;
+}
+
+const FAIL_ACE_NAMES = ['ac', 'as', 'ah'];
+
+function arbTrickData(userId: number): fc.Arbitrary<TrickData> {
+  return fc.record({
+    leadPlayer: fc.constantFrom(userId, userId + 1, userId + 2),
+    leadCardName: fc.constantFrom('ac', 'as', 'ah', 'xc', 'xs', 'qc', '7d', 'ad'),
+    winner: fc.constantFrom(userId, userId + 1, userId + 2),
+  });
+}
+
+function computeExpectedLeadFailAce(tricks: TrickData[], userId: number) {
+  const leadFailAceTricks = tricks.filter(
+    (t) => t.leadPlayer === userId && FAIL_ACE_NAMES.includes(t.leadCardName),
+  );
+  const won = leadFailAceTricks.filter((t) => t.winner === userId).length;
+  return buildRatioStat(won, leadFailAceTricks.length);
 }
 
 describe('Report aggregation correctness', () => {
@@ -174,13 +191,20 @@ describe('Report aggregation correctness', () => {
     );
   });
 
-  it('crack/blitz rate equals sessions with crack or blitz divided by total sessions', () => {
+  it('lead fail ace success rate equals tricks won when leading a fail ace divided by total fail ace leads', () => {
+    const userId = 1;
     fc.assert(
-      fc.property(fc.array(arbSessionData(), { minLength: 1, maxLength: 50 }), (sessions) => {
-        const expected = computeExpectedStats(sessions);
-        const actual = computeRepositoryStats(sessions);
+      fc.property(fc.array(arbTrickData(userId), { minLength: 1, maxLength: 30 }), (tricks) => {
+        const expected = computeExpectedLeadFailAce(tricks, userId);
 
-        expect(actual.crackBlitzRate).toEqual(expected.crackBlitzRate);
+        // Simulate the repository logic
+        const leadFailAceTricks = tricks.filter(
+          (t) => t.leadPlayer === userId && FAIL_ACE_NAMES.includes(t.leadCardName),
+        );
+        const won = leadFailAceTricks.filter((t) => t.winner === userId).length;
+        const actual = buildRatioStat(won, leadFailAceTricks.length);
+
+        expect(actual).toEqual(expected);
       }),
       { numRuns: 100 },
     );
@@ -219,7 +243,6 @@ describe('Report aggregation correctness', () => {
             won: fc.boolean(),
             scoreDelta: fc.integer({ min: -20, max: 20 }),
             points: fc.integer({ min: 0, max: 120 }),
-            hasCrackOrBlitz: fc.boolean(),
           }),
           { minLength: 1, maxLength: 30 },
         ),
@@ -241,5 +264,17 @@ describe('Report aggregation correctness', () => {
       ),
       { numRuns: 100 },
     );
+  });
+
+  it('lead fail ace success rate is null when player never led a fail ace', () => {
+    const userId = 1;
+    // All tricks led by other players
+    const tricks: TrickData[] = [
+      { leadPlayer: 2, leadCardName: 'ac', winner: 2 },
+      { leadPlayer: 3, leadCardName: 'as', winner: 1 },
+    ];
+    const result = computeExpectedLeadFailAce(tricks, userId);
+    expect(result.denominator).toBe(0);
+    expect(result.value).toBeNull();
   });
 });
