@@ -128,3 +128,14 @@ export type {
   PlayerStatsResponse,
   StatsQueryParams,
 } from './lib/stats-types';
+
+export type {
+  ReportDescriptor,
+  ReportFilters,
+  GameReportRepository,
+  GameReportPlugin,
+  RatioStat,
+  AverageStat,
+  ScoreTrajectoryPoint,
+  SheepsheadReportPayload,
+} from './lib/report-types';

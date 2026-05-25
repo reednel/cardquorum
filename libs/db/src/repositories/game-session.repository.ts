@@ -18,7 +18,7 @@ export class GameSessionRepository {
     return this.db.select().from(gameSessions).where(eq(gameSessions.roomId, roomId));
   }
 
-  async create(data: { roomId: number; gameType: string; config?: unknown }) {
+  async create(data: { roomId: number; gameType: string; config?: unknown; variant?: string }) {
     const [row] = await this.db.insert(gameSessions).values(data).returning();
     return row;
   }

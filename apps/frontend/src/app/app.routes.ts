@@ -71,6 +71,12 @@ export const appRoutes: Route[] = [
             title: 'Friends — CardQuorum',
             loadComponent: () => import('./account/friends-page').then((m) => m.FriendsPage),
           },
+          {
+            path: 'reports',
+            title: 'Reports — CardQuorum',
+            loadComponent: () =>
+              import('./report/report-shell').then((m) => m.ReportShellComponent),
+          },
           { path: '', redirectTo: 'account', pathMatch: 'full' },
         ],
       },

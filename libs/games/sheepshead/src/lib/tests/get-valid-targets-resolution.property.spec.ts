@@ -153,7 +153,11 @@ function arbBuryPhaseWithCorrectCount(): fc.Arbitrary<{
         redeals: null,
       };
 
-      const config = makeConfig({ name: configName, blindSize });
+      const config = makeConfig({
+        name: configName,
+        blindSize,
+        ...(configName === 'partner-draft' ? { partnerDraft: true } : {}),
+      });
       const userID = userIDs[pickerIdx];
       const selectedCards = pickerHand.slice(0, buryCount).map((c) => c.name);
 

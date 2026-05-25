@@ -77,6 +77,7 @@ describe('handleBury', () => {
       blindSize: 4,
       partnerRule: 'left-of-picker',
       noPick: 'leaster',
+      partnerDraft: true,
     });
 
     function setupDraft() {

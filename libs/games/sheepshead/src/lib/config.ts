@@ -56,6 +56,7 @@ export const SheepsheadConfigSchema = z.object({
   noAceFaceTrump: z.boolean(),
   multiplicityLimit: z.number().int().positive().nullable(),
   callOwnAce: z.boolean().nullable(),
+  partnerDraft: z.boolean().optional(),
   cardsRemoved: z
     .array(
       z.enum([
@@ -130,6 +131,7 @@ export interface ConfigPreset {
   label: string;
   description: string;
   allowedPlayerCounts: number[];
+  partnerDraft?: boolean;
   fields: {
     handSize: ConfigFieldDef<number>;
     blindSize: ConfigFieldDef<number>;
@@ -575,6 +577,7 @@ export const CONFIG_PRESETS: readonly ConfigPreset[] = [
     description:
       'Picker draws 2 from blind. Player to their left is partner and draws the other 2.',
     allowedPlayerCounts: [7],
+    partnerDraft: true,
     fields: {
       handSize: { value: 4, mode: 'locked' },
       blindSize: { value: 4, mode: 'locked' },

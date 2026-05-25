@@ -128,10 +128,12 @@ describe('GameService', () => {
     it('should validate config, persist to DB, and return session info', async () => {
       const result = await service.createSession(1, 'sheepshead', validConfig, 10);
 
+      const { name: _name, ...configWithoutName } = validConfig;
       expect(mockSessionRepo.create).toHaveBeenCalledWith({
         roomId: 1,
         gameType: 'sheepshead',
-        config: validConfig,
+        config: configWithoutName,
+        variant: '3-hand',
       });
       expect(result).toEqual({
         sessionId: 1,

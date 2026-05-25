@@ -204,6 +204,7 @@ describe('SheepsheadPlugin', () => {
         partnerRule: 'left-of-picker',
         blindSize: 4,
         handSize: 4,
+        partnerDraft: true,
       });
       const blind = DECK.slice(0, 4);
       const state = SheepsheadPlugin.createInitialState(config, [1, 2, 3, 4, 5]);

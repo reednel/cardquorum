@@ -62,6 +62,15 @@ import { AuthService } from '../auth/auth.service';
             Stats
           </button>
           <button
+            data-testid="menu-reports"
+            role="menuitem"
+            (click)="goToReports()"
+            class="w-full px-4 py-2 text-left text-sm text-text-body hover:bg-hover-overlay
+                   dark:text-text-body-dark dark:hover:bg-hover-overlay-dark"
+          >
+            Reports
+          </button>
+          <button
             data-testid="menu-logout"
             role="menuitem"
             (click)="doLogout()"
@@ -116,6 +125,11 @@ export class UserDropdown implements OnInit {
   protected goToStats(): void {
     this.showMenu.set(false);
     this.router.navigate(['/user/stats']);
+  }
+
+  protected goToReports(): void {
+    this.showMenu.set(false);
+    this.router.navigate(['/user/reports']);
   }
 
   protected goToFriends(): void {

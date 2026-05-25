@@ -101,10 +101,10 @@ function getBlindCards(state: SheepsheadPlayerView): (string | null)[] {
 }
 
 function getBuryCount(state: SheepsheadPlayerView, config: unknown): number {
-  const cfg = config as { blindSize?: number; name?: string } | null;
+  const cfg = config as { blindSize?: number; partnerDraft?: boolean } | null;
   if (!cfg) return 2;
   const blindSize = cfg.blindSize ?? 2;
-  return cfg.name === 'partner-draft' ? Math.floor(blindSize / 2) : blindSize;
+  return cfg.partnerDraft === true ? Math.floor(blindSize / 2) : blindSize;
 }
 
 function buildPlayCardEvent(state: SheepsheadPlayerView, cardName: string): SheepsheadAction {

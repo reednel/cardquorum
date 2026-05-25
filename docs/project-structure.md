@@ -23,11 +23,12 @@ cardquorum/
 
 Defined in `tsconfig.base.json`, usable from any project:
 
-| Alias                    | Points to                            |
-| ------------------------ | ------------------------------------ |
-| `@cardquorum/shared`     | `libs/shared/src/index.ts`           |
-| `@cardquorum/engine`     | `libs/engine/src/index.ts`           |
-| `@cardquorum/sheepshead` | `libs/games/sheepshead/src/index.ts` |
+| Alias                              | Points to                                      |
+| ---------------------------------- | ---------------------------------------------- |
+| `@cardquorum/shared`               | `libs/shared/src/index.ts`                     |
+| `@cardquorum/engine`               | `libs/engine/src/index.ts`                     |
+| `@cardquorum/sheepshead`           | `libs/games/sheepshead/src/index.ts`           |
+| `@cardquorum/sheepshead/reporting` | `libs/games/sheepshead/src/reporting/index.ts` |
 
 ## Libraries
 

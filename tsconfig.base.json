@@ -18,7 +18,8 @@
       "@cardquorum/shared": ["libs/shared/src/index.ts"],
       "@cardquorum/engine": ["libs/engine/src/index.ts"],
       "@cardquorum/db": ["libs/db/src/index.ts"],
-      "@cardquorum/sheepshead": ["libs/games/sheepshead/src/index.ts"]
+      "@cardquorum/sheepshead": ["libs/games/sheepshead/src/index.ts"],
+      "@cardquorum/sheepshead/reporting": ["libs/games/sheepshead/src/reporting/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

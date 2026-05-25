@@ -106,9 +106,20 @@ export class GameService implements OnModuleDestroy {
     // Reserve the room slot before the async DB call to prevent races
     this.roomToSession.set(roomId, -1);
 
+    // Extract variant (preset name) from config and strip it before persisting
+    let variant: string | undefined;
+    let persistConfig = config;
+    if (config && typeof config === 'object' && 'name' in config) {
+      const { name, ...rest } = config as Record<string, unknown>;
+      if (typeof name === 'string') {
+        variant = name;
+      }
+      persistConfig = rest;
+    }
+
     let row: { id: number };
     try {
-      row = await this.sessionRepo.create({ roomId, gameType, config });
+      row = await this.sessionRepo.create({ roomId, gameType, config: persistConfig, variant });
     } catch (err) {
       this.roomToSession.delete(roomId);
       throw err;

@@ -2,11 +2,9 @@
 
 ## Minor Features
 
-1. Player Ready/Unready should be more obvious.
-
 ## Major Features
 
-1. Game Reporting
+1. Game Reporting.
 2. Replay and Summary access permissions
 3. Spectator view
 4. Replay omnicient view

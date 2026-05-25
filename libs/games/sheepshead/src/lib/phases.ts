@@ -153,7 +153,7 @@ export function handlePick(
     const blind = state.blind ?? [];
 
     // Partner-draft: split blind between picker and partner (left of picker)
-    if (config.name === 'partner-draft') {
+    if (config.partnerDraft === true) {
       const half = Math.floor(blind.length / 2);
       const pickerBlind = blind.slice(0, half);
       const partnerBlind = blind.slice(half);
@@ -291,7 +291,7 @@ export function handleBury(
 
   // Partner-draft: each player buries half the blind size
   const buryCount =
-    config.name === 'partner-draft' ? Math.floor(config.blindSize / 2) : config.blindSize;
+    config.partnerDraft === true ? Math.floor(config.blindSize / 2) : config.blindSize;
 
   if (buriedCards.length !== buryCount) {
     throw new Error(`Must bury exactly ${buryCount} cards, got ${buriedCards.length}`);
@@ -319,7 +319,7 @@ export function handleBury(
   const buried = [...(state.buried ?? []), ...buriedCards];
 
   // Partner-draft: after picker buries, check if partner still needs to bury
-  if (config.name === 'partner-draft') {
+  if (config.partnerDraft === true) {
     const partner = players.find((p) => p.role === 'partner');
     if (partner && partner.hand.length > config.handSize) {
       return { ...state, players, buried, activePlayer: partner.userID };

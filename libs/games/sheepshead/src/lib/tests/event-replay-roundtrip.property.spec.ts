@@ -139,7 +139,7 @@ function buildEvent(
     case 'bury': {
       const player = state.players.find((p) => p.userID === actingPlayer)!;
       const buryCount =
-        config.name === 'partner-draft' ? Math.floor(config.blindSize / 2) : config.blindSize;
+        config.partnerDraft === true ? Math.floor(config.blindSize / 2) : config.blindSize;
       const cards = player.hand.slice(0, buryCount);
       return { type: 'bury', userID: actingPlayer, payload: { cards } };
     }

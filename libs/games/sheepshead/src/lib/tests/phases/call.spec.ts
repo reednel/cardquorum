@@ -1,5 +1,6 @@
+import { isTrump } from '../../cards';
 import { handleBury, handleCall, handleDeal, handlePick, legalCallOptions } from '../../phases';
-import { SheepsheadState } from '../../types';
+import { Card, SheepsheadState } from '../../types';
 import { card, makeConfig, makeState, pickContinue } from '../test-helpers';
 
 describe('handleCall', () => {
@@ -30,12 +31,28 @@ describe('handleCall', () => {
     const hasAllFailAces = failAces.every((a) => pickerHand.some((c) => c.name === a));
     const calledCard = callableAce ?? (hasAllFailAces ? 'xc' : 'alone');
 
+    // Determine if a hole card is needed (picker has no fail-suit cards of the called suit)
+    let holeCard: Card | undefined;
+    if (calledCard !== 'alone') {
+      const suitChar = calledCard.slice(-1);
+      const suitMap: Record<string, string> = { c: 'clubs', s: 'spades', h: 'hearts' };
+      const suit = suitMap[suitChar];
+      if (suit) {
+        const failSuitCards = pickerHand.filter((c) => !isTrump(c) && c.suit === suit);
+        if (failSuitCards.length === 0) {
+          // Picker has no fail-suit cards of the called suit — provide a non-trump card as hole
+          const nonTrumpCards = pickerHand.filter((c) => !isTrump(c));
+          holeCard = nonTrumpCards[0] ?? pickerHand[0];
+        }
+      }
+    }
+
     const state = handleCall(
       buried,
       {
         type: 'call_ace',
         userID: 2,
-        payload: { card: calledCard },
+        payload: { card: calledCard, holeCard },
       },
       config,
     );

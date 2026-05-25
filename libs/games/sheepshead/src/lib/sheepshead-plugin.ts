@@ -274,7 +274,7 @@ function getPlayerView(
   } else if (state.phase === 'pick') {
     blind = state.blind ? state.blind.map(() => null) : [];
   } else if (state.phase === 'bury' && state.blind) {
-    if (config.name === 'partner-draft') {
+    if (config.partnerDraft === true) {
       const half = Math.floor(state.blind.length / 2);
       if (isPicker) {
         blind = state.blind.slice(0, half);
@@ -434,7 +434,7 @@ function getValidTargets(
       if (state.activePlayer !== userID) return [];
       if (player.role !== 'picker') return [];
       const blindSize = config.blindSize ?? 2;
-      const buryCount = config.name === 'partner-draft' ? Math.floor(blindSize / 2) : blindSize;
+      const buryCount = config.partnerDraft === true ? Math.floor(blindSize / 2) : blindSize;
       if (selectedCards.length === buryCount) {
         return ['buried'];
       }
