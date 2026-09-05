@@ -1,4 +1,4 @@
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { StrategiesResponse } from '@cardquorum/shared';
 import { AuthController } from './auth.controller';
@@ -21,6 +21,7 @@ describe('AuthController', () => {
       enabledStrategies: ['basic', 'oidc'],
       isStrategyEnabled: jest.fn(() => true),
       getOidcAuthorizationUrl: jest.fn().mockReturnValue('https://provider/authorize?state=abc'),
+      getEndSessionUrl: jest.fn().mockReturnValue(null),
       oidcCallback: jest.fn().mockResolvedValue({
         sessionId: 'new-session',
         user: { userId: 1, username: 'alice', displayName: 'Alice' },
@@ -32,9 +33,15 @@ describe('AuthController', () => {
       linkOidcCredential: jest.fn(),
       unlinkOidcCredential: jest.fn(),
       verifyBasicCredential: jest.fn(),
+      backchannelLogout: jest.fn(),
     };
     sessionService = { deleteSession: jest.fn(), validateSession: jest.fn() };
-    const config = { get: jest.fn().mockReturnValue('development') };
+    const config = {
+      get: jest.fn((key: string, fallback?: unknown) => {
+        if (key === 'NODE_ENV') return 'development';
+        return fallback;
+      }),
+    };
 
     controller = new AuthController(
       authService as unknown as AuthService,
@@ -60,10 +67,6 @@ describe('AuthController', () => {
           displayName: null,
           authMethod: 'oidc',
         },
-      };
-      const reply = {
-        status: jest.fn().mockReturnThis(),
-        redirect: jest.fn(),
       };
 
       const result = await controller.oidcRegister({ username: 'alice' }, request as any);
@@ -142,7 +145,7 @@ describe('AuthController', () => {
   });
 
   describe('GET /auth/oidc/login', () => {
-    it('should set state cookie and redirect', () => {
+    it('should set state cookie with nonce.codeVerifier.state format and redirect', () => {
       const reply = {
         header: jest.fn().mockReturnThis(),
         status: jest.fn().mockReturnThis(),
@@ -151,24 +154,50 @@ describe('AuthController', () => {
 
       controller.oidcLogin(undefined, reply as any);
 
-      expect(reply.header).toHaveBeenCalledWith(
-        'Set-Cookie',
-        expect.stringContaining('cq_oidc_state='),
-      );
+      const cookieHeader = (reply.header as jest.Mock).mock.calls.find(
+        (c: string[]) => c[0] === 'Set-Cookie',
+      )?.[1] as string;
+      // Cookie value must have two dots separating three non-empty segments
+      expect(cookieHeader).toMatch(/^cq_oidc_state=[^.]+\.[^.]+\.[^;]+/);
       expect(reply.status).toHaveBeenCalledWith(302);
       expect(reply.redirect).toHaveBeenCalledWith(
         expect.stringContaining('https://provider/authorize'),
       );
+      // state, nonce, codeChallenge, forceReauth=false
       expect(authService['getOidcAuthorizationUrl']).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(String),
         expect.any(String),
         false,
       );
     });
+
+    it('should include code_challenge param in the authorization URL', () => {
+      const reply = {
+        header: jest.fn().mockReturnThis(),
+        status: jest.fn().mockReturnThis(),
+        redirect: jest.fn(),
+      };
+      (authService['getOidcAuthorizationUrl'] as jest.Mock).mockImplementation(
+        (state: string, nonce: string, codeChallenge: string) =>
+          `https://provider/authorize?state=${state}&nonce=${nonce}&code_challenge=${codeChallenge}&code_challenge_method=S256`,
+      );
+
+      controller.oidcLogin(undefined, reply as any);
+
+      const redirectUrl = (reply.redirect as jest.Mock).mock.calls[0][0] as string;
+      expect(redirectUrl).toContain('code_challenge=');
+      expect(redirectUrl).toContain('code_challenge_method=S256');
+    });
   });
 
   describe('GET /auth/oidc/callback', () => {
-    const makeRequest = (cookieState?: string) => ({
-      cookies: cookieState ? { cq_oidc_state: cookieState } : {},
+    /** Build a valid cookie header value for the OIDC state cookie (nonce.codeVerifier.state format). */
+    const makeStateCookie = (nonce: string, codeVerifier: string, state: string) =>
+      `${nonce}.${codeVerifier}.${state}`;
+
+    const makeRequest = (cookieValue?: string) => ({
+      cookies: cookieValue ? { cq_oidc_state: cookieValue } : {},
     });
 
     const makeReply = () => ({
@@ -179,7 +208,7 @@ describe('AuthController', () => {
 
     it('should redirect to /login?error=oidc_failed when IdP returns error', async () => {
       const reply = makeReply();
-      const request = makeRequest('valid-state');
+      const request = makeRequest(makeStateCookie('n', 'v', 'valid-state'));
 
       await controller.oidcCallback(
         undefined as any,
@@ -197,7 +226,7 @@ describe('AuthController', () => {
 
     it('should redirect to /login?error=invalid_state on state mismatch', async () => {
       const reply = makeReply();
-      const request = makeRequest('wrong-state');
+      const request = makeRequest(makeStateCookie('n', 'v', 'wrong-state'));
 
       await controller.oidcCallback(
         'auth-code',
@@ -234,12 +263,13 @@ describe('AuthController', () => {
       (authService['oidcCallback'] as jest.Mock).mockRejectedValue(
         new Error('token exchange failed'),
       );
+      const stateValue = 'valid-state';
       const reply = makeReply();
-      const request = makeRequest('valid-state');
+      const request = makeRequest(makeStateCookie('mynonce', 'myverifier', stateValue));
 
       await controller.oidcCallback(
         'bad-code',
-        'valid-state',
+        stateValue,
         undefined as any,
         undefined as any,
         request as any,
@@ -253,8 +283,8 @@ describe('AuthController', () => {
     describe('oidc callback with link action', () => {
       it('should link OIDC credential and redirect to /user?linked=oidc', async () => {
         (authService['linkOidcCredential'] as jest.Mock).mockResolvedValue(undefined);
-        const stateValue = 'nonce123:link';
-        const request = makeRequest(stateValue);
+        const stateValue = 'state123:link';
+        const request = makeRequest(makeStateCookie('mynonce', 'myverifier', stateValue));
         (request as any).cookies['cq_session'] = 'valid-session';
         const reply = makeReply();
 
@@ -274,7 +304,12 @@ describe('AuthController', () => {
           reply as any,
         );
 
-        expect(authService['linkOidcCredential']).toHaveBeenCalledWith(1, 'auth-code');
+        expect(authService['linkOidcCredential']).toHaveBeenCalledWith(
+          1,
+          'auth-code',
+          'mynonce',
+          'myverifier',
+        );
         expect(reply.redirect).toHaveBeenCalledWith('/user/account?linked=oidc');
       });
 
@@ -282,8 +317,8 @@ describe('AuthController', () => {
         (authService['linkOidcCredential'] as jest.Mock).mockRejectedValue(
           new ConflictException('already linked'),
         );
-        const stateValue = 'nonce123:link';
-        const request = makeRequest(stateValue);
+        const stateValue = 'state123:link';
+        const request = makeRequest(makeStateCookie('mynonce', 'myverifier', stateValue));
         (request as any).cookies['cq_session'] = 'valid-session';
         const reply = makeReply();
         sessionService['validateSession'] = jest.fn().mockResolvedValue({
@@ -309,8 +344,8 @@ describe('AuthController', () => {
         (authService['linkOidcCredential'] as jest.Mock).mockRejectedValue(
           new Error('token exchange failed'),
         );
-        const stateValue = 'nonce123:link';
-        const request = makeRequest(stateValue);
+        const stateValue = 'state123:link';
+        const request = makeRequest(makeStateCookie('mynonce', 'myverifier', stateValue));
         (request as any).cookies['cq_session'] = 'valid-session';
         const reply = makeReply();
         sessionService['validateSession'] = jest.fn().mockResolvedValue({
@@ -333,8 +368,8 @@ describe('AuthController', () => {
       });
 
       it('should redirect to /user?error=session_expired when no valid session', async () => {
-        const stateValue = 'nonce123:link';
-        const request = makeRequest(stateValue);
+        const stateValue = 'state123:link';
+        const request = makeRequest(makeStateCookie('mynonce', 'myverifier', stateValue));
         const reply = makeReply();
 
         sessionService['validateSession'] = jest.fn().mockResolvedValue(null);
@@ -355,8 +390,8 @@ describe('AuthController', () => {
     describe('oidc callback with unlink action', () => {
       it('should unlink OIDC credential and redirect to /user?unlinked=oidc', async () => {
         (authService['unlinkOidcCredential'] as jest.Mock).mockResolvedValue(undefined);
-        const stateValue = 'nonce123:unlink';
-        const request = makeRequest(stateValue);
+        const stateValue = 'state123:unlink';
+        const request = makeRequest(makeStateCookie('mynonce', 'myverifier', stateValue));
         (request as any).cookies['cq_session'] = 'valid-session';
         const reply = makeReply();
 
@@ -376,7 +411,12 @@ describe('AuthController', () => {
           reply as any,
         );
 
-        expect(authService['unlinkOidcCredential']).toHaveBeenCalledWith(1, 'auth-code');
+        expect(authService['unlinkOidcCredential']).toHaveBeenCalledWith(
+          1,
+          'auth-code',
+          'mynonce',
+          'myverifier',
+        );
         expect(reply.redirect).toHaveBeenCalledWith('/user/account?unlinked=oidc');
       });
 
@@ -384,8 +424,8 @@ describe('AuthController', () => {
         (authService['unlinkOidcCredential'] as jest.Mock).mockRejectedValue(
           new ConflictException('last credential'),
         );
-        const stateValue = 'nonce123:unlink';
-        const request = makeRequest(stateValue);
+        const stateValue = 'state123:unlink';
+        const request = makeRequest(makeStateCookie('mynonce', 'myverifier', stateValue));
         (request as any).cookies['cq_session'] = 'valid-session';
         const reply = makeReply();
         sessionService['validateSession'] = jest.fn().mockResolvedValue({
@@ -414,8 +454,8 @@ describe('AuthController', () => {
           sessionId: 'new-session',
           user: { userId: 2, username: 'user_a1b2c3d4', displayName: null },
         });
-        const stateValue = 'nonce123';
-        const request = makeRequest(stateValue);
+        const stateValue = 'state123';
+        const request = makeRequest(makeStateCookie('mynonce', 'myverifier', stateValue));
         const reply = makeReply();
 
         await controller.oidcCallback(
@@ -435,8 +475,8 @@ describe('AuthController', () => {
           sessionId: 'new-session',
           user: { userId: 1, username: 'alice', displayName: 'Alice' },
         });
-        const stateValue = 'nonce123';
-        const request = makeRequest(stateValue);
+        const stateValue = 'state123';
+        const request = makeRequest(makeStateCookie('mynonce', 'myverifier', stateValue));
         const reply = makeReply();
 
         await controller.oidcCallback(
@@ -454,8 +494,8 @@ describe('AuthController', () => {
 
     describe('oidc callback with delete-account action', () => {
       it('should redirect to /user?action=delete-account', async () => {
-        const stateValue = 'nonce123:delete-account';
-        const request = makeRequest(stateValue);
+        const stateValue = 'state123:delete-account';
+        const request = makeRequest(makeStateCookie('mynonce', 'myverifier', stateValue));
         const reply = makeReply();
 
         await controller.oidcCallback(
@@ -467,9 +507,114 @@ describe('AuthController', () => {
           reply as any,
         );
 
-        expect(authService['oidcCallback']).toHaveBeenCalledWith('auth-code');
+        expect(authService['oidcCallback']).toHaveBeenCalledWith(
+          'auth-code',
+          'mynonce',
+          'myverifier',
+        );
         expect(reply.redirect).toHaveBeenCalledWith('/user/account?action=delete-account');
       });
+    });
+  });
+
+  describe('POST /auth/oidc/backchannel-logout', () => {
+    it('should return 200 and call backchannelLogout with the token', async () => {
+      (authService['backchannelLogout'] as jest.Mock).mockResolvedValue(undefined);
+      const request = { body: { logout_token: 'signed-logout-token' } };
+
+      await controller.backchannelLogout(request as any);
+
+      expect(authService['backchannelLogout']).toHaveBeenCalledWith('signed-logout-token');
+    });
+
+    it('should throw BadRequestException when logout_token is missing', async () => {
+      const request = { body: {} };
+
+      await expect(controller.backchannelLogout(request as any)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(authService['backchannelLogout']).not.toHaveBeenCalled();
+    });
+
+    it('should propagate errors from backchannelLogout', async () => {
+      (authService['backchannelLogout'] as jest.Mock).mockRejectedValue(
+        new UnauthorizedException('invalid token'),
+      );
+      const request = { body: { logout_token: 'bad-token' } };
+
+      await expect(controller.backchannelLogout(request as any)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+  });
+
+  describe('POST /auth/logout', () => {
+    const makeReply = () => ({
+      header: jest.fn().mockReturnThis(),
+      status: jest.fn().mockReturnThis(),
+      send: jest.fn(),
+    });
+
+    it('should return { ok: true } with no endSessionUrl for a basic session', async () => {
+      sessionService['validateSession'] = jest.fn().mockResolvedValue({
+        userId: 1,
+        username: 'alice',
+        displayName: null,
+        authMethod: 'basic',
+        createdAt: new Date(),
+      });
+      sessionService['deleteSession'] = jest.fn().mockResolvedValue(undefined);
+      (authService['getEndSessionUrl'] as jest.Mock).mockReturnValue(null);
+      const request = { cookies: { cq_session: 'session-abc' } };
+      const reply = makeReply();
+
+      const result = await controller.logout(request as any, reply as any);
+
+      expect(result).toEqual({ ok: true });
+      expect(authService['getEndSessionUrl']).not.toHaveBeenCalled();
+    });
+
+    it('should return endSessionUrl when the session is an OIDC session and IdP supports end_session', async () => {
+      sessionService['validateSession'] = jest.fn().mockResolvedValue({
+        userId: 1,
+        username: 'alice',
+        displayName: null,
+        authMethod: 'oidc',
+        createdAt: new Date(),
+      });
+      sessionService['deleteSession'] = jest.fn().mockResolvedValue(undefined);
+      (authService['getEndSessionUrl'] as jest.Mock).mockReturnValue(
+        'https://idp.example.com/end-session?post_logout_redirect_uri=http%3A%2F%2Flocalhost%3A4200',
+      );
+      const request = { cookies: { cq_session: 'session-abc' } };
+      const reply = makeReply();
+
+      const result = await controller.logout(request as any, reply as any);
+
+      expect(authService['getEndSessionUrl']).toHaveBeenCalledWith();
+      expect(result).toEqual({
+        ok: true,
+        endSessionUrl:
+          'https://idp.example.com/end-session?post_logout_redirect_uri=http%3A%2F%2Flocalhost%3A4200',
+      });
+    });
+
+    it('should return { ok: true } with no endSessionUrl for an OIDC session when IdP has no end_session_endpoint', async () => {
+      sessionService['validateSession'] = jest.fn().mockResolvedValue({
+        userId: 1,
+        username: 'alice',
+        displayName: null,
+        authMethod: 'oidc',
+        createdAt: new Date(),
+      });
+      sessionService['deleteSession'] = jest.fn().mockResolvedValue(undefined);
+      (authService['getEndSessionUrl'] as jest.Mock).mockReturnValue(null);
+      const request = { cookies: { cq_session: 'session-abc' } };
+      const reply = makeReply();
+
+      const result = await controller.logout(request as any, reply as any);
+
+      expect(result).toEqual({ ok: true });
     });
   });
 });

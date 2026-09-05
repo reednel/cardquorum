@@ -23,6 +23,7 @@ describe('SessionService', () => {
         id: 'generated',
         userId: 1,
         authMethod: 'basic',
+        oidcSid: null,
         expiresAt: new Date(),
         createdAt: new Date(),
       });
@@ -31,7 +32,7 @@ describe('SessionService', () => {
 
       expect(typeof sessionId).toBe('string');
       expect(sessionId.length).toBeGreaterThan(0);
-      expect(sessionRepo.create).toHaveBeenCalledWith(sessionId, 1, 'basic');
+      expect(sessionRepo.create).toHaveBeenCalledWith(sessionId, 1, 'basic', undefined);
     });
   });
 

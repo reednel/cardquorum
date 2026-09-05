@@ -1,16 +1,15 @@
-import { and, eq, gt, isNull } from 'drizzle-orm';
+import { and, eq, gt, isNotNull, isNull } from 'drizzle-orm';
 import { sessions, users } from '../schema';
 import { DbInstance } from '../types';
 
 export class SessionRepository {
   constructor(private readonly db: DbInstance) {}
 
-  // TODO: discuss why we pass in the session id instead of generating it in the database
-  async create(id: string, userId: number, authMethod: 'basic' | 'oidc') {
+  async create(id: string, userId: number, authMethod: 'basic' | 'oidc', oidcSid?: string) {
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     const [row] = await this.db
       .insert(sessions)
-      .values({ id, userId, authMethod, expiresAt })
+      .values({ id, userId, authMethod, expiresAt, oidcSid })
       .returning();
     return row;
   }
@@ -43,6 +42,13 @@ export class SessionRepository {
     return this.db
       .delete(sessions)
       .where(eq(sessions.userId, userId))
+      .returning({ id: sessions.id });
+  }
+
+  async deleteByOidcSid(oidcSid: string) {
+    return this.db
+      .delete(sessions)
+      .where(and(eq(sessions.oidcSid, oidcSid), isNotNull(sessions.oidcSid)))
       .returning({ id: sessions.id });
   }
 }

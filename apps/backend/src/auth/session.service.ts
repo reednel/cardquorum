@@ -6,9 +6,13 @@ import { SessionRepository } from '@cardquorum/db';
 export class SessionService {
   constructor(private readonly sessionRepo: SessionRepository) {}
 
-  async createSession(userId: number, authMethod: 'basic' | 'oidc' = 'basic'): Promise<string> {
+  async createSession(
+    userId: number,
+    authMethod: 'basic' | 'oidc' = 'basic',
+    oidcSid?: string,
+  ): Promise<string> {
     const id = randomBytes(32).toString('base64url');
-    await this.sessionRepo.create(id, userId, authMethod);
+    await this.sessionRepo.create(id, userId, authMethod, oidcSid);
     return id;
   }
 
@@ -28,5 +32,9 @@ export class SessionService {
 
   async deleteAllUserSessions(userId: number): Promise<void> {
     await this.sessionRepo.deleteAllByUserId(userId);
+  }
+
+  async deleteSessionByOidcSid(oidcSid: string): Promise<void> {
+    await this.sessionRepo.deleteByOidcSid(oidcSid);
   }
 }

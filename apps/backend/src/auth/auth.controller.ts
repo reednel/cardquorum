@@ -1,10 +1,12 @@
-import { randomBytes } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 import {
+  BadRequestException,
   Body,
   ConflictException,
   Controller,
   Delete,
   Get,
+  HttpCode,
   Logger,
   Patch,
   Post,
@@ -24,6 +26,7 @@ import {
   buildClearSessionCookie,
   buildOidcStateCookie,
   buildSessionCookie,
+  parseOidcStateCookie,
 } from './cookie';
 import { HttpAuthGuard, REQUEST_USER_KEY } from './http-auth.guard';
 import { SessionService } from './session.service';
@@ -90,11 +93,22 @@ export class AuthController {
     @Res({ passthrough: true }) reply: FastifyReply,
   ): void {
     const nonce = randomBytes(32).toString('base64url');
+    const codeVerifier = randomBytes(32).toString('base64url');
+    const codeChallenge = createHash('sha256').update(codeVerifier).digest('base64url');
+    const state = randomBytes(32).toString('base64url');
     // Encode action in state using ':' delimiter (safe — base64url doesn't contain ':')
-    const statePayload = action ? `${nonce}:${action}` : nonce;
+    const statePayload = action ? `${state}:${action}` : state;
     const forceReauth = action === 'delete-account' || action === 'unlink';
-    const url = this.authService.getOidcAuthorizationUrl(statePayload, forceReauth);
-    reply.header('Set-Cookie', buildOidcStateCookie(statePayload, this.nodeEnv));
+    const url = this.authService.getOidcAuthorizationUrl(
+      statePayload,
+      nonce,
+      codeChallenge,
+      forceReauth,
+    );
+    reply.header(
+      'Set-Cookie',
+      buildOidcStateCookie(nonce, codeVerifier, statePayload, this.nodeEnv),
+    );
     reply.status(302).redirect(url);
   }
 
@@ -123,17 +137,21 @@ export class AuthController {
       return;
     }
 
-    const cookieState = (request as any).cookies?.['cq_oidc_state'];
-    if (!cookieState || cookieState !== state) {
+    const rawCookie = (request as any).cookies?.['cq_oidc_state'];
+    const parsed = parseOidcStateCookie(rawCookie ? `cq_oidc_state=${rawCookie}` : undefined);
+
+    if (!parsed || parsed.state !== state) {
       this.logger.warn(
-        `OIDC state mismatch: cookie=${!!cookieState}, match=${cookieState === state}`,
+        `OIDC state mismatch: cookie=${!!rawCookie}, match=${parsed?.state === state}`,
       );
       reply.header('Set-Cookie', buildClearOidcStateCookie(this.nodeEnv));
       reply.status(302).redirect('/login?error=invalid_state');
       return;
     }
 
-    // Parse action from state (format: "nonce:action" or just "nonce")
+    const { nonce, codeVerifier } = parsed;
+
+    // Parse action from state (format: "randomstate:action" or just "randomstate")
     const actionSuffix = state.includes(':') ? state.split(':').slice(1).join(':') : null;
 
     try {
@@ -148,17 +166,17 @@ export class AuthController {
         }
 
         if (actionSuffix === 'link') {
-          await this.authService.linkOidcCredential(session.userId, code);
+          await this.authService.linkOidcCredential(session.userId, code, nonce, codeVerifier);
           reply.header('Set-Cookie', buildClearOidcStateCookie(this.nodeEnv));
           reply.status(302).redirect('/user/account?linked=oidc');
         } else {
-          await this.authService.unlinkOidcCredential(session.userId, code);
+          await this.authService.unlinkOidcCredential(session.userId, code, nonce, codeVerifier);
           reply.header('Set-Cookie', buildClearOidcStateCookie(this.nodeEnv));
           reply.status(302).redirect('/user/account?unlinked=oidc');
         }
       } else {
         // Existing login flow
-        const { sessionId, user } = await this.authService.oidcCallback(code);
+        const { sessionId, user } = await this.authService.oidcCallback(code, nonce, codeVerifier);
 
         let redirectUrl = null;
         if (actionSuffix === 'delete-account') {
@@ -188,6 +206,23 @@ export class AuthController {
         reply.status(302).redirect('/login?error=oidc_failed');
       }
     }
+  }
+
+  /**
+   * Backchannel logout endpoint — called server-to-server by the IdP.
+   * No auth guard: the request is authenticated via the signed logout token JWT.
+   */
+  @Post('oidc/backchannel-logout')
+  @HttpCode(200)
+  async backchannelLogout(@Req() request: FastifyRequest): Promise<void> {
+    const body = (request as any).body as Record<string, string> | undefined;
+    const logoutToken = body?.['logout_token'];
+
+    if (!logoutToken || typeof logoutToken !== 'string') {
+      throw new BadRequestException('Missing logout_token');
+    }
+
+    await this.authService.backchannelLogout(logoutToken);
   }
 
   @UseGuards(HttpAuthGuard)
@@ -246,12 +281,25 @@ export class AuthController {
   async logout(
     @Req() request: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
-  ): Promise<{ ok: true }> {
+  ): Promise<{ ok: true; endSessionUrl?: string }> {
     const sessionId = (request as any).cookies?.['cq_session'];
+    let authMethod: string | undefined;
+
     if (sessionId) {
+      const session = await this.sessionService.validateSession(sessionId);
+      authMethod = session?.authMethod;
       await this.sessionService.deleteSession(sessionId);
     }
+
     reply.header('Set-Cookie', buildClearSessionCookie(this.nodeEnv));
+
+    if (authMethod === 'oidc') {
+      const endSessionUrl = this.authService.getEndSessionUrl();
+      if (endSessionUrl) {
+        return { ok: true, endSessionUrl };
+      }
+    }
+
     return { ok: true };
   }
 }

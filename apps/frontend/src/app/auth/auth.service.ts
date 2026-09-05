@@ -119,7 +119,13 @@ export class AuthService {
     this._user.set(null);
     this._credentials.set([]);
     this.ws.disconnect();
-    this.http.post('/api/auth/logout', {}).subscribe();
+    this.http.post<{ ok: true; endSessionUrl?: string }>('/api/auth/logout', {}).subscribe({
+      next: (res) => {
+        if (res.endSessionUrl) {
+          window.location.href = res.endSessionUrl;
+        }
+      },
+    });
     this.router.navigate(['/login']);
   }
 

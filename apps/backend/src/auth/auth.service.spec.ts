@@ -24,7 +24,9 @@ describe('AuthService', () => {
       | 'findUserByCredential'
     >
   >;
-  let sessionService: jest.Mocked<Pick<SessionService, 'createSession'>>;
+  let sessionService: jest.Mocked<
+    Pick<SessionService, 'createSession' | 'deleteAllUserSessions' | 'deleteSessionByOidcSid'>
+  >;
   let passwordHash: string;
 
   beforeAll(async () => {
@@ -48,6 +50,8 @@ describe('AuthService', () => {
     };
     sessionService = {
       createSession: jest.fn().mockResolvedValue('session-id'),
+      deleteAllUserSessions: jest.fn().mockResolvedValue(undefined),
+      deleteSessionByOidcSid: jest.fn().mockResolvedValue(undefined),
     };
   });
 
@@ -234,7 +238,9 @@ describe('AuthService', () => {
         { strategies: ['basic'] },
       );
 
-      await expect(basicOnly.oidcCallback('code')).rejects.toThrow(NotFoundException);
+      await expect(basicOnly.oidcCallback('code', 'nonce', 'verifier')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -340,8 +346,7 @@ describe('AuthService', () => {
     });
 
     describe('linkOidcCredential', () => {
-      it('should upsert OIDC credential when sub is not linked to another user', async () => {
-        const jose = require('jose');
+      beforeEach(async () => {
         const fetchSpy = jest.spyOn(globalThis, 'fetch').mockResolvedValue({
           ok: true,
           json: () =>
@@ -352,16 +357,21 @@ describe('AuthService', () => {
             }),
         } as Response);
         await bothService.initOidc();
-        fetchSpy.mockResolvedValue({
+        fetchSpy.mockRestore();
+      });
+
+      it('should upsert OIDC credential when sub is not linked to another user', async () => {
+        const jose = require('jose');
+        const fetchSpy = jest.spyOn(globalThis, 'fetch').mockResolvedValue({
           ok: true,
           json: () => Promise.resolve({ id_token: 'mock-token' }),
         } as Response);
         jose.jwtVerify.mockResolvedValue({
-          payload: { sub: 'oidc-sub-123', preferred_username: 'alice' },
+          payload: { sub: 'oidc-sub-123', nonce: 'mynonce', preferred_username: 'alice' },
         });
         credentialRepo.findUserByCredential.mockResolvedValue(null);
         credentialRepo.upsertCredential.mockResolvedValue({} as any);
-        await bothService.linkOidcCredential(1, 'auth-code');
+        await bothService.linkOidcCredential(1, 'auth-code', 'mynonce', 'myverifier');
         expect(credentialRepo.findUserByCredential).toHaveBeenCalledWith('oidc', 'oidc-sub-123');
         expect(credentialRepo.upsertCredential).toHaveBeenCalledWith(1, 'oidc', 'oidc-sub-123');
         fetchSpy.mockRestore();
@@ -371,20 +381,10 @@ describe('AuthService', () => {
         const jose = require('jose');
         const fetchSpy = jest.spyOn(globalThis, 'fetch').mockResolvedValue({
           ok: true,
-          json: () =>
-            Promise.resolve({
-              authorization_endpoint: 'https://example.com/authorize',
-              token_endpoint: 'https://example.com/token',
-              jwks_uri: 'https://example.com/jwks',
-            }),
-        } as Response);
-        await bothService.initOidc();
-        fetchSpy.mockResolvedValue({
-          ok: true,
           json: () => Promise.resolve({ id_token: 'mock-token' }),
         } as Response);
         jose.jwtVerify.mockResolvedValue({
-          payload: { sub: 'oidc-sub-123', preferred_username: 'alice' },
+          payload: { sub: 'oidc-sub-123', nonce: 'mynonce', preferred_username: 'alice' },
         });
         credentialRepo.findUserByCredential.mockResolvedValue({
           id: 99,
@@ -394,10 +394,25 @@ describe('AuthService', () => {
           createdAt: new Date(),
           updatedAt: new Date(),
         });
-        await expect(bothService.linkOidcCredential(1, 'auth-code')).rejects.toThrow(
-          ConflictException,
-        );
+        await expect(
+          bothService.linkOidcCredential(1, 'auth-code', 'mynonce', 'myverifier'),
+        ).rejects.toThrow(ConflictException);
         expect(credentialRepo.upsertCredential).not.toHaveBeenCalled();
+        fetchSpy.mockRestore();
+      });
+
+      it('should throw UnauthorizedException when nonce does not match', async () => {
+        const jose = require('jose');
+        const fetchSpy = jest.spyOn(globalThis, 'fetch').mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve({ id_token: 'mock-token' }),
+        } as Response);
+        jose.jwtVerify.mockResolvedValue({
+          payload: { sub: 'oidc-sub-123', nonce: 'different-nonce' },
+        });
+        await expect(
+          bothService.linkOidcCredential(1, 'auth-code', 'expected-nonce', 'myverifier'),
+        ).rejects.toThrow(UnauthorizedException);
         fetchSpy.mockRestore();
       });
     });
@@ -424,12 +439,12 @@ describe('AuthService', () => {
           json: () => Promise.resolve({ id_token: 'mock-token' }),
         } as Response);
         jose.jwtVerify.mockResolvedValue({
-          payload: { sub: 'oidc-sub-123', preferred_username: 'alice' },
+          payload: { sub: 'oidc-sub-123', nonce: 'mynonce', preferred_username: 'alice' },
         });
         credentialRepo.findCredentialByUserId.mockResolvedValue('oidc-sub-123');
         credentialRepo.findMethodsByUserId.mockResolvedValue(['basic', 'oidc']);
         credentialRepo.deleteByUserIdAndMethod.mockResolvedValue(undefined);
-        await bothService.unlinkOidcCredential(1, 'auth-code');
+        await bothService.unlinkOidcCredential(1, 'auth-code', 'mynonce', 'myverifier');
         expect(credentialRepo.deleteByUserIdAndMethod).toHaveBeenCalledWith(1, 'oidc');
         fetchSpy.mockRestore();
       });
@@ -441,12 +456,12 @@ describe('AuthService', () => {
           json: () => Promise.resolve({ id_token: 'mock-token' }),
         } as Response);
         jose.jwtVerify.mockResolvedValue({
-          payload: { sub: 'wrong-sub', preferred_username: 'alice' },
+          payload: { sub: 'wrong-sub', nonce: 'mynonce', preferred_username: 'alice' },
         });
         credentialRepo.findCredentialByUserId.mockResolvedValue('oidc-sub-123');
-        await expect(bothService.unlinkOidcCredential(1, 'auth-code')).rejects.toThrow(
-          UnauthorizedException,
-        );
+        await expect(
+          bothService.unlinkOidcCredential(1, 'auth-code', 'mynonce', 'myverifier'),
+        ).rejects.toThrow(UnauthorizedException);
         fetchSpy.mockRestore();
       });
 
@@ -457,13 +472,13 @@ describe('AuthService', () => {
           json: () => Promise.resolve({ id_token: 'mock-token' }),
         } as Response);
         jose.jwtVerify.mockResolvedValue({
-          payload: { sub: 'oidc-sub-123', preferred_username: 'alice' },
+          payload: { sub: 'oidc-sub-123', nonce: 'mynonce', preferred_username: 'alice' },
         });
         credentialRepo.findCredentialByUserId.mockResolvedValue('oidc-sub-123');
         credentialRepo.findMethodsByUserId.mockResolvedValue(['oidc']);
-        await expect(bothService.unlinkOidcCredential(1, 'auth-code')).rejects.toThrow(
-          ConflictException,
-        );
+        await expect(
+          bothService.unlinkOidcCredential(1, 'auth-code', 'mynonce', 'myverifier'),
+        ).rejects.toThrow(ConflictException);
         expect(credentialRepo.deleteByUserIdAndMethod).not.toHaveBeenCalled();
         fetchSpy.mockRestore();
       });
@@ -541,7 +556,9 @@ describe('AuthService', () => {
       await svc.initOidc();
 
       expect(fetchSpy).toHaveBeenCalledWith('https://example.com/.well-known/openid-configuration');
-      expect(svc.getOidcAuthorizationUrl('state123')).toContain('https://example.com/authorize?');
+      expect(svc.getOidcAuthorizationUrl('state123', 'nonce123', 'challenge123')).toContain(
+        'https://example.com/authorize?',
+      );
 
       fetchSpy.mockRestore();
     });
@@ -584,6 +601,336 @@ describe('AuthService', () => {
 
       expect(fetchSpy).not.toHaveBeenCalled();
       fetchSpy.mockRestore();
+    });
+  });
+
+  describe('oidcCallback', () => {
+    let oidcService: AuthService;
+
+    beforeEach(async () => {
+      oidcService = new AuthService(
+        userRepo as unknown as UserRepository,
+        credentialRepo as unknown as CredentialRepository,
+        sessionService as unknown as SessionService,
+        {
+          strategies: ['oidc'],
+          oidcIssuer: 'https://example.com',
+          oidcClientId: 'id',
+          oidcClientSecret: 'secret',
+          oidcRedirectUri: 'http://localhost/callback',
+        },
+      );
+      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            authorization_endpoint: 'https://example.com/authorize',
+            token_endpoint: 'https://example.com/token',
+            jwks_uri: 'https://example.com/jwks',
+          }),
+      } as Response);
+      await oidcService.initOidc();
+      fetchSpy.mockRestore();
+    });
+
+    it('should create a session with sid when the id token contains a sid claim', async () => {
+      const jose = require('jose');
+      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ id_token: 'mock-token' }),
+      } as Response);
+      jose.jwtVerify.mockResolvedValue({
+        payload: { sub: 'oidc-sub-123', nonce: 'mynonce', sid: 'idp-session-abc' },
+      });
+      credentialRepo.findOrCreateUserByOidc.mockResolvedValue({
+        id: 1,
+        username: 'alice',
+        displayName: null,
+        email: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      await oidcService.oidcCallback('auth-code', 'mynonce', 'myverifier');
+
+      expect(sessionService.createSession).toHaveBeenCalledWith(1, 'oidc', 'idp-session-abc');
+      fetchSpy.mockRestore();
+    });
+
+    it('should create a session without sid when the id token has no sid claim', async () => {
+      const jose = require('jose');
+      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ id_token: 'mock-token' }),
+      } as Response);
+      jose.jwtVerify.mockResolvedValue({
+        payload: { sub: 'oidc-sub-123', nonce: 'mynonce' },
+      });
+      credentialRepo.findOrCreateUserByOidc.mockResolvedValue({
+        id: 1,
+        username: 'alice',
+        displayName: null,
+        email: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      await oidcService.oidcCallback('auth-code', 'mynonce', 'myverifier');
+
+      expect(sessionService.createSession).toHaveBeenCalledWith(1, 'oidc', undefined);
+      fetchSpy.mockRestore();
+    });
+  });
+
+  describe('getOidcAuthorizationUrl', () => {
+    let oidcService: AuthService;
+
+    beforeEach(async () => {
+      oidcService = new AuthService(
+        userRepo as unknown as UserRepository,
+        credentialRepo as unknown as CredentialRepository,
+        sessionService as unknown as SessionService,
+        {
+          strategies: ['oidc'],
+          oidcIssuer: 'https://example.com',
+          oidcClientId: 'clientid',
+          oidcClientSecret: 'secret',
+          oidcRedirectUri: 'http://localhost/callback',
+        },
+      );
+      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            authorization_endpoint: 'https://example.com/authorize',
+            token_endpoint: 'https://example.com/token',
+            jwks_uri: 'https://example.com/jwks',
+          }),
+      } as Response);
+      await oidcService.initOidc();
+      fetchSpy.mockRestore();
+    });
+
+    it('should include code_challenge and code_challenge_method=S256 in the URL', () => {
+      const url = oidcService.getOidcAuthorizationUrl('state', 'nonce', 'mychallenge');
+      const params = new URL(url).searchParams;
+      expect(params.get('code_challenge')).toBe('mychallenge');
+      expect(params.get('code_challenge_method')).toBe('S256');
+    });
+
+    it('should include nonce in the URL', () => {
+      const url = oidcService.getOidcAuthorizationUrl('state', 'mynonce', 'challenge');
+      expect(new URL(url).searchParams.get('nonce')).toBe('mynonce');
+    });
+  });
+
+  describe('getEndSessionUrl', () => {
+    it('should return a URL with post_logout_redirect_uri when end_session_endpoint is in discovery', async () => {
+      const svc = new AuthService(
+        userRepo as unknown as UserRepository,
+        credentialRepo as unknown as CredentialRepository,
+        sessionService as unknown as SessionService,
+        {
+          strategies: ['oidc'],
+          oidcIssuer: 'https://example.com',
+          oidcClientId: 'id',
+          oidcClientSecret: 'secret',
+          oidcRedirectUri: 'http://localhost/callback',
+        },
+      );
+      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            authorization_endpoint: 'https://example.com/authorize',
+            token_endpoint: 'https://example.com/token',
+            jwks_uri: 'https://example.com/jwks',
+            end_session_endpoint: 'https://example.com/end-session',
+          }),
+      } as Response);
+      await svc.initOidc();
+      fetchSpy.mockRestore();
+
+      const url = svc.getEndSessionUrl();
+      expect(url).not.toBeNull();
+      const params = new URL(url!).searchParams;
+      expect(params.get('post_logout_redirect_uri')).toBe('http://localhost');
+    });
+
+    it('should return null when end_session_endpoint is not in discovery', async () => {
+      const svc = new AuthService(
+        userRepo as unknown as UserRepository,
+        credentialRepo as unknown as CredentialRepository,
+        sessionService as unknown as SessionService,
+        {
+          strategies: ['oidc'],
+          oidcIssuer: 'https://example.com',
+          oidcClientId: 'id',
+          oidcClientSecret: 'secret',
+          oidcRedirectUri: 'http://localhost/callback',
+        },
+      );
+      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            authorization_endpoint: 'https://example.com/authorize',
+            token_endpoint: 'https://example.com/token',
+            jwks_uri: 'https://example.com/jwks',
+            // no end_session_endpoint
+          }),
+      } as Response);
+      await svc.initOidc();
+      fetchSpy.mockRestore();
+
+      expect(svc.getEndSessionUrl()).toBeNull();
+    });
+  });
+
+  describe('backchannelLogout', () => {
+    let oidcService: AuthService;
+    const BACKCHANNEL_EVENT = 'http://schemas.openid.net/event/backchannel-logout';
+
+    beforeEach(async () => {
+      oidcService = new AuthService(
+        userRepo as unknown as UserRepository,
+        credentialRepo as unknown as CredentialRepository,
+        sessionService as unknown as SessionService,
+        {
+          strategies: ['oidc'],
+          oidcIssuer: 'https://example.com',
+          oidcClientId: 'id',
+          oidcClientSecret: 'secret',
+          oidcRedirectUri: 'http://localhost/callback',
+        },
+      );
+      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            issuer: 'https://example.com',
+            authorization_endpoint: 'https://example.com/authorize',
+            token_endpoint: 'https://example.com/token',
+            jwks_uri: 'https://example.com/jwks',
+          }),
+      } as Response);
+      await oidcService.initOidc();
+      fetchSpy.mockRestore();
+    });
+
+    it('should delete only the matching session when sid is present in the logout token', async () => {
+      const jose = require('jose');
+      jose.jwtVerify.mockResolvedValue({
+        payload: {
+          sub: 'oidc-sub-123',
+          sid: 'idp-session-abc',
+          events: { [BACKCHANNEL_EVENT]: {} },
+        },
+      });
+
+      await oidcService.backchannelLogout('logout-token');
+
+      expect(sessionService.deleteSessionByOidcSid).toHaveBeenCalledWith('idp-session-abc');
+      expect(sessionService.deleteAllUserSessions).not.toHaveBeenCalled();
+    });
+
+    it('should delete all user sessions when only sub is present (no sid)', async () => {
+      const jose = require('jose');
+      jose.jwtVerify.mockResolvedValue({
+        payload: {
+          sub: 'oidc-sub-123',
+          events: { [BACKCHANNEL_EVENT]: {} },
+        },
+      });
+      credentialRepo.findUserByCredential.mockResolvedValue({
+        id: 1,
+        username: 'alice',
+        displayName: null,
+        email: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      await oidcService.backchannelLogout('logout-token');
+
+      expect(sessionService.deleteAllUserSessions).toHaveBeenCalledWith(1);
+      expect(sessionService.deleteSessionByOidcSid).not.toHaveBeenCalled();
+    });
+
+    it('should not throw when sub-only logout token has no matching local user', async () => {
+      const jose = require('jose');
+      jose.jwtVerify.mockResolvedValue({
+        payload: {
+          sub: 'unknown-sub',
+          events: { [BACKCHANNEL_EVENT]: {} },
+        },
+      });
+      credentialRepo.findUserByCredential.mockResolvedValue(null);
+
+      await expect(oidcService.backchannelLogout('logout-token')).resolves.toBeUndefined();
+      expect(sessionService.deleteAllUserSessions).not.toHaveBeenCalled();
+    });
+
+    it('should throw when the logout token contains a nonce claim', async () => {
+      const jose = require('jose');
+      jose.jwtVerify.mockResolvedValue({
+        payload: {
+          sub: 'oidc-sub-123',
+          nonce: 'should-not-be-here',
+          events: { [BACKCHANNEL_EVENT]: {} },
+        },
+      });
+
+      await expect(oidcService.backchannelLogout('logout-token')).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should throw when the events claim is missing', async () => {
+      const jose = require('jose');
+      jose.jwtVerify.mockResolvedValue({
+        payload: { sub: 'oidc-sub-123' },
+      });
+
+      await expect(oidcService.backchannelLogout('logout-token')).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should throw when the events claim does not contain the backchannel-logout event', async () => {
+      const jose = require('jose');
+      jose.jwtVerify.mockResolvedValue({
+        payload: {
+          sub: 'oidc-sub-123',
+          events: { 'http://schemas.openid.net/event/something-else': {} },
+        },
+      });
+
+      await expect(oidcService.backchannelLogout('logout-token')).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should throw when neither sub nor sid is present', async () => {
+      const jose = require('jose');
+      jose.jwtVerify.mockResolvedValue({
+        payload: { events: { [BACKCHANNEL_EVENT]: {} } },
+      });
+
+      await expect(oidcService.backchannelLogout('logout-token')).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should throw when oidc strategy is disabled', async () => {
+      const basicOnly = new AuthService(
+        userRepo as unknown as UserRepository,
+        credentialRepo as unknown as CredentialRepository,
+        sessionService as unknown as SessionService,
+        { strategies: ['basic'] },
+      );
+
+      await expect(basicOnly.backchannelLogout('logout-token')).rejects.toThrow(NotFoundException);
     });
   });
 });

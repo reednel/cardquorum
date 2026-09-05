@@ -31,6 +31,16 @@ export interface AuthConfig {
   oidcRedirectUri?: string;
 }
 
+/** Claims extracted from a verified OIDC ID token. */
+interface OidcIdentity {
+  sub: string;
+  sid?: string;
+  preferredUsername?: string;
+}
+
+/** Logout token event claim URI per OIDC Back-Channel Logout spec. */
+const BACKCHANNEL_LOGOUT_EVENT = 'http://schemas.openid.net/event/backchannel-logout';
+
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -39,9 +49,12 @@ export class AuthService {
   private readonly oidcClientId?: string;
   private readonly oidcClientSecret?: string;
   private readonly oidcRedirectUri?: string;
+  private readonly oidcAppOrigin?: string;
   private authorizationEndpoint?: string;
   private tokenEndpoint?: string;
+  private endSessionEndpoint?: string;
   private jwks?: ReturnType<typeof jose.createRemoteJWKSet>;
+  private oidcIssuerFromDiscovery?: string;
 
   constructor(
     private readonly userRepo: UserRepository,
@@ -65,6 +78,8 @@ export class AuthService {
       this.oidcClientId = config.oidcClientId;
       this.oidcClientSecret = config.oidcClientSecret;
       this.oidcRedirectUri = config.oidcRedirectUri;
+      // Derive the app origin from the redirect URI — used as post_logout_redirect_uri
+      this.oidcAppOrigin = new URL(config.oidcRedirectUri).origin;
     }
   }
 
@@ -82,8 +97,10 @@ export class AuthService {
     }
 
     const discovery = await response.json();
+    this.oidcIssuerFromDiscovery = discovery.issuer;
     this.authorizationEndpoint = discovery.authorization_endpoint;
     this.tokenEndpoint = discovery.token_endpoint;
+    this.endSessionEndpoint = discovery.end_session_endpoint;
     this.jwks = jose.createRemoteJWKSet(new URL(discovery.jwks_uri));
     this.logger.log(`OIDC discovery complete: authorize=${this.authorizationEndpoint}`);
   }
@@ -174,18 +191,18 @@ export class AuthService {
     };
   }
 
-  async oidcCallback(code: string): Promise<AuthResult> {
+  async oidcCallback(code: string, nonce: string, codeVerifier: string): Promise<AuthResult> {
     this.requireStrategy('oidc');
 
-    const tokenResponse = await this.exchangeOidcCode(code);
-    const identity = await this.verifyIdToken(tokenResponse.id_token);
+    const tokenResponse = await this.exchangeOidcCode(code, codeVerifier);
+    const identity = await this.verifyIdToken(tokenResponse.id_token, nonce);
 
     const user = await this.credentialRepo.findOrCreateUserByOidc(
       identity.sub,
       identity.preferredUsername,
     );
 
-    const sessionId = await this.sessionService.createSession(user.id, 'oidc');
+    const sessionId = await this.sessionService.createSession(user.id, 'oidc', identity.sid);
     return {
       sessionId,
       user: {
@@ -197,20 +214,38 @@ export class AuthService {
     };
   }
 
-  getOidcAuthorizationUrl(state: string, forceReauth = false): string {
+  getOidcAuthorizationUrl(
+    state: string,
+    nonce: string,
+    codeChallenge: string,
+    forceReauth = false,
+  ): string {
     this.requireStrategy('oidc');
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: this.oidcClientId!,
       redirect_uri: this.oidcRedirectUri!,
-      scope: 'openid profile email',
+      scope: 'openid profile',
       state,
+      nonce,
+      code_challenge: codeChallenge,
+      code_challenge_method: 'S256',
     });
     if (forceReauth) {
       params.set('max_age', '0');
       params.set('prompt', 'login');
     }
     return `${this.authorizationEndpoint}?${params}`;
+  }
+
+  /**
+   * Returns the IdP's end_session_endpoint URL for RP-initiated logout, or null if the
+   * discovery document did not advertise one.
+   */
+  getEndSessionUrl(): string | null {
+    if (!this.endSessionEndpoint || !this.oidcAppOrigin) return null;
+    const params = new URLSearchParams({ post_logout_redirect_uri: this.oidcAppOrigin });
+    return `${this.endSessionEndpoint}?${params}`;
   }
 
   async linkBasicCredential(userId: number, password: string): Promise<void> {
@@ -223,10 +258,15 @@ export class AuthService {
     await this.credentialRepo.insertCredential(userId, 'basic', hash);
   }
 
-  async linkOidcCredential(userId: number, code: string): Promise<void> {
+  async linkOidcCredential(
+    userId: number,
+    code: string,
+    nonce: string,
+    codeVerifier: string,
+  ): Promise<void> {
     this.requireStrategy('oidc');
-    const tokenResponse = await this.exchangeOidcCode(code);
-    const identity = await this.verifyIdToken(tokenResponse.id_token);
+    const tokenResponse = await this.exchangeOidcCode(code, codeVerifier);
+    const identity = await this.verifyIdToken(tokenResponse.id_token, nonce);
     const existingUser = await this.credentialRepo.findUserByCredential('oidc', identity.sub);
     if (existingUser && existingUser.id !== userId) {
       throw new ConflictException('This OIDC identity is already linked to another account');
@@ -245,10 +285,15 @@ export class AuthService {
     await this.credentialRepo.deleteByUserIdAndMethod(userId, method);
   }
 
-  async unlinkOidcCredential(userId: number, code: string): Promise<void> {
+  async unlinkOidcCredential(
+    userId: number,
+    code: string,
+    nonce: string,
+    codeVerifier: string,
+  ): Promise<void> {
     this.requireStrategy('oidc');
-    const tokenResponse = await this.exchangeOidcCode(code);
-    const identity = await this.verifyIdToken(tokenResponse.id_token);
+    const tokenResponse = await this.exchangeOidcCode(code, codeVerifier);
+    const identity = await this.verifyIdToken(tokenResponse.id_token, nonce);
     const storedSub = await this.credentialRepo.findCredentialByUserId(userId, 'oidc');
     if (storedSub !== identity.sub) {
       throw new UnauthorizedException('OIDC identity does not match stored credential');
@@ -282,19 +327,70 @@ export class AuthService {
     }
   }
 
+  /**
+   * Validates a backchannel logout token from the IdP and invalidates the targeted session(s).
+   *
+   * If the logout token contains a `sid` claim, only the session with that IdP session ID is
+   * revoked — preserving other active sessions for the same user. If there is no `sid`, all
+   * sessions for the identified user (`sub`) are revoked.
+   */
+  async backchannelLogout(logoutToken: string): Promise<void> {
+    this.requireStrategy('oidc');
+
+    const { payload } = await jose.jwtVerify(logoutToken, this.jwks!, {
+      issuer: this.oidcIssuerFromDiscovery ?? this.oidcIssuer,
+      audience: this.oidcClientId,
+      maxTokenAge: '2m',
+    });
+
+    // Must not contain a nonce claim (spec §2.6)
+    if (payload['nonce'] !== undefined) {
+      throw new UnauthorizedException('Logout token must not contain a nonce claim');
+    }
+
+    // Must contain the backchannel-logout event (spec §2.4)
+    const events = payload['events'] as Record<string, unknown> | undefined;
+    if (!events || typeof events[BACKCHANNEL_LOGOUT_EVENT] !== 'object') {
+      throw new UnauthorizedException('Logout token missing required events claim');
+    }
+
+    const sub = payload.sub;
+    const sid = payload['sid'] as string | undefined;
+
+    // Must have at least one of sub or sid (spec §2.4)
+    if (!sub && !sid) {
+      throw new UnauthorizedException('Logout token must contain sub or sid');
+    }
+
+    if (sid) {
+      // Targeted logout — only the session matching this IdP session ID
+      await this.sessionService.deleteSessionByOidcSid(sid);
+    } else {
+      // Fallback — revoke all local sessions for this user
+      const user = await this.credentialRepo.findUserByCredential('oidc', sub!);
+      if (user) {
+        await this.sessionService.deleteAllUserSessions(user.id);
+      }
+    }
+  }
+
   private requireStrategy(strategy: AuthStrategy): void {
     if (!this.strategies.has(strategy)) {
       throw new NotFoundException(`Auth strategy '${strategy}' is not enabled`);
     }
   }
 
-  private async exchangeOidcCode(code: string): Promise<{ id_token: string }> {
+  private async exchangeOidcCode(
+    code: string,
+    codeVerifier: string,
+  ): Promise<{ id_token: string }> {
     const body = new URLSearchParams({
       grant_type: 'authorization_code',
       code,
       redirect_uri: this.oidcRedirectUri!,
       client_id: this.oidcClientId!,
       client_secret: this.oidcClientSecret!,
+      code_verifier: codeVerifier,
     });
 
     const response = await fetch(this.tokenEndpoint!, {
@@ -311,21 +407,25 @@ export class AuthService {
     return response.json();
   }
 
-  private async verifyIdToken(
-    idToken: string,
-  ): Promise<{ sub: string; preferredUsername?: string }> {
+  private async verifyIdToken(idToken: string, nonce: string): Promise<OidcIdentity> {
     const { payload } = await jose.jwtVerify(idToken, this.jwks!, {
-      issuer: this.oidcIssuer,
+      issuer: this.oidcIssuerFromDiscovery ?? this.oidcIssuer,
       audience: this.oidcClientId,
+      maxTokenAge: '5m',
     });
 
     if (!payload.sub) {
       throw new UnauthorizedException('OIDC token missing sub claim');
     }
 
+    if (payload['nonce'] !== nonce) {
+      throw new UnauthorizedException('OIDC token nonce mismatch');
+    }
+
     const raw = payload['preferred_username'] as string | undefined;
     const preferredUsername = raw && isValidUsername(raw) ? raw : undefined;
+    const sid = payload['sid'] as string | undefined;
 
-    return { sub: payload.sub, preferredUsername };
+    return { sub: payload.sub, sid, preferredUsername };
   }
 }
