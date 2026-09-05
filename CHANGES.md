@@ -23,19 +23,20 @@
 1. Schema renaming
 2. Both extend and prune the test suite
 3. Thorough security and code quality review
-4. Protected branches
-5. Versioning
-6. Security Scanning
+4. Wipe db migrations
+5. Protected branches
+6. Versioning
+7. Security Scanning
    1. SAST: CodeQL
    2. SCA + auto-remediation: Dependabot
-7. CI/CD pipelines
+8. CI/CD pipelines
    1. Run automated tests
    2. Image deployment
-8. Actually robust documentation
+9. Actually robust documentation
    1. Zensical hosted on GH Pages (separate repo) - `docs.cardquorum.com`
    2. Three domains:
       1. User - getting started, in-depth game rules
       2. Admin - deployment options, env configuration, etc
       3. Developer - building from source, dev procedures, design decisions, etc
-9. 404 Page
-10. Copyright/TOS/Privacy Policy
+10. 404 Page
+11. Copyright/TOS/Privacy Policy

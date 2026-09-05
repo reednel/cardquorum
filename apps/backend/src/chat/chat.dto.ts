@@ -6,10 +6,10 @@ export const MAX_MESSAGE_LENGTH = 10_000;
 export class SendMessageDto implements SendMessagePayload {
   @IsInt()
   @Min(1)
-  roomId: number;
+  declare roomId: number;
 
   @IsString()
   @IsNotEmpty()
   @MaxLength(MAX_MESSAGE_LENGTH)
-  content: string;
+  declare content: string;
 }

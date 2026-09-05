@@ -6,8 +6,8 @@ import { DRIZZLE } from '../drizzle/drizzle.module';
 
 @Controller('healthz')
 export class HealthController {
-  @Inject(HealthCheckService) private readonly health: HealthCheckService;
-  @Inject(DRIZZLE) private readonly db: PostgresJsDatabase;
+  @Inject(HealthCheckService) declare private readonly health: HealthCheckService;
+  @Inject(DRIZZLE) declare private readonly db: PostgresJsDatabase;
 
   @Get()
   @HealthCheck()

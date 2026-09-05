@@ -19,7 +19,7 @@ export class SessionService {
   async validateSession(sessionId: string): Promise<{
     userId: number;
     username: string;
-    displayName: string;
+    displayName: string | null;
     authMethod: string;
     createdAt: Date;
   } | null> {

@@ -5,7 +5,7 @@ export interface Room {
   name: string;
   description: string | null;
   ownerId: number;
-  ownerDisplayName: string;
+  ownerDisplayName: string | null;
   ownerUsername: string;
   visibility: RoomVisibility;
   createdAt: string;

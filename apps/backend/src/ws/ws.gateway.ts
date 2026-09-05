@@ -16,7 +16,7 @@ export class WsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(WsGateway.name);
 
   @WebSocketServer()
-  server: Server;
+  declare server: Server;
 
   constructor(
     private readonly wsAuthGuard: WsAuthGuard,

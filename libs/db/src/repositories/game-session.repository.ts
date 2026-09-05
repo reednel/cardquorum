@@ -96,20 +96,23 @@ export class GameSessionRepository {
         const { startedAt, id } = decoded;
         // For descending: get rows where (startedAt < cursor) OR (startedAt = cursor AND id < cursorId)
         // For ascending: get rows where (startedAt > cursor) OR (startedAt = cursor AND id > cursorId)
-        if (sortDirection === 'desc') {
-          conditions.push(
-            or(
-              lt(gameSessions.startedAt, startedAt),
-              and(eq(gameSessions.startedAt, startedAt), lt(gameSessions.id, id))!,
-            )!,
-          );
-        } else {
-          conditions.push(
-            or(
-              gt(gameSessions.startedAt, startedAt),
-              and(eq(gameSessions.startedAt, startedAt), gt(gameSessions.id, id))!,
-            )!,
-          );
+        // If startedAt is null (session never started), cursor-based pagination is not applicable.
+        if (startedAt !== null) {
+          if (sortDirection === 'desc') {
+            conditions.push(
+              or(
+                lt(gameSessions.startedAt, startedAt),
+                and(eq(gameSessions.startedAt, startedAt), lt(gameSessions.id, id))!,
+              )!,
+            );
+          } else {
+            conditions.push(
+              or(
+                gt(gameSessions.startedAt, startedAt),
+                and(eq(gameSessions.startedAt, startedAt), gt(gameSessions.id, id))!,
+              )!,
+            );
+          }
         }
       }
     }

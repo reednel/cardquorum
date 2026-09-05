@@ -7,7 +7,8 @@ export async function registerHelmet(
 ): Promise<void> {
   const isDev = nodeEnv !== 'production';
 
-  await app.register(helmet, {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await app.register(helmet as any, {
     crossOriginEmbedderPolicy: false,
     contentSecurityPolicy: {
       directives: {

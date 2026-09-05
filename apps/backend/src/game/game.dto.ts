@@ -21,28 +21,28 @@ import {
 export class GameCreateDto implements GameCreatePayload {
   @IsInt()
   @Min(1)
-  roomId: number;
+  declare roomId: number;
 
   @IsString()
   @IsNotEmpty()
   @MaxLength(50)
-  gameType: string;
+  declare gameType: string;
 
   @IsObject()
-  config: unknown;
+  declare config: unknown;
 }
 
 export class GameStartDto implements GameStartPayload {
   @IsInt()
   @Min(1)
-  sessionId: number;
+  declare sessionId: number;
 }
 
 class GameActionInner {
   @IsString()
   @IsNotEmpty()
   @MaxLength(50)
-  type: string;
+  declare type: string;
 
   @IsOptional()
   payload?: unknown;
@@ -51,35 +51,35 @@ class GameActionInner {
 export class GameActionDto implements GameActionPayload {
   @IsInt()
   @Min(1)
-  sessionId: number;
+  declare sessionId: number;
 
   @ValidateNested()
   @Type(() => GameActionInner)
-  action: GameActionInner;
+  declare action: GameActionInner;
 }
 
 export class GameRejoinDto implements GameRejoinPayload {
   @IsInt()
   @Min(1)
-  roomId: number;
+  declare roomId: number;
 }
 
 export class GameCancelDto implements GameCancelPayload {
   @IsInt()
   @Min(1)
-  sessionId: number;
+  declare sessionId: number;
 }
 
 export class GameAbandonDto {
   @IsInt()
   @Type(() => Number)
-  sessionId: number;
+  declare sessionId: number;
 }
 
 export class GameLogHistoryDto {
   @IsInt()
   @Min(1)
-  roomId: number;
+  declare roomId: number;
 
   @IsOptional()
   @IsInt()
@@ -95,27 +95,27 @@ export class GameLogHistoryDto {
 export class GameForceAbandonDto {
   @IsInt()
   @Min(1)
-  sessionId: number;
+  declare sessionId: number;
 
   @IsInt()
   @Min(1)
-  targetUserId: number;
+  declare targetUserId: number;
 }
 
 export class GameQueryTargetsDto {
   @IsInt()
   @Min(1)
-  sessionId: number;
+  declare sessionId: number;
 
   @IsString()
   @IsNotEmpty()
-  sourceStackId: string;
+  declare sourceStackId: string;
 
   @IsArray()
   @IsString({ each: true })
-  selectedCards: string[];
+  declare selectedCards: string[];
 
   @IsInt()
   @Min(0)
-  generation: number;
+  declare generation: number;
 }

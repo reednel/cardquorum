@@ -31,7 +31,7 @@ export const DRIZZLE = Symbol('DRIZZLE');
       provide: DRIZZLE,
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
-        const client = postgres(config.get<string>('DATABASE_URL'));
+        const client = postgres(config.getOrThrow<string>('DATABASE_URL'));
         return drizzle(client, { schema });
       },
     },
