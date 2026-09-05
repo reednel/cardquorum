@@ -44,7 +44,7 @@ export class UserRepository {
     limit = 20,
     excludeIds: number[] = [],
   ) {
-    const escaped = query.replace(/[%_]/g, '\\$&');
+    const escaped = query.replace(/\\/g, '\\\\').replace(/[%_]/g, '\\$&');
     const conditions = [ilike(users.username, `${escaped}%`), ne(users.id, excludeUserId)];
     if (excludeIds.length > 0) {
       conditions.push(notInArray(users.id, excludeIds));

@@ -16,7 +16,10 @@ const TEST_PASSWORD = 'TestPassword123!';
  */
 export function generateTestUser(prefix?: string): TestUser {
   const base = prefix ?? 'e';
-  const random = Math.random().toString(36).substring(2, 8);
+  const randomBytes = crypto.getRandomValues(new Uint8Array(4));
+  const random = Array.from(randomBytes, (b) => b.toString(36))
+    .join('')
+    .substring(0, 6);
   const suffix = Date.now().toString(36).slice(-5);
   const username = `${base}${random}${suffix}`.slice(0, 20);
   return {

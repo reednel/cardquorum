@@ -251,7 +251,7 @@ export class RoomRepository {
     blockedIds: number[],
     rosteredRoomIds: number[],
   ) {
-    const escaped = query.replace(/[%_]/g, '\\$&');
+    const escaped = query.replace(/\\/g, '\\\\').replace(/[%_]/g, '\\$&');
 
     // Build visibility filter: public OR (friends-only with friend owner) OR (invite-only with invite)
     const visibilityConditions: ReturnType<typeof eq>[] = [eq(rooms.visibility, 'public')];

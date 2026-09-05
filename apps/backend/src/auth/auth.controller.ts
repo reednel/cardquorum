@@ -114,13 +114,18 @@ export class AuthController {
 
   @Get('oidc/callback')
   async oidcCallback(
-    @Query('code') code: string,
-    @Query('state') state: string,
-    @Query('error') oidcError: string,
-    @Query('error_description') oidcErrorDesc: string,
+    @Query('code') rawCode: string | string[],
+    @Query('state') rawState: string | string[],
+    @Query('error') rawOidcError: string | string[],
+    @Query('error_description') rawOidcErrorDesc: string | string[],
     @Req() request: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<void> {
+    const code = Array.isArray(rawCode) ? rawCode[0] : rawCode;
+    const state = Array.isArray(rawState) ? rawState[0] : rawState;
+    const oidcError = Array.isArray(rawOidcError) ? rawOidcError[0] : rawOidcError;
+    const oidcErrorDesc = Array.isArray(rawOidcErrorDesc) ? rawOidcErrorDesc[0] : rawOidcErrorDesc;
+
     if (oidcError) {
       this.logger.warn(
         `OIDC provider returned error: ${oidcError} — ${oidcErrorDesc ?? '(no description)'}`,
