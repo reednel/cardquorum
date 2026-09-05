@@ -271,7 +271,7 @@ describe('RoomController', () => {
     });
 
     it('should throw NotFoundException for missing room', async () => {
-      roomService.findById.mockResolvedValue(null);
+      roomService.findById.mockResolvedValue(null as any);
 
       await expect(controller.update(makeRequest(alice), 999, { name: 'Nope' })).rejects.toThrow(
         NotFoundException,
@@ -401,7 +401,7 @@ describe('RoomController', () => {
     });
 
     it('should throw NotFoundException for missing room', async () => {
-      roomService.findById.mockResolvedValue(null);
+      roomService.findById.mockResolvedValue(null as any);
 
       await expect(controller.remove(makeRequest(alice), 999)).rejects.toThrow(NotFoundException);
     });
@@ -739,7 +739,7 @@ describe('RoomController', () => {
     });
 
     it('should throw NotFoundException for missing room', async () => {
-      roomService.findById.mockResolvedValue(null);
+      roomService.findById.mockResolvedValue(null as any);
 
       await expect(
         controller.updateRoster(makeRequest(alice), 999, { players: [], spectators: [] }),
@@ -773,7 +773,7 @@ describe('RoomController', () => {
     });
 
     it('should throw NotFoundException for missing room', async () => {
-      roomService.findById.mockResolvedValue(null);
+      roomService.findById.mockResolvedValue(null as any);
 
       await expect(
         controller.toggleRotate(makeRequest(alice), 999, { enabled: false }),

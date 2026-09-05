@@ -155,7 +155,7 @@ describe('AuthService', () => {
     });
 
     it('register should create user with null displayName', async () => {
-      userRepo.findByUsername.mockResolvedValue(null);
+      userRepo.findByUsername.mockResolvedValue(null as any);
       userRepo.create.mockResolvedValue({
         id: 2,
         username: 'bob',
@@ -197,8 +197,8 @@ describe('AuthService', () => {
     });
 
     it('should update username', async () => {
-      userRepo.findByUsername.mockResolvedValue(null);
-      userRepo.updateUsername.mockResolvedValue(undefined);
+      userRepo.findByUsername.mockResolvedValue(null as any);
+      userRepo.updateUsername.mockResolvedValue(undefined as any);
 
       await oidcService.oidcRegister(1, 'newname');
 
@@ -369,7 +369,7 @@ describe('AuthService', () => {
         jose.jwtVerify.mockResolvedValue({
           payload: { sub: 'oidc-sub-123', nonce: 'mynonce', preferred_username: 'alice' },
         });
-        credentialRepo.findUserByCredential.mockResolvedValue(null);
+        credentialRepo.findUserByCredential.mockResolvedValue(null as any);
         credentialRepo.upsertCredential.mockResolvedValue({} as any);
         await bothService.linkOidcCredential(1, 'auth-code', 'mynonce', 'myverifier');
         expect(credentialRepo.findUserByCredential).toHaveBeenCalledWith('oidc', 'oidc-sub-123');
@@ -865,7 +865,7 @@ describe('AuthService', () => {
           events: { [BACKCHANNEL_EVENT]: {} },
         },
       });
-      credentialRepo.findUserByCredential.mockResolvedValue(null);
+      credentialRepo.findUserByCredential.mockResolvedValue(null as any);
 
       await expect(oidcService.backchannelLogout('logout-token')).resolves.toBeUndefined();
       expect(sessionService.deleteAllUserSessions).not.toHaveBeenCalled();

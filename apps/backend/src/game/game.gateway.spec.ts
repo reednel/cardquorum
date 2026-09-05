@@ -74,8 +74,8 @@ describe('GameGateway', () => {
     it('should call service.createSession and broadcast game:created to room members', async () => {
       const client1 = createMockClient();
       const client2 = createMockClient();
-      const t1 = connectionService.trackClient(client1, aliceIdentity);
-      const t2 = connectionService.trackClient(client2, bobIdentity);
+      const t1 = connectionService.trackClient(client1, aliceIdentity)!;
+      const t2 = connectionService.trackClient(client2, bobIdentity)!;
 
       roomService.manager.joinRoom('1', t1.id, aliceIdentity);
       roomService.manager.joinRoom('1', t2.id, bobIdentity);
@@ -126,7 +126,7 @@ describe('GameGateway', () => {
 
     it('should send game:error if createSession throws', async () => {
       const client = createMockClient();
-      const tracked = connectionService.trackClient(client, aliceIdentity);
+      const tracked = connectionService.trackClient(client, aliceIdentity)!;
       roomService.manager.joinRoom('1', tracked.id, aliceIdentity);
 
       gameService.createSession.mockRejectedValue(new Error('Invalid game configuration'));
@@ -284,7 +284,7 @@ describe('GameGateway', () => {
 
       let capturedBroadcastFn: (result: any) => void;
       gameService.applyAction.mockImplementation(async (_sid, _uid, _action, broadcastFn) => {
-        capturedBroadcastFn = broadcastFn;
+        capturedBroadcastFn = broadcastFn!;
         return {
           gameOver: false,
           playerViews: [
@@ -329,7 +329,7 @@ describe('GameGateway', () => {
 
       let capturedBroadcastFn: (result: any) => void;
       gameService.applyAction.mockImplementation(async (_sid, _uid, _action, broadcastFn) => {
-        capturedBroadcastFn = broadcastFn;
+        capturedBroadcastFn = broadcastFn!;
         return {
           gameOver: false,
           playerViews: [
@@ -454,8 +454,8 @@ describe('GameGateway', () => {
     it('should cancel session and broadcast game:cancelled to room', async () => {
       const client1 = createMockClient();
       const client2 = createMockClient();
-      const t1 = connectionService.trackClient(client1, aliceIdentity);
-      const t2 = connectionService.trackClient(client2, bobIdentity);
+      const t1 = connectionService.trackClient(client1, aliceIdentity)!;
+      const t2 = connectionService.trackClient(client2, bobIdentity)!;
 
       roomService.manager.joinRoom('1', t1.id, aliceIdentity);
       roomService.manager.joinRoom('1', t2.id, bobIdentity);
@@ -557,7 +557,7 @@ describe('GameGateway', () => {
 
       // Bob is still in the room to receive the broadcast
       const bobClient = createMockClient();
-      const bobTracked = connectionService.trackClient(bobClient, bobIdentity);
+      const bobTracked = connectionService.trackClient(bobClient, bobIdentity)!;
       roomService.manager.joinRoom('1', bobTracked.id, bobIdentity);
 
       await connectionService.notifyDisconnect(client);

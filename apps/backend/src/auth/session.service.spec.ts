@@ -51,7 +51,7 @@ describe('SessionService', () => {
     });
 
     it('should return null for invalid session', async () => {
-      sessionRepo.findValidSession.mockResolvedValue(null);
+      sessionRepo.findValidSession.mockResolvedValue(null as any);
 
       const result = await service.validateSession('bad');
       expect(result).toBeNull();
