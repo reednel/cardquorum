@@ -6,15 +6,15 @@
 # ============================================================
 
 # --- Stage 1: Install dependencies ---
-FROM node:22-alpine AS deps
-RUN corepack enable && corepack prepare pnpm@10 --activate
+FROM node:24-alpine AS deps
+RUN npm install -g pnpm@12
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 # --- Stage 2: Build frontend + backend ---
-FROM node:22-alpine AS builder
-RUN corepack enable && corepack prepare pnpm@10 --activate
+FROM node:24-alpine AS builder
+RUN npm install -g pnpm@12
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -22,8 +22,8 @@ RUN pnpm nx build frontend --configuration=production
 RUN pnpm nx build backend
 
 # --- Stage 3: Production runtime ---
-FROM node:22-alpine AS runtime
-RUN corepack enable && corepack prepare pnpm@10 --activate
+FROM node:24-alpine AS runtime
+RUN npm install -g pnpm@12
 WORKDIR /app
 
 # Copy the built backend (includes generated package.json with prod deps)
