@@ -9,7 +9,7 @@
 FROM node:24-alpine AS deps
 RUN npm install -g pnpm@12
 WORKDIR /app
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
 # --- Stage 2: Build frontend + backend ---
