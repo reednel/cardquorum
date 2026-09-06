@@ -1,6 +1,7 @@
 module.exports = {
   displayName: 'frontend',
   preset: '../../jest.preset.js',
+  cacheDirectory: '<rootDir>/.jest-cache',
   setupFilesAfterEnv: ['<rootDir>/src/test-setup.ts'],
   coverageDirectory: '../../coverage/apps/frontend',
   transform: {

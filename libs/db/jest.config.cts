@@ -1,5 +1,6 @@
 module.exports = {
   displayName: 'db',
+  cacheDirectory: '<rootDir>/.jest-cache',
   preset: '../../jest.preset.js',
   testEnvironment: 'node',
   transform: {

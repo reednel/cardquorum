@@ -1,5 +1,6 @@
 module.exports = {
   displayName: 'engine',
+  cacheDirectory: '<rootDir>/.jest-cache',
   preset: '../../jest.preset.js',
   testEnvironment: 'node',
   transform: {

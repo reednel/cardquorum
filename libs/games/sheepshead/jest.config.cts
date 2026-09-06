@@ -1,5 +1,6 @@
 module.exports = {
   displayName: 'sheepshead',
+  cacheDirectory: '<rootDir>/.jest-cache',
   preset: '../../../jest.preset.js',
   testEnvironment: 'node',
   transform: {

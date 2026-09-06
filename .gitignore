@@ -3,6 +3,9 @@ dist
 tmp
 out-tsc
 
+# Jest cache
+.jest-cache
+
 # dependencies
 node_modules
 
