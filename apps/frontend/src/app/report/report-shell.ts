@@ -5,14 +5,14 @@ import {
   computed,
   DestroyRef,
   inject,
-  OnInit,
   signal,
+  type OnInit,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faCalendar } from '@fortawesome/free-solid-svg-icons';
 import { catchError, debounceTime, EMPTY, Subject, switchMap, timeout } from 'rxjs';
-import { GameReportPlugin } from '@cardquorum/shared';
+import { type GameReportPlugin } from '@cardquorum/shared';
 import { FlatpickrDirective } from '../shared/flatpickr.directive';
 import { MultiselectDropdownComponent } from '../shared/multiselect-dropdown';
 import { GAME_REPORT_PLUGINS } from './report-registry';

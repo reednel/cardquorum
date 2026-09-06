@@ -15,12 +15,21 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { type ConfigService } from '@nestjs/config';
 import { Throttle } from '@nestjs/throttler';
-import { FastifyReply, FastifyRequest } from 'fastify';
-import { CredentialsResponse, SessionIdentity, StrategiesResponse } from '@cardquorum/shared';
-import { ChangePasswordDto, LoginDto, PasswordDto, RegisterDto } from './auth.dto';
-import { AuthService } from './auth.service';
+import { type FastifyReply, type FastifyRequest } from 'fastify';
+import {
+  type CredentialsResponse,
+  type SessionIdentity,
+  type StrategiesResponse,
+} from '@cardquorum/shared';
+import {
+  type ChangePasswordDto,
+  type LoginDto,
+  type PasswordDto,
+  type RegisterDto,
+} from './auth.dto';
+import { type AuthService } from './auth.service';
 import {
   buildClearOidcStateCookie,
   buildClearSessionCookie,
@@ -29,7 +38,7 @@ import {
   parseOidcStateCookie,
 } from './cookie';
 import { HttpAuthGuard, REQUEST_USER_KEY } from './http-auth.guard';
-import { SessionService } from './session.service';
+import { type SessionService } from './session.service';
 
 @Controller('auth')
 export class AuthController {

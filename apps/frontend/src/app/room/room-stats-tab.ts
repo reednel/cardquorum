@@ -8,7 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { RoomStatsPlayerDto, StatsQueryParams } from '@cardquorum/shared';
+import { type RoomStatsPlayerDto, type StatsQueryParams } from '@cardquorum/shared';
 import { GameService } from '../game/game.service';
 import { StatsService } from '../stats/stats.service';
 

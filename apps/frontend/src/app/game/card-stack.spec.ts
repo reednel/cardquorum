@@ -1,5 +1,5 @@
-import { CdkDrag } from '@angular/cdk/drag-drop';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { type CdkDrag } from '@angular/cdk/drag-drop';
+import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import * as fc from 'fast-check';
 import { CardStack } from './card-stack';
 import { InteractionController } from './interaction-controller';

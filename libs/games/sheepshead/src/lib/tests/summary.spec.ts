@@ -2,15 +2,15 @@ import * as fc from 'fast-check';
 import { DECK } from '../constants';
 import { SheepsheadPlugin } from '../sheepshead-plugin';
 import {
-  Card,
-  PlayerRole,
-  PlayerState,
-  SheepsheadConfig,
-  SheepsheadState,
-  SheepsheadStore,
-  TrickPlay,
-  TrickState,
-  UserID,
+  type Card,
+  type PlayerRole,
+  type PlayerState,
+  type SheepsheadConfig,
+  type SheepsheadState,
+  type SheepsheadStore,
+  type TrickPlay,
+  type TrickState,
+  type UserID,
 } from '../types';
 
 /** Arbitrary card from the standard 32-card Sheepshead deck. */

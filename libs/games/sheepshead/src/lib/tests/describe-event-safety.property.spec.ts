@@ -1,7 +1,13 @@
 import * as fc from 'fast-check';
 import { DECK } from '../constants';
 import { SheepsheadPlugin } from '../sheepshead-plugin';
-import { Card, CardName, SheepsheadConfig, SheepsheadEvent, SheepsheadState } from '../types';
+import {
+  Card,
+  type CardName,
+  type SheepsheadConfig,
+  type SheepsheadEvent,
+  type SheepsheadState,
+} from '../types';
 
 const describeEvent = SheepsheadPlugin.describeEvent!;
 

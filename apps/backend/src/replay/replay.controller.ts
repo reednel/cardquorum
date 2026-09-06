@@ -1,9 +1,13 @@
 import { Controller, Get, Param, ParseIntPipe, Query, Req, UseGuards } from '@nestjs/common';
-import { FastifyRequest } from 'fastify';
-import { ReplayDataResponse, ReplaySessionListResponse, UserIdentity } from '@cardquorum/shared';
+import { type FastifyRequest } from 'fastify';
+import {
+  type ReplayDataResponse,
+  type ReplaySessionListResponse,
+  type UserIdentity,
+} from '@cardquorum/shared';
 import { HttpAuthGuard, REQUEST_USER_KEY } from '../auth/http-auth.guard';
-import { GetSessionsQueryDto } from './replay.dto';
-import { ReplayService, SessionListOptions } from './replay.service';
+import { type GetSessionsQueryDto } from './replay.dto';
+import { type ReplayService, type SessionListOptions } from './replay.service';
 
 const TERMINAL_STATUSES = ['finished', 'abandoned', 'cancelled', 'aborted'];
 

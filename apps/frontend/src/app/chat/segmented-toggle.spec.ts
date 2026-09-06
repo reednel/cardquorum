@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { SegmentedToggle } from './segmented-toggle';
 
 const TEST_OPTIONS = [

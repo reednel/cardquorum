@@ -1,10 +1,10 @@
 import { BadRequestException, ConflictException, UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { StrategiesResponse } from '@cardquorum/shared';
+import { type ConfigService } from '@nestjs/config';
+import { type StrategiesResponse } from '@cardquorum/shared';
 import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
+import { type AuthService } from './auth.service';
 import { REQUEST_USER_KEY } from './http-auth.guard';
-import { SessionService } from './session.service';
+import { type SessionService } from './session.service';
 
 jest.mock('jose', () => ({
   createRemoteJWKSet: jest.fn().mockReturnValue(jest.fn()),

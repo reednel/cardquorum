@@ -1,5 +1,5 @@
 import * as fc from 'fast-check';
-import { AggregatedPlayerStats, PlayerStatsRepository } from './player-stats.repository';
+import { PlayerStatsRepository, type AggregatedPlayerStats } from './player-stats.repository';
 
 // ---------------------------------------------------------------------------
 // Types

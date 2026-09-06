@@ -1,5 +1,5 @@
 import { signal } from '@angular/core';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import * as fc from 'fast-check';
 import type { FieldRegistry, GenericConfigPreset } from '@cardquorum/engine';

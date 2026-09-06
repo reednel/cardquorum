@@ -1,6 +1,6 @@
 import { DECK } from '../constants';
 import { SheepsheadPlugin } from '../sheepshead-plugin';
-import { SheepsheadConfig, SheepsheadState, UserID } from '../types';
+import { type SheepsheadConfig, type SheepsheadState, type UserID } from '../types';
 
 /** Helper: call applyEvent and return just the state (unwraps ApplyEventResult). */
 function apply(

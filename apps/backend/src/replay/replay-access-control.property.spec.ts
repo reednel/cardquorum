@@ -1,10 +1,10 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import * as fc from 'fast-check';
 import {
-  GameEventRepository,
-  GameParticipantRepository,
-  GameSessionRepository,
-  UserRepository,
+  type GameEventRepository,
+  type GameParticipantRepository,
+  type GameSessionRepository,
+  type UserRepository,
 } from '@cardquorum/db';
 import { ReplayService } from './replay.service';
 

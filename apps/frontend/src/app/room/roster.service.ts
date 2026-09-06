@@ -1,15 +1,15 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
-import { Observable } from 'rxjs';
+import { type Observable } from 'rxjs';
 import {
-  RoomInviteResponse,
-  RoomJoinedPayload,
-  RosterMember,
-  RosterState,
-  RosterUpdatePayload,
-  RotationMode,
   WS_EMIT,
   WS_EVENT,
+  type RoomInviteResponse,
+  type RoomJoinedPayload,
+  type RosterMember,
+  type RosterState,
+  type RosterUpdatePayload,
+  type RotationMode,
 } from '@cardquorum/shared';
 import { WebSocketService } from '../websocket.service';
 

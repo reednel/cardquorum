@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { WebSocket } from 'ws';
-import { UserIdentity } from '@cardquorum/shared';
+import { type WebSocket } from 'ws';
+import { type UserIdentity } from '@cardquorum/shared';
 
 export interface TrackedClient {
   id: string;

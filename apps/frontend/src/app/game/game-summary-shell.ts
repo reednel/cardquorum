@@ -5,12 +5,12 @@ import {
   Component,
   computed,
   DestroyRef,
-  ElementRef,
   inject,
   input,
   output,
-  Type,
   viewChild,
+  type ElementRef,
+  type Type,
 } from '@angular/core';
 import type { UserIdentity } from '@cardquorum/shared';
 

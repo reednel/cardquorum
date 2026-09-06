@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { FriendshipResponse, UserSearchResult } from '@cardquorum/shared';
+import { type FriendshipResponse, type UserSearchResult } from '@cardquorum/shared';
 import { FriendService } from './friend.service';
 
 const FRIEND: FriendshipResponse = {

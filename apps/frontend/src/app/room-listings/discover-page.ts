@@ -2,14 +2,14 @@ import {
   ChangeDetectionStrategy,
   Component,
   inject,
-  OnDestroy,
-  OnInit,
   signal,
+  type OnDestroy,
+  type OnInit,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { of, Subject, Subscription, switchMap } from 'rxjs';
+import { of, Subject, switchMap, type Subscription } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
-import { RoomResponse } from '@cardquorum/shared';
+import { type RoomResponse } from '@cardquorum/shared';
 import { AuthService } from '../auth/auth.service';
 import { PaginationComponent } from './pagination';
 import { RoomListingsService } from './room-listings.service';

@@ -1,6 +1,6 @@
 import { and, eq, gt, isNotNull, isNull } from 'drizzle-orm';
 import { sessions, users } from '../schema';
-import { DbInstance } from '../types';
+import { type DbInstance } from '../types';
 
 export class SessionRepository {
   constructor(private readonly db: DbInstance) {}

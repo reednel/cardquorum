@@ -13,13 +13,13 @@ import {
   ValidateNested,
 } from 'class-validator';
 import {
-  GameSettingsUpdatePayload,
-  JoinRoomPayload,
-  LeaveRoomPayload,
-  LeaveRosterPayload,
-  RoomGameSettings,
-  RosterReorderPayload,
-  RosterToggleRotatePayload,
+  type GameSettingsUpdatePayload,
+  type JoinRoomPayload,
+  type LeaveRoomPayload,
+  type LeaveRosterPayload,
+  type RoomGameSettings,
+  type RosterReorderPayload,
+  type RosterToggleRotatePayload,
 } from '@cardquorum/shared';
 
 export class JoinRoomDto implements JoinRoomPayload {

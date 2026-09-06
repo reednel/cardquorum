@@ -1,5 +1,5 @@
 import { IsInt, Min } from 'class-validator';
-import { BlockUserRequest } from '@cardquorum/shared';
+import { type BlockUserRequest } from '@cardquorum/shared';
 
 export class BlockUserDto implements BlockUserRequest {
   @IsInt()

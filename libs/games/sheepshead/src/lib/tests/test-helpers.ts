@@ -1,6 +1,11 @@
-import { CONFIG_PRESETS } from '../config';
+import { type CONFIG_PRESETS } from '../config';
 import { DECK } from '../constants';
-import { Card, PickPhaseResult, SheepsheadConfig, SheepsheadState } from '../types';
+import {
+  type Card,
+  type PickPhaseResult,
+  type SheepsheadConfig,
+  type SheepsheadState,
+} from '../types';
 
 /** Look up a card by short name (e.g. 'ac', 'qc'). Throws if not found. */
 export function card(name: string): Card {

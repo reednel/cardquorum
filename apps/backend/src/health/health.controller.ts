@@ -1,7 +1,7 @@
 import { Controller, Get, Inject } from '@nestjs/common';
-import { HealthCheck, HealthCheckService, HealthIndicatorResult } from '@nestjs/terminus';
+import { HealthCheck, HealthCheckService, type HealthIndicatorResult } from '@nestjs/terminus';
 import { sql } from 'drizzle-orm';
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+import { type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { DRIZZLE } from '../drizzle/drizzle.module';
 
 @Controller('healthz')

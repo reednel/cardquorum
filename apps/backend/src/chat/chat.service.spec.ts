@@ -1,4 +1,4 @@
-import { MessageRepository } from '@cardquorum/db';
+import { type MessageRepository } from '@cardquorum/db';
 import { ChatService } from './chat.service';
 
 describe('ChatService', () => {

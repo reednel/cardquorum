@@ -5,8 +5,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { FriendshipRepository, FriendshipRequestRepository, UserRepository } from '@cardquorum/db';
-import { FriendRequestResponse, FriendshipResponse } from '@cardquorum/shared';
+import {
+  type FriendshipRepository,
+  type FriendshipRequestRepository,
+  type UserRepository,
+} from '@cardquorum/db';
+import { type FriendRequestResponse, type FriendshipResponse } from '@cardquorum/shared';
 
 @Injectable()
 export class FriendService {

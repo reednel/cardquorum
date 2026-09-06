@@ -1,6 +1,6 @@
 import { isTrump } from '../../cards';
 import { handleBury, handleCall, handleDeal, handlePick, legalCallOptions } from '../../phases';
-import { Card, SheepsheadState } from '../../types';
+import { type Card, type SheepsheadState } from '../../types';
 import { card, makeConfig, makeState, pickContinue } from '../test-helpers';
 
 describe('handleCall', () => {

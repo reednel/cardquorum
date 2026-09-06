@@ -1,5 +1,5 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { SheepsheadReportRepository } from '@cardquorum/sheepshead/reporting';
+import { type SheepsheadReportRepository } from '@cardquorum/sheepshead/reporting';
 import { ReportService } from './report.service';
 
 describe('ReportService', () => {

@@ -1,13 +1,13 @@
 import {
-  CanActivate,
-  ExecutionContext,
   Injectable,
   Logger,
   UnauthorizedException,
+  type CanActivate,
+  type ExecutionContext,
 } from '@nestjs/common';
-import { FastifyRequest } from 'fastify';
-import { SessionIdentity } from '@cardquorum/shared';
-import { SessionService } from './session.service';
+import { type FastifyRequest } from 'fastify';
+import { type SessionIdentity } from '@cardquorum/shared';
+import { type SessionService } from './session.service';
 
 export const REQUEST_USER_KEY = 'user';
 export const REQUEST_SESSION_KEY = 'sessionMeta';

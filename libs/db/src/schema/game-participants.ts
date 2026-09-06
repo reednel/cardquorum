@@ -1,4 +1,4 @@
-import { InferInsertModel, InferSelectModel } from 'drizzle-orm';
+import { type InferInsertModel, type InferSelectModel } from 'drizzle-orm';
 import { index, integer, pgTable, serial, smallint, uniqueIndex } from 'drizzle-orm/pg-core';
 import { gameSessions } from './game-sessions';
 import { users } from './users';

@@ -3,20 +3,25 @@ import {
   Component,
   computed,
   effect,
-  ElementRef,
   inject,
   input,
   signal,
   viewChild,
+  type ElementRef,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faPaperPlane } from '@fortawesome/free-solid-svg-icons';
-import { GameLogBroadcast } from '@cardquorum/shared';
+import { type GameLogBroadcast } from '@cardquorum/shared';
 import { ChatService } from '../chat/chat.service';
 import { FormatTimePipe } from '../chat/format-time.pipe';
 import { GameLogEntryComponent } from '../chat/game-log-entry';
-import { deriveFeedItems, FeedItem, FeedMode, isBoundaryEntry } from '../chat/game-log-utils';
+import {
+  deriveFeedItems,
+  isBoundaryEntry,
+  type FeedItem,
+  type FeedMode,
+} from '../chat/game-log-utils';
 import { GameLogService } from '../chat/game-log.service';
 import { SessionBoundaryMarker } from '../chat/session-boundary-marker';
 import { WebSocketService } from '../websocket.service';

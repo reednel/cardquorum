@@ -1,5 +1,5 @@
 import { Component, input } from '@angular/core';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import * as fc from 'fast-check';
 import { SheepsheadSummary } from './sheepshead-summary';
 

@@ -1,5 +1,5 @@
 import { FAIL_RANK_ORDER, RANK_ABBREVIATIONS, SUIT_SYMBOLS, TRUMP_ORDER } from './constants';
-import { CalledCard, Card, Rank, Suit, TrickState } from './types';
+import { type CalledCard, type Card, type Rank, type Suit, type TrickState } from './types';
 
 /** Whether a card is trump (queens, jacks, or diamonds). */
 export function isTrump(card: Card): boolean {

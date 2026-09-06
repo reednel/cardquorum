@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { UserProfile } from '@cardquorum/shared';
+import { type UserProfile } from '@cardquorum/shared';
 import { AuthService } from '../auth/auth.service';
 import { UserService } from './user.service';
 

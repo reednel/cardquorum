@@ -5,13 +5,13 @@ import {
   SubscribeMessage,
   WebSocketGateway,
 } from '@nestjs/websockets';
-import { WebSocket } from 'ws';
+import { type WebSocket } from 'ws';
 import { WS_EMIT, WS_EVENT } from '@cardquorum/shared';
-import { RoomService } from '../room/room.service';
-import { WsConnectionService } from '../ws/ws-connection.service';
+import { type RoomService } from '../room/room.service';
+import { type WsConnectionService } from '../ws/ws-connection.service';
 import { WsValidationPipe } from '../ws/ws-validation.pipe';
-import { SendMessageDto } from './chat.dto';
-import { ChatService } from './chat.service';
+import { type SendMessageDto } from './chat.dto';
+import { type ChatService } from './chat.service';
 
 @UsePipes(WsValidationPipe)
 @WebSocketGateway({ path: '/ws' })

@@ -2,10 +2,10 @@ import {
   afterNextRender,
   ChangeDetectionStrategy,
   Component,
-  ElementRef,
-  OnDestroy,
   signal,
   viewChild,
+  type ElementRef,
+  type OnDestroy,
 } from '@angular/core';
 import { CardRenderer } from '../game/card-renderer';
 

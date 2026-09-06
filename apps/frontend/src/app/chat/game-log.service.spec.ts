@@ -1,6 +1,6 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { GameLogBroadcast, WS_EMIT, WS_EVENT } from '@cardquorum/shared';
+import { WS_EMIT, WS_EVENT, type GameLogBroadcast } from '@cardquorum/shared';
 import { RoomContextService } from '../room/room-context.service';
 import { WebSocketService } from '../websocket.service';
 import { GameLogService } from './game-log.service';

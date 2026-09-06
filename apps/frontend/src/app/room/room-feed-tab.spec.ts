@@ -1,6 +1,6 @@
-import { signal, WritableSignal } from '@angular/core';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ChatMessagePayload, GameLogBroadcast } from '@cardquorum/shared';
+import { signal, type WritableSignal } from '@angular/core';
+import { TestBed, type ComponentFixture } from '@angular/core/testing';
+import { type ChatMessagePayload, type GameLogBroadcast } from '@cardquorum/shared';
 import { ChatService } from '../chat/chat.service';
 import { GameLogService } from '../chat/game-log.service';
 import { WebSocketService } from '../websocket.service';

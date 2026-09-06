@@ -1,16 +1,16 @@
 import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { firstValueFrom, map, Observable, tap } from 'rxjs';
+import { firstValueFrom, map, tap, type Observable } from 'rxjs';
 import {
-  AuthMethod,
-  AuthStrategy,
-  ChangePasswordRequest,
-  CredentialsResponse,
-  LoginRequest,
-  RegisterRequest,
-  SessionIdentity,
-  StrategiesResponse,
+  type AuthMethod,
+  type AuthStrategy,
+  type ChangePasswordRequest,
+  type CredentialsResponse,
+  type LoginRequest,
+  type RegisterRequest,
+  type SessionIdentity,
+  type StrategiesResponse,
 } from '@cardquorum/shared';
 import { WebSocketService } from '../websocket.service';
 

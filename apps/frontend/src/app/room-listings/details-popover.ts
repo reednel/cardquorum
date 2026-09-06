@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faCircleInfo } from '@fortawesome/free-solid-svg-icons';
-import { RoomResponse } from '@cardquorum/shared';
+import { type RoomResponse } from '@cardquorum/shared';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,

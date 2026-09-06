@@ -7,7 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { finalize } from 'rxjs';
-import { GameType, PlayerStatsResponse, StatsQueryParams } from '@cardquorum/shared';
+import { type GameType, type PlayerStatsResponse, type StatsQueryParams } from '@cardquorum/shared';
 import { StatsService } from './stats.service';
 
 type TimeRange = 'all' | 'day' | 'week' | 'month' | 'year';

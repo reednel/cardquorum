@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
-import { PaginatedResponse, RoomResponse } from '@cardquorum/shared';
+import { type Observable } from 'rxjs';
+import { type PaginatedResponse, type RoomResponse } from '@cardquorum/shared';
 
 @Injectable({ providedIn: 'root' })
 export class RoomListingsService {

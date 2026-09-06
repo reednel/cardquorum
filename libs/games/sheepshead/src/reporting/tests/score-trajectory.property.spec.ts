@@ -1,5 +1,5 @@
 import * as fc from 'fast-check';
-import { ScoreTrajectoryPoint } from '@cardquorum/shared';
+import { type ScoreTrajectoryPoint } from '@cardquorum/shared';
 
 // ---------------------------------------------------------------------------
 // Reference implementation — mirrors the repository's computeScoreTrajectory

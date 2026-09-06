@@ -1,4 +1,4 @@
-import { ChatMessagePayload, GameLogBroadcast } from '@cardquorum/shared';
+import { type ChatMessagePayload, type GameLogBroadcast } from '@cardquorum/shared';
 
 export type FeedMode = 'chat' | 'game-log' | 'all';
 

@@ -1,4 +1,4 @@
-import { WebSocket } from 'ws';
+import { type WebSocket } from 'ws';
 import { MAX_CONNECTIONS_PER_USER, WsConnectionService } from './ws-connection.service';
 
 describe('WsConnectionService', () => {

@@ -1,5 +1,5 @@
 import * as fc from 'fast-check';
-import { EventBufferEntry, EventLogService } from './event-log.service';
+import { EventLogService, type EventBufferEntry } from './event-log.service';
 
 // ---------------------------------------------------------------------------
 // Helpers

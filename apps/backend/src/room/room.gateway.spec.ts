@@ -1,9 +1,9 @@
-import { WebSocket } from 'ws';
-import { RosterState, UserIdentity, WS_EMIT } from '@cardquorum/shared';
-import { GameService } from '../game/game.service';
+import { type WebSocket } from 'ws';
+import { WS_EMIT, type RosterState, type UserIdentity } from '@cardquorum/shared';
+import { type GameService } from '../game/game.service';
 import { WsConnectionService } from '../ws/ws-connection.service';
 import { RoomGateway } from './room.gateway';
-import { RoomService } from './room.service';
+import { type RoomService } from './room.service';
 
 describe('RoomGateway', () => {
   let gateway: RoomGateway;

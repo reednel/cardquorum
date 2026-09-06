@@ -5,20 +5,20 @@ import { assignPartnerByRule, determinePartnerCalledAce } from './partners';
 import { gotSchwarzed, pickingTeamPoints, scoreMultiplier } from './scoring';
 import { evaluateTrick, legalPlays } from './tricks';
 import {
-  BuryEvent,
-  CallAceEvent,
-  Card,
-  CardName,
-  DealEventPayload,
-  PassEvent,
-  PickEvent,
-  PickPhaseResult,
-  PlayCardEvent,
-  PlayHoleEvent,
-  SheepsheadConfig,
-  SheepsheadState,
-  TrickState,
-  UserID,
+  type BuryEvent,
+  type CallAceEvent,
+  type Card,
+  type CardName,
+  type DealEventPayload,
+  type PassEvent,
+  type PickEvent,
+  type PickPhaseResult,
+  type PlayCardEvent,
+  type PlayHoleEvent,
+  type SheepsheadConfig,
+  type SheepsheadState,
+  type TrickState,
+  type UserID,
 } from './types';
 
 /**

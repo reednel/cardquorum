@@ -1,6 +1,6 @@
 import { cardPower, cardsEqual, isTrump, sumPoints } from '../cards';
 import { DECK, FAIL_RANK_ORDER, TRUMP_ORDER } from '../constants';
-import { TrickState } from '../types';
+import { type TrickState } from '../types';
 import { card } from './test-helpers';
 
 describe('isTrump', () => {

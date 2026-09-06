@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { type Observable } from 'rxjs';
 import type { ReplayDataResponse, ReplaySessionListResponse } from '@cardquorum/shared';
 
 export interface SessionListParams {

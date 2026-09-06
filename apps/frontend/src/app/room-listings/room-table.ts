@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faGear } from '@fortawesome/free-solid-svg-icons';
-import { RoomResponse } from '@cardquorum/shared';
+import { type RoomResponse } from '@cardquorum/shared';
 import { DetailsPopoverComponent } from './details-popover';
 
 @Component({

@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { roomGameSettings } from '../schema';
-import { DbInstance } from '../types';
+import { type DbInstance } from '../types';
 
 export class RoomGameSettingsRepository {
   constructor(private readonly db: DbInstance) {}

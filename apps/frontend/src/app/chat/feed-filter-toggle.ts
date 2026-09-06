@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faComments, faScroll } from '@fortawesome/free-solid-svg-icons';
-import { FeedMode } from './game-log-utils';
+import { type FeedMode } from './game-log-utils';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,

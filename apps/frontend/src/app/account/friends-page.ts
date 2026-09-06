@@ -3,8 +3,8 @@ import {
   Component,
   DestroyRef,
   inject,
-  OnInit,
   signal,
+  type OnInit,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';

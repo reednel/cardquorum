@@ -4,7 +4,7 @@ import { DECK } from '../../constants';
 import { handlePlayCard, handleTrickAdvance } from '../../phases';
 import { SheepsheadPlugin } from '../../sheepshead-plugin';
 import { legalPlays } from '../../tricks';
-import { Card, SheepsheadState, TrickState } from '../../types';
+import { Card, type SheepsheadState, type TrickState } from '../../types';
 import { card, makeConfig } from '../test-helpers';
 
 /**

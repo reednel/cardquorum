@@ -1,7 +1,11 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
-import { PlayerStatsResponse, RoomStatsResponse, StatsQueryParams } from '@cardquorum/shared';
+import { type Observable } from 'rxjs';
+import {
+  type PlayerStatsResponse,
+  type RoomStatsResponse,
+  type StatsQueryParams,
+} from '@cardquorum/shared';
 
 @Injectable({ providedIn: 'root' })
 export class StatsService {

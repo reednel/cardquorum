@@ -10,12 +10,12 @@ import {
   ValidateIf,
 } from 'class-validator';
 import {
-  DeleteAccountRequest,
   DISPLAY_NAME_MAX,
-  UpdateDisplayNameRequest,
-  UpdateUsernameRequest,
   USERNAME_MAX,
   USERNAME_MIN,
+  type DeleteAccountRequest,
+  type UpdateDisplayNameRequest,
+  type UpdateUsernameRequest,
 } from '@cardquorum/shared';
 
 export class UpdateUsernameDto implements UpdateUsernameRequest {

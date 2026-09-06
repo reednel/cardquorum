@@ -1,8 +1,8 @@
 import { signal } from '@angular/core';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
-import { PALETTE_HUES, UserProfile } from '@cardquorum/shared';
+import { PALETTE_HUES, type UserProfile } from '@cardquorum/shared';
 import { AuthService } from '../auth/auth.service';
 import { AccountPage } from './account-page';
 import { UserService } from './user.service';

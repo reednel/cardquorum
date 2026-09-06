@@ -1,27 +1,27 @@
-import { forwardRef, Inject, Logger, OnModuleInit, UsePipes } from '@nestjs/common';
+import { forwardRef, Inject, Logger, UsePipes, type OnModuleInit } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
   SubscribeMessage,
   WebSocketGateway,
 } from '@nestjs/websockets';
-import { WebSocket } from 'ws';
+import { type WebSocket } from 'ws';
 import { WS_EMIT, WS_EVENT } from '@cardquorum/shared';
 import { GameService } from '../game/game.service';
-import { WsConnectionService } from '../ws/ws-connection.service';
+import { type WsConnectionService } from '../ws/ws-connection.service';
 import { WsValidationPipe } from '../ws/ws-validation.pipe';
 import {
-  GameSettingsLoadDto,
-  GameSettingsUpdateDto,
-  JoinRoomDto,
-  LeaveRoomDto,
-  LeaveRosterDto,
-  RosterReorderDto,
-  RosterSetRotationModeDto,
-  RosterToggleReadyDto,
-  RosterToggleRotateDto,
+  type GameSettingsLoadDto,
+  type GameSettingsUpdateDto,
+  type JoinRoomDto,
+  type LeaveRoomDto,
+  type LeaveRosterDto,
+  type RosterReorderDto,
+  type RosterSetRotationModeDto,
+  type RosterToggleReadyDto,
+  type RosterToggleRotateDto,
 } from './room.dto';
-import { RoomService } from './room.service';
+import { type RoomService } from './room.service';
 
 @UsePipes(WsValidationPipe)
 @WebSocketGateway({ path: '/ws' })

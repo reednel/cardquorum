@@ -8,15 +8,15 @@ import {
 } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import * as jose from 'jose';
-import { CredentialRepository, UserRepository } from '@cardquorum/db';
+import { type CredentialRepository, type UserRepository } from '@cardquorum/db';
 import {
-  AuthMethod,
-  AuthStrategy,
   isValidUsername,
-  RegisterRequest,
-  SessionIdentity,
+  type AuthMethod,
+  type AuthStrategy,
+  type RegisterRequest,
+  type SessionIdentity,
 } from '@cardquorum/shared';
-import { SessionService } from './session.service';
+import { type SessionService } from './session.service';
 
 export interface AuthResult {
   sessionId: string;

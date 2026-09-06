@@ -1,5 +1,5 @@
 import * as fc from 'fast-check';
-import { GameEvent } from '../schema';
+import { type GameEvent } from '../schema';
 import { GameEventRepository } from './game-event.repository';
 import { GameParticipantRepository } from './game-participant.repository';
 

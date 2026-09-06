@@ -1,8 +1,8 @@
 import { ConflictException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
-import { CredentialRepository, UserRepository } from '@cardquorum/db';
+import { type CredentialRepository, type UserRepository } from '@cardquorum/db';
 import { AuthService } from './auth.service';
-import { SessionService } from './session.service';
+import { type SessionService } from './session.service';
 
 jest.mock('jose', () => ({
   createRemoteJWKSet: jest.fn().mockReturnValue(jest.fn()),

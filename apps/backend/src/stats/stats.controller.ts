@@ -1,13 +1,13 @@
 import { Controller, Get, Param, ParseIntPipe, Query, Req, UseGuards } from '@nestjs/common';
-import { FastifyRequest } from 'fastify';
+import { type FastifyRequest } from 'fastify';
 import {
-  PlayerStatsResponse,
-  RoomStatsResponse,
-  StatsQueryParams,
-  UserIdentity,
+  type PlayerStatsResponse,
+  type RoomStatsResponse,
+  type StatsQueryParams,
+  type UserIdentity,
 } from '@cardquorum/shared';
 import { HttpAuthGuard, REQUEST_USER_KEY } from '../auth/http-auth.guard';
-import { StatsService } from './stats.service';
+import { type StatsService } from './stats.service';
 
 @UseGuards(HttpAuthGuard)
 @Controller('stats')

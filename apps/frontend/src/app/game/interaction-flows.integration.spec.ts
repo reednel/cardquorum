@@ -1,7 +1,7 @@
 import {
   InteractionController,
-  InteractionDispatcher,
-  InteractionPluginAdapter,
+  type InteractionDispatcher,
+  type InteractionPluginAdapter,
 } from './interaction-controller';
 import { SheepsheadTablePlugin } from './sheepshead/sheepshead-table-plugin';
 

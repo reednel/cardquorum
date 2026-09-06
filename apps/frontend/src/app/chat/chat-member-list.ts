@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { UserIdentity } from '@cardquorum/shared';
+import { type UserIdentity } from '@cardquorum/shared';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,

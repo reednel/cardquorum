@@ -1,4 +1,4 @@
-import { CardName, SheepsheadState, UserID } from './types';
+import { type CardName, type SheepsheadState, type UserID } from './types';
 
 /**
  * Determine the partner by Jack of Diamonds rule.

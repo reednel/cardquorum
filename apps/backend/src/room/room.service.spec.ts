@@ -1,7 +1,7 @@
 import { ConflictException, ForbiddenException } from '@nestjs/common';
 import * as fc from 'fast-check';
-import { WebSocket } from 'ws';
-import { UserIdentity, WS_EMIT } from '@cardquorum/shared';
+import { type WebSocket } from 'ws';
+import { WS_EMIT, type UserIdentity } from '@cardquorum/shared';
 import { WsConnectionService } from '../ws/ws-connection.service';
 import { RoomService } from './room.service';
 

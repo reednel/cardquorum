@@ -1,5 +1,5 @@
 import { IsInt, Min } from 'class-validator';
-import { FriendRequestBody } from '@cardquorum/shared';
+import { type FriendRequestBody } from '@cardquorum/shared';
 
 export class FriendRequestDto implements FriendRequestBody {
   @IsInt()

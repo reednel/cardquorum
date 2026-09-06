@@ -1,5 +1,5 @@
 import { UnauthorizedException } from '@nestjs/common';
-import { SessionIdentity } from '@cardquorum/shared';
+import { type SessionIdentity } from '@cardquorum/shared';
 import { REQUEST_SESSION_KEY } from '../auth/http-auth.guard';
 import { RoomService } from '../room/room.service';
 import { WsConnectionService } from '../ws/ws-connection.service';

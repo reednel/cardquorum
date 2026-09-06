@@ -6,10 +6,10 @@ import {
   DestroyRef,
   effect,
   inject,
-  OnDestroy,
-  OnInit,
   signal,
   viewChild,
+  type OnDestroy,
+  type OnInit,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Title } from '@angular/platform-browser';
@@ -25,11 +25,11 @@ import {
   faTrophy,
   faUsers,
 } from '@fortawesome/free-solid-svg-icons';
-import { RoomResponse, UserIdentity, WS_EVENT } from '@cardquorum/shared';
+import { WS_EVENT, type RoomResponse, type UserIdentity } from '@cardquorum/shared';
 import { AuthService } from '../auth/auth.service';
 import { ChatService } from '../chat/chat.service';
 import { FeedFilterToggle } from '../chat/feed-filter-toggle';
-import { FeedMode } from '../chat/game-log-utils';
+import { type FeedMode } from '../chat/game-log-utils';
 import { GameLogService } from '../chat/game-log.service';
 import { ForceAbandonModal } from '../game/force-abandon-modal';
 import { ForceAbandonService } from '../game/force-abandon.service';

@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CredentialRepository, SessionRepository, UserRepository } from '@cardquorum/db';
-import { AuthStrategy } from '@cardquorum/shared';
+import { type AuthStrategy } from '@cardquorum/shared';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { HttpAuthGuard } from './http-auth.guard';

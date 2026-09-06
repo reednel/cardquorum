@@ -1,14 +1,14 @@
 import { cardPower, cardsEqual, isTrump } from './cards';
 import { DECK, FAIL_TENS, TRUMP_ORDER } from './constants';
 import {
-  CalledCard,
-  Card,
-  CardName,
-  SheepsheadConfig,
-  SheepsheadState,
-  Suit,
-  TrickState,
-  UserID,
+  type CalledCard,
+  type Card,
+  type CardName,
+  type SheepsheadConfig,
+  type SheepsheadState,
+  type Suit,
+  type TrickState,
+  type UserID,
 } from './types';
 
 export interface LegalPlaysResult {

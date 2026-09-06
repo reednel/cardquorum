@@ -1,4 +1,4 @@
-import { GameType } from './game-types';
+import { type GameType } from './game-types';
 
 /**
  * Mirrors the PlayerStatRow from @cardquorum/engine.

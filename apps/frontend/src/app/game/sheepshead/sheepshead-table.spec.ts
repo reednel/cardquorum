@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { CardStack } from '../card-stack';
 import { GameSummaryShell } from '../game-summary-shell';
 import { InteractionController } from '../interaction-controller';

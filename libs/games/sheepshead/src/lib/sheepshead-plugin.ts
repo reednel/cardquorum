@@ -1,4 +1,4 @@
-import { ApplyEventResult, GamePlugin, PlayerStatRow } from '@cardquorum/engine';
+import { type ApplyEventResult, type GamePlugin, type PlayerStatRow } from '@cardquorum/engine';
 import { formatCard } from './cards';
 import { SheepsheadConfigSchema } from './config';
 import { DECK } from './constants';
@@ -17,16 +17,16 @@ import {
 import { scoreMultiplier } from './scoring';
 import { legalPlays } from './tricks';
 import {
-  BlitzState,
-  Card,
-  DealEventPayload,
-  SheepsheadConfig,
-  SheepsheadEvent,
-  SheepsheadEventType,
-  SheepsheadState,
-  SheepsheadStore,
-  TrickState,
-  UserID,
+  type BlitzState,
+  type Card,
+  type DealEventPayload,
+  type SheepsheadConfig,
+  type SheepsheadEvent,
+  type SheepsheadEventType,
+  type SheepsheadState,
+  type SheepsheadStore,
+  type TrickState,
+  type UserID,
 } from './types';
 
 function validateConfig(config: unknown): config is SheepsheadConfig {

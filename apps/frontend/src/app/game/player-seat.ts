@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
-import { hueToHsl, SeatBadge } from '@cardquorum/shared';
+import { hueToHsl, type SeatBadge } from '@cardquorum/shared';
 import { ThemeService } from '../shell/theme.service';
 import { CardStack } from './card-stack';
 

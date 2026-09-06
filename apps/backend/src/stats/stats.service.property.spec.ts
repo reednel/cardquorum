@@ -1,6 +1,10 @@
 import * as fc from 'fast-check';
-import { PlayerStatsRepository, RoomRepository, RoomRosterRepository } from '@cardquorum/db';
-import { PlayerStatRow } from '@cardquorum/shared';
+import {
+  type PlayerStatsRepository,
+  type RoomRepository,
+  type RoomRosterRepository,
+} from '@cardquorum/db';
+import { type PlayerStatRow } from '@cardquorum/shared';
 import { StatsService } from './stats.service';
 
 // ---------------------------------------------------------------------------

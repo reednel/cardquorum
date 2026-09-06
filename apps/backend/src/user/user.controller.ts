@@ -12,21 +12,26 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { FastifyReply, FastifyRequest } from 'fastify';
-import { SessionIdentity, UserProfile, UserSearchResult, WS_EMIT } from '@cardquorum/shared';
+import { type FastifyReply, type FastifyRequest } from 'fastify';
+import {
+  WS_EMIT,
+  type SessionIdentity,
+  type UserProfile,
+  type UserSearchResult,
+} from '@cardquorum/shared';
 import { buildClearSessionCookie } from '../auth/cookie';
 import { HttpAuthGuard, REQUEST_SESSION_KEY, REQUEST_USER_KEY } from '../auth/http-auth.guard';
-import { BlockService } from '../block/block.service';
-import { RoomService } from '../room/room.service';
-import { WsConnectionService } from '../ws/ws-connection.service';
+import { type BlockService } from '../block/block.service';
+import { type RoomService } from '../room/room.service';
+import { type WsConnectionService } from '../ws/ws-connection.service';
 import {
-  DeleteAccountDto,
-  SearchUsersDto,
-  UpdateColorPreferenceDto,
-  UpdateDisplayNameDto,
-  UpdateUsernameDto,
+  type DeleteAccountDto,
+  type SearchUsersDto,
+  type UpdateColorPreferenceDto,
+  type UpdateDisplayNameDto,
+  type UpdateUsernameDto,
 } from './user.dto';
-import { UserService } from './user.service';
+import { type UserService } from './user.service';
 
 @UseGuards(HttpAuthGuard)
 @Controller('users')

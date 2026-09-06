@@ -1,6 +1,6 @@
-import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { UnauthorizedException, type ExecutionContext } from '@nestjs/common';
 import { HttpAuthGuard, REQUEST_SESSION_KEY, REQUEST_USER_KEY } from './http-auth.guard';
-import { SessionService } from './session.service';
+import { type SessionService } from './session.service';
 
 describe('HttpAuthGuard', () => {
   let guard: HttpAuthGuard;

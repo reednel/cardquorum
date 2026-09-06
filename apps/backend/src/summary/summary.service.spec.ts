@@ -1,5 +1,9 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
-import { GameParticipantRepository, GameSessionRepository, UserRepository } from '@cardquorum/db';
+import {
+  type GameParticipantRepository,
+  type GameSessionRepository,
+  type UserRepository,
+} from '@cardquorum/db';
 import { SummaryService } from './summary.service';
 
 describe('SummaryService', () => {

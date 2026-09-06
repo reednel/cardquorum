@@ -1,6 +1,6 @@
 import { NO_ERRORS_SCHEMA } from '@angular/core';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { SheepsheadReportPayload } from '@cardquorum/shared';
+import { TestBed, type ComponentFixture } from '@angular/core/testing';
+import { type SheepsheadReportPayload } from '@cardquorum/shared';
 import { SheepsheadReportComponent } from './sheepshead-report';
 
 function buildPayload(overrides: Partial<SheepsheadReportPayload> = {}): SheepsheadReportPayload {

@@ -1,15 +1,15 @@
-import { IncomingMessage } from 'http';
+import { type IncomingMessage } from 'http';
 import { Logger } from '@nestjs/common';
 import {
-  OnGatewayConnection,
-  OnGatewayDisconnect,
   WebSocketGateway,
   WebSocketServer,
+  type OnGatewayConnection,
+  type OnGatewayDisconnect,
 } from '@nestjs/websockets';
-import { Server, WebSocket } from 'ws';
+import { type Server, type WebSocket } from 'ws';
 import { WS_EMIT } from '@cardquorum/shared';
-import { WsAuthGuard } from '../auth/ws-auth.guard';
-import { WsConnectionService } from './ws-connection.service';
+import { type WsAuthGuard } from '../auth/ws-auth.guard';
+import { type WsConnectionService } from './ws-connection.service';
 
 @WebSocketGateway({ path: '/ws' })
 export class WsGateway implements OnGatewayConnection, OnGatewayDisconnect {

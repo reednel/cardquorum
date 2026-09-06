@@ -6,9 +6,9 @@ import {
   ElementRef,
   inject,
   input,
-  OnInit,
   output,
   signal,
+  type OnInit,
 } from '@angular/core';
 
 export interface MultiselectOption {

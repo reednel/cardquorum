@@ -1,6 +1,10 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { GameParticipantRepository, GameSessionRepository, UserRepository } from '@cardquorum/db';
-import { SummaryDataResponse, SummaryParticipantDto } from '@cardquorum/shared';
+import {
+  type GameParticipantRepository,
+  type GameSessionRepository,
+  type UserRepository,
+} from '@cardquorum/db';
+import { type SummaryDataResponse, type SummaryParticipantDto } from '@cardquorum/shared';
 
 const TERMINAL_STATUSES = ['finished', 'abandoned', 'cancelled', 'aborted'];
 

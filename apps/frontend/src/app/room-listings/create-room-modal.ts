@@ -1,16 +1,16 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, type HttpErrorResponse } from '@angular/common/http';
 import {
   afterNextRender,
   ChangeDetectionStrategy,
   Component,
-  ElementRef,
   inject,
   output,
   signal,
   viewChild,
+  type ElementRef,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RoomResponse, RoomVisibility, UserSearchResult } from '@cardquorum/shared';
+import { type RoomResponse, type RoomVisibility, type UserSearchResult } from '@cardquorum/shared';
 import { RoomService } from '../room/room.service';
 
 @Component({

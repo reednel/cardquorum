@@ -1,5 +1,5 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { GameLogBroadcast } from '@cardquorum/shared';
+import { TestBed, type ComponentFixture } from '@angular/core/testing';
+import { type GameLogBroadcast } from '@cardquorum/shared';
 import { GameLogEntryComponent } from './game-log-entry';
 import { SessionBoundaryMarker } from './session-boundary-marker';
 

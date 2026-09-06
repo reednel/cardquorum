@@ -1,8 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { signal } from '@angular/core';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { of } from 'rxjs';
-import { RoomResponse, RosterMember } from '@cardquorum/shared';
+import { type RoomResponse, type RosterMember } from '@cardquorum/shared';
 import { AuthService } from '../auth/auth.service';
 import { ForceAbandonService } from '../game/force-abandon.service';
 import { GameService } from '../game/game.service';

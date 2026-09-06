@@ -1,8 +1,8 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
-import { UserIdentity } from '@cardquorum/shared';
+import { type UserIdentity } from '@cardquorum/shared';
 import { REQUEST_USER_KEY } from '../auth/http-auth.guard';
 import { StatsController } from './stats.controller';
-import { StatsService } from './stats.service';
+import { type StatsService } from './stats.service';
 
 describe('StatsController', () => {
   let controller: StatsController;

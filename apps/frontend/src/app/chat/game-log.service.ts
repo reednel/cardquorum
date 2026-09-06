@@ -1,5 +1,10 @@
 import { effect, inject, Injectable, signal } from '@angular/core';
-import { GameLogBroadcast, GameLogHistoryPayload, WS_EMIT, WS_EVENT } from '@cardquorum/shared';
+import {
+  WS_EMIT,
+  WS_EVENT,
+  type GameLogBroadcast,
+  type GameLogHistoryPayload,
+} from '@cardquorum/shared';
 import { RoomContextService } from '../room/room-context.service';
 import { WebSocketService } from '../websocket.service';
 import { deduplicateEntries, prependHistory } from './game-log-utils';

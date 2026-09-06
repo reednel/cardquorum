@@ -1,6 +1,6 @@
 import * as fc from 'fast-check';
 import { SheepsheadPlugin } from '../sheepshead-plugin';
-import { PlayerRole, SheepsheadConfig, SheepsheadState } from '../types';
+import { type PlayerRole, type SheepsheadConfig, type SheepsheadState } from '../types';
 import { makeConfig } from './test-helpers';
 
 /**

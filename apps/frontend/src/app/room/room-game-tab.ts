@@ -6,28 +6,28 @@ import {
   effect,
   inject,
   input,
-  OnInit,
   signal,
+  type OnInit,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faCircleInfo, faRepeat } from '@fortawesome/free-solid-svg-icons';
 import {
-  ConfigFieldDef,
-  FieldRegistry,
-  GenericConfigPreset,
-  SelectFieldDef,
+  type ConfigFieldDef,
+  type FieldRegistry,
+  type GenericConfigPreset,
+  type SelectFieldDef,
 } from '@cardquorum/engine';
 import {
-  GameSettingsLoadedPayload,
-  GameSettingsUpdatedPayload,
-  RoomGameSettings,
-  RosterMember,
   WS_EMIT,
   WS_EVENT,
+  type GameSettingsLoadedPayload,
+  type GameSettingsUpdatedPayload,
+  type RoomGameSettings,
+  type RosterMember,
 } from '@cardquorum/shared';
 import { SheepsheadConfigPlugin } from '@cardquorum/sheepshead';
-import { GameRegistry } from '../game/game-registry';
+import { type GameRegistry } from '../game/game-registry';
 import { GameService } from '../game/game.service';
 import { ConfirmDialog } from '../shared/confirm-dialog';
 import { WebSocketService } from '../websocket.service';

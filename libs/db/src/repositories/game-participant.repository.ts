@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
-import { GameParticipant, gameParticipants, NewGameParticipant } from '../schema';
-import { DbInstance } from '../types';
+import { gameParticipants, type GameParticipant, type NewGameParticipant } from '../schema';
+import { type DbInstance } from '../types';
 
 export class GameParticipantRepository {
   constructor(private readonly db: DbInstance) {}

@@ -1,11 +1,11 @@
 import * as fc from 'fast-check';
 import {
-  GameEventRepository,
-  GameParticipantRepository,
-  GameSessionRepository,
-  UserRepository,
+  type GameEventRepository,
+  type GameParticipantRepository,
+  type GameSessionRepository,
+  type UserRepository,
 } from '@cardquorum/db';
-import { ReplayService, SessionListOptions } from './replay.service';
+import { ReplayService, type SessionListOptions } from './replay.service';
 
 describe('Session list filtering', () => {
   const TERMINAL_STATUSES = ['finished', 'abandoned', 'cancelled', 'aborted'] as const;

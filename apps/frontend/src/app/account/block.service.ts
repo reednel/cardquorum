@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
-import { Observable, tap } from 'rxjs';
-import { BlockedUserResponse, BlockUserRequest } from '@cardquorum/shared';
+import { tap, type Observable } from 'rxjs';
+import { type BlockedUserResponse, type BlockUserRequest } from '@cardquorum/shared';
 import { FriendService } from './friend.service';
 
 @Injectable({ providedIn: 'root' })

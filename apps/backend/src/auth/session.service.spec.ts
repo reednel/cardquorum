@@ -1,4 +1,4 @@
-import { SessionRepository } from '@cardquorum/db';
+import { type SessionRepository } from '@cardquorum/db';
 import { SessionService } from './session.service';
 
 describe('SessionService', () => {

@@ -1,6 +1,6 @@
 import { randomBytes } from 'crypto';
 import { Injectable } from '@nestjs/common';
-import { SessionRepository } from '@cardquorum/db';
+import { type SessionRepository } from '@cardquorum/db';
 
 @Injectable()
 export class SessionService {

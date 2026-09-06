@@ -1,6 +1,6 @@
 import { and, eq, ilike, ne, notInArray, sql } from 'drizzle-orm';
 import { messages, rooms, userCredentials, users } from '../schema';
-import { DbInstance } from '../types';
+import { type DbInstance } from '../types';
 
 export class UserRepository {
   constructor(private readonly db: DbInstance) {}

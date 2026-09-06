@@ -6,8 +6,8 @@ import {
   inject,
   input,
   signal,
-  Type,
   type OutputEmitterRef,
+  type Type,
 } from '@angular/core';
 import type { ColorAssignmentMap, GameTablePlugin, UserIdentity } from '@cardquorum/shared';
 import { CardStack } from '../card-stack';

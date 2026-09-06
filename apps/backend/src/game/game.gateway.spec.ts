@@ -1,11 +1,11 @@
-import { WebSocket } from 'ws';
-import { RoomManager } from '@cardquorum/engine';
-import { UserIdentity, WS_EMIT } from '@cardquorum/shared';
-import { RoomService } from '../room/room.service';
+import { type WebSocket } from 'ws';
+import { type RoomManager } from '@cardquorum/engine';
+import { WS_EMIT, type UserIdentity } from '@cardquorum/shared';
+import { type RoomService } from '../room/room.service';
 import { WsConnectionService } from '../ws/ws-connection.service';
-import { EventLogService } from './event-log.service';
+import { type EventLogService } from './event-log.service';
 import { GameGateway } from './game.gateway';
-import { GameService } from './game.service';
+import { type GameService } from './game.service';
 
 describe('GameGateway', () => {
   let gateway: GameGateway;

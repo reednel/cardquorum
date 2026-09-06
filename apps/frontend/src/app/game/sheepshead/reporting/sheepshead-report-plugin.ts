@@ -1,4 +1,4 @@
-import { GameReportPlugin } from '@cardquorum/shared';
+import { type GameReportPlugin } from '@cardquorum/shared';
 import { CONFIG_PRESETS } from '@cardquorum/sheepshead';
 import { SheepsheadReportComponent } from './sheepshead-report';
 

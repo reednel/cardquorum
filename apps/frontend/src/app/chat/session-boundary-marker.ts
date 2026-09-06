@@ -5,12 +5,12 @@ import {
   inject,
   input,
   signal,
-  Type,
+  type Type,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faClapperboard, faTableList } from '@fortawesome/free-solid-svg-icons';
-import { GameLogBroadcast, UserIdentity } from '@cardquorum/shared';
+import { type GameLogBroadcast, type UserIdentity } from '@cardquorum/shared';
 import { GAME_TABLE_PLUGINS } from '../game/game-registry';
 import { GameSummaryShell } from '../game/game-summary-shell';
 import { GameService } from '../game/game.service';

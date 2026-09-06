@@ -1,11 +1,11 @@
 import {
   CdkDrag,
-  CdkDragDrop,
-  CdkDragEnd,
   CdkDragPreview,
-  CdkDragStart,
   CdkDropList,
   moveItemInArray,
+  type CdkDragDrop,
+  type CdkDragEnd,
+  type CdkDragStart,
 } from '@angular/cdk/drag-drop';
 import {
   afterRenderEffect,

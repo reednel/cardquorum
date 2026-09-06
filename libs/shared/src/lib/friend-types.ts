@@ -1,4 +1,4 @@
-import { UserSearchResult } from './user-types';
+import { type UserSearchResult } from './user-types';
 
 export interface FriendshipResponse {
   friendshipId: number;

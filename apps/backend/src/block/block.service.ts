@@ -4,8 +4,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { BlockRepository, FriendshipRepository, UserRepository } from '@cardquorum/db';
-import { BlockedUserResponse } from '@cardquorum/shared';
+import {
+  type BlockRepository,
+  type FriendshipRepository,
+  type UserRepository,
+} from '@cardquorum/db';
+import { type BlockedUserResponse } from '@cardquorum/shared';
 
 @Injectable()
 export class BlockService {

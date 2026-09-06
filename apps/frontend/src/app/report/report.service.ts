@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
-import { ReportFilters } from '@cardquorum/shared';
+import { type Observable } from 'rxjs';
+import { type ReportFilters } from '@cardquorum/shared';
 
 @Injectable({ providedIn: 'root' })
 export class ReportService {

@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { ChartConfiguration } from 'chart.js';
+import { type ChartConfiguration } from 'chart.js';
 import { BaseChartDirective } from 'ng2-charts';
-import { AverageStat, RatioStat, SheepsheadReportPayload } from '@cardquorum/shared';
+import { type AverageStat, type RatioStat, type SheepsheadReportPayload } from '@cardquorum/shared';
 import '../../../shared/chart-config';
 
 interface StatCardDisplay {

@@ -1,14 +1,14 @@
 import * as fc from 'fast-check';
-import { ChatMessagePayload, GameLogBroadcast } from '@cardquorum/shared';
+import { type ChatMessagePayload, type GameLogBroadcast } from '@cardquorum/shared';
 import {
   deduplicateEntries,
   deriveFeedItems,
   entryKey,
-  FeedMode,
   isBoundaryEntry,
   mergeFeedItems,
   prependHistory,
   SESSION_BOUNDARY_EVENTS,
+  type FeedMode,
 } from './game-log-utils';
 
 // --- Custom Arbitraries ---

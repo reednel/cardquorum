@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { RoomResponse } from '@cardquorum/shared';
+import { type RoomResponse } from '@cardquorum/shared';
 import { RoomService } from './room.service';
 
 const ROOM: RoomResponse = {

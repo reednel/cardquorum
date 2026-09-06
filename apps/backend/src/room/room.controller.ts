@@ -16,26 +16,26 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { FastifyRequest } from 'fastify';
+import { type FastifyRequest } from 'fastify';
 import {
-  PaginatedResponse,
-  RoomBanResponse,
-  RoomInviteResponse,
-  RoomResponse,
-  RoomVisibility,
-  RosterState,
-  UserIdentity,
+  type PaginatedResponse,
+  type RoomBanResponse,
+  type RoomInviteResponse,
+  type RoomResponse,
+  type RoomVisibility,
+  type RosterState,
+  type UserIdentity,
 } from '@cardquorum/shared';
 import { HttpAuthGuard, REQUEST_USER_KEY } from '../auth/http-auth.guard';
-import { GameService } from '../game/game.service';
+import { type GameService } from '../game/game.service';
 import {
-  CreateRoomDto,
-  RoomUserDto,
-  ToggleRotateDto,
-  UpdateRoomDto,
-  UpdateRosterDto,
+  type CreateRoomDto,
+  type RoomUserDto,
+  type ToggleRotateDto,
+  type UpdateRoomDto,
+  type UpdateRosterDto,
 } from './room.dto';
-import { RoomService } from './room.service';
+import { type RoomService } from './room.service';
 
 @UseGuards(HttpAuthGuard)
 @Controller('rooms')

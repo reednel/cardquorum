@@ -4,8 +4,8 @@ import {
   DestroyRef,
   ElementRef,
   inject,
-  OnInit,
   signal,
+  type OnInit,
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';

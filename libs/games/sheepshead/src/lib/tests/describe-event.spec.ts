@@ -1,5 +1,5 @@
 import { SheepsheadPlugin } from '../sheepshead-plugin';
-import { SheepsheadState } from '../types';
+import { type SheepsheadState } from '../types';
 import { card, makeState } from './test-helpers';
 
 const describeEvent = SheepsheadPlugin.describeEvent!;

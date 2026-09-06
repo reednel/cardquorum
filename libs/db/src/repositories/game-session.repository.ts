@@ -1,6 +1,6 @@
-import { and, asc, desc, eq, gt, inArray, lt, or, SQL } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray, lt, or, type SQL } from 'drizzle-orm';
 import { gameParticipants, gameSessions, rooms } from '../schema';
-import { DbInstance } from '../types';
+import { type DbInstance } from '../types';
 
 export class GameSessionRepository {
   constructor(private readonly db: DbInstance) {}

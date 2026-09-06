@@ -1,9 +1,9 @@
 import {
   CdkDrag,
-  CdkDragDrop,
   CdkDropList,
   moveItemInArray,
   transferArrayItem,
+  type CdkDragDrop,
 } from '@angular/cdk/drag-drop';
 import { HttpClient } from '@angular/common/http';
 import {
@@ -31,13 +31,13 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import {
   hueToHsl,
-  RoomBanResponse,
-  RoomInviteResponse,
-  RoomResponse,
-  RosterMember,
-  RotationMode,
-  UserSearchResult,
   WS_EVENT,
+  type RoomBanResponse,
+  type RoomInviteResponse,
+  type RoomResponse,
+  type RosterMember,
+  type RotationMode,
+  type UserSearchResult,
 } from '@cardquorum/shared';
 import { AuthService } from '../auth/auth.service';
 import { ForceAbandonService } from '../game/force-abandon.service';
@@ -45,7 +45,7 @@ import { GameService } from '../game/game.service';
 import { ConfirmDialog } from '../shared/confirm-dialog';
 import { ThemeService } from '../shell/theme.service';
 import { WebSocketService } from '../websocket.service';
-import { OverflowAction, OverflowMenuComponent } from './overflow-menu';
+import { OverflowMenuComponent, type OverflowAction } from './overflow-menu';
 import { RoomContextService } from './room-context.service';
 import { RoomService } from './room.service';
 import {

@@ -1,4 +1,4 @@
-import { UserIdentity } from '@cardquorum/shared';
+import { type UserIdentity } from '@cardquorum/shared';
 import { RoomManager } from './room-manager';
 
 describe('RoomManager', () => {

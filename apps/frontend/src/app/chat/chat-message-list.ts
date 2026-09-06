@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { ChatMessagePayload } from '@cardquorum/shared';
+import { type ChatMessagePayload } from '@cardquorum/shared';
 import { FormatTimePipe } from './format-time.pipe';
 
 @Component({

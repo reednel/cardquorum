@@ -10,12 +10,16 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { FastifyRequest } from 'fastify';
-import { FriendRequestResponse, FriendshipResponse, UserIdentity } from '@cardquorum/shared';
+import { type FastifyRequest } from 'fastify';
+import {
+  type FriendRequestResponse,
+  type FriendshipResponse,
+  type UserIdentity,
+} from '@cardquorum/shared';
 import { HttpAuthGuard, REQUEST_USER_KEY } from '../auth/http-auth.guard';
-import { BlockService } from '../block/block.service';
-import { FriendRequestDto } from './friend.dto';
-import { FriendService } from './friend.service';
+import { type BlockService } from '../block/block.service';
+import { type FriendRequestDto } from './friend.dto';
+import { type FriendService } from './friend.service';
 
 @UseGuards(HttpAuthGuard)
 @Controller('friends')

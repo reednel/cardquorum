@@ -9,13 +9,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
-  MessageRepository,
-  RoomBanRepository,
-  RoomGameSettingsRepository,
-  RoomInviteRepository,
-  RoomRepository,
-  RoomRosterRepository,
-  UserRepository,
+  type MessageRepository,
+  type RoomBanRepository,
+  type RoomGameSettingsRepository,
+  type RoomInviteRepository,
+  type RoomRepository,
+  type RoomRosterRepository,
+  type UserRepository,
 } from '@cardquorum/db';
 import {
   demoteNotReadyPlayers,
@@ -26,21 +26,21 @@ import {
   validateReorder,
 } from '@cardquorum/engine';
 import {
-  PaginatedResponse,
-  RoomBanResponse,
-  RoomInviteResponse,
-  RoomResponse,
-  RoomVisibility,
-  RosterMember,
-  RosterState,
-  RotationMode,
   WS_EMIT,
+  type PaginatedResponse,
+  type RoomBanResponse,
+  type RoomInviteResponse,
+  type RoomResponse,
+  type RoomVisibility,
+  type RosterMember,
+  type RosterState,
+  type RotationMode,
 } from '@cardquorum/shared';
-import { BlockService } from '../block/block.service';
-import { ColorAssignmentService } from '../color/color-assignment.service';
-import { FriendService } from '../friend/friend.service';
+import { type BlockService } from '../block/block.service';
+import { type ColorAssignmentService } from '../color/color-assignment.service';
+import { type FriendService } from '../friend/friend.service';
 import { GameService } from '../game/game.service';
-import { WsConnectionService } from '../ws/ws-connection.service';
+import { type WsConnectionService } from '../ws/ws-connection.service';
 
 /** Hard cap: maximum number of players allowed in a single room. */
 const MAX_PLAYERS = 16;

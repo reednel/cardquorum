@@ -1,5 +1,10 @@
 import { inject, Injectable, signal } from '@angular/core';
-import { ChatMessagePayload, MessageHistoryPayload, WS_EMIT, WS_EVENT } from '@cardquorum/shared';
+import {
+  WS_EMIT,
+  WS_EVENT,
+  type ChatMessagePayload,
+  type MessageHistoryPayload,
+} from '@cardquorum/shared';
 import { RoomContextService } from '../room/room-context.service';
 import { WebSocketService } from '../websocket.service';
 

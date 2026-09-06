@@ -1,6 +1,6 @@
 import { DECK, TOTAL_POINTS } from '../constants';
 import { gotSchneidered, gotSchwarzed, pickingTeamPoints, scoreMultiplier } from '../scoring';
-import { SheepsheadConfig, SheepsheadState, TrickState } from '../types';
+import { SheepsheadConfig, type SheepsheadState, type TrickState } from '../types';
 import { card, makeConfig } from './test-helpers';
 
 function makeState(overrides: Partial<SheepsheadState> = {}): SheepsheadState {

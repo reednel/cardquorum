@@ -1,7 +1,7 @@
 import { and, desc, eq, notInArray } from 'drizzle-orm';
-import { ChatMessagePayload } from '@cardquorum/shared';
+import { type ChatMessagePayload } from '@cardquorum/shared';
 import { messages } from '../schema';
-import { DbInstance } from '../types';
+import { type DbInstance } from '../types';
 
 export class MessageRepository {
   constructor(private readonly db: DbInstance) {}

@@ -3,11 +3,11 @@ import { DECK } from '../constants';
 import { SheepsheadPlugin } from '../sheepshead-plugin';
 import {
   Card,
-  GamePhase,
-  PlayerRole,
-  SheepsheadConfig,
-  SheepsheadState,
-  TrickState,
+  type GamePhase,
+  type PlayerRole,
+  type SheepsheadConfig,
+  type SheepsheadState,
+  type TrickState,
 } from '../types';
 
 /** Build a config with sensible defaults. */

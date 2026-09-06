@@ -1,12 +1,12 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
-import { Observable } from 'rxjs';
+import { type Observable } from 'rxjs';
 import {
-  CreateRoomRequest,
-  RoomBanResponse,
-  RoomInviteResponse,
-  RoomResponse,
-  UpdateRoomRequest,
+  type CreateRoomRequest,
+  type RoomBanResponse,
+  type RoomInviteResponse,
+  type RoomResponse,
+  type UpdateRoomRequest,
 } from '@cardquorum/shared';
 
 @Injectable({ providedIn: 'root' })

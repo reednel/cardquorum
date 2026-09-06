@@ -1,14 +1,13 @@
 import {
-  AfterViewInit,
   DestroyRef,
   Directive,
   ElementRef,
   inject,
   input,
   output,
+  type AfterViewInit,
 } from '@angular/core';
 import flatpickr from 'flatpickr';
-import { Instance } from 'flatpickr/dist/types/instance';
 
 @Directive({
   selector: '[appFlatpickr]',
@@ -20,7 +19,7 @@ export class FlatpickrDirective implements AfterViewInit {
 
   private readonly elRef = inject(ElementRef);
   private readonly destroyRef = inject(DestroyRef);
-  private instance: Instance | null = null;
+  private instance: { destroy(): void } | null = null;
 
   ngAfterViewInit(): void {
     this.instance = flatpickr(this.elRef.nativeElement, {

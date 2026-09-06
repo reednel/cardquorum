@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { BlockedUserResponse } from '@cardquorum/shared';
+import { type BlockedUserResponse } from '@cardquorum/shared';
 import { BlockService } from './block.service';
 import { FriendService } from './friend.service';
 

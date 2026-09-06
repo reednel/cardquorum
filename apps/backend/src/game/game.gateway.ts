@@ -1,28 +1,28 @@
-import { Logger, OnModuleInit, UsePipes } from '@nestjs/common';
+import { Logger, UsePipes, type OnModuleInit } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
   SubscribeMessage,
   WebSocketGateway,
 } from '@nestjs/websockets';
-import { WebSocket } from 'ws';
-import { ColorAssignmentMap, WS_EMIT, WS_EVENT } from '@cardquorum/shared';
-import { RoomService } from '../room/room.service';
-import { WsConnectionService } from '../ws/ws-connection.service';
+import { type WebSocket } from 'ws';
+import { WS_EMIT, WS_EVENT, type ColorAssignmentMap } from '@cardquorum/shared';
+import { type RoomService } from '../room/room.service';
+import { type WsConnectionService } from '../ws/ws-connection.service';
 import { WsValidationPipe } from '../ws/ws-validation.pipe';
-import { EventLogService } from './event-log.service';
+import { type EventLogService } from './event-log.service';
 import {
-  GameAbandonDto,
-  GameActionDto,
-  GameCancelDto,
-  GameCreateDto,
-  GameForceAbandonDto,
-  GameLogHistoryDto,
-  GameQueryTargetsDto,
-  GameRejoinDto,
-  GameStartDto,
+  type GameAbandonDto,
+  type GameActionDto,
+  type GameCancelDto,
+  type GameCreateDto,
+  type GameForceAbandonDto,
+  type GameLogHistoryDto,
+  type GameQueryTargetsDto,
+  type GameRejoinDto,
+  type GameStartDto,
 } from './game.dto';
-import { GameService } from './game.service';
+import { type GameService } from './game.service';
 
 @UsePipes(WsValidationPipe)
 @WebSocketGateway({ path: '/ws' })

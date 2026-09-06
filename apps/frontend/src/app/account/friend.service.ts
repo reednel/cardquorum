@@ -1,11 +1,11 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
-import { Observable, tap } from 'rxjs';
+import { tap, type Observable } from 'rxjs';
 import {
-  FriendRequestBody,
-  FriendRequestResponse,
-  FriendshipResponse,
-  UserSearchResult,
+  type FriendRequestBody,
+  type FriendRequestResponse,
+  type FriendshipResponse,
+  type UserSearchResult,
 } from '@cardquorum/shared';
 
 @Injectable({ providedIn: 'root' })

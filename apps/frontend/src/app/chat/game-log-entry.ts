@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { GameLogBroadcast } from '@cardquorum/shared';
+import { type GameLogBroadcast } from '@cardquorum/shared';
 import { FormatTimePipe } from './format-time.pipe';
 
 @Component({

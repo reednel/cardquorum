@@ -1,9 +1,9 @@
-import { WebSocket } from 'ws';
-import { UserIdentity, WS_EMIT } from '@cardquorum/shared';
-import { RoomService } from '../room/room.service';
+import { type WebSocket } from 'ws';
+import { WS_EMIT, type UserIdentity } from '@cardquorum/shared';
+import { type RoomService } from '../room/room.service';
 import { WsConnectionService } from '../ws/ws-connection.service';
 import { ChatGateway } from './chat.gateway';
-import { ChatService } from './chat.service';
+import { type ChatService } from './chat.service';
 
 describe('ChatGateway', () => {
   let gateway: ChatGateway;

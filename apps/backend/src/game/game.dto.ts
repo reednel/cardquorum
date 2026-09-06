@@ -11,11 +11,11 @@ import {
   ValidateNested,
 } from 'class-validator';
 import {
-  GameActionPayload,
-  GameCancelPayload,
-  GameCreatePayload,
-  GameRejoinPayload,
-  GameStartPayload,
+  type GameActionPayload,
+  type GameCancelPayload,
+  type GameCreatePayload,
+  type GameRejoinPayload,
+  type GameStartPayload,
 } from '@cardquorum/shared';
 
 export class GameCreateDto implements GameCreatePayload {

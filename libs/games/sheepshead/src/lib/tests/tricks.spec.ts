@@ -1,5 +1,5 @@
 import { evaluateTrick, legalPlays } from '../tricks';
-import { Card, SheepsheadConfig, SheepsheadState, TrickState } from '../types';
+import { SheepsheadConfig, type Card, type SheepsheadState, type TrickState } from '../types';
 import { card, makeConfig } from './test-helpers';
 
 /** Build a minimal play-phase state for legalPlays tests. */

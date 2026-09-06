@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { GameReportRepository, ReportFilters } from '@cardquorum/shared';
-import { SheepsheadReportRepository } from '@cardquorum/sheepshead/reporting';
+import { type GameReportRepository, type ReportFilters } from '@cardquorum/shared';
+import { type SheepsheadReportRepository } from '@cardquorum/sheepshead/reporting';
 
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 

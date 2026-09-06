@@ -1,4 +1,4 @@
-import { Route } from '@angular/router';
+import { type Route } from '@angular/router';
 import { authGuard } from './auth/auth.guard';
 import { noAuthGuard } from './auth/no-auth.guard';
 

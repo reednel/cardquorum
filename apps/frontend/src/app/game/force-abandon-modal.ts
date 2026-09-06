@@ -3,10 +3,10 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  ElementRef,
   inject,
   input,
   viewChild,
+  type ElementRef,
 } from '@angular/core';
 import { ForceAbandonService } from './force-abandon.service';
 

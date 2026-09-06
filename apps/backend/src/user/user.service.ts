@@ -6,13 +6,17 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
-import { CredentialRepository, RoomRepository, UserRepository } from '@cardquorum/db';
+import {
+  type CredentialRepository,
+  type RoomRepository,
+  type UserRepository,
+} from '@cardquorum/db';
 import {
   DISPLAY_NAME_MAX,
   isValidPaletteHue,
   isValidUsername,
-  UserProfile,
-  UserSearchResult,
+  type UserProfile,
+  type UserSearchResult,
 } from '@cardquorum/shared';
 
 @Injectable()

@@ -1,18 +1,18 @@
-import { HttpErrorResponse } from '@angular/common/http';
+import { type HttpErrorResponse } from '@angular/common/http';
 import {
   afterNextRender,
   ChangeDetectionStrategy,
   Component,
-  ElementRef,
   inject,
   input,
-  OnInit,
   output,
   signal,
   viewChild,
+  type ElementRef,
+  type OnInit,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RoomResponse } from '@cardquorum/shared';
+import { type RoomResponse } from '@cardquorum/shared';
 import { RoomService } from '../room/room.service';
 
 @Component({

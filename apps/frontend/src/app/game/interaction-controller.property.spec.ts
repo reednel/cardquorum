@@ -1,8 +1,8 @@
 import * as fc from 'fast-check';
 import {
   InteractionController,
-  InteractionDispatcher,
-  InteractionPluginAdapter,
+  type InteractionDispatcher,
+  type InteractionPluginAdapter,
 } from './interaction-controller';
 
 const VALID_PHASES = ['idle', 'selecting', 'targeting'] as const;

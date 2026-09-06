@@ -2,11 +2,11 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import {
-  ActivatedRouteSnapshot,
   provideRouter,
   Router,
-  RouterStateSnapshot,
   UrlTree,
+  type ActivatedRouteSnapshot,
+  type RouterStateSnapshot,
 } from '@angular/router';
 import { authGuard } from './auth.guard';
 import { AuthService } from './auth.service';

@@ -1,4 +1,4 @@
-import { NestFastifyApplication } from '@nestjs/platform-fastify';
+import { type NestFastifyApplication } from '@nestjs/platform-fastify';
 import helmet from '@fastify/helmet';
 
 export async function registerHelmet(

@@ -1,4 +1,4 @@
-import { Type } from '@angular/core';
+import { type Type } from '@angular/core';
 
 /** Describes a single report offered by a game plugin. */
 export interface ReportDescriptor {

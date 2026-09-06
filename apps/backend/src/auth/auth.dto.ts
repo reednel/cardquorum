@@ -1,5 +1,5 @@
 import { IsString, MaxLength, MinLength } from 'class-validator';
-import { ChangePasswordRequest, PASSWORD_MAX, PASSWORD_MIN } from '@cardquorum/shared';
+import { PASSWORD_MAX, PASSWORD_MIN, type ChangePasswordRequest } from '@cardquorum/shared';
 
 export class PasswordDto {
   @IsString()

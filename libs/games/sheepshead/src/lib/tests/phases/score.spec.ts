@@ -1,5 +1,5 @@
 import { handleScore } from '../../phases';
-import { SheepsheadConfig, SheepsheadState } from '../../types';
+import { SheepsheadConfig, type SheepsheadState } from '../../types';
 import { card, makeConfig, makeNoPickScoreState } from '../test-helpers';
 
 describe('handleScore', () => {

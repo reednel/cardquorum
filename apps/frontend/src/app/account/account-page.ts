@@ -4,8 +4,8 @@ import {
   computed,
   effect,
   inject,
-  OnInit,
   signal,
+  type OnInit,
 } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { finalize } from 'rxjs';

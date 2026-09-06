@@ -1,9 +1,9 @@
-import { GameSessionRepository } from '@cardquorum/db';
-import { RoomManager } from '@cardquorum/engine';
-import { RosterState } from '@cardquorum/shared';
-import { RoomService } from '../room/room.service';
-import { StatsService } from '../stats/stats.service';
-import { EventLogService } from './event-log.service';
+import { type GameSessionRepository } from '@cardquorum/db';
+import { type RoomManager } from '@cardquorum/engine';
+import { type RosterState } from '@cardquorum/shared';
+import { type RoomService } from '../room/room.service';
+import { type StatsService } from '../stats/stats.service';
+import { type EventLogService } from './event-log.service';
 import { GameService } from './game.service';
 
 describe('Force-abandon flow', () => {

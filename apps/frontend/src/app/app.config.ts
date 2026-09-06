@@ -1,9 +1,9 @@
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import {
-  ApplicationConfig,
   inject,
   provideAppInitializer,
   provideBrowserGlobalErrorListeners,
+  type ApplicationConfig,
 } from '@angular/core';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideRouter } from '@angular/router';

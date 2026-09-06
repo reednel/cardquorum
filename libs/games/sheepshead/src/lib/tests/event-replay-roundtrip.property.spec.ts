@@ -1,7 +1,12 @@
 import * as fc from 'fast-check';
 import { SheepsheadPlugin } from '../sheepshead-plugin';
 import { legalPlays } from '../tricks';
-import { CalledCard, SheepsheadConfig, SheepsheadEvent, SheepsheadState } from '../types';
+import {
+  type CalledCard,
+  type SheepsheadConfig,
+  type SheepsheadEvent,
+  type SheepsheadState,
+} from '../types';
 
 const { createInitialState, applyEvent, getValidActions, isGameOver } = SheepsheadPlugin;
 

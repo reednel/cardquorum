@@ -1,6 +1,6 @@
 import { and, count, desc, eq, ilike, inArray, ne, notInArray, or, sql } from 'drizzle-orm';
 import { roomRosters, rooms, users } from '../schema';
-import { DbInstance } from '../types';
+import { type DbInstance } from '../types';
 
 export class RoomRepository {
   constructor(private readonly db: DbInstance) {}

@@ -1,5 +1,5 @@
 import { AxeBuilder } from '@axe-core/playwright';
-import { Page } from '@playwright/test';
+import { type Page } from '@playwright/test';
 
 type AxeResults = Awaited<ReturnType<AxeBuilder['analyze']>>;
 
