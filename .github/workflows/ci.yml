@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Lint, Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # needed for nx affected
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Get pnpm store path
+        id: pnpm-store
+        run: echo "path=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Set Nx base/head for affected
+        run: |
+          echo "NX_BASE=origin/main" >> $GITHUB_ENV
+          echo "NX_HEAD=HEAD" >> $GITHUB_ENV
+
+      - name: Lint
+        run: pnpm nx affected -t lint --base=$NX_BASE --head=$NX_HEAD
+
+      - name: Build
+        run: pnpm nx affected -t build --base=$NX_BASE --head=$NX_HEAD
+
+      - name: Test
+        run: pnpm nx affected -t test --base=$NX_BASE --head=$NX_HEAD
