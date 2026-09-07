@@ -125,7 +125,7 @@ describe('WsConnectionService', () => {
       service.trackClient(ws, aliceIdentity);
 
       let wasTrackedDuringCallback = false;
-      service.onDisconnect((tracked) => {
+      service.onDisconnect((_tracked) => {
         wasTrackedDuringCallback = service.getTracked(ws) !== undefined;
       });
 

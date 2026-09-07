@@ -27,7 +27,7 @@ export class BlockController {
     @Req() request: FastifyRequest,
     @Body() dto: BlockUserDto,
   ): Promise<BlockedUserResponse> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
     return this.blockService.blockUser(user.userId, dto.userId);
   }
 
@@ -37,13 +37,13 @@ export class BlockController {
     @Req() request: FastifyRequest,
     @Param('userId', ParseIntPipe) userId: number,
   ): Promise<void> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
     return this.blockService.unblockUser(user.userId, userId);
   }
 
   @Get()
   async list(@Req() request: FastifyRequest): Promise<BlockedUserResponse[]> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
     return this.blockService.getBlockList(user.userId);
   }
 }

@@ -17,7 +17,7 @@ export class ReportController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ): Promise<unknown> {
-    const user = (request as any)[REQUEST_USER_KEY] as SessionIdentity;
+    const user = request[REQUEST_USER_KEY] as SessionIdentity;
 
     return this.reportService.getReport(gameType, user.userId, {
       variants: variants && variants !== 'all' ? variants.split(',') : undefined,

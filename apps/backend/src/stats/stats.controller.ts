@@ -21,7 +21,7 @@ export class StatsController {
     @Query('gameType') gameType?: string,
     @Query('timeRange') timeRange?: string,
   ): Promise<RoomStatsResponse> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
 
     const filters: StatsQueryParams = {
       gameType: gameType as StatsQueryParams['gameType'],
@@ -37,7 +37,7 @@ export class StatsController {
     @Query('gameType') gameType?: string,
     @Query('timeRange') timeRange?: string,
   ): Promise<PlayerStatsResponse> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
 
     const filters: StatsQueryParams = {
       gameType: gameType as StatsQueryParams['gameType'],

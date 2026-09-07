@@ -49,6 +49,15 @@ export default [
     },
   },
   {
+    // Relax rules in test files that legitimately require partial mocks, opaque
+    // state access, and post-assertion non-null narrowing that TS can't see through.
+    files: ['**/*.spec.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-non-null-assertion': 'off',
+    },
+  },
+  {
     // consistent-type-imports applies to the Angular frontend and shared libs.
     // The backend is excluded: NestJS uses emitDecoratorMetadata and class-as-token DI,
     // where constructor parameter types must remain runtime imports. Enforcing the rule

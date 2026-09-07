@@ -49,7 +49,7 @@ export class RoomController {
 
   @Post()
   async create(@Req() request: FastifyRequest, @Body() dto: CreateRoomDto): Promise<RoomResponse> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
     const visibility = dto.visibility ?? 'public';
 
     const row = await this.roomService.create(
@@ -89,7 +89,7 @@ export class RoomController {
 
   @Get('memberships')
   async memberships(@Req() request: FastifyRequest): Promise<RoomResponse[]> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
     return this.roomService.findMemberships(user.userId);
   }
 
@@ -101,7 +101,7 @@ export class RoomController {
     @Query('page') pageStr?: string,
     @Query('pageSize') pageSizeStr?: string,
   ): Promise<RoomResponse[] | PaginatedResponse<RoomResponse>> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
 
     if (search) {
       return this.roomService.searchDiscoverable(user.userId, search);
@@ -126,7 +126,7 @@ export class RoomController {
 
   @Get()
   async list(@Req() request: FastifyRequest): Promise<RoomResponse[]> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
     const rooms = await this.roomService.findAllForUser(user.userId);
 
     const results: RoomResponse[] = [];
@@ -163,7 +163,7 @@ export class RoomController {
     @Req() request: FastifyRequest,
     @Param('id', ParseIntPipe) id: number,
   ): Promise<RoomResponse> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
     const canAccess = await this.roomService.canAccessRoom(id, user.userId);
     if (!canAccess) {
       throw new NotFoundException(`Room ${id} not found`);
@@ -202,7 +202,7 @@ export class RoomController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateRoomDto,
   ): Promise<RoomResponse> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
 
     const room = await this.roomService.findById(id);
     if (!room) {
@@ -253,7 +253,7 @@ export class RoomController {
     @Req() request: FastifyRequest,
     @Param('id', ParseIntPipe) id: number,
   ): Promise<{ deleted: true }> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
 
     const room = await this.roomService.findById(id);
     if (!room) {
@@ -277,7 +277,7 @@ export class RoomController {
     @Req() request: FastifyRequest,
     @Param('id', ParseIntPipe) id: number,
   ): Promise<RoomInviteResponse[]> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
     const canAccess = await this.roomService.canAccessRoom(id, user.userId);
     if (!canAccess) {
       throw new NotFoundException(`Room ${id} not found`);
@@ -291,7 +291,7 @@ export class RoomController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: RoomUserDto,
   ): Promise<{ success: true }> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
     await this.assertOwner(id, user.userId);
     this.assertNotSelf(user.userId, dto.userId);
     await this.roomService.inviteUser(id, dto.userId);
@@ -304,7 +304,7 @@ export class RoomController {
     @Param('id', ParseIntPipe) id: number,
     @Param('userId', ParseIntPipe) userId: number,
   ): Promise<{ success: true }> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
     await this.assertOwner(id, user.userId);
     this.assertNotSelf(user.userId, userId);
     await this.roomService.uninviteUser(id, userId);
@@ -319,7 +319,7 @@ export class RoomController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: RoomUserDto,
   ): Promise<{ success: true }> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
     await this.assertOwner(id, user.userId);
     this.assertNotSelf(user.userId, dto.userId);
     await this.roomService.kickUser(id, dto.userId);
@@ -333,7 +333,7 @@ export class RoomController {
     @Req() request: FastifyRequest,
     @Param('id', ParseIntPipe) id: number,
   ): Promise<RoomBanResponse[]> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
     await this.assertOwner(id, user.userId);
     return this.roomService.getBans(id);
   }
@@ -344,7 +344,7 @@ export class RoomController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: RoomUserDto,
   ): Promise<{ success: true }> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
     await this.assertOwner(id, user.userId);
     this.assertNotSelf(user.userId, dto.userId);
     await this.roomService.banUser(id, dto.userId);
@@ -357,7 +357,7 @@ export class RoomController {
     @Param('id', ParseIntPipe) id: number,
     @Param('userId', ParseIntPipe) userId: number,
   ): Promise<{ success: true }> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
     await this.assertOwner(id, user.userId);
     this.assertNotSelf(user.userId, userId);
     await this.roomService.unbanUser(id, userId);
@@ -371,7 +371,7 @@ export class RoomController {
     @Req() request: FastifyRequest,
     @Param('id', ParseIntPipe) id: number,
   ): Promise<RosterState> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
     const canAccess = await this.roomService.canAccessRoom(id, user.userId);
     if (!canAccess) {
       throw new NotFoundException(`Room ${id} not found`);
@@ -384,7 +384,7 @@ export class RoomController {
     @Req() request: FastifyRequest,
     @Param('id', ParseIntPipe) id: number,
   ): Promise<{ success: true }> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
     await this.roomService.removeFromRoster(id, user.userId);
     return { success: true };
   }
@@ -395,7 +395,7 @@ export class RoomController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateRosterDto,
   ): Promise<RosterState> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
     await this.assertOwner(id, user.userId);
     const gameActive = this.gameService.isGameActive(id);
     return this.roomService.reorderRoster(id, dto.players, dto.spectators, { gameActive });
@@ -407,7 +407,7 @@ export class RoomController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: ToggleRotateDto,
   ): Promise<RosterState> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
     await this.assertOwner(id, user.userId);
     return this.roomService.setRotationMode(id, dto.enabled ? 'rotate-players' : 'none');
   }

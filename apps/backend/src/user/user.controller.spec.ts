@@ -1,10 +1,7 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { type SessionIdentity } from '@cardquorum/shared';
 import { REQUEST_SESSION_KEY } from '../auth/http-auth.guard';
-import { RoomService } from '../room/room.service';
-import { WsConnectionService } from '../ws/ws-connection.service';
 import { UserController } from './user.controller';
-import { UserService } from './user.service';
 
 const REQUEST_USER_KEY = 'user';
 

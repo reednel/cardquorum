@@ -86,7 +86,7 @@ export class AuthController {
     @Body() dto: { username: string },
     @Req() request: FastifyRequest,
   ): Promise<SessionIdentity> {
-    const user = (request as any)[REQUEST_USER_KEY];
+    const user = request[REQUEST_USER_KEY];
     await this.authService.oidcRegister(user.userId, dto.username);
     return {
       userId: user.userId,
@@ -151,7 +151,7 @@ export class AuthController {
       return;
     }
 
-    const rawCookie = (request as any).cookies?.['cq_oidc_state'];
+    const rawCookie = request.cookies?.['cq_oidc_state'];
     const parsed = parseOidcStateCookie(rawCookie ? `cq_oidc_state=${rawCookie}` : undefined);
 
     if (!parsed || parsed.state !== state) {
@@ -171,7 +171,7 @@ export class AuthController {
     try {
       if (actionSuffix === 'link' || actionSuffix === 'unlink') {
         // Manual session validation — HttpAuthGuard can't be used on this shared endpoint
-        const sessionId = (request as any).cookies?.['cq_session'];
+        const sessionId = request.cookies?.['cq_session'];
         const session = sessionId ? await this.sessionService.validateSession(sessionId) : null;
         if (!session) {
           reply.header('Set-Cookie', buildClearOidcStateCookie(this.nodeEnv));
@@ -229,7 +229,7 @@ export class AuthController {
   @Post('oidc/backchannel-logout')
   @HttpCode(200)
   async backchannelLogout(@Req() request: FastifyRequest): Promise<void> {
-    const body = (request as any).body as Record<string, string> | undefined;
+    const body = request.body as Record<string, string> | undefined;
     const logoutToken = body?.['logout_token'];
 
     if (!logoutToken || typeof logoutToken !== 'string') {
@@ -242,7 +242,7 @@ export class AuthController {
   @UseGuards(HttpAuthGuard)
   @Get('credentials')
   async getCredentials(@Req() request: FastifyRequest): Promise<CredentialsResponse> {
-    const user = (request as any)[REQUEST_USER_KEY];
+    const user = request[REQUEST_USER_KEY];
     const methods = await this.authService.getCredentialMethods(user.userId);
     return { methods };
   }
@@ -254,7 +254,7 @@ export class AuthController {
     @Req() request: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<void> {
-    const user = (request as any)[REQUEST_USER_KEY];
+    const user = request[REQUEST_USER_KEY];
     await this.authService.linkBasicCredential(user.userId, dto.password);
     reply.status(204).send();
   }
@@ -266,7 +266,7 @@ export class AuthController {
     @Req() request: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<void> {
-    const user = (request as any)[REQUEST_USER_KEY];
+    const user = request[REQUEST_USER_KEY];
     await this.authService.changePassword(user.userId, dto.currentPassword, dto.newPassword);
     reply.status(204).send();
   }
@@ -278,7 +278,7 @@ export class AuthController {
     @Req() request: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<void> {
-    const user = (request as any)[REQUEST_USER_KEY];
+    const user = request[REQUEST_USER_KEY];
     await this.authService.verifyBasicCredential(user.userId, dto.password);
     await this.authService.unlinkCredential(user.userId, 'basic');
     reply.status(204).send();
@@ -287,7 +287,7 @@ export class AuthController {
   @UseGuards(HttpAuthGuard)
   @Get('me')
   me(@Req() request: FastifyRequest): SessionIdentity {
-    return (request as any)[REQUEST_USER_KEY];
+    return request[REQUEST_USER_KEY];
   }
 
   @UseGuards(HttpAuthGuard)
@@ -296,7 +296,7 @@ export class AuthController {
     @Req() request: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<{ ok: true; endSessionUrl?: string }> {
-    const sessionId = (request as any).cookies?.['cq_session'];
+    const sessionId = request.cookies?.['cq_session'];
     let authMethod: string | undefined;
 
     if (sessionId) {

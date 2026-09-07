@@ -31,7 +31,7 @@ export class FriendController {
 
   @Get()
   async listFriends(@Req() request: FastifyRequest): Promise<FriendshipResponse[]> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
     const [friends, blockedIds] = await Promise.all([
       this.friendService.listFriends(user.userId),
       this.blockService.getBlockedIds(user.userId),
@@ -46,13 +46,13 @@ export class FriendController {
     @Req() request: FastifyRequest,
     @Body() dto: FriendRequestDto,
   ): Promise<FriendRequestResponse> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
     return this.friendService.sendRequest(user.userId, dto.userId);
   }
 
   @Get('requests/incoming')
   async listIncoming(@Req() request: FastifyRequest): Promise<FriendRequestResponse[]> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
     const [requests, blockedIds] = await Promise.all([
       this.friendService.listIncomingRequests(user.userId),
       this.blockService.getBlockedIds(user.userId),
@@ -63,7 +63,7 @@ export class FriendController {
 
   @Get('requests/outgoing')
   async listOutgoing(@Req() request: FastifyRequest): Promise<FriendRequestResponse[]> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
     const [requests, blockedIds] = await Promise.all([
       this.friendService.listOutgoingRequests(user.userId),
       this.blockService.getBlockedIds(user.userId),
@@ -77,7 +77,7 @@ export class FriendController {
     @Req() request: FastifyRequest,
     @Param('id', ParseIntPipe) id: number,
   ): Promise<FriendshipResponse> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
     return this.friendService.acceptRequest(user.userId, id);
   }
 
@@ -87,7 +87,7 @@ export class FriendController {
     @Req() request: FastifyRequest,
     @Param('id', ParseIntPipe) id: number,
   ): Promise<void> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
     return this.friendService.deleteRequest(user.userId, id);
   }
 
@@ -97,7 +97,7 @@ export class FriendController {
     @Req() request: FastifyRequest,
     @Param('id', ParseIntPipe) id: number,
   ): Promise<void> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
     return this.friendService.removeFriend(user.userId, id);
   }
 }

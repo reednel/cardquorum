@@ -12,7 +12,6 @@ describe('ChatGateway', () => {
   let chatService: jest.Mocked<ChatService>;
 
   const aliceIdentity: UserIdentity = { userId: 1, username: 'alice', displayName: 'Alice' };
-  const bobIdentity: UserIdentity = { userId: 2, username: 'bob', displayName: 'Bob' };
 
   const createMockClient = () => ({ send: jest.fn(), close: jest.fn() }) as unknown as WebSocket;
 

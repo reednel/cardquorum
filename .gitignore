@@ -51,14 +51,20 @@ data
 .angular
 
 # AI agents
+.agents/
 .claude/
+CLAUDE.md
 .kiro/
+.codex/
 .cursorrules
 .cursor/
 .aider*
 .codeium/
-CLAUDE.md
-.windsurfrules
+.opencode/
+opencode.json
 .superpowers/
+.windsurfrules
 
 scratch.sql
+
+.nx/polygraph

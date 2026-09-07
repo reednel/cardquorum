@@ -41,10 +41,8 @@ function applyAndCapture(
   if (result.sideEffects !== undefined) {
     const sideEffects = result.sideEffects as Record<string, unknown>;
     if (sideEffects['dealPayload']) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (event as any).dealPayload = sideEffects['dealPayload'];
     } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (event as any).payload = result.sideEffects;
     }
   }
@@ -126,7 +124,6 @@ function generateValidEventSequence(
     if (isGameOver(state)) break;
 
     // Check for scheduled events (trick_advance, game_scored)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const scheduled = (state as any).scheduledEvents;
     if (scheduled && scheduled.length > 0) {
       const scheduledEvent = JSON.parse(JSON.stringify(scheduled[0].event)) as SheepsheadEvent;

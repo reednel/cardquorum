@@ -21,7 +21,7 @@ export class ReplayController {
     @Param('sessionId', ParseIntPipe) sessionId: number,
     @Req() request: FastifyRequest,
   ): Promise<ReplayDataResponse> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
     return this.replayService.getReplayData(sessionId, user.userId);
   }
 
@@ -30,7 +30,7 @@ export class ReplayController {
     @Req() request: FastifyRequest,
     @Query() query: GetSessionsQueryDto,
   ): Promise<ReplaySessionListResponse> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
 
     const statuses = query.includeIncomplete === 'true' ? TERMINAL_STATUSES : ['finished'];
 

@@ -118,7 +118,6 @@ function playGameWithCapture(
     if (isGameOver(state)) break;
 
     // Check for scheduled events (trick_advance, game_scored)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const scheduled = (state as any).scheduledEvents;
     if (scheduled && scheduled.length > 0) {
       const scheduledEvent = JSON.parse(JSON.stringify(scheduled[0].event)) as SheepsheadEvent;

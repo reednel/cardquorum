@@ -20,7 +20,7 @@ export class HttpAuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<FastifyRequest>();
-    const cookies = (request as any).cookies as Record<string, string> | undefined;
+    const cookies = request.cookies;
     const sessionId = cookies?.['cq_session'];
 
     if (!sessionId) {
@@ -41,8 +41,8 @@ export class HttpAuthGuard implements CanActivate {
       authMethod: session.authMethod as 'basic' | 'oidc',
     };
 
-    (request as any)[REQUEST_USER_KEY] = identity;
-    (request as any)[REQUEST_SESSION_KEY] = { createdAt: session.createdAt };
+    request[REQUEST_USER_KEY] = identity;
+    request[REQUEST_SESSION_KEY] = { createdAt: session.createdAt };
     return true;
   }
 }

@@ -14,7 +14,7 @@ export class SummaryController {
     @Param('sessionId', ParseIntPipe) sessionId: number,
     @Req() request: FastifyRequest,
   ): Promise<SummaryDataResponse> {
-    const user = (request as any)[REQUEST_USER_KEY] as UserIdentity;
+    const user = request[REQUEST_USER_KEY] as UserIdentity;
     return this.summaryService.getSummaryData(sessionId, user.userId);
   }
 }

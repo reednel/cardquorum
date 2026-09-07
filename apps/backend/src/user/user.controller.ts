@@ -47,7 +47,7 @@ export class UserController {
 
   @Get('me')
   async getProfile(@Req() request: FastifyRequest): Promise<UserProfile> {
-    const user = (request as any)[REQUEST_USER_KEY] as SessionIdentity;
+    const user = request[REQUEST_USER_KEY] as SessionIdentity;
     const profile = await this.userService.getProfile(user.userId);
     if (!profile) {
       throw new NotFoundException('User not found');
@@ -60,7 +60,7 @@ export class UserController {
     @Req() request: FastifyRequest,
     @Body() dto: UpdateUsernameDto,
   ): Promise<UserProfile> {
-    const user = (request as any)[REQUEST_USER_KEY] as SessionIdentity;
+    const user = request[REQUEST_USER_KEY] as SessionIdentity;
     return this.userService.updateUsername(user.userId, dto.username);
   }
 
@@ -69,7 +69,7 @@ export class UserController {
     @Req() request: FastifyRequest,
     @Body() dto: UpdateDisplayNameDto,
   ): Promise<UserProfile> {
-    const user = (request as any)[REQUEST_USER_KEY] as SessionIdentity;
+    const user = request[REQUEST_USER_KEY] as SessionIdentity;
     return this.userService.updateDisplayName(user.userId, dto.displayName);
   }
 
@@ -78,13 +78,13 @@ export class UserController {
     @Req() request: FastifyRequest,
     @Body() dto: UpdateColorPreferenceDto,
   ): Promise<UserProfile> {
-    const user = (request as any)[REQUEST_USER_KEY] as SessionIdentity;
+    const user = request[REQUEST_USER_KEY] as SessionIdentity;
     return this.userService.updateColorPreference(user.userId, dto.hue);
   }
 
   @Delete('me/color-preference')
   async clearColorPreference(@Req() request: FastifyRequest): Promise<UserProfile> {
-    const user = (request as any)[REQUEST_USER_KEY] as SessionIdentity;
+    const user = request[REQUEST_USER_KEY] as SessionIdentity;
     return this.userService.clearColorPreference(user.userId);
   }
 
@@ -93,7 +93,7 @@ export class UserController {
     @Req() request: FastifyRequest,
     @Query() query: SearchUsersDto,
   ): Promise<UserSearchResult[]> {
-    const user = (request as any)[REQUEST_USER_KEY] as SessionIdentity;
+    const user = request[REQUEST_USER_KEY] as SessionIdentity;
     const blockedIds = await this.blockService.getBlockedIds(user.userId);
     return this.userService.searchUsers(query.q, user.userId, blockedIds);
   }
@@ -105,8 +105,8 @@ export class UserController {
     @Res({ passthrough: true }) reply: FastifyReply,
     @Body() dto: DeleteAccountDto,
   ): Promise<void> {
-    const user = (request as any)[REQUEST_USER_KEY] as SessionIdentity;
-    const sessionMeta = (request as any)[REQUEST_SESSION_KEY] as { createdAt: Date };
+    const user = request[REQUEST_USER_KEY] as SessionIdentity;
+    const sessionMeta = request[REQUEST_SESSION_KEY] as { createdAt: Date };
     const nodeEnv = process.env.NODE_ENV ?? 'development';
     const { ownedRoomIds } = await this.userService.deleteAccount(
       user.userId,
