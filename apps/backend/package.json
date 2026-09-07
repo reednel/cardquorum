@@ -1,0 +1,9 @@
+{
+  "name": "@cardquorum/backend",
+  "devDependencies": {
+    "@cardquorum/shared": "workspace:*",
+    "@cardquorum/engine": "workspace:*",
+    "@cardquorum/db": "workspace:*",
+    "@cardquorum/sheepshead": "workspace:*"
+  }
+}

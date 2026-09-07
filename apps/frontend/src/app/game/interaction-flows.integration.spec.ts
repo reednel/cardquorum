@@ -33,6 +33,9 @@ function makePlayState(overrides: Record<string, unknown> = {}) {
     noPick: null,
     redeals: null,
     legalCardNames: ['qc', 'jc', 'ac'],
+    hasHoleCard: false,
+    legalCallableCards: null,
+    holeCardRequired: null,
     dealerUserID: null,
     ...overrides,
   };
@@ -64,6 +67,9 @@ function makeBuryState(overrides: Record<string, unknown> = {}) {
     noPick: null,
     redeals: null,
     legalCardNames: null,
+    hasHoleCard: false,
+    legalCallableCards: null,
+    holeCardRequired: null,
     dealerUserID: null,
     ...overrides,
   };
@@ -73,7 +79,9 @@ function makeBuryState(overrides: Record<string, unknown> = {}) {
  * Wire an InteractionController with a real SheepsheadTablePlugin adapter
  * and a mock dispatcher, simulating what GameTable does in production.
  */
-function createWiredController(state: unknown, validActions: string[]) {
+type GameState = Parameters<NonNullable<typeof SheepsheadTablePlugin.getDefaultTarget>>[0];
+
+function createWiredController(state: GameState, validActions: string[]) {
   const ctrl = new InteractionController();
 
   const dispatcher: InteractionDispatcher = {

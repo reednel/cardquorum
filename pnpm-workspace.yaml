@@ -1,3 +1,8 @@
+packages:
+  - 'apps/*'
+  - 'libs/*'
+  - 'libs/games/*'
+
 allowBuilds:
   '@parcel/watcher': true
   '@swc/core': true

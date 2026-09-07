@@ -1,14 +1,25 @@
 {
-  "extends": "./tsconfig.json",
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "../../dist/out-tsc",
+    "noEmit": true,
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
     "module": "Node16",
     "moduleResolution": "Node16",
+    "esModuleInterop": true,
     "types": ["node"],
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "target": "es2021"
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["jest.config.ts", "jest.config.cts", "src/**/*.spec.ts", "src/**/*.test.ts"]
+  "exclude": ["jest.config.ts", "jest.config.cts", "src/**/*.spec.ts", "src/**/*.test.ts"],
+  "references": [
+    { "path": "../../libs/shared/tsconfig.lib.json" },
+    { "path": "../../libs/engine/tsconfig.lib.json" },
+    { "path": "../../libs/db/tsconfig.lib.json" },
+    { "path": "../../libs/games/sheepshead/tsconfig.lib.json" }
+  ]
 }

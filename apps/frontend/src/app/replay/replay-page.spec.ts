@@ -161,9 +161,9 @@ describe('ReplayPage summary integration', () => {
 
     // Start with no session selected to avoid rendering the replay table
     paramMapSubject = new BehaviorSubject({
-      get: (_key: string) => null as string | null,
-      has: (_key: string) => false,
-      getAll: (_key: string) => [] as string[],
+      get: (_key: string): string | null => null,
+      has: (_key: string): boolean => false,
+      getAll: (_key: string): string[] => [],
       keys: [] as string[],
     });
 

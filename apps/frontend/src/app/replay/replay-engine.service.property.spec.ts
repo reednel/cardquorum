@@ -50,11 +50,11 @@ function applyAndCapture(
   const result = applyEvent(config, state, event);
   if (result.sideEffects !== undefined) {
     if ((result.sideEffects as Record<string, unknown>)['dealPayload']) {
-      (event as Record<string, unknown>)['dealPayload'] = (
+      (event as unknown as Record<string, unknown>)['dealPayload'] = (
         result.sideEffects as Record<string, unknown>
       )['dealPayload'];
     } else {
-      (event as Record<string, unknown>)['payload'] = result.sideEffects;
+      (event as unknown as Record<string, unknown>)['payload'] = result.sideEffects;
     }
   }
   return result.state;
@@ -171,8 +171,8 @@ function playRandomGame(
 function toReplayEventDto(event: SheepsheadEvent, seq: number): ReplayEventDto {
   return {
     eventType: event.type,
-    userId: event.userID ?? null,
-    payload: (event as Record<string, unknown>)['payload'] ?? null,
+    userId: ((event as unknown as Record<string, unknown>)['userID'] as number | null) ?? null,
+    payload: (event as unknown as Record<string, unknown>)['payload'] ?? null,
     message: null,
     seq,
     createdAt: new Date().toISOString(),

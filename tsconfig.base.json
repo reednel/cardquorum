@@ -1,9 +1,7 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-    "rootDir": ".",
     "sourceMap": true,
-    "declaration": false,
     "moduleResolution": "Node16",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
@@ -13,15 +11,9 @@
     "lib": ["es2020", "dom"],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
-    "ignoreDeprecations": "6.0",
-    "baseUrl": ".",
-    "paths": {
-      "@cardquorum/shared": ["libs/shared/src/index.ts"],
-      "@cardquorum/engine": ["libs/engine/src/index.ts"],
-      "@cardquorum/db": ["libs/db/src/index.ts"],
-      "@cardquorum/sheepshead": ["libs/games/sheepshead/src/index.ts"],
-      "@cardquorum/sheepshead/reporting": ["libs/games/sheepshead/src/reporting/index.ts"]
-    }
+    "composite": true,
+    "declarationMap": true,
+    "customConditions": ["@cardquorum/source"]
   },
   "exclude": ["node_modules", "tmp"]
 }

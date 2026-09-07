@@ -217,7 +217,7 @@ describe('GameTable – InteractionController wiring', () => {
     });
 
     const ic = fixture.componentRef.injector.get(InteractionController);
-    ic.register('buried', {} as unknown);
+    ic.register('buried', {} as unknown as HTMLElement);
 
     ic.selectCard('hand', 'qc', 2);
     expect(ic.phase()).toBe('selecting');
@@ -239,7 +239,7 @@ describe('GameTable – InteractionController wiring', () => {
     });
 
     const ic = fixture.componentRef.injector.get(InteractionController);
-    ic.register('buried', {} as unknown);
+    ic.register('buried', {} as unknown as HTMLElement);
 
     ic.selectCard('hand', 'qc', 2);
     expect(ic.phase()).toBe('selecting');

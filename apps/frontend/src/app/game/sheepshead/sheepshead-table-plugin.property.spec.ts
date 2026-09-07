@@ -57,6 +57,9 @@ function arbPlayerView() {
         noPick: null,
         redeals: null,
         legalCardNames: null,
+        hasHoleCard: false,
+        legalCallableCards: null,
+        holeCardRequired: null,
         dealerUserID: userIDs[0],
       };
     });
@@ -120,6 +123,9 @@ function arbPlayerViewForBadges() {
         noPick: null,
         redeals: null,
         legalCardNames: null,
+        hasHoleCard: false,
+        legalCallableCards: null,
+        holeCardRequired: null,
         dealerUserID: userIDs[dealerIdx],
       };
     });
@@ -260,6 +266,9 @@ describe('tricks-won badge appears with correct count if and only if phase is pl
           noPick: null,
           redeals: null,
           legalCardNames: null,
+          hasHoleCard: false,
+          legalCallableCards: null,
+          holeCardRequired: null,
           dealerUserID: userIDs[dealerIdx],
         };
       });
@@ -355,6 +364,9 @@ describe('leader badge appears if and only if the phase is play and the player l
           noPick: null,
           redeals: null,
           legalCardNames: null,
+          hasHoleCard: false,
+          legalCallableCards: null,
+          holeCardRequired: null,
           dealerUserID: userIDs[0],
         };
       });

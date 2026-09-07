@@ -8,7 +8,7 @@
   },
   "scripts": {
     "prepare": "husky",
-    "validate": "prettier --check '**/*.{ts,html,css,json,md}' && pnpm nx run-many -t lint test build",
+    "validate": "prettier --check '**/*.{ts,html,css,json,md}' && pnpm nx run-many -t lint test build typecheck",
     "format": "prettier --write '**/*.{ts,html,css,json,md}'",
     "serve": "pnpm nx serve frontend",
     "drizzle-generate": "pnpm drizzle-kit generate --config ./libs/db/drizzle.config.ts",

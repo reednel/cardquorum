@@ -1,0 +1,30 @@
+{
+  "extends": "./tsconfig.base.json",
+  "files": [],
+  "references": [
+    {
+      "path": "./libs/shared"
+    },
+    {
+      "path": "./libs/engine"
+    },
+    {
+      "path": "./libs/db"
+    },
+    {
+      "path": "./libs/games/sheepshead"
+    },
+    {
+      "path": "./apps/backend"
+    },
+    {
+      "path": "./apps/frontend"
+    },
+    {
+      "path": "./apps/frontend-e2e"
+    },
+    {
+      "path": "./apps/backend-e2e"
+    }
+  ]
+}
