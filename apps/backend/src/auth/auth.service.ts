@@ -7,7 +7,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
-import * as jose from 'jose';
+import type { createRemoteJWKSet, jwtVerify } from 'jose' with { 'resolution-mode': 'import' };
 import { CredentialRepository, UserRepository } from '@cardquorum/db';
 import {
   isValidUsername,
@@ -53,7 +53,11 @@ export class AuthService {
   private authorizationEndpoint?: string;
   private tokenEndpoint?: string;
   private endSessionEndpoint?: string;
-  private jwks?: ReturnType<typeof jose.createRemoteJWKSet>;
+  private jwks?: ReturnType<typeof createRemoteJWKSet>;
+  private joseModule?: {
+    createRemoteJWKSet: typeof createRemoteJWKSet;
+    jwtVerify: typeof jwtVerify;
+  };
   private oidcIssuerFromDiscovery?: string;
 
   constructor(
@@ -101,7 +105,8 @@ export class AuthService {
     this.authorizationEndpoint = discovery.authorization_endpoint;
     this.tokenEndpoint = discovery.token_endpoint;
     this.endSessionEndpoint = discovery.end_session_endpoint;
-    this.jwks = jose.createRemoteJWKSet(new URL(discovery.jwks_uri));
+    this.joseModule = await import('jose');
+    this.jwks = this.joseModule.createRemoteJWKSet(new URL(discovery.jwks_uri));
     this.logger.log(`OIDC discovery complete: authorize=${this.authorizationEndpoint}`);
   }
 
@@ -337,7 +342,7 @@ export class AuthService {
   async backchannelLogout(logoutToken: string): Promise<void> {
     this.requireStrategy('oidc');
 
-    const { payload } = await jose.jwtVerify(logoutToken, this.jwks!, {
+    const { payload } = await this.joseModule!.jwtVerify(logoutToken, this.jwks!, {
       issuer: this.oidcIssuerFromDiscovery ?? this.oidcIssuer,
       audience: this.oidcClientId,
       maxTokenAge: '2m',
@@ -408,7 +413,7 @@ export class AuthService {
   }
 
   private async verifyIdToken(idToken: string, nonce: string): Promise<OidcIdentity> {
-    const { payload } = await jose.jwtVerify(idToken, this.jwks!, {
+    const { payload } = await this.joseModule!.jwtVerify(idToken, this.jwks!, {
       issuer: this.oidcIssuerFromDiscovery ?? this.oidcIssuer,
       audience: this.oidcClientId,
       maxTokenAge: '5m',
