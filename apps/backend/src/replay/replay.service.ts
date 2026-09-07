@@ -1,9 +1,9 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import {
-  type GameEventRepository,
-  type GameParticipantRepository,
-  type GameSessionRepository,
-  type UserRepository,
+  GameEventRepository,
+  GameParticipantRepository,
+  GameSessionRepository,
+  UserRepository,
 } from '@cardquorum/db';
 import {
   type ReplayDataResponse,

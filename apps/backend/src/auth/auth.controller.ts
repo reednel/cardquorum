@@ -15,7 +15,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { type ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 import { Throttle } from '@nestjs/throttler';
 import { type FastifyReply, type FastifyRequest } from 'fastify';
 import {
@@ -29,7 +29,7 @@ import {
   type PasswordDto,
   type RegisterDto,
 } from './auth.dto';
-import { type AuthService } from './auth.service';
+import { AuthService } from './auth.service';
 import {
   buildClearOidcStateCookie,
   buildClearSessionCookie,
@@ -38,7 +38,7 @@ import {
   parseOidcStateCookie,
 } from './cookie';
 import { HttpAuthGuard, REQUEST_USER_KEY } from './http-auth.guard';
-import { type SessionService } from './session.service';
+import { SessionService } from './session.service';
 
 @Controller('auth')
 export class AuthController {

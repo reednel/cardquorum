@@ -795,9 +795,6 @@ describe('SheepsheadPlugin', () => {
         }
 
         const activePlayer = state.activePlayer;
-        const playerIdx = state.players.findIndex((p) => p.userID === activePlayer);
-        const hand = state.players[playerIdx].hand;
-        const currentTrick = state.tricks[state.tricks.length - 1];
 
         // Pick the first legal card
         const { legalPlays } = require('../tricks');

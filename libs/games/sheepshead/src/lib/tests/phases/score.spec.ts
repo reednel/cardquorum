@@ -1,5 +1,5 @@
 import { handleScore } from '../../phases';
-import { SheepsheadConfig, type SheepsheadState } from '../../types';
+import { type SheepsheadState } from '../../types';
 import { card, makeConfig, makeNoPickScoreState } from '../test-helpers';
 
 describe('handleScore', () => {
@@ -167,8 +167,6 @@ describe('handleScore', () => {
 
   it('mittler: player with middle score wins', () => {
     const config = makeConfig({ noPick: 'mittler' });
-    const state = makeNoPickScoreState([20, 50, 50], [1, 2, 2], 'mittler');
-    const scored = handleScore(state, config);
 
     // Player 1 (20 pts) is middle of 3 sorted values [20, 50, 50]
     // Actually with duplicates at 50, the middle is 50. Let me use distinct values.

@@ -1,6 +1,5 @@
-import { DECK, TOTAL_POINTS } from '../constants';
 import { gotSchneidered, gotSchwarzed, pickingTeamPoints, scoreMultiplier } from '../scoring';
-import { SheepsheadConfig, type SheepsheadState, type TrickState } from '../types';
+import { type SheepsheadState, type TrickState } from '../types';
 import { card, makeConfig } from './test-helpers';
 
 function makeState(overrides: Partial<SheepsheadState> = {}): SheepsheadState {
@@ -329,27 +328,6 @@ describe('scoreMultiplier', () => {
 
   it('doubleOnTheBump doubles when picker loses', () => {
     // Picker lost with < 61 points, no schneider (>= 30)
-    const state = makeState({
-      buried: [card('kc'), card('ks')], // 4 + 4 = 8
-      tricks: [
-        {
-          plays: [
-            { player: 1, card: card('ac') },
-            { player: 2, card: card('7c') },
-          ],
-          winner: 1,
-        }, // picker wins 11
-        {
-          plays: [
-            { player: 2, card: card('as') },
-            { player: 1, card: card('7s') },
-          ],
-          winner: 2,
-        }, // opp wins 11
-      ],
-    });
-    // pickerPts = 8 (buried) + 11 (trick) = 19... that's schneider
-    // Let's use a case where picker has 30+ but < 61
     const state2 = makeState({
       buried: [card('ac'), card('as')], // 11 + 11 = 22
       tricks: [
@@ -510,25 +488,6 @@ describe('scoreMultiplier', () => {
   });
 
   it('doubleOnTheBump does not apply when picker wins', () => {
-    const state = makeState({
-      buried: [card('ac'), card('as'), card('ah'), card('xc')],
-      tricks: [
-        {
-          plays: [
-            { player: 1, card: card('xs') },
-            { player: 2, card: card('7c') },
-          ],
-          winner: 1,
-        }, // picker wins 10
-        {
-          plays: [
-            { player: 2, card: card('7s') },
-            { player: 1, card: card('7h') },
-          ],
-          winner: 2,
-        }, // opp wins 0
-      ],
-    });
     // pickerPts = 11+11+11+10 (buried) + 10 (trick) = 53... not enough
     // Use more buried: ac=11, as=11, ah=11, xc=10 = 43 + 10 (trick) = 53... still < 61
     // Add more to buried

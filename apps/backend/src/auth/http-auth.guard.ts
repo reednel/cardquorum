@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { type FastifyRequest } from 'fastify';
 import { type SessionIdentity } from '@cardquorum/shared';
-import { type SessionService } from './session.service';
+import { SessionService } from './session.service';
 
 export const REQUEST_USER_KEY = 'user';
 export const REQUEST_SESSION_KEY = 'sessionMeta';

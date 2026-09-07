@@ -8,7 +8,7 @@ import {
 import { type WebSocket } from 'ws';
 import { WS_EMIT, WS_EVENT } from '@cardquorum/shared';
 import { GameService } from '../game/game.service';
-import { type WsConnectionService } from '../ws/ws-connection.service';
+import { WsConnectionService } from '../ws/ws-connection.service';
 import { WsValidationPipe } from '../ws/ws-validation.pipe';
 import {
   type GameSettingsLoadDto,
@@ -21,7 +21,7 @@ import {
   type RosterToggleReadyDto,
   type RosterToggleRotateDto,
 } from './room.dto';
-import { type RoomService } from './room.service';
+import { RoomService } from './room.service';
 
 @UsePipes(WsValidationPipe)
 @WebSocketGateway({ path: '/ws' })

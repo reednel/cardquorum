@@ -1,6 +1,6 @@
 import { DECK } from '../../constants';
 import { handleBury, handleDeal, handlePick } from '../../phases';
-import { card, makeConfig, makeState, pickContinue } from '../test-helpers';
+import { makeConfig, makeState, pickContinue } from '../test-helpers';
 
 describe('handleBury', () => {
   it('removes buried cards from picker hand', () => {

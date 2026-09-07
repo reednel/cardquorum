@@ -1,4 +1,3 @@
-import { Component, input } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import * as fc from 'fast-check';
 import { SheepsheadSummary } from './sheepshead-summary';

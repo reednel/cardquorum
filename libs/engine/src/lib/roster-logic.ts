@@ -287,7 +287,7 @@ export function rotateSeatV2(
 export function validateReorder(
   roster: RosterState,
   newPlayers: number[],
-  newSpectators: number[],
+  _newSpectators: number[],
 ): { valid: true } | { valid: false; reason: string } {
   // Build a map of current spectators and their readyToPlay status
   const spectatorReadyMap = new Map<number, boolean>();

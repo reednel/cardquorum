@@ -1,37 +1,9 @@
 import * as fc from 'fast-check';
 import { DECK } from '../constants';
 import { SheepsheadPlugin } from '../sheepshead-plugin';
-import {
-  Card,
-  type CardName,
-  type SheepsheadConfig,
-  type SheepsheadEvent,
-  type SheepsheadState,
-} from '../types';
+import { type CardName, type SheepsheadEvent, type SheepsheadState } from '../types';
 
 const describeEvent = SheepsheadPlugin.describeEvent!;
-
-/** Build a config with sensible defaults. */
-function makeConfig(overrides: Partial<SheepsheadConfig> = {}): SheepsheadConfig {
-  return {
-    name: 'jack-of-diamonds',
-    playerCount: 3,
-    handSize: 10,
-    blindSize: 2,
-    pickerRule: 'autonomous',
-    partnerRule: 'jd',
-    noPick: 'leaster',
-    cracking: false,
-    blitzing: false,
-    doubleOnTheBump: false,
-    partnerOffTheHook: false,
-    noAceFaceTrump: false,
-    multiplicityLimit: null,
-    callOwnAce: null,
-    cardsRemoved: [],
-    ...overrides,
-  };
-}
 
 /** All card names in the deck. */
 const ALL_CARD_NAMES: CardName[] = DECK.map((c) => c.name);
@@ -206,7 +178,6 @@ describe('describeEvent never reveals hidden card information', () => {
   it('output does not contain raw card name codes from hidden hands', () => {
     fc.assert(
       fc.property(arbStateAndEvent(), ({ state, event, hiddenCardNames, playerNames }) => {
-        const config = makeConfig();
         const result = describeEvent(event, state, playerNames);
 
         // If result is null, nothing is revealed

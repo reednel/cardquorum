@@ -1,5 +1,5 @@
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { type RoomResponse } from '@cardquorum/shared';

@@ -27,15 +27,15 @@ import {
   type UserIdentity,
 } from '@cardquorum/shared';
 import { HttpAuthGuard, REQUEST_USER_KEY } from '../auth/http-auth.guard';
-import { type GameService } from '../game/game.service';
+import { GameService } from '../game/game.service';
 import {
-  type CreateRoomDto,
-  type RoomUserDto,
-  type ToggleRotateDto,
-  type UpdateRoomDto,
-  type UpdateRosterDto,
+  CreateRoomDto,
+  RoomUserDto,
+  ToggleRotateDto,
+  UpdateRoomDto,
+  UpdateRosterDto,
 } from './room.dto';
-import { type RoomService } from './room.service';
+import { RoomService } from './room.service';
 
 @UseGuards(HttpAuthGuard)
 @Controller('rooms')

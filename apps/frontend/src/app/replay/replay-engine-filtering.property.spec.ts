@@ -90,7 +90,6 @@ function initializeWithEvents(events: ReplayEventDto[]): ReplayEngineService {
   // Spy on goToPosition to prevent it from actually applying events
   // (which would fail since our generated events don't have valid payloads).
   // The filtering happens before goToPosition is called.
-  const originalGoToPosition = service.goToPosition.bind(service);
   jest.spyOn(service, 'goToPosition').mockImplementation((pos: number) => {
     // Only set position-related signals without applying events
     // This is safe because we're testing filtering, not event application

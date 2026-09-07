@@ -3,7 +3,6 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { type BlockedUserResponse } from '@cardquorum/shared';
 import { BlockService } from './block.service';
-import { FriendService } from './friend.service';
 
 const BLOCKED_USER: BlockedUserResponse = {
   userId: 5,
@@ -15,7 +14,6 @@ const BLOCKED_USER: BlockedUserResponse = {
 describe('BlockService', () => {
   let service: BlockService;
   let http: HttpTestingController;
-  let friendService: FriendService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -23,7 +21,6 @@ describe('BlockService', () => {
     });
     service = TestBed.inject(BlockService);
     http = TestBed.inject(HttpTestingController);
-    friendService = TestBed.inject(FriendService);
   });
 
   afterEach(() => http.verify());

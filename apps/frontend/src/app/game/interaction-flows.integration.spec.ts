@@ -285,7 +285,7 @@ describe('Stale query rejection with rapid selection changes', () => {
 describe('Phase change resets interaction state', () => {
   it('simulates what GameTable does on phase change: calls reset', () => {
     const state = makeBuryState();
-    const { ctrl, dispatcher } = createWiredController(state, ['bury']);
+    const { ctrl } = createWiredController(state, ['bury']);
 
     ctrl.register('hand', document.createElement('div'));
     ctrl.register('buried', document.createElement('div'));

@@ -2,7 +2,7 @@ import { type IncomingMessage } from 'http';
 import { Injectable, Logger } from '@nestjs/common';
 import { type UserIdentity } from '@cardquorum/shared';
 import { parseCookieSessionId } from './cookie';
-import { type SessionService } from './session.service';
+import { SessionService } from './session.service';
 
 @Injectable()
 export class WsAuthGuard {

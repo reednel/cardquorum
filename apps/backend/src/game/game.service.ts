@@ -1,11 +1,11 @@
 import { forwardRef, Inject, Injectable, Logger, type OnModuleDestroy } from '@nestjs/common';
-import { type GameSessionRepository, type RoomGameSettingsRepository } from '@cardquorum/db';
+import { GameSessionRepository, RoomGameSettingsRepository } from '@cardquorum/db';
 import { type GamePlugin, type WithScheduledEvents } from '@cardquorum/engine';
 import { WS_EMIT, type ColorAssignmentMap } from '@cardquorum/shared';
 import { SheepsheadPlugin } from '@cardquorum/sheepshead';
 import { RoomService } from '../room/room.service';
-import { type StatsService } from '../stats/stats.service';
-import { type EventBufferEntry, type EventLogService } from './event-log.service';
+import { StatsService } from '../stats/stats.service';
+import { EventLogService, type EventBufferEntry } from './event-log.service';
 import { resolveCancellationStatus } from './game-status';
 
 type BroadcastFn = (result: {

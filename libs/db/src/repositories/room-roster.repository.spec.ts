@@ -1,5 +1,5 @@
 import * as fc from 'fast-check';
-import { RoomRosterRepository, RosterSection, type RosterMember } from './room-roster.repository';
+import { RoomRosterRepository, type RosterMember } from './room-roster.repository';
 
 // ---------------------------------------------------------------------------
 // In-memory DB simulation

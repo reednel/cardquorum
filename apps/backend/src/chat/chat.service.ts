@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { type MessageRepository } from '@cardquorum/db';
+import { MessageRepository } from '@cardquorum/db';
 import { type ChatMessagePayload } from '@cardquorum/shared';
 
 @Injectable()

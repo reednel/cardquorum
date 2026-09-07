@@ -356,7 +356,7 @@ describe('Participant insertion with correct seat indices', () => {
 
   it('batchInsert is not called when there are no players (empty roster)', async () => {
     await fc.assert(
-      fc.asyncProperty(fc.integer({ min: 1, max: 10000 }), async (sessionId) => {
+      fc.asyncProperty(fc.integer({ min: 1, max: 10000 }), async (_sessionId) => {
         const db = {
           insert: jest.fn(() => ({
             values: jest.fn(() => Promise.resolve()),

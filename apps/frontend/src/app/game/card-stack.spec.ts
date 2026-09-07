@@ -669,17 +669,7 @@ describe('CardStack – drag preserves selection state', () => {
             emissions.push([...selected]);
           });
 
-          // Record the last known selection (from the clicks above)
-          // We read it by doing one more subscribe snapshot — the selection signal
-          // was already set by the clicks. We capture it by triggering a no-op check.
-          const selectionBeforeDrop = emissions.length > 0 ? emissions[emissions.length - 1] : [];
-
-          // Since we subscribed AFTER the clicks, emissions is empty at this point.
-          // The selection state is internal. We need to capture it differently.
-          // Let's click a card that's already selected to get the current state,
-          // then click it again to restore. Instead, let's just track emissions
-          // from this point and verify none arrive after the drop.
-
+          // The selection state is internal; track emissions from after the drop.
           // Clear emissions — we only care about emissions AFTER the drop
           emissions.length = 0;
 

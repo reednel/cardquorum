@@ -17,9 +17,9 @@ import {
   type UserIdentity,
 } from '@cardquorum/shared';
 import { HttpAuthGuard, REQUEST_USER_KEY } from '../auth/http-auth.guard';
-import { type BlockService } from '../block/block.service';
-import { type FriendRequestDto } from './friend.dto';
-import { type FriendService } from './friend.service';
+import { BlockService } from '../block/block.service';
+import { FriendRequestDto } from './friend.dto';
+import { FriendService } from './friend.service';
 
 @UseGuards(HttpAuthGuard)
 @Controller('friends')

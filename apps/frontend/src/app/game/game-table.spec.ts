@@ -1,5 +1,5 @@
 import { CUSTOM_ELEMENTS_SCHEMA, signal } from '@angular/core';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { GameTable } from './game-table';
 import { GameTableShell } from './game-table-shell';
 import { GameService } from './game.service';

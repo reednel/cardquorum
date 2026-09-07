@@ -21,9 +21,9 @@ import {
 } from '@cardquorum/shared';
 import { buildClearSessionCookie } from '../auth/cookie';
 import { HttpAuthGuard, REQUEST_SESSION_KEY, REQUEST_USER_KEY } from '../auth/http-auth.guard';
-import { type BlockService } from '../block/block.service';
-import { type RoomService } from '../room/room.service';
-import { type WsConnectionService } from '../ws/ws-connection.service';
+import { BlockService } from '../block/block.service';
+import { RoomService } from '../room/room.service';
+import { WsConnectionService } from '../ws/ws-connection.service';
 import {
   type DeleteAccountDto,
   type SearchUsersDto,
@@ -31,7 +31,7 @@ import {
   type UpdateDisplayNameDto,
   type UpdateUsernameDto,
 } from './user.dto';
-import { type UserService } from './user.service';
+import { UserService } from './user.service';
 
 @UseGuards(HttpAuthGuard)
 @Controller('users')

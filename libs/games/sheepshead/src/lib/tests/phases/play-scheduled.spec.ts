@@ -4,8 +4,8 @@ import { DECK } from '../../constants';
 import { handlePlayCard, handleTrickAdvance } from '../../phases';
 import { SheepsheadPlugin } from '../../sheepshead-plugin';
 import { legalPlays } from '../../tricks';
-import { Card, type SheepsheadState, type TrickState } from '../../types';
-import { card, makeConfig } from '../test-helpers';
+import { type SheepsheadState, type TrickState } from '../../types';
+import { makeConfig } from '../test-helpers';
 
 /**
  * Build a 3-player play-phase state where each player has exactly 1 card,
@@ -263,12 +263,11 @@ describe('completeTrick produces a pending state with scheduledEvents', () => {
 
   it('sets trick winner, updates stats, sets activePlayer to null, and schedules trick_advance', () => {
     fc.assert(
-      fc.property(arbLastCardTrick(), ({ state, cards }) => {
+      fc.property(arbLastCardTrick(), ({ state }) => {
         // Play all 3 cards through handlePlayCard
         let s = state;
         for (let i = 0; i < 3; i++) {
           const playerID = s.activePlayer!;
-          const playerIdx = s.players.findIndex((p) => p.userID === playerID);
           const { cards: legal } = legalPlays(s, config, playerID);
           // Play the first legal card (the player only has 1 card)
           s = handlePlayCard(
@@ -352,7 +351,7 @@ describe('leaster blind points awarded before scheduling', () => {
 
   it('winner gets blind card points added to pointsWon and blind cards added to cardsWon, with scheduledEvents set', () => {
     fc.assert(
-      fc.property(arbLeasterFinalTrick(), ({ state, cards, blind }) => {
+      fc.property(arbLeasterFinalTrick(), ({ state, blind }) => {
         // Play all 3 cards through handlePlayCard
         let s = state;
         for (let i = 0; i < 3; i++) {

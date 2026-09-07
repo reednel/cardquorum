@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
 import type { GameLogBroadcast, GameTablePlugin, UserIdentity } from '@cardquorum/shared';
 import * as gameRegistry from '../game/game-registry';
 import { GameService } from '../game/game.service';

@@ -2,7 +2,6 @@ import * as fc from 'fast-check';
 import { DECK } from '../constants';
 import { SheepsheadPlugin } from '../sheepshead-plugin';
 import {
-  Card,
   type GamePhase,
   type PlayerRole,
   type SheepsheadConfig,

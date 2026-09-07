@@ -6,11 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
-import {
-  type CredentialRepository,
-  type RoomRepository,
-  type UserRepository,
-} from '@cardquorum/db';
+import { CredentialRepository, RoomRepository, UserRepository } from '@cardquorum/db';
 import {
   DISPLAY_NAME_MAX,
   isValidPaletteHue,

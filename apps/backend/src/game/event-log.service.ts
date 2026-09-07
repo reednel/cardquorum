@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import {
+  GameEventRepository,
+  GameParticipantRepository,
   type GameEvent,
-  type GameEventRepository,
-  type GameParticipantRepository,
   type NewGameEvent,
 } from '@cardquorum/db';
 import { type GameEventBase } from '@cardquorum/engine';

@@ -7,7 +7,7 @@ import {
   type UserIdentity,
 } from '@cardquorum/shared';
 import { HttpAuthGuard, REQUEST_USER_KEY } from '../auth/http-auth.guard';
-import { type StatsService } from './stats.service';
+import { StatsService } from './stats.service';
 
 @UseGuards(HttpAuthGuard)
 @Controller('stats')

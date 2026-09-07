@@ -8,8 +8,8 @@ import {
 } from '@nestjs/websockets';
 import { type Server, type WebSocket } from 'ws';
 import { WS_EMIT } from '@cardquorum/shared';
-import { type WsAuthGuard } from '../auth/ws-auth.guard';
-import { type WsConnectionService } from './ws-connection.service';
+import { WsAuthGuard } from '../auth/ws-auth.guard';
+import { WsConnectionService } from './ws-connection.service';
 
 @WebSocketGateway({ path: '/ws' })
 export class WsGateway implements OnGatewayConnection, OnGatewayDisconnect {
