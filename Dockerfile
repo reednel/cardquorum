@@ -6,14 +6,14 @@
 # ============================================================
 
 # --- Stage 1: Install dependencies ---
-FROM node:24-alpine AS deps
+FROM node:26-alpine AS deps
 RUN npm install -g pnpm@12
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
 # --- Stage 2: Build frontend + backend ---
-FROM node:24-alpine AS builder
+FROM node:26-alpine AS builder
 RUN npm install -g pnpm@12
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
@@ -22,7 +22,7 @@ RUN pnpm nx build frontend --configuration=production
 RUN pnpm nx build backend
 
 # --- Stage 3: Production runtime ---
-FROM node:24-alpine AS runtime
+FROM node:26-alpine AS runtime
 RUN npm install -g pnpm@12
 WORKDIR /app
 
