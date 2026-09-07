@@ -69,6 +69,10 @@
     "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@cardquorum/shared": "workspace:*",
+    "@cardquorum/engine": "workspace:*",
+    "@cardquorum/db": "workspace:*",
+    "@cardquorum/sheepshead": "workspace:*",
     "@angular-devkit/core": "22.1.7",
     "@angular-devkit/schematics": "22.1.7",
     "@angular/build": "22.1.7",

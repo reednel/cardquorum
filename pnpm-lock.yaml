@@ -266,6 +266,18 @@ importers:
       '@axe-core/playwright':
         specifier: ^4.13.0
         version: 4.13.0(playwright-core@1.63.0)
+      '@cardquorum/db':
+        specifier: workspace:*
+        version: link:libs/db
+      '@cardquorum/engine':
+        specifier: workspace:*
+        version: link:libs/engine
+      '@cardquorum/shared':
+        specifier: workspace:*
+        version: link:libs/shared
+      '@cardquorum/sheepshead':
+        specifier: workspace:*
+        version: link:libs/games/sheepshead
       '@eslint/js':
         specifier: ^9.39.5
         version: 9.39.5
